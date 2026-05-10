@@ -11,7 +11,7 @@ export default function HomePage() {
         </p>
         <div className="flex gap-4 justify-center">
           <Link
-            href="/api/auth/signin"
+            href="/api/auth/signin/github?callbackUrl=/dashboard"
             className="bg-white text-slate-900 px-6 py-3 rounded-lg font-semibold hover:bg-slate-100 transition"
           >
             Sign in with GitHub
