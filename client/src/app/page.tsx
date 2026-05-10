@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 export default function HomePage() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="max-w-2xl text-center">
@@ -11,7 +13,7 @@ export default function HomePage() {
         </p>
         <div className="flex gap-4 justify-center">
           <Link
-            href="/api/auth/signin"
+            href={`${apiUrl}/api/v1/auth/github`}
             className="bg-white text-slate-900 px-6 py-3 rounded-lg font-semibold hover:bg-slate-100 transition"
           >
             Sign in with GitHub
