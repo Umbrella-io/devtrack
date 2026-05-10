@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 export default function HomePage() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="max-w-2xl text-center">

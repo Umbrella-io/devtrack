@@ -1,8 +1,31 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
+const GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize";
 const GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token";
 const GITHUB_USER_URL = "https://api.github.com/user";
+
+function getGithubRedirectUri(req: Request): string {
+  return (
+    process.env.GITHUB_REDIRECT_URI ??
+    `${req.protocol}://${req.get("host")}/api/v1/auth/github/callback`
+  );
+}
+
+export function githubSignIn(req: Request, res: Response): void {
+  if (!process.env.GITHUB_CLIENT_ID) {
+    res.status(500).json({ error: "Missing GITHUB_CLIENT_ID" });
+    return;
+  }
+
+  const params = new URLSearchParams({
+    client_id: process.env.GITHUB_CLIENT_ID,
+    redirect_uri: getGithubRedirectUri(req),
+    scope: process.env.GITHUB_OAUTH_SCOPES ?? "read:user user:email repo",
+  });
+
+  res.redirect(`${GITHUB_AUTHORIZE_URL}?${params.toString()}`);
+}
 
 export async function githubCallback(req: Request, res: Response): Promise<void> {
   const { code } = req.query;
@@ -24,6 +47,7 @@ export async function githubCallback(req: Request, res: Response): Promise<void>
         client_id: process.env.GITHUB_CLIENT_ID,
         client_secret: process.env.GITHUB_CLIENT_SECRET,
         code,
+        redirect_uri: getGithubRedirectUri(req),
       }),
     });
 
@@ -47,7 +71,8 @@ export async function githubCallback(req: Request, res: Response): Promise<void>
       { expiresIn: "7d" }
     );
 
-    res.json({ token: jwtToken, user: { id: user.id, login: user.login } });
+    const clientUrl = process.env.CLIENT_URL ?? "http://localhost:3000";
+    res.redirect(`${clientUrl}/dashboard#token=${encodeURIComponent(jwtToken)}`);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
