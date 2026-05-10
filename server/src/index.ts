@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import authRouter from "./routes/auth";
 import metricsRouter from "./routes/metrics";
 
 dotenv.config();
@@ -16,7 +15,6 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/metrics", metricsRouter);
 
 app.listen(PORT, () => {

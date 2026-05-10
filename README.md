@@ -90,8 +90,6 @@ Edit `.env`:
 
 ```env
 DATABASE_URL=postgresql://user:password@localhost:5432/devtrack
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
 JWT_SECRET=your_jwt_secret
 PORT=4000
 ```
@@ -114,7 +112,6 @@ npm install
 Edit `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:4000
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your_nextauth_secret
 GITHUB_ID=your_github_client_id
