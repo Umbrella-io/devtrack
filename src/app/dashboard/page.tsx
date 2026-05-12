@@ -2,9 +2,17 @@ import ContributionGraph from "@/components/ContributionGraph";
 import PRMetrics from "@/components/PRMetrics";
 import GoalTracker from "@/components/GoalTracker";
 import DashboardHeader from "@/components/DashboardHeader";
+import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 
+export default async function DashboardPage() {
+  const session = await getServerSession(authOptions);
 
-export default function DashboardPage() {
+  if (!session) {
+    redirect("/");
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 p-8">
       <DashboardHeader />
