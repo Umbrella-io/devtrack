@@ -1,6 +1,7 @@
 "use client"
 
 import SignOutButton from "@/components/SignOutButton";
+import UserAvatar from "@/components/UserAvatar";
 
 
 export default function DashboardHeader() {
@@ -11,7 +12,10 @@ export default function DashboardHeader() {
                 <p className="text-slate-400 mt-1">Your coding activity at a glance</p>
             </div>
 
-            <SignOutButton />
+            <div className="flex items-center gap-3">
+                <UserAvatar />
+                <SignOutButton />
+            </div>
 
         </header>
     );
