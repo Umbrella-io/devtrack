@@ -55,12 +55,12 @@ export default function ContributionGraph() {
 
   return (
     <div className="bg-slate-800 rounded-xl p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
         <h2 className="text-white font-semibold text-lg">
           Commit Activity
         </h2>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
     
           <div className="flex gap-1 bg-slate-700 rounded-lg p-1">
             {RANGES.map((r) => (
