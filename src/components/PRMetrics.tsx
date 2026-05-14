@@ -31,12 +31,12 @@ export default function PRMetrics() {
     : [];
 
   return (
-    <div className="bg-slate-800 rounded-xl p-6">
-      <h2 className="text-white font-semibold text-lg mb-4">PR Analytics</h2>
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-slate-700 rounded-lg p-4 h-20 animate-pulse" />
+            <div key={i} className="h-20 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse" />
           ))}
         </div>
       ) : (
@@ -44,12 +44,12 @@ export default function PRMetrics() {
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="bg-slate-700 rounded-lg p-4 text-center"
+              className="rounded-lg bg-[var(--control)] p-4 text-center"
             >
-              <div className="text-2xl font-bold text-indigo-400">
+              <div className="text-2xl font-bold text-[var(--accent)]">
                 {stat.value}
               </div>
-              <div className="text-slate-400 text-sm mt-1">{stat.label}</div>
+              <div className="mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
             </div>
           ))}
         </div>

@@ -23,12 +23,12 @@ export default function GoalTracker() {
 
   if (loading) {
     return (
-      <div className="bg-slate-800 rounded-xl p-6 h-full">
-        <div className="h-5 w-32 bg-slate-700 rounded animate-pulse mb-4" />
+      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <div className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse" />
         {[1, 2, 3].map((i) => (
           <div key={i} className="mb-4">
-            <div className="h-3 bg-slate-700 rounded animate-pulse mb-2" />
-            <div className="h-2 bg-slate-700 rounded animate-pulse" />
+            <div className="mb-2 h-3 rounded bg-[var(--card-muted)] animate-pulse" />
+            <div className="h-2 rounded bg-[var(--card-muted)] animate-pulse" />
           </div>
         ))}
       </div>
@@ -36,10 +36,10 @@ export default function GoalTracker() {
   }
 
   return (
-    <div className="bg-slate-800 rounded-xl p-6 h-full">
-      <h2 className="text-white font-semibold text-lg mb-4">Weekly Goals</h2>
+    <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Weekly Goals</h2>
       {goals.length === 0 ? (
-        <p className="text-slate-400 text-sm">
+        <p className="text-sm text-[var(--muted-foreground)]">
           No goals yet. Create one via the API or future UI.
         </p>
       ) : (
@@ -49,14 +49,14 @@ export default function GoalTracker() {
             return (
               <li key={goal.id}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-300">{goal.label}</span>
-                  <span className="text-slate-400">
+                  <span className="text-[var(--card-foreground)]">{goal.label}</span>
+                  <span className="text-[var(--muted-foreground)]">
                     {goal.current}/{goal.target}
                   </span>
                 </div>
-                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
-                    className="h-full bg-indigo-500 rounded-full transition-all"
+                    className="h-full rounded-full bg-[var(--accent)] transition-all"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
