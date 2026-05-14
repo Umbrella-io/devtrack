@@ -36,7 +36,10 @@ export default function PRMetrics() {
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-slate-700 rounded-lg p-4 h-20 animate-pulse" />
+            <div
+              key={i}
+              className="bg-slate-700 rounded-lg p-4 h-24 animate-pulse"
+            />
           ))}
         </div>
       ) : (

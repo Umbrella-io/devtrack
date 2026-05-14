@@ -22,18 +22,19 @@ export default function GoalTracker() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="bg-slate-800 rounded-xl p-6 h-full">
-        <div className="h-5 w-32 bg-slate-700 rounded animate-pulse mb-4" />
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="mb-4">
-            <div className="h-3 bg-slate-700 rounded animate-pulse mb-2" />
-            <div className="h-2 bg-slate-700 rounded animate-pulse" />
-          </div>
-        ))}
-      </div>
-    );
-  }
+  return (
+    <div className="bg-slate-800 rounded-xl p-6 h-full">
+      <div className="h-6 w-32 bg-slate-700 rounded animate-pulse mb-4" />
+
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="mb-4">
+          <div className="h-4 bg-slate-700 rounded animate-pulse mb-2" />
+          <div className="h-2 bg-slate-700 rounded animate-pulse" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
   return (
     <div className="bg-slate-800 rounded-xl p-6 h-full">
