@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-8">
+  <div className="min-h-screen bg-slate-900 p-4 md:p-8">
       <DashboardHeader />
 
       {/* Row 1: Contribution graph + Streak + Goals */}
