@@ -54,13 +54,13 @@ export default function ContributionGraph() {
   }, [days]);
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+<div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           Commit Activity
         </h2>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
     
           <div className="flex gap-1 rounded-lg bg-[var(--control)] p-1">
             {RANGES.map((r) => (
