@@ -15,10 +15,11 @@ export default function TopRepos() {
 
   useEffect(() => {
     setLoading(true);
+
     fetch(`/api/metrics/repos?days=${days}`)
       .then((r) => r.json())
       .then((d: { repos: Repo[] }) => setRepos(d.repos ?? []))
-      .catch(() => {})
+      .catch(() => setRepos([]))
       .finally(() => setLoading(false));
   }, [days]);
 
@@ -26,8 +27,13 @@ export default function TopRepos() {
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Top Repositories</h2>
+        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+          Top Repositories
+        </h2>
+
         <select
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
@@ -39,25 +45,49 @@ export default function TopRepos() {
         </select>
       </div>
 
+      {/* Loading State */}
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-10 rounded bg-[var(--card-muted)] animate-pulse" />
+            <div
+              key={i}
+              className="h-10 rounded bg-[var(--card-muted)] animate-pulse"
+            />
           ))}
         </div>
+
       ) : repos.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
+
+        /* Empty State */
+        <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
+          <div className="text-4xl">📁</div>
+
+          <h3 className="text-lg font-semibold text-[var(--card-foreground)]">
+            No repositories found
+          </h3>
+
+          <p className="text-sm text-[var(--muted-foreground)]">
+            No GitHub activity detected for the last {days} days.
+          </p>
+        </div>
+
       ) : (
+
+        /* Repo List */
         <ul className="space-y-3">
           {repos.map((repo, idx) => {
             const barWidth = Math.max(
               Math.round((repo.commits / maxCommits) * 100),
               4
             );
-            const shortName = repo.name.split("/")[1] ?? repo.name;
+
+            const shortName =
+              repo.name.split("/")[1] ?? repo.name;
+
             return (
               <li key={repo.name}>
                 <div className="flex items-center justify-between text-sm mb-1">
+                  
                   <a
                     href={repo.url}
                     target="_blank"
@@ -65,13 +95,18 @@ export default function TopRepos() {
                     className="max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
                     title={repo.name}
                   >
-                    <span className="mr-1 text-[var(--muted-foreground)]">#{idx + 1}</span>
+                    <span className="mr-1 text-[var(--muted-foreground)]">
+                      #{idx + 1}
+                    </span>
                     {shortName}
                   </a>
+
                   <span className="shrink-0 text-[var(--muted-foreground)]">
-                    {repo.commits} commit{repo.commits !== 1 ? "s" : ""}
+                    {repo.commits} commit
+                    {repo.commits !== 1 ? "s" : ""}
                   </span>
                 </div>
+
                 <div className="h-1.5 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
                     className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
