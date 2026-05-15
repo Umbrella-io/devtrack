@@ -45,7 +45,7 @@ async function fetchStreak(
   since.setDate(since.getDate() - 90);
   const sinceStr = since.toISOString().slice(0, 10);
 
-  const url = `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=asc`;
+  const url = `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`;
   
   const searchRes = await fetchGitHubWithToken(url, token);
 
