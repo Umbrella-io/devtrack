@@ -131,7 +131,7 @@ async function fetchContributions(
   const sinceStr = since.toISOString().slice(0, 10);
 
   const searchRes = await fetchGitHubWithToken(
-    `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=asc`,
+    `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
     token
   );
 
@@ -173,7 +173,7 @@ async function fetchStreak(
   const sinceStr = since.toISOString().slice(0, 10);
 
   const searchRes = await fetchGitHubWithToken(
-    `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=asc`,
+    `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
     token
   );
 

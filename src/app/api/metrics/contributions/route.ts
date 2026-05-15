@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   // including web UI commits, merge commits, PRs — unlike the events API
   // which only catches PushEvents from direct pushes.
   const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=asc`,
+    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
     {
       headers: {
         Authorization: `Bearer ${session.accessToken}`,

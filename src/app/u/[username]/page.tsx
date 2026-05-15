@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import BadgeSection from "@/components/BadgeSection";
 import ContributionGraph from "@/components/ContributionGraph";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
@@ -131,6 +132,11 @@ export default async function PublicProfilePage({
       {/* Row 2: Top repos */}
       <div className="mt-6">
         <PublicTopRepos repos={profile.repos} />
+      </div>
+
+      {/* Row 3: Get your badge */}
+      <div className="mt-6">
+        <BadgeSection username={profile.username} />
       </div>
     </div>
   );

@@ -37,11 +37,16 @@ export default function ContributionGraph() {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
   const [chartType, setChartType] = useState<ViewMode>("bar");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     fetch(`/api/metrics/contributions?days=${days}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("API error");
+        return r.json();
+      })
       .then((res: { data: Record<string, number> }) => {
         const sorted = Object.entries(res.data ?? {})
           .sort(([a], [b]) => a.localeCompare(b))
@@ -49,7 +54,9 @@ export default function ContributionGraph() {
 
         setData(sorted);
       })
-      .catch(() => { })
+      .catch(() => {
+        setError("Failed to load contribution data.");
+      })
       .finally(() => setLoading(false));
   }, [days]);
 
@@ -68,8 +75,8 @@ export default function ContributionGraph() {
                 key={r.days}
                 onClick={() => setDays(r.days)}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${days === r.days
-                    ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
+                  ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
                   }`}
               >
                 {r.label}
@@ -78,7 +85,7 @@ export default function ContributionGraph() {
           </div>
 
           {/* Chart Toggle Buttons */}
-          {data.length > 0 && (
+          {data.length > 0 && !error && (
             <div
               role="group"
               aria-label="Chart type"
@@ -105,6 +112,12 @@ export default function ContributionGraph() {
 
       {loading ? (
         <div className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse" />
+      ) : error ? (
+        <div className="flex h-[200px] items-center rounded-lg border border-red-500/30 bg-red-500/10 px-4">
+          <p className="text-sm text-red-400">
+            {error} Please try refreshing.
+          </p>
+        </div>
       ) : data.length === 0 ? (
         <p className="flex h-[200px] items-center text-sm text-[var(--muted-foreground)]">
           No commits in the last {days} days.
