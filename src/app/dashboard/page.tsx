@@ -5,6 +5,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
+import CommitTimeChart from "@/components/CommitTimeChart";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -16,9 +17,9 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
- return (
-      <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-        <DashboardHeader />
+  return (
+    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
+      <DashboardHeader />
 
       {/* Row 1: Contribution graph + Streak + Goals */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -30,9 +31,10 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 2: PR metrics */}
-      <div className="mt-6">
+      {/* Row 2: PR metrics & Time Chart */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PRMetrics />
+        <CommitTimeChart />
       </div>
 
       {/* Row 3: Top repos + Language breakdown + Goal tracker */}
