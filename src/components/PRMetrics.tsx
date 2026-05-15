@@ -12,13 +12,21 @@ interface PRData {
 export default function PRMetrics() {
   const [metrics, setMetrics] = useState<PRData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchMetrics = () => {
+    setLoading(true);
+    setError(null);
+
     fetch("/api/metrics/prs")
       .then((r) => r.json())
       .then((data: PRData) => setMetrics(data))
-      .catch(() => {})
+      .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchMetrics();
   }, []);
 
   const stats = metrics
@@ -31,8 +39,8 @@ export default function PRMetrics() {
     : [];
 
   return (
-    <div className="bg-slate-800 rounded-xl p-6">
-      <h2 className="text-white font-semibold text-lg mb-4">PR Analytics</h2>
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -42,17 +50,28 @@ export default function PRMetrics() {
             />
           ))}
         </div>
+      ) : error ? (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={fetchMetrics}
+            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+          >
+            Try again
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="bg-slate-700 rounded-lg p-4 text-center"
+              className="rounded-lg bg-[var(--control)] p-4 text-center"
             >
-              <div className="text-2xl font-bold text-indigo-400">
+              <div className="text-2xl font-bold text-[var(--accent)]">
                 {stat.value}
               </div>
-              <div className="text-slate-400 text-sm mt-1">{stat.label}</div>
+              <div className="mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
             </div>
           ))}
         </div>

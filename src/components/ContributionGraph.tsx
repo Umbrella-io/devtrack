@@ -54,23 +54,23 @@ export default function ContributionGraph() {
   }, [days]);
 
   return (
-    <div className="bg-slate-800 rounded-xl p-6">
+<div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
-        <h2 className="text-white font-semibold text-lg">
+        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           Commit Activity
         </h2>
 
         <div className="flex flex-wrap items-center gap-2">
     
-          <div className="flex gap-1 bg-slate-700 rounded-lg p-1">
+          <div className="flex gap-1 rounded-lg bg-[var(--control)] p-1">
             {RANGES.map((r) => (
               <button
                 key={r.days}
                 onClick={() => setDays(r.days)}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                   days === r.days
-                    ? "bg-indigo-500 text-white"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                    : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
                 }`}
               >
                 {r.label}
@@ -80,15 +80,15 @@ export default function ContributionGraph() {
 
           {/* Chart Toggle Buttons */}
           {data.length > 0 && (
-            <div className="flex gap-1 bg-slate-700 rounded-lg p-1 text-sm">
+            <div className="flex gap-1 rounded-lg bg-[var(--control)] p-1 text-sm">
               {charts.map((chart) => (
                 <button
                   key={chart.key}
                   onClick={() => setChartType(chart.key)}
                   className={`px-3 py-1 rounded-md transition-colors duration-200 ${
                     chartType === chart.key
-                      ? "bg-indigo-500 text-white"
-                      : "text-slate-400 hover:text-slate-200"
+                      ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
                   }`}
                 >
                   {chart.label}
@@ -100,57 +100,59 @@ export default function ContributionGraph() {
       </div>
 
       {loading ? (
-        <div className="h-[200px] bg-slate-700 rounded animate-pulse" />
+        <div className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse" />
       ) : data.length === 0 ? (
-        <p className="text-slate-400 text-sm h-[200px] flex items-center">
+        <p className="flex h-[200px] items-center text-sm text-[var(--muted-foreground)]">
           No commits in the last {days} days.
         </p>
       ) : (
         <ResponsiveContainer width="100%" height={200}>
           {chartType === "bar" ? (
             <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="day" hide />
-              <YAxis stroke="#94a3b8" allowDecimals={false} />
+              <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
               <Tooltip
                 contentStyle={{
-                  background: "#1e293b",
-                  border: "none",
+                  background: "var(--tooltip)",
+                  color: "var(--tooltip-foreground)",
+                  border: "1px solid var(--border)",
                   borderRadius: "8px",
                 }}
                 labelStyle={{
-                  color: "#f8fafc",
+                  color: "var(--tooltip-foreground)",
                   fontSize: "12px",
                 }}
-                cursor={{ fill: "#334155" }}
+                cursor={{ fill: "var(--card-muted)" }}
               />
               <Bar
                 dataKey="commits"
-                fill="#6366f1"
+                fill="var(--accent)"
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
           ) : (
             <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="day" hide />
-              <YAxis stroke="#94a3b8" allowDecimals={false} />
+              <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
               <Tooltip
                 contentStyle={{
-                  background: "#1e293b",
-                  border: "none",
+                  background: "var(--tooltip)",
+                  color: "var(--tooltip-foreground)",
+                  border: "1px solid var(--border)",
                   borderRadius: "8px",
                 }}
                 labelStyle={{
-                  color: "#f8fafc",
+                  color: "var(--tooltip-foreground)",
                   fontSize: "12px",
                 }}
-                cursor={{ fill: "#334155" }}
+                cursor={{ fill: "var(--card-muted)" }}
               />
               <Line
                 type="monotone"
                 dataKey="commits"
-                stroke="#6366f1"
+                stroke="var(--accent)"
                 strokeWidth={2}
                 dot={false}
               />
