@@ -85,7 +85,31 @@ export default function StreakTracker() {
                 : "bg-[var(--control)]"
             }`}
           >
-            <div className="text-xl mb-1">{stat.icon}</div>
+            <div
+          className="text-xl mb-1"
+  title={
+    stat.icon === "🔥"
+      ? "Current consecutive coding days"
+      : stat.icon === "🏆"
+      ? "Your longest streak ever"
+      : stat.icon === "📅"
+      ? "Total active days in last 90 days"
+      : "Last commit activity"
+  }
+  aria-label={
+    stat.icon === "🔥"
+      ? "Current consecutive coding days"
+      : stat.icon === "🏆"
+      ? "Your longest streak ever"
+      : stat.icon === "📅"
+      ? "Total active days in last 90 days"
+      : "Last commit activity"
+  }
+  role="img"
+>
+  {stat.icon}
+</div>
+                          
             <div
               className={`text-2xl font-bold ${
                 stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
