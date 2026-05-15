@@ -9,10 +9,18 @@ interface StreakData {
   totalActiveDays: number;
 }
 
+interface FreezeData {
+  hasFreeze: boolean;
+}
+
 export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [freeze, setFreeze] = useState<FreezeData | null>(null);
+  const [freezeLoading, setFreezeLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   const fetchStreak = () => {
     setLoading(true);
@@ -25,9 +33,50 @@ export default function StreakTracker() {
       .finally(() => setLoading(false));
   };
 
+  const fetchFreeze = () => {
+    setFreezeLoading(true);
+    fetch("/api/streak/freeze")
+      .then((r) => r.json())
+      .then((d: FreezeData) => setFreeze(d))
+      .catch(() => setFreeze(null))
+      .finally(() => setFreezeLoading(false));
+  };
+
   useEffect(() => {
     fetchStreak();
+    fetchFreeze();
   }, []);
+
+  async function handleCancelFreeze() {
+    if (!confirmCancel) {
+      setConfirmCancel(true);
+      return;
+    }
+
+    setCancelling(true);
+    try {
+      const res = await fetch("/api/streak/freeze", { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to cancel freeze");
+
+      setConfirmCancel(false);
+
+      // Silently refresh both without triggering loading skeletons
+      const [streakRes, freezeRes] = await Promise.all([
+        fetch("/api/metrics/streak"),
+        fetch("/api/streak/freeze"),
+      ]);
+      const [streakData, freezeData] = await Promise.all([
+        streakRes.json() as Promise<StreakData>,
+        freezeRes.json() as Promise<FreezeData>,
+      ]);
+      setData(streakData);
+      setFreeze(freezeData);
+    } catch {
+      fetchFreeze();
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -132,6 +181,40 @@ export default function StreakTracker() {
           </div>
         ))}
       </div>
+      {!freezeLoading && freeze?.hasFreeze && (
+        <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-4 py-3">
+          <span className="text-sm font-medium text-[var(--accent)]">✓ Freeze active today</span>
+          {confirmCancel ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--muted-foreground)]">Remove freeze?</span>
+              <button
+                type="button"
+                onClick={handleCancelFreeze}
+                disabled={cancelling}
+                className="rounded-md bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400 transition hover:bg-red-500/20 disabled:opacity-60"
+              >
+                {cancelling ? "Removing..." : "Yes, remove"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmCancel(false)}
+                disabled={cancelling}
+                className="rounded-md border border-[var(--border)] px-2.5 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)]"
+              >
+                Keep
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleCancelFreeze}
+              className="rounded-md border border-[var(--border)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)]"
+            >
+              Cancel freeze
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
