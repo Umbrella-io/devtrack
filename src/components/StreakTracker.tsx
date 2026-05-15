@@ -58,7 +58,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: false,
           icon: "📅",
-          tooltip: "Your active days count stands at 90",
+          tooltip: "Days you made commits in the last 90 days",
         },
         {
           label: "Last Commit",
@@ -89,10 +89,7 @@ export default function StreakTracker() {
                 : "bg-[var(--control)]"
             }`}
           >
-            <div className="text-xl mb-1" title={stat.tooltip} aria-label={stat.tooltip} role="img">
-              {stat.icon}
-            </div>
-
+            <div className="text-xl mb-1" title={stat.tooltip} aria-label={stat.tooltip} role="img">{stat.icon}</div>
             <div
               className={`text-2xl font-bold ${
                 stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
