@@ -63,7 +63,6 @@ export async function POST() {
     .single();
 
   if (error) {
-    // Unique constraint violation — already has a freeze for today
     if (error.code === "23505") {
       return Response.json(
         { error: "You already have an unused streak freeze." },
@@ -74,4 +73,31 @@ export async function POST() {
   }
 
   return Response.json({ freeze }, { status: 201 });
+}
+
+// DELETE /api/streak/freeze
+// Removes today's active freeze for the authenticated user.
+export async function DELETE() {
+  const session = await getServerSession(authOptions);
+  if (!session?.githubId) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: user } = await supabaseAdmin
+    .from("users")
+    .select("id")
+    .eq("github_id", session.githubId)
+    .single();
+
+  if (!user) return Response.json({ error: "User not found" }, { status: 404 });
+
+  const { error } = await supabaseAdmin
+    .from("streak_freezes")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("freeze_date", todayStr());
+
+  if (error) return Response.json({ error: "Failed to cancel freeze" }, { status: 500 });
+
+  return Response.json({ success: true });
 }
