@@ -12,6 +12,7 @@ interface StreakData {
 export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false); 
 
   useEffect(() => {
     fetch("/api/metrics/streak")
@@ -72,9 +73,49 @@ export default function StreakTracker() {
       ]
     : [];
 
+    const handleCopy = () => {
+    if (!data) return;
+
+    // Using an array guarantees the exact format with zero indentation errors
+    const textToCopy = [
+      "🔥 DevTrack Stats",
+      `Current streak: ${data.current} days`,
+      `Longest streak: ${data.longest} days`,
+      `Active days: ${data.totalActiveDays}`
+    ].join('\n');
+
+    if (!navigator.clipboard) {
+      console.warn("Clipboard API not supported in this browser.");
+      return;
+    }
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch((err) => console.error("Failed to copy stats", err));
+  };
+
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+          Commit Streaks
+        </h2>
+        {data && (
+          <button
+            onClick={handleCopy}
+            className="flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
+            aria-label="Copy streak stats to clipboard"
+            title="Copy stats"
+          >
+            {copied ? (
+              <span className="text-xs font-medium text-green-500">Copied!</span>
+            ) : (
+              <span className="text-base opacity-80 hover:opacity-100">📋</span>
+            )}
+          </button>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-3">
         {stats.map((stat) => (
           <div
