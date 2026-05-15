@@ -13,6 +13,8 @@ export default function TopRepos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
 
   const fetchRepos = useCallback(() => {
     setLoading(true);
@@ -21,8 +23,22 @@ export default function TopRepos() {
       .then((r) => r.json())
       .then((d: { repos: Repo[] }) => setRepos(d.repos ?? []))
       .catch(() => setError("We couldn't load your top repositories right now. Please try again in a moment."))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setLastUpdated(new Date());
+        setMinutesAgo(0);
+      });
   }, [days]);
+
+  useEffect(() => {
+    if (!lastUpdated) return;
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
+      setMinutesAgo(diff);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
+
 
   useEffect(() => {
     fetchRepos();
@@ -37,6 +53,7 @@ export default function TopRepos() {
         <select
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
+          aria-label="Select time range for top repositories"
           className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus:outline-none focus:border-[var(--accent)]"
         >
           <option value={7}>Last 7d</option>
@@ -99,6 +116,11 @@ export default function TopRepos() {
           })}
         </ul>
       )}
+      {lastUpdated && (
+        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
+         {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        </p>
+     )}
     </div>
   );
 }

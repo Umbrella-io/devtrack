@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 interface Goal {
   id: string;
@@ -10,15 +9,33 @@ interface Goal {
   current: number;
 }
 
-export default function GoalTracker({ goals }: { goals: Goal[] }) {
-  const router = useRouter();
-
+export default function GoalTracker() {
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
   const [label, setLabel] = useState("");
   const [target, setTarget] = useState(7);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const loadGoals = useCallback(async () => {
+    const response = await fetch("/api/goals");
+    const data: { goals: Goal[] } = await response.json();
+    setGoals(data.goals ?? []);
+  }, []);
+
+  useEffect(() => {
+    loadGoals()
+      .catch(() => {})
+      .finally(() => {
+        setLoading(false);
+        setLastUpdated(new Date());
+        setMinutesAgo(0);
+      });
+  }, [loadGoals]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -43,35 +60,55 @@ export default function GoalTracker({ goals }: { goals: Goal[] }) {
 
     setLabel("");
     setTarget(7);
-    
-    router.refresh();
+    await loadGoals().catch(() => {});
     setCreating(false);
   }
 
   async function handleDelete(id: string) {
+    const previousGoals = goals;
+    setGoals((prev) => prev.filter((g) => g.id !== id));
     setConfirmingId(null);
     setDeletingId(id);
 
     try {
       const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        router.refresh();
+      if (!res.ok) {
+        setGoals(previousGoals);
       }
     } catch {
-      // Silently fail or you could add a deleteError state here if desired
+      setGoals(previousGoals);
     } finally {
       setDeletingId(null);
     }
   }
 
-  // Safely check for goals array to prevent map crashes
-  const hasGoals = Array.isArray(goals) && goals.length > 0;
+  useEffect(() => {
+    if (!lastUpdated) return;
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
+      setMinutesAgo(diff);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
+
+  if (loading) {
+    return (
+      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+        <div className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse" />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="mb-4">
+            <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
+            <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Weekly Goals</h2>
-      
-      {!hasGoals ? (
+      {goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No goals yet. Create one below.
         </p>
@@ -147,6 +184,11 @@ export default function GoalTracker({ goals }: { goals: Goal[] }) {
             );
           })}
         </ul>
+      )}
+      {lastUpdated && (
+        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
+          {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        </p>
       )}
 
       <form onSubmit={handleCreate} className="mt-6 space-y-3 border-t border-[var(--border)] pt-4">

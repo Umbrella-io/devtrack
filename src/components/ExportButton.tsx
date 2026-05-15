@@ -23,15 +23,31 @@ interface Goal {
   current: number;
 }
 
-interface ExportButtonProps {
-  prData: PRData | null;
-  contribData: DayData[];
-  goalsData: Goal[];
-}
-
-export default function ExportButton({ prData, contribData, goalsData }: ExportButtonProps) {
+export default function ExportButton() {
   const [isExportingCSV, setIsExportingCSV] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  const fetchData = async () => {
+    const fetchOptions: RequestInit = {
+      cache: "no-store",
+    };
+
+    const [prRes, goalsRes, contribRes] = await Promise.all([
+      fetch(`/api/metrics/prs`, fetchOptions),
+      fetch(`/api/goals`, fetchOptions),
+      fetch(`/api/metrics/contributions?days=365`, fetchOptions),
+    ]);
+
+    const prData: PRData | null = prRes.ok ? await prRes.json() : null;
+    const goalsData = goalsRes.ok ? await goalsRes.json() : { goals: [] };
+    const contribDataRaw = contribRes.ok ? await contribRes.json() : { data: {} };
+
+    const contribData: DayData[] = Object.entries(contribDataRaw.data ?? {})
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, commits]) => ({ day, commits: commits as number }));
+
+    return { prData, contribData, goalsData: goalsData?.goals as Goal[] };
+  };
 
   const downloadFile = (content: string, filename: string, type: string) => {
     const blob = new Blob([content], { type });
@@ -45,14 +61,17 @@ export default function ExportButton({ prData, contribData, goalsData }: ExportB
     URL.revokeObjectURL(url);
   };
 
-  const exportCSV = () => {
+  const exportCSV = async () => {
     setIsExportingCSV(true);
     try {
+      const { prData, goalsData, contribData } = await fetchData();
+
       let csv = "--- PR Metrics ---\n";
       csv += "Open,Merged,Avg Review Hours,Merge Rate\n";
       if (prData) {
         csv += `${prData.open},${prData.merged},${prData.avgReviewHours},${prData.mergeRate}\n`;
       }
+      
       if (contribData && contribData.length > 0) {
         csv += "\n--- Contributions ---\n";
         csv += "Date,Commits\n";
@@ -76,9 +95,10 @@ export default function ExportButton({ prData, contribData, goalsData }: ExportB
     }
   };
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     setIsExportingPDF(true);
     try {
+      const { prData, goalsData, contribData } = await fetchData();
       const doc = new jsPDF();
       
       doc.setFontSize(18);
@@ -100,7 +120,6 @@ export default function ExportButton({ prData, contribData, goalsData }: ExportB
             prData.mergeRate
           ]],
         });
-        startY = (doc as any).lastAutoTable.finalY + 15;
       }
 
       // Goals Data
@@ -115,10 +134,8 @@ export default function ExportButton({ prData, contribData, goalsData }: ExportB
               return [g.label, g.current, g.target, `${pct}%`];
           }),
         });
-        startY = (doc as any).lastAutoTable.finalY + 15;
       }
 
-      // Contrib Data
       if (contribData && contribData.length > 0) {
         doc.setFontSize(14);
         doc.text("Commit Activity", 14, startY);

@@ -5,16 +5,17 @@ import GoalTracker from "@/components/GoalTracker";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
+import PinnedRepos from "@/components/PinnedRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
+import CommitTimeChart from "@/components/CommitTimeChart";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
+import WeeklySummaryCard from "@/components/WeeklySummaryCard";
+import ExportButton from "@/components/ExportButton";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-
-import ExportButton from "@/components/ExportButton";
-import { headers } from "next/headers";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -23,39 +24,15 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
-
-  const fetchOptions = {
-    headers: headers(),
-    cache: "no-store" as RequestCache,
-  };
-
-  const [prRes, goalsRes, contribRes] = await Promise.all([
-    fetch(`${baseUrl}/api/metrics/prs`, fetchOptions),
-    fetch(`${baseUrl}/api/goals`, fetchOptions),
-    fetch(`${baseUrl}/api/metrics/contributions?days=365`, fetchOptions),
-  ])
-
-  const prData = prRes.ok ? await prRes.json() : null;
-  const goalsData = goalsRes.ok ? await goalsRes.json() : { goals: [] };
-  const contribDataRaw = contribRes.ok ? await contribRes.json() : { data: {} };
-
-  const contribData = Object.entries(contribDataRaw.data ?? {})
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, commits]) => ({ day, commits: commits as number }));
-  
-
- return (
-      <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-        <DashboardHeader />
-        <StreakAtRiskBanner />
-        <div className="mb-5">
-        <ExportButton 
-          prData={prData} 
-          contribData={contribData} 
-          goalsData={goalsData.goals} 
-        />
+  return (
+    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
+      <DashboardHeader />
+      <div className="mb-6 flex justify-end">
+        <ExportButton />
       </div>
+      <StreakAtRiskBanner />
+
+      <WeeklySummaryCard />
 
       {/* Row 1: Contribution graph + Streak + Friend Comparison */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -69,10 +46,11 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 2: PR metrics */}
-      <div className="mt-6">
-        <PRMetrics metrics={prData}/>
+      {/* Row 2: PR metrics, PR breakdown & Time Chart */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <PRMetrics />
         <PRBreakdownChart />
+        <CommitTimeChart />
       </div>
 
       {/* Row 3: Issue metrics */}
@@ -80,11 +58,16 @@ export default async function DashboardPage() {
         <IssueMetrics />
       </div>
 
-      {/* Row 4: Top repos + Language breakdown + Goal tracker */}
+      {/* Row 4: Pinned repositories */}
+      <div className="mt-6">
+        <PinnedRepos />
+      </div>
+
+      {/* Row 5: Top repos + Language breakdown + Goal tracker */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <TopRepos />
         <LanguageBreakdown />
-        <GoalTracker goals={goalsData?.goals || []}/>
+        <GoalTracker />
       </div>
     </div>
   );

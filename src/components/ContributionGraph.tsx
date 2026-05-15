@@ -37,6 +37,8 @@ export default function ContributionGraph() {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
   const [chartType, setChartType] = useState<ViewMode>("bar");
+  const [lastUpdated, setLastUpdated] = useState<Date|null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -57,8 +59,21 @@ export default function ContributionGraph() {
       .catch(() => {
         setError("Failed to load contribution data.");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setLastUpdated(new Date());
+        setMinutesAgo(0);
+      });
   }, [days]);
+
+  useEffect(() => {
+    if (!lastUpdated) return;
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
+      setMinutesAgo(diff);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -74,10 +89,13 @@ export default function ContributionGraph() {
               <button
                 key={r.days}
                 onClick={() => setDays(r.days)}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${days === r.days
-                  ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
-                  }`}
+                aria-label={`Show ${r.days}-day range`}
+                aria-pressed={days === r.days}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  days === r.days
+                    ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                    : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
+                }`}
               >
                 {r.label}
               </button>
@@ -177,6 +195,11 @@ export default function ContributionGraph() {
           )}
         </ResponsiveContainer>
       )}
+      {lastUpdated && (
+        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
+           {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        </p>
+    )}
     </div>
   );
 }

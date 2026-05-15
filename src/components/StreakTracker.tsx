@@ -23,6 +23,8 @@ export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [contributionData, setContributionData] = useState<ContributionData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -54,6 +56,8 @@ export default function StreakTracker() {
       setError("We couldn't load your streak data right now. Please try again in a moment.");
     } finally {
       setLoading(false);
+      setLastUpdated(new Date());
+      setMinutesAgo(0);
     }
   };
 
@@ -70,6 +74,14 @@ export default function StreakTracker() {
     fetchStreak();
     fetchFreeze();
   }, []);
+  useEffect(() => {
+    if (!lastUpdated) return;
+    const interval= setInterval(() => {
+     const diff= Math.floor((Date.now()-lastUpdated.getTime())/60000);
+    setMinutesAgo(diff);
+   }, 60000);
+   return ()=> clearInterval(interval);
+  }, [lastUpdated]);
 
   async function handleCancelFreeze() {
     if (!confirmCancel) {
@@ -241,6 +253,11 @@ export default function StreakTracker() {
           </div>
         ))}
       </div>
+      {lastUpdated && (
+        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
+          {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        </p>
+      )}
 
       {!freezeLoading && freeze?.hasFreeze && (
         <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-4 py-3">
