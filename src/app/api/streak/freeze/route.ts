@@ -23,10 +23,14 @@ function todayStr(): string {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // GET /api/streak/freeze
 // Returns whether the user currently has an unused freeze available.
 export async function GET(req: NextRequest) {
 =======
+=======
+// GET /api/streak/freeze
+>>>>>>> 8c942cb (fix: address PR review — unique constraint, created_at, trailing newlines, revert lockfile)
 // Returns whether the user currently has an unused freeze available.
 export async function GET() {
 >>>>>>> 1337d90 (feat: add streak freeze feature (#37))
@@ -88,7 +92,12 @@ async function getFreezeStatus(userId: string) {
 =======
   return Response.json({ hasFreeze, freezeDate: hasFreeze ? pending![0].freeze_date : null });
 }
+<<<<<<< HEAD
 >>>>>>> 1337d90 (feat: add streak freeze feature (#37))
+=======
+
+// POST /api/streak/freeze
+>>>>>>> 8c942cb (fix: address PR review — unique constraint, created_at, trailing newlines, revert lockfile)
 // Inserts a freeze for today. Fails if the user already holds an unused freeze.
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -110,6 +119,7 @@ export async function POST() {
 
   const today = todayStr();
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   // Prevent users from stockpiling unused freezes
   const { count } = await supabaseAdmin
@@ -155,6 +165,8 @@ export async function POST() {
     );
   }
 
+=======
+>>>>>>> 8c942cb (fix: address PR review — unique constraint, created_at, trailing newlines, revert lockfile)
   const { data: freeze, error } = await supabaseAdmin
     .from("streak_freezes")
     .insert({ user_id: user.id, freeze_date: today })
@@ -163,6 +175,13 @@ export async function POST() {
     .single();
 
   if (error) {
+    // Unique constraint violation — already has a freeze for today
+    if (error.code === "23505") {
+      return Response.json(
+        { error: "You already have an unused streak freeze." },
+        { status: 409 }
+      );
+    }
     return Response.json({ error: "Failed to apply freeze." }, { status: 500 });
   }
 
@@ -201,4 +220,7 @@ export async function DELETE() {
 =======
   return Response.json({ freeze }, { status: 201 });
 }
+<<<<<<< HEAD
 >>>>>>> 1337d90 (feat: add streak freeze feature (#37))
+=======
+>>>>>>> 8c942cb (fix: address PR review — unique constraint, created_at, trailing newlines, revert lockfile)

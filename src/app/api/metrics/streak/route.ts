@@ -1,5 +1,4 @@
 import { getServerSession } from "next-auth";
-import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
@@ -25,10 +24,36 @@ async function fetchActiveDates(
   // stores each account's dates separately and merges them in the GET handler.
   const key = metricsCacheKey(cacheContext.userId, "streak", { githubLogin });
 
+<<<<<<< HEAD
   // withMetricsCache returns cached dates if available within the TTL window,
   // skipping all GitHub API calls below. This is the primary protection against
   // exhausting the Search API rate limit on repeated page loads.
   const dates = await withMetricsCache(
+=======
+function dateDiffDays(a: string, b: string): number {
+  return (
+    (new Date(b).getTime() - new Date(a).getTime()) / (1000 * 60 * 60 * 24)
+  );
+}
+
+function toDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.accessToken || !session.githubLogin || !session.githubId) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Fetch 90 days to calculate a meaningful longest streak
+  const since = new Date();
+  since.setDate(since.getDate() - 90);
+  const sinceStr = since.toISOString().slice(0, 10);
+
+  const searchRes = await fetch(
+    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=asc`,
+>>>>>>> 8c942cb (fix: address PR review — unique constraint, created_at, trailing newlines, revert lockfile)
     {
       bypass: cacheContext.bypass,
       key,
@@ -176,6 +201,7 @@ function calculateStreakFromDates(
     // totalActiveDays counts only days with real commits or freezes in the 90-day window,
     // not the full streak length — useful for the "active days" stat on the dashboard.
     totalActiveDays: commitDays.length,
+<<<<<<< HEAD
     freezeDates: Array.from(freezeDates),
   };
 }
@@ -352,4 +378,7 @@ export async function GET(req: NextRequest) {
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
+=======
+  });
+>>>>>>> 8c942cb (fix: address PR review — unique constraint, created_at, trailing newlines, revert lockfile)
 }
