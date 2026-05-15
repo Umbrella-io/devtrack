@@ -7,7 +7,7 @@ export default function SignOutButton() {
         <button 
             type="button"
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 font-semibold text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]">
+            className="rounded-full border border-red-600/50 bg-red-600/80 px-4 py-2 font-semibold text-white transition-colors hover:bg-red-600">
             Sign-out
         </button>
     );
