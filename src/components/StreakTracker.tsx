@@ -12,13 +12,21 @@ interface StreakData {
 export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchStreak = () => {
+    setLoading(true);
+    setError(null);
+
     fetch("/api/metrics/streak")
       .then((r) => r.json())
       .then((d: StreakData) => setData(d))
-      .catch(() => {})
+      .catch(() => setError("We couldn't load your streak data right now. Please try again in a moment."))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchStreak();
   }, []);
 
   if (loading) {
@@ -29,6 +37,24 @@ export default function StreakTracker() {
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse" />
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={fetchStreak}
+            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );

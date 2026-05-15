@@ -11,15 +11,21 @@ interface Repo {
 export default function TopRepos() {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
 
-  useEffect(() => {
+  const fetchRepos = () => {
     setLoading(true);
+    setError(null);
     fetch(`/api/metrics/repos?days=${days}`)
       .then((r) => r.json())
       .then((d: { repos: Repo[] }) => setRepos(d.repos ?? []))
-      .catch(() => {})
+      .catch(() => setError("We couldn't load your top repositories right now. Please try again in a moment."))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchRepos();
   }, [days]);
 
   const maxCommits = repos[0]?.commits ?? 1;
@@ -38,12 +44,24 @@ export default function TopRepos() {
           <option value={90}>Last 90d</option>
         </select>
       </div>
+      {error && <p className="text-red-400 text-sm">{error}</p>}
 
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-10 rounded bg-[var(--card-muted)] animate-pulse" />
           ))}
+        </div>
+      ) : error ? (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={fetchRepos}
+            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+          >
+            Try again
+          </button>
         </div>
       ) : repos.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
