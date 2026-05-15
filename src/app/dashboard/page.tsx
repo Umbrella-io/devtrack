@@ -6,7 +6,6 @@ import PRMetrics from "@/components/PRMetrics";
 import CommunityMetrics from "@/components/CommunityMetrics";
 import PRBreakdownChart from "@/components/PRBreakdownChart";
 import GoalTracker from "@/components/GoalTracker";
-import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
 import PinnedRepos from "@/components/PinnedRepos";
@@ -22,6 +21,7 @@ import FriendComparison from "@/components/FriendComparison";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import { AIMentorWidget } from "@/components/AIMentorWidget";
 import ExportButton from "@/components/ExportButton";
+import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
@@ -38,18 +38,20 @@ export default async function DashboardPage() {
   if (session.error === "TokenRevoked") redirect("/");
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-      <DashboardHeader />
-      <div className="mb-6 flex justify-end items-center gap-2">
-        <Link
-          href="/dashboard/settings"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
-        >
-          Settings
-        </Link>
-        <ExportButton />
-      </div>
-      <StreakAtRiskBanner />
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
+        <div className="mb-6 flex justify-end items-center gap-2">
+          <Link
+            href="/dashboard/settings"
+            className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
+          >
+            Settings
+          </Link>
+          <ExportButton />
+        </div>
+
+        <StreakAtRiskBanner />
 
       <div className="mb-6">
         <WeeklySummaryCard />
@@ -134,6 +136,7 @@ export default async function DashboardPage() {
       <div className="mt-6">
         <RecentActivity />
       </div>
-    </div>
+      </div>
+    </>
   );
 }
