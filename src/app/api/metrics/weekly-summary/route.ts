@@ -172,7 +172,7 @@ export async function GET(req: NextRequest) {
     : null;
   const streak =
     results[4].status === "fulfilled"
-      ? (results[4].value as { currentStreak: number }).currentStreak
+      ? (results[4].value as { current: number }).current
       : null;
 
   return Response.json({
