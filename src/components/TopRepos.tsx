@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface Repo {
   name: string;
@@ -14,7 +14,7 @@ export default function TopRepos() {
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
 
-  const fetchRepos = () => {
+  const fetchRepos = useCallback(() => {
     setLoading(true);
     setError(null);
     fetch(`/api/metrics/repos?days=${days}`)
@@ -22,11 +22,11 @@ export default function TopRepos() {
       .then((d: { repos: Repo[] }) => setRepos(d.repos ?? []))
       .catch(() => setError("We couldn't load your top repositories right now. Please try again in a moment."))
       .finally(() => setLoading(false));
-  };
+  }, [days]);
 
   useEffect(() => {
     fetchRepos();
-  }, [days]);
+  }, [fetchRepos]);
 
   const maxCommits = repos[0]?.commits ?? 1;
 
