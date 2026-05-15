@@ -30,3 +30,5 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+desktop.ini

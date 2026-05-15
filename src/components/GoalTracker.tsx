@@ -15,10 +15,8 @@ export default function GoalTracker() {
   const [label, setLabel] = useState("");
   const [target, setTarget] = useState(7);
   const [creating, setCreating] = useState(false);
-  
-  // Track which goal is awaiting delete confirmation
+  const [createError, setCreateError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  // Track which goal is currently being deleted (API in-flight)
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadGoals = useCallback(async () => {
@@ -36,6 +34,7 @@ export default function GoalTracker() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
+    setCreateError(null);
 
     try {
       const response = await fetch("/api/goals", {
@@ -47,17 +46,19 @@ export default function GoalTracker() {
       if (!response.ok) {
         throw new Error("Failed to create goal");
       }
-
-      setLabel("");
-      setTarget(7);
-      await loadGoals();
-    } finally {
+    } catch {
+      setCreateError("Failed to create goal. Please try again.");
       setCreating(false);
+      return;
     }
+
+    setLabel("");
+    setTarget(7);
+    await loadGoals().catch(() => {});
+    setCreating(false);
   }
 
   async function handleDelete(id: string) {
-    // Optimistic update: remove goal immediately
     const previousGoals = goals;
     setGoals((prev) => prev.filter((g) => g.id !== id));
     setConfirmingId(null);
@@ -66,11 +67,9 @@ export default function GoalTracker() {
     try {
       const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
       if (!res.ok) {
-        // Restore on failure
         setGoals(previousGoals);
       }
     } catch {
-      // Restore on network error
       setGoals(previousGoals);
     } finally {
       setDeletingId(null);
@@ -83,8 +82,8 @@ export default function GoalTracker() {
         <div className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse" />
         {[1, 2, 3].map((i) => (
           <div key={i} className="mb-4">
-            <div className="mb-2 h-3 rounded bg-[var(--card-muted)] animate-pulse" />
-            <div className="h-2 rounded bg-[var(--card-muted)] animate-pulse" />
+            <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
+            <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
           </div>
         ))}
       </div>
@@ -96,7 +95,7 @@ export default function GoalTracker() {
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Weekly Goals</h2>
       {goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
-          No goals yet. Create one via the API or future UI.
+          No goals yet. Create one below.
         </p>
       ) : (
         <ul className="space-y-4">
@@ -109,13 +108,12 @@ export default function GoalTracker() {
               <li key={goal.id}>
                 <div className="flex justify-between items-center text-sm mb-1">
                   <span className="text-[var(--card-foreground)]">{goal.label}</span>
-                  
+
                   <div className="flex items-center gap-2">
                     <span className="text-[var(--muted-foreground)]">
                       {goal.current}/{goal.target}
                     </span>
 
-                    {/* Delete / Confirm UI */}
                     {isConfirming ? (
                       <span className="flex items-center gap-1 text-xs">
                         <span className="text-[var(--muted-foreground)]">Delete?</span>
@@ -144,7 +142,6 @@ export default function GoalTracker() {
                         aria-label={`Delete goal: ${goal.label}`}
                         title="Delete goal"
                       >
-                        {/* Trash icon */}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 20 20"
@@ -173,6 +170,7 @@ export default function GoalTracker() {
           })}
         </ul>
       )}
+
       <form onSubmit={handleCreate} className="mt-6 space-y-3 border-t border-[var(--border)] pt-4">
         <div>
           <label htmlFor="goal-label" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
@@ -182,7 +180,7 @@ export default function GoalTracker() {
             id="goal-label"
             type="text"
             value={label}
-            onChange={(event) => setLabel(event.target.value)}
+            onChange={(e) => setLabel(e.target.value)}
             placeholder="Commit every day"
             required
             disabled={creating}
@@ -198,7 +196,7 @@ export default function GoalTracker() {
             type="number"
             min={1}
             value={target}
-            onChange={(event) => setTarget(Number(event.target.value))}
+            onChange={(e) => setTarget(Number(e.target.value))}
             disabled={creating}
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
           />
@@ -217,6 +215,9 @@ export default function GoalTracker() {
             "Add goal"
           )}
         </button>
+        {createError && (
+          <p className="text-sm text-red-500">{createError}</p>
+        )}
       </form>
     </div>
   );

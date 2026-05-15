@@ -9,20 +9,43 @@ interface StreakData {
   totalActiveDays: number;
 }
 
+interface ContributionData {
+  days: number;
+  total: number;
+  data: Record<string, number>;
+}
+
 export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
+  const [contributionData, setContributionData] = useState<ContributionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
 
-  const fetchStreak = () => {
+  const fetchStreak = async () => {
     setLoading(true);
     setError(null);
 
-    fetch("/api/metrics/streak")
-      .then((r) => r.json())
-      .then((d: StreakData) => setData(d))
-      .catch(() => setError("We couldn't load your streak data right now. Please try again in a moment."))
-      .finally(() => setLoading(false));
+    try {
+      const [streakRes, contributionRes] = await Promise.all([
+        fetch("/api/metrics/streak"),
+        fetch("/api/metrics/contributions?days=365"),
+      ]);
+
+      if (!streakRes.ok || !contributionRes.ok) {
+        throw new Error("Failed to fetch data");
+      }
+
+      const streakData = (await streakRes.json()) as StreakData;
+      const contribData = (await contributionRes.json()) as ContributionData;
+
+      setData(streakData);
+      setContributionData(contribData);
+    } catch {
+      setError("We couldn't load your streak data right now. Please try again in a moment.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -31,11 +54,15 @@ export default function StreakTracker() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
-        <div className="mb-4 h-5 w-36 rounded bg-[var(--card-muted)] animate-pulse" />
+      <div className="bg-[var(--card)] rounded-xl p-6">
+        <div className="h-6 w-36 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
+
         <div className="grid grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse" />
+            <div
+              key={i}
+              className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse"
+            />
           ))}
         </div>
       </div>
@@ -131,6 +158,206 @@ export default function StreakTracker() {
             <div className="mt-1 text-xs text-[var(--muted-foreground)]">{stat.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* Streak Calendar Section */}
+      {loading ? (
+        <div className="mt-6 pt-6 border-t border-[var(--border)]">
+          <div className="mb-4 h-6 w-40 rounded bg-[var(--card-muted)] animate-pulse" />
+          <div className="grid grid-cols-7 gap-2">
+            {Array.from({ length: 35 }).map((_, i) => (
+              <div
+                key={i}
+                className="aspect-square rounded-lg bg-[var(--card-muted)] animate-pulse"
+              />
+            ))}
+          </div>
+        </div>
+      ) : contributionData ? (
+        <StreakCalendar
+          contributions={contributionData.data}
+          currentMonth={calendarMonth}
+          onMonthChange={setCalendarMonth}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+interface StreakCalendarProps {
+  contributions: Record<string, number>;
+  currentMonth: Date;
+  onMonthChange: (date: Date) => void;
+}
+
+function StreakCalendar({
+  contributions,
+  currentMonth,
+  onMonthChange,
+}: StreakCalendarProps) {
+  const today = new Date();
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+
+  // Get first day of month and number of days
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
+
+  const monthName = firstDay.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  // Create calendar grid
+  const calendarDays: Array<{ date: Date | null; dayOfMonth: number | null }> =
+    [];
+
+  // Empty cells for days before month starts
+  for (let i = 0; i < startingDayOfWeek; i++) {
+    calendarDays.push({ date: null, dayOfMonth: null });
+  }
+
+  // Days of the month
+  for (let day = 1; day <= daysInMonth; day++) {
+    calendarDays.push({
+      date: new Date(year, month, day),
+      dayOfMonth: day,
+    });
+  }
+
+  // Fill remaining cells to complete the grid
+  const totalCells = Math.ceil(calendarDays.length / 7) * 7;
+  while (calendarDays.length < totalCells) {
+    calendarDays.push({ date: null, dayOfMonth: null });
+  }
+
+  const handlePrevMonth = () => {
+    onMonthChange(new Date(year, month - 1));
+  };
+
+  const handleNextMonth = () => {
+    onMonthChange(new Date(year, month + 1));
+  };
+
+  return (
+    <div className="mt-6 pt-6 border-t border-[var(--border)]">
+      {/* Calendar Header */}
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+          {monthName}
+        </h3>
+        <div className="flex gap-2">
+          <button
+            onClick={handlePrevMonth}
+            className="rounded-md p-1 hover:bg-[var(--control)] transition-colors"
+            aria-label="Previous month"
+          >
+            ←
+          </button>
+          <button
+            onClick={handleNextMonth}
+            className="rounded-md p-1 hover:bg-[var(--control)] transition-colors"
+            aria-label="Next month"
+          >
+            →
+          </button>
+        </div>
+      </div>
+
+      {/* Day labels */}
+      <div className="mb-2 grid grid-cols-7 gap-1">
+        {dayLabels.map((label) => (
+          <div
+            key={label}
+            className="text-center text-xs font-medium text-[var(--muted-foreground)]"
+          >
+            {label}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {calendarDays.map((dayData, idx) => {
+          if (!dayData.date) {
+            return (
+              <div key={`empty-${idx}`} className="aspect-square" />
+            );
+          }
+
+          const dateStr = dayData.date
+            .toISOString()
+            .slice(0, 10);
+          const commitCount = contributions[dateStr] ?? 0;
+          const isFuture = dayData.date > today;
+          const isToday =
+            dayData.date.toDateString() === today.toDateString();
+
+          let bgColor = "bg-white dark:bg-transparent";
+          let borderColor = "border border-[var(--border)]";
+
+          if (!isFuture) {
+            if (commitCount > 0) {
+              bgColor = "bg-green-500";
+              borderColor = "border border-green-600";
+            } else {
+              bgColor = "bg-gray-500";
+              borderColor = "border border-gray-600";
+            }
+          }
+
+          const tooltipText = !isFuture
+            ? `${dayData.date.toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}: ${commitCount > 0 ? "Committed" : "Missed"}`
+            : "";
+
+          return (
+            <div
+              key={dateStr}
+              className={`group relative aspect-square rounded-md ${bgColor} ${borderColor} transition-transform hover:scale-110 cursor-default ${
+                isToday ? "ring-2 ring-[var(--accent)]" : ""
+              }`}
+              title={tooltipText}
+            >
+              {!isFuture && (
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {dayData.dayOfMonth}
+                </span>
+              )}
+
+              {/* Tooltip */}
+              {!isFuture && tooltipText && (
+                <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--foreground)] px-2 py-1 text-xs text-[var(--background)] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-10">
+                  {tooltipText}
+                  <div className="absolute top-full left-1/2 h-1 w-1 -translate-x-1/2 border-4 border-t-[var(--foreground)] border-transparent" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-4 flex flex-wrap gap-4 text-xs text-[var(--muted-foreground)]">
+        <div className="flex items-center gap-2">
+          <div className="h-3 w-3 rounded bg-green-500" />
+          <span>Committed</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-3 w-3 rounded bg-gray-500" />
+          <span>Missed</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-3 w-3 rounded border border-[var(--border)]" />
+          <span>Future</span>
+        </div>
       </div>
     </div>
   );
