@@ -44,7 +44,7 @@ export default function TopRepos() {
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
 
-      {/* Header */}
+    
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           Top Repositories
@@ -61,7 +61,7 @@ export default function TopRepos() {
         </select>
       </div>
 
-      {/* LOADING */}
+  
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
@@ -72,7 +72,7 @@ export default function TopRepos() {
           ))}
         </div>
       ) : error ? (
-        /* ERROR STATE */
+  
         <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
           <div className="text-4xl">⚠️</div>
           <h3 className="text-lg font-semibold">Something went wrong</h3>
@@ -85,7 +85,7 @@ export default function TopRepos() {
           </button>
         </div>
       ) : repos.length === 0 ? (
-        /* EMPTY STATE */
+      
         <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
           <div className="text-4xl">📁</div>
           <h3 className="text-lg font-semibold">No repositories found</h3>
@@ -94,7 +94,7 @@ export default function TopRepos() {
           </p>
         </div>
       ) : (
-        /* DATA STATE */
+        
         <ul className="space-y-3">
           {repos.map((repo, idx) => {
             const barWidth = Math.max(
