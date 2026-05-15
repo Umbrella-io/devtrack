@@ -9,6 +9,7 @@ import LanguageBreakdown from "@/components/LanguageBreakdown";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
+import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -25,6 +26,8 @@ export default async function DashboardPage() {
       <DashboardHeader />
 
       <StreakAtRiskBanner />
+
+      <WeeklySummaryCard />
 
       {/* Row 1: Contribution graph + Streak + Friend Comparison */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
