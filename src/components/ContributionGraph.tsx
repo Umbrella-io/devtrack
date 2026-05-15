@@ -67,6 +67,8 @@ export default function ContributionGraph() {
               <button
                 key={r.days}
                 onClick={() => setDays(r.days)}
+                aria-label={`Show ${r.days}-day range`}
+                aria-pressed={days === r.days}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                   days === r.days
                     ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
