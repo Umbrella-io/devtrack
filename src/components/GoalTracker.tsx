@@ -48,12 +48,12 @@ export default function GoalTracker() {
 
   if (loading) {
     return (
-      <div className="bg-slate-800 rounded-xl p-6 h-full">
-        <div className="h-5 w-32 bg-slate-700 rounded animate-pulse mb-4" />
+      <div className="bg-[var(--card)] rounded-xl p-6 h-full border border-[var(--border)] shadow-sm">
+        <div className="h-5 w-32 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
         {[1, 2, 3].map((i) => (
           <div key={i} className="mb-4">
-            <div className="h-3 bg-slate-700 rounded animate-pulse mb-2" />
-            <div className="h-2 bg-slate-700 rounded animate-pulse" />
+            <div className="h-3 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
+            <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
           </div>
         ))}
       </div>
@@ -61,10 +61,10 @@ export default function GoalTracker() {
   }
 
   return (
-    <div className="bg-slate-800 rounded-xl p-6 h-full">
-      <h2 className="text-white font-semibold text-lg mb-4">Weekly Goals</h2>
+    <div className="bg-[var(--card)] rounded-xl p-6 h-full border border-[var(--border)] shadow-sm">
+      <h2 className="text-[var(--card-foreground)] font-semibold text-lg mb-4">Weekly Goals</h2>
       {goals.length === 0 ? (
-        <p className="text-slate-400 text-sm">
+        <p className="text-[var(--muted-foreground)] text-sm">
           No goals yet. Create one via the API or future UI.
         </p>
       ) : (
@@ -77,17 +77,17 @@ export default function GoalTracker() {
             return (
               <li key={goal.id}>
                 <div className="flex justify-between items-center text-sm mb-1">
-                  <span className="text-slate-300">{goal.label}</span>
+                  <span className="text-[var(--card-foreground)]">{goal.label}</span>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400">
+                    <span className="text-[var(--muted-foreground)]">
                       {goal.current}/{goal.target}
                     </span>
 
                     {/* Delete / Confirm UI */}
                     {isConfirming ? (
                       <span className="flex items-center gap-1 text-xs">
-                        <span className="text-slate-400">Delete?</span>
+                        <span className="text-[var(--muted-foreground)]">Delete?</span>
                         <button
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
@@ -96,10 +96,10 @@ export default function GoalTracker() {
                         >
                           Yes
                         </button>
-                        <span className="text-slate-600">/</span>
+                        <span className="text-[var(--muted-foreground)]">/</span>
                         <button
                           onClick={() => setConfirmingId(null)}
-                          className="text-slate-400 hover:text-slate-200 transition-colors"
+                          className="text-[var(--muted-foreground)] hover:text-[var(--card-foreground)] transition-colors"
                           aria-label="Cancel delete"
                         >
                           No
@@ -109,7 +109,7 @@ export default function GoalTracker() {
                       <button
                         onClick={() => setConfirmingId(goal.id)}
                         disabled={isDeleting}
-                        className="text-slate-500 hover:text-red-400 transition-colors disabled:opacity-50"
+                        className="text-[var(--muted-foreground)] hover:text-red-400 transition-colors disabled:opacity-50"
                         aria-label={`Delete goal: ${goal.label}`}
                         title="Delete goal"
                       >
@@ -132,9 +132,9 @@ export default function GoalTracker() {
                   </div>
                 </div>
 
-                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-2 bg-[var(--card-muted)] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-indigo-500 rounded-full transition-all"
+                    className="h-full bg-[var(--accent)] rounded-full transition-all"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
