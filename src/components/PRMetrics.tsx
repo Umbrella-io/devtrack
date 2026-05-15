@@ -19,7 +19,10 @@ export default function PRMetrics() {
     setError(null);
 
     fetch("/api/metrics/prs")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("API error");
+        return r.json();
+      })
       .then((data: PRData) => setMetrics(data))
       .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
       .finally(() => setLoading(false));

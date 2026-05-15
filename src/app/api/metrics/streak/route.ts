@@ -28,7 +28,7 @@ export async function GET() {
   const sinceStr = since.toISOString().slice(0, 10);
 
   const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=asc`,
+    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
     {
       headers: {
         Authorization: `Bearer ${session.accessToken}`,
