@@ -37,6 +37,8 @@ export default function ContributionGraph() {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
   const [chartType, setChartType] = useState<ViewMode>("bar");
+  const [lastUpdated, setLastUpdated] = useState<Date|null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
 
   useEffect(() => {
     setLoading(true);
@@ -50,8 +52,20 @@ export default function ContributionGraph() {
         setData(sorted);
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [days]);
+      .finally(() => {
+       setLoading(false);
+       setLastUpdated(new Date());
+       setMinutesAgo(0);
+      });
+      }, [days]);
+      useEffect(() => {
+       if (!lastUpdated) return;
+       const interval= setInterval(() => {
+        const diff= Math.floor((Date.now()-lastUpdated.getTime())/60000);
+        setMinutesAgo(diff);
+       }, 60000);
+       return ()=> clearInterval(interval);
+      }, [lastUpdated]);
 
   return (
 <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -160,6 +174,11 @@ export default function ContributionGraph() {
           )}
         </ResponsiveContainer>
       )}
+      {lastUpdated && (
+        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
+           {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        </p>
+    )}
     </div>
   );
 }

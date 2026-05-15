@@ -12,14 +12,28 @@ interface StreakData {
 export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
 
   useEffect(() => {
     fetch("/api/metrics/streak")
       .then((r) => r.json())
       .then((d: StreakData) => setData(d))
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setLastUpdated(new Date());
+        setMinutesAgo(0);
+      });
   }, []);
+  useEffect(() => {
+    if (!lastUpdated) return;
+    const interval= setInterval(() => {
+     const diff= Math.floor((Date.now()-lastUpdated.getTime())/60000);
+    setMinutesAgo(diff);
+   }, 60000);
+   return ()=> clearInterval(interval);
+  }, [lastUpdated]);
 
   if (loading) {
     return (
@@ -102,6 +116,11 @@ export default function StreakTracker() {
           </div>
         ))}
       </div>
-    </div>
+      {lastUpdated && (
+        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
+          {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        </p>
+      )}
+      </div>
   );
 }

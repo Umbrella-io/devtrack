@@ -12,6 +12,8 @@ export default function TopRepos() {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
 
   useEffect(() => {
     setLoading(true);
@@ -19,8 +21,21 @@ export default function TopRepos() {
       .then((r) => r.json())
       .then((d: { repos: Repo[] }) => setRepos(d.repos ?? []))
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setLastUpdated(new Date());
+        setMinutesAgo(0);
+      });
   }, [days]);
+  useEffect(() => {
+   if (!lastUpdated) return;
+   const interval = setInterval(() => {
+     const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
+     setMinutesAgo(diff);
+    }, 60000);
+   return () => clearInterval(interval);
+  }, [lastUpdated]);
+
 
   const maxCommits = repos[0]?.commits ?? 1;
 
@@ -83,6 +98,11 @@ export default function TopRepos() {
           })}
         </ul>
       )}
+      {lastUpdated && (
+        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
+         {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        </p>
+     )}
     </div>
   );
 }
