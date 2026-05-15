@@ -46,7 +46,7 @@ export default function PRMetrics() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-slate-700 rounded-lg p-4 h-24 animate-pulse"
+              className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
             />
           ))}
         </div>
