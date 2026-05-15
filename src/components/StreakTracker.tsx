@@ -12,7 +12,7 @@ interface StreakData {
 export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false); 
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetch("/api/metrics/streak")
@@ -73,10 +73,8 @@ export default function StreakTracker() {
       ]
     : [];
 
-    const handleCopy = () => {
+  const handleCopy = () => {
     if (!data) return;
-
-    // Using an array guarantees the exact format with zero indentation errors
     const textToCopy = [
       "🔥 DevTrack Stats",
       `Current streak: ${data.current} days`,
@@ -85,14 +83,13 @@ export default function StreakTracker() {
     ].join('\n');
 
     if (!navigator.clipboard) {
-      console.warn("Clipboard API not supported in this browser.");
       return;
     }
 
     navigator.clipboard.writeText(textToCopy).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    }).catch((err) => console.error("Failed to copy stats", err));
+    }).catch(() => {});
   };
 
   return (
@@ -103,10 +100,10 @@ export default function StreakTracker() {
         </h2>
         {data && (
           <button
+            type="button"
             onClick={handleCopy}
-            className="flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
+            className="cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
             aria-label="Copy streak stats to clipboard"
-            title="Copy stats"
           >
             {copied ? (
               <span className="text-xs font-medium text-green-500">Copied!</span>
