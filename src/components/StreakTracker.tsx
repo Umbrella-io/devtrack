@@ -9,17 +9,55 @@ interface StreakData {
   totalActiveDays: number;
 }
 
+interface FreezeData {
+  hasFreeze: boolean;
+  freezeDate: string | null;
+}
+
 export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
+  const [freeze, setFreeze] = useState<FreezeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [freezeLoading, setFreezeLoading] = useState(false);
+  const [freezeError, setFreezeError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/metrics/streak")
-      .then((r) => r.json())
-      .then((d: StreakData) => setData(d))
+    Promise.all([
+      fetch("/api/metrics/streak").then((r) => r.json()),
+      fetch("/api/streak/freeze").then((r) => r.json()),
+    ])
+      .then(([streakData, freezeData]: [StreakData, FreezeData]) => {
+        setData(streakData);
+        setFreeze(freezeData);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleUseFreeze() {
+    setFreezeLoading(true);
+    setFreezeError(null);
+    try {
+      const res = await fetch("/api/streak/freeze", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        setFreezeError(json.error ?? "Failed to apply freeze.");
+      } else {
+        // Refresh both streak and freeze state after applying
+        const [streakData, freezeData]: [StreakData, FreezeData] =
+          await Promise.all([
+            fetch("/api/metrics/streak").then((r) => r.json()),
+            fetch("/api/streak/freeze").then((r) => r.json()),
+          ]);
+        setData(streakData);
+        setFreeze(freezeData);
+      }
+    } catch {
+      setFreezeError("Something went wrong. Please try again.");
+    } finally {
+      setFreezeLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -30,6 +68,7 @@ export default function StreakTracker() {
             <div key={i} className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse" />
           ))}
         </div>
+        <div className="mt-4 h-10 rounded-lg bg-[var(--card-muted)] animate-pulse" />
       </div>
     );
   }
@@ -101,6 +140,42 @@ export default function StreakTracker() {
             <div className="mt-1 text-xs text-[var(--muted-foreground)]">{stat.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* ── Streak Freeze Section ── */}
+      <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--control)] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🧊</span>
+            <div>
+              <p className="text-sm font-medium text-[var(--card-foreground)]">
+                Streak Freeze
+              </p>
+              <p className="text-xs text-[var(--muted-foreground)]">
+                {freeze?.hasFreeze
+                  ? `Freeze active for ${freeze.freezeDate}`
+                  : "No freeze active — protect today's streak"}
+              </p>
+            </div>
+          </div>
+          {!freeze?.hasFreeze && (
+            <button
+              onClick={handleUseFreeze}
+              disabled={freezeLoading}
+              className="shrink-0 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--accent)] transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {freezeLoading ? "Applying…" : "Use Freeze"}
+            </button>
+          )}
+          {freeze?.hasFreeze && (
+            <span className="shrink-0 rounded-lg bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--accent)]">
+              ✓ Active
+            </span>
+          )}
+        </div>
+        {freezeError && (
+          <p className="mt-2 text-xs text-red-500">{freezeError}</p>
+        )}
       </div>
     </div>
   );
