@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import BadgeSection from "@/components/BadgeSection";
 import ContributionGraph from "@/components/ContributionGraph";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
@@ -335,86 +336,6 @@ function PublicTopRepos({
           })}
         </ul>
       )}
-    </div>
-  );
-}
-
-/**
- * Client-side badge section for embedding badges in README
- */
-function BadgeSection({ username }: { username: string }) {
-  const baseUrl = typeof window !== "undefined"
-    ? window.location.origin
-    : "https://devtrack.app";
-
-  const streakBadgeUrl = `${baseUrl}/api/badge/streak?user=${username}`;
-  const commitsBadgeUrl = `${baseUrl}/api/badge/commits?user=${username}`;
-
-  const streakMarkdown = `![DevTrack Streak](${streakBadgeUrl})`;
-  const commitsMarkdown = `![DevTrack Commits](${commitsBadgeUrl})`;
-  const combinedMarkdown = `${streakMarkdown} ${commitsMarkdown}`;
-
-  return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
-        📌 Get Your Badge
-      </h2>
-      <p className="mb-4 text-sm text-[var(--muted-foreground)]">
-        Show off your DevTrack stats on your GitHub profile! Copy and paste the markdown below into your README.
-      </p>
-
-      <div className="space-y-4">
-        {/* Streak Badge */}
-        <div>
-          <h3 className="mb-2 font-medium text-[var(--card-foreground)] text-sm">
-            Streak Badge
-          </h3>
-          <div className="rounded-lg bg-[var(--control)] p-3 border border-[var(--border)]">
-            <code className="text-xs text-[var(--card-foreground)]">
-              {streakMarkdown}
-            </code>
-          </div>
-          <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-            Preview: Display your current commit streak
-          </p>
-        </div>
-
-        {/* Commits Badge */}
-        <div>
-          <h3 className="mb-2 font-medium text-[var(--card-foreground)] text-sm">
-            Commits Badge
-          </h3>
-          <div className="rounded-lg bg-[var(--control)] p-3 border border-[var(--border)]">
-            <code className="text-xs text-[var(--card-foreground)]">
-              {commitsMarkdown}
-            </code>
-          </div>
-          <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-            Preview: Show commits from this month
-          </p>
-        </div>
-
-        {/* Combined */}
-        <div>
-          <h3 className="mb-2 font-medium text-[var(--card-foreground)] text-sm">
-            Combined (Both Badges)
-          </h3>
-          <div className="rounded-lg bg-[var(--control)] p-3 border border-[var(--border)]">
-            <code className="text-xs text-[var(--card-foreground)]">
-              {combinedMarkdown}
-            </code>
-          </div>
-          <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-            Preview: Show both stats side-by-side
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 p-3 rounded-lg bg-[var(--accent)]/10 border border-[var(--accent)]/20">
-        <p className="text-xs text-[var(--card-foreground)]">
-          <span className="font-semibold">💡 Tip:</span> Badges are cached for 1 hour and update automatically. Public data only (no authentication needed).
-        </p>
-      </div>
     </div>
   );
 }
