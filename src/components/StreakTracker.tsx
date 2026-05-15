@@ -15,12 +15,20 @@ interface ContributionData {
   data: Record<string, number>;
 }
 
+interface FreezeData {
+  hasFreeze: boolean;
+}
+
 export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [contributionData, setContributionData] = useState<ContributionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [freeze, setFreeze] = useState<FreezeData | null>(null);
+  const [freezeLoading, setFreezeLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   const fetchStreak = async () => {
     setLoading(true);
@@ -48,21 +56,57 @@ export default function StreakTracker() {
     }
   };
 
+  const fetchFreeze = () => {
+    setFreezeLoading(true);
+    fetch("/api/streak/freeze")
+      .then((r) => r.json())
+      .then((d: FreezeData) => setFreeze(d))
+      .catch(() => setFreeze(null))
+      .finally(() => setFreezeLoading(false));
+  };
+
   useEffect(() => {
     fetchStreak();
+    fetchFreeze();
   }, []);
+
+  async function handleCancelFreeze() {
+    if (!confirmCancel) {
+      setConfirmCancel(true);
+      return;
+    }
+
+    setCancelling(true);
+    try {
+      const res = await fetch("/api/streak/freeze", { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to cancel freeze");
+
+      setConfirmCancel(false);
+
+      const [streakRes, freezeRes] = await Promise.all([
+        fetch("/api/metrics/streak"),
+        fetch("/api/streak/freeze"),
+      ]);
+      const [streakData, freezeData] = await Promise.all([
+        streakRes.json() as Promise<StreakData>,
+        freezeRes.json() as Promise<FreezeData>,
+      ]);
+      setData(streakData);
+      setFreeze(freezeData);
+    } catch {
+      fetchFreeze();
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   if (loading) {
     return (
       <div className="bg-[var(--card)] rounded-xl p-6">
         <div className="h-6 w-36 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
-
         <div className="grid grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse"
-            />
+            <div key={i} className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse" />
           ))}
         </div>
       </div>
@@ -160,20 +204,43 @@ export default function StreakTracker() {
         ))}
       </div>
 
-      {/* Streak Calendar Section */}
-      {loading ? (
-        <div className="mt-6 pt-6 border-t border-[var(--border)]">
-          <div className="mb-4 h-6 w-40 rounded bg-[var(--card-muted)] animate-pulse" />
-          <div className="grid grid-cols-7 gap-2">
-            {Array.from({ length: 35 }).map((_, i) => (
-              <div
-                key={i}
-                className="aspect-square rounded-lg bg-[var(--card-muted)] animate-pulse"
-              />
-            ))}
-          </div>
+      {!freezeLoading && freeze?.hasFreeze && (
+        <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-4 py-3">
+          <span className="text-sm font-medium text-[var(--accent)]">✓ Freeze active today</span>
+          {confirmCancel ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--muted-foreground)]">Remove freeze?</span>
+              <button
+                type="button"
+                onClick={handleCancelFreeze}
+                disabled={cancelling}
+                className="rounded-md bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400 transition hover:bg-red-500/20 disabled:opacity-60"
+              >
+                {cancelling ? "Removing..." : "Yes, remove"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmCancel(false)}
+                disabled={cancelling}
+                className="rounded-md border border-[var(--border)] px-2.5 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)]"
+              >
+                Keep
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleCancelFreeze}
+              className="rounded-md border border-[var(--border)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)]"
+            >
+              Cancel freeze
+            </button>
+          )}
         </div>
-      ) : contributionData ? (
+      )}
+
+      {/* Streak Calendar Section */}
+      {contributionData ? (
         <StreakCalendar
           contributions={contributionData.data}
           currentMonth={calendarMonth}
@@ -190,66 +257,39 @@ interface StreakCalendarProps {
   onMonthChange: (date: Date) => void;
 }
 
-function StreakCalendar({
-  contributions,
-  currentMonth,
-  onMonthChange,
-}: StreakCalendarProps) {
+function StreakCalendar({ contributions, currentMonth, onMonthChange }: StreakCalendarProps) {
   const today = new Date();
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
-  // Get first day of month and number of days
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const daysInMonth = lastDay.getDate();
-  const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
+  const startingDayOfWeek = firstDay.getDay();
 
-  const monthName = firstDay.toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
-
+  const monthName = firstDay.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  // Create calendar grid
-  const calendarDays: Array<{ date: Date | null; dayOfMonth: number | null }> =
-    [];
+  const calendarDays: Array<{ date: Date | null; dayOfMonth: number | null }> = [];
 
-  // Empty cells for days before month starts
   for (let i = 0; i < startingDayOfWeek; i++) {
     calendarDays.push({ date: null, dayOfMonth: null });
   }
-
-  // Days of the month
   for (let day = 1; day <= daysInMonth; day++) {
-    calendarDays.push({
-      date: new Date(year, month, day),
-      dayOfMonth: day,
-    });
+    calendarDays.push({ date: new Date(year, month, day), dayOfMonth: day });
   }
-
-  // Fill remaining cells to complete the grid
   const totalCells = Math.ceil(calendarDays.length / 7) * 7;
   while (calendarDays.length < totalCells) {
     calendarDays.push({ date: null, dayOfMonth: null });
   }
 
-  const handlePrevMonth = () => {
-    onMonthChange(new Date(year, month - 1));
-  };
-
-  const handleNextMonth = () => {
-    onMonthChange(new Date(year, month + 1));
-  };
+  const handlePrevMonth = () => onMonthChange(new Date(year, month - 1));
+  const handleNextMonth = () => onMonthChange(new Date(year, month + 1));
 
   return (
     <div className="mt-6 pt-6 border-t border-[var(--border)]">
-      {/* Calendar Header */}
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
-          {monthName}
-        </h3>
+        <h3 className="text-sm font-semibold text-[var(--card-foreground)]">{monthName}</h3>
         <div className="flex gap-2">
           <button
             onClick={handlePrevMonth}
@@ -268,34 +308,24 @@ function StreakCalendar({
         </div>
       </div>
 
-      {/* Day labels */}
       <div className="mb-2 grid grid-cols-7 gap-1">
         {dayLabels.map((label) => (
-          <div
-            key={label}
-            className="text-center text-xs font-medium text-[var(--muted-foreground)]"
-          >
+          <div key={label} className="text-center text-xs font-medium text-[var(--muted-foreground)]">
             {label}
           </div>
         ))}
       </div>
 
-      {/* Calendar grid */}
       <div className="grid grid-cols-7 gap-1">
         {calendarDays.map((dayData, idx) => {
           if (!dayData.date) {
-            return (
-              <div key={`empty-${idx}`} className="aspect-square" />
-            );
+            return <div key={`empty-${idx}`} className="aspect-square" />;
           }
 
-          const dateStr = dayData.date
-            .toISOString()
-            .slice(0, 10);
+          const dateStr = dayData.date.toISOString().slice(0, 10);
           const commitCount = contributions[dateStr] ?? 0;
           const isFuture = dayData.date > today;
-          const isToday =
-            dayData.date.toDateString() === today.toDateString();
+          const isToday = dayData.date.toDateString() === today.toDateString();
 
           let bgColor = "bg-white dark:bg-transparent";
           let borderColor = "border border-[var(--border)]";
@@ -331,8 +361,6 @@ function StreakCalendar({
                   {dayData.dayOfMonth}
                 </span>
               )}
-
-              {/* Tooltip */}
               {!isFuture && tooltipText && (
                 <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--foreground)] px-2 py-1 text-xs text-[var(--background)] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-10">
                   {tooltipText}
@@ -344,7 +372,6 @@ function StreakCalendar({
         })}
       </div>
 
-      {/* Legend */}
       <div className="mt-4 flex flex-wrap gap-4 text-xs text-[var(--muted-foreground)]">
         <div className="flex items-center gap-2">
           <div className="h-3 w-3 rounded bg-green-500" />
