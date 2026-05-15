@@ -35,7 +35,21 @@ export async function GET() {
 
   const hasFreeze = Array.isArray(pending) && pending.length > 0;
 
-  return Response.json({ hasFreeze, freezeDate: hasFreeze ? pending![0].freeze_date : null });
+  const { data: allFreezes } = await supabaseAdmin
+    .from("streak_freezes")
+    .select("freeze_date")
+    .eq("user_id", user.id)
+    .order("freeze_date", { ascending: true });
+
+  const freezeDates: string[] = Array.isArray(allFreezes)
+    ? allFreezes.map((r) => r.freeze_date)
+    : [];
+
+  return Response.json({
+    hasFreeze,
+    freezeDate: hasFreeze ? pending![0].freeze_date : null,
+    freezeDates,
+  });
 }
 
 // POST /api/streak/freeze
