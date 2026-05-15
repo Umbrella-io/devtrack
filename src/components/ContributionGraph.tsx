@@ -53,49 +53,62 @@ export default function ContributionGraph() {
       .finally(() => setLoading(false));
   }, [days]);
 
+  useEffect(() => {
+    const handleToggleChart = () => {
+      setChartType((current) => (current === "bar" ? "line" : "bar"));
+    };
+
+    window.addEventListener("toggle-chart", handleToggleChart as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        "toggle-chart",
+        handleToggleChart as EventListener
+      );
+    };
+  }, []);
+
   return (
-<div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           Commit Activity
         </h2>
 
         <div className="flex flex-wrap items-center gap-2">
-    
           <div className="flex gap-1 rounded-lg bg-[var(--control)] p-1">
             {RANGES.map((r) => (
               <button
                 key={r.days}
                 onClick={() => setDays(r.days)}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                   days === r.days
                     ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
                     : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
                 }`}
+                title={`Show ${r.label} data`}
               >
                 {r.label}
               </button>
             ))}
           </div>
 
-          {/* Chart Toggle Buttons */}
-          {data.length > 0 && (
-            <div className="flex gap-1 rounded-lg bg-[var(--control)] p-1 text-sm">
-              {charts.map((chart) => (
-                <button
-                  key={chart.key}
-                  onClick={() => setChartType(chart.key)}
-                  className={`px-3 py-1 rounded-md transition-colors duration-200 ${
-                    chartType === chart.key
-                      ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
-                      : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
-                  }`}
-                >
-                  {chart.label}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex gap-1 rounded-lg bg-[var(--control)] p-1 text-sm">
+            {charts.map((chart) => (
+              <button
+                key={chart.key}
+                onClick={() => setChartType(chart.key)}
+                className={`rounded-md px-3 py-1 transition-colors duration-200 ${
+                  chartType === chart.key
+                    ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                    : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
+                }`}
+                title={`Toggle ${chart.label.toLowerCase()} chart (${chart.label[0]})`}
+              >
+                {chart.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

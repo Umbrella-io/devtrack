@@ -20,18 +20,29 @@ export default function ThemeToggle() {
   }, []);
 
   useEffect(() => {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     document.documentElement.classList.toggle("dark", dark);
     document.documentElement.style.colorScheme = dark ? "dark" : "light";
     localStorage.setItem(STORAGE_KEY, dark ? "dark" : "light");
   }, [dark, mounted]);
 
-  if (!mounted) {
-    return null;
-  }
+  useEffect(() => {
+    const handleToggleTheme = () => {
+      setDark((current) => !current);
+    };
+
+    window.addEventListener("toggle-theme", handleToggleTheme as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        "toggle-theme",
+        handleToggleTheme as EventListener
+      );
+    };
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <button
