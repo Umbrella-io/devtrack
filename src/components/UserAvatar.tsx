@@ -17,8 +17,8 @@ export default function UserAvatar() {
   const showImage = image && !imageFailed;
 
   return (
-    <div className="flex items-center gap-3 rounded-full border border-slate-700 bg-slate-800/80 px-3 py-2">
-      <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-700 text-sm font-semibold text-white">
+    <div className="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-2">
+      <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[var(--control)] text-sm font-semibold text-[var(--card-foreground)]">
         {showImage ? (
           <Image
             src={image}
@@ -32,7 +32,7 @@ export default function UserAvatar() {
           <span aria-hidden="true">{getInitial(name)}</span>
         )}
       </div>
-      <span className="max-w-32 truncate text-sm font-medium text-slate-100">
+      <span className="max-w-32 truncate text-sm font-medium text-[var(--card-foreground)]">
         {name}
       </span>
     </div>

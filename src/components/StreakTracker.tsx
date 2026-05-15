@@ -12,23 +12,49 @@ interface StreakData {
 export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchStreak = () => {
+    setLoading(true);
+    setError(null);
+
     fetch("/api/metrics/streak")
       .then((r) => r.json())
       .then((d: StreakData) => setData(d))
-      .catch(() => {})
+      .catch(() => setError("We couldn't load your streak data right now. Please try again in a moment."))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchStreak();
   }, []);
 
   if (loading) {
     return (
-      <div className="bg-slate-800 rounded-xl p-6">
-        <div className="h-5 w-36 bg-slate-700 rounded animate-pulse mb-4" />
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <div className="mb-4 h-5 w-36 rounded bg-[var(--card-muted)] animate-pulse" />
         <div className="grid grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-slate-700 rounded-lg h-20 animate-pulse" />
+            <div key={i} className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse" />
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={fetchStreak}
+            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
@@ -42,6 +68,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: data.current > 0,
           icon: "🔥",
+          tooltip: "Current consecutive coding days",
         },
         {
           label: "Longest Streak",
@@ -49,6 +76,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: false,
           icon: "🏆",
+          tooltip: "Your longest streak ever",
         },
         {
           label: "Active Days (90d)",
@@ -56,6 +84,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: false,
           icon: "📅",
+          tooltip: "Days you made commits in the last 90 days",
         },
         {
           label: "Last Commit",
@@ -68,37 +97,38 @@ export default function StreakTracker() {
           unit: "",
           highlight: false,
           icon: "⚡",
+          tooltip: "Your most recent commit",
         },
       ]
     : [];
 
   return (
-    <div className="bg-slate-800 rounded-xl p-6">
-      <h2 className="text-white font-semibold text-lg mb-4">Commit Streaks</h2>
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
       <div className="grid grid-cols-2 gap-3">
         {stats.map((stat) => (
           <div
             key={stat.label}
             className={`rounded-lg p-4 text-center ${
               stat.highlight
-                ? "bg-indigo-500/20 border border-indigo-500/40"
-                : "bg-slate-700"
+                ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
+                : "bg-[var(--control)]"
             }`}
           >
-            <div className="text-xl mb-1">{stat.icon}</div>
+            <div className="text-xl mb-1" title={stat.tooltip} aria-label={stat.tooltip} role="img">{stat.icon}</div>
             <div
               className={`text-2xl font-bold ${
-                stat.highlight ? "text-indigo-300" : "text-indigo-400"
+                stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
               }`}
             >
               {stat.value}
               {stat.unit && (
-                <span className="text-sm font-normal text-slate-400 ml-1">
+                <span className="ml-1 text-sm font-normal text-[var(--muted-foreground)]">
                   {stat.unit}
                 </span>
               )}
             </div>
-            <div className="text-slate-400 text-xs mt-1">{stat.label}</div>
+            <div className="mt-1 text-xs text-[var(--muted-foreground)]">{stat.label}</div>
           </div>
         ))}
       </div>
