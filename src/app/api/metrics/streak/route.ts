@@ -1,5 +1,4 @@
 import { getServerSession } from "next-auth";
-import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -17,7 +16,7 @@ function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken || !session.githubLogin || !session.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

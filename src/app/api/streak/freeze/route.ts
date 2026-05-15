@@ -8,6 +8,7 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+// GET /api/streak/freeze
 // Returns whether the user currently has an unused freeze available.
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -36,6 +37,8 @@ export async function GET() {
 
   return Response.json({ hasFreeze, freezeDate: hasFreeze ? pending![0].freeze_date : null });
 }
+
+// POST /api/streak/freeze
 // Inserts a freeze for today. Fails if the user already holds an unused freeze.
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -53,21 +56,6 @@ export async function POST() {
 
   const today = todayStr();
 
-  // only 1 unused freeze at a time
-  const { data: existing } = await supabaseAdmin
-    .from("streak_freezes")
-    .select("id")
-    .eq("user_id", user.id)
-    .gte("freeze_date", today)
-    .limit(1);
-
-  if (Array.isArray(existing) && existing.length > 0) {
-    return Response.json(
-      { error: "You already have an unused streak freeze." },
-      { status: 409 }
-    );
-  }
-
   const { data: freeze, error } = await supabaseAdmin
     .from("streak_freezes")
     .insert({ user_id: user.id, freeze_date: today })
@@ -75,6 +63,13 @@ export async function POST() {
     .single();
 
   if (error) {
+    // Unique constraint violation — already has a freeze for today
+    if (error.code === "23505") {
+      return Response.json(
+        { error: "You already have an unused streak freeze." },
+        { status: 409 }
+      );
+    }
     return Response.json({ error: "Failed to apply freeze." }, { status: 500 });
   }
 

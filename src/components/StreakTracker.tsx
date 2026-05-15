@@ -43,7 +43,6 @@ export default function StreakTracker() {
       if (!res.ok) {
         setFreezeError(json.error ?? "Failed to apply freeze.");
       } else {
-        // Refresh both streak and freeze state after applying
         const [streakData, freezeData]: [StreakData, FreezeData] =
           await Promise.all([
             fetch("/api/metrics/streak").then((r) => r.json()),
