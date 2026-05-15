@@ -2,6 +2,9 @@ import { type NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
 import { supabaseAdmin } from "./supabase";
 
+const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
+const useSecureCookies = process.env.NODE_ENV === "production";
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({
@@ -12,6 +15,28 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  session: {
+    strategy: "jwt",
+    maxAge: SESSION_MAX_AGE,
+    // updateAge: SESSION_UPDATE_AGE,
+  },
+  jwt: {
+    maxAge: SESSION_MAX_AGE,
+  },
+  cookies: {
+    sessionToken: {
+      name: useSecureCookies
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+        maxAge: SESSION_MAX_AGE,
+      },
+    },
+  },
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {
