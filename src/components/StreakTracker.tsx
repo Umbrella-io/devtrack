@@ -18,7 +18,6 @@ export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [freeze, setFreeze] = useState<FreezeData | null>(null);
   const [loading, setLoading] = useState(true);
-<<<<<<< HEAD
   const [freezeLoading, setFreezeLoading] = useState(false);
   const [freezeError, setFreezeError] = useState<string | null>(null);
 
@@ -32,18 +31,6 @@ export default function StreakTracker() {
         setFreeze(freezeData);
       })
       .catch(() => {})
-=======
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchStreak = () => {
-    setLoading(true);
-    setError(null);
-
-    fetch("/api/metrics/streak")
-      .then((r) => r.json())
-      .then((d: StreakData) => setData(d))
-      .catch(() => setError("We couldn't load your streak data right now. Please try again in a moment."))
->>>>>>> upstream/main
       .finally(() => setLoading(false));
   };
 
