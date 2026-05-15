@@ -5,6 +5,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
+import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -19,6 +20,8 @@ export default async function DashboardPage() {
  return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
         <DashboardHeader />
+
+        <StreakAtRiskBanner />
 
       {/* Row 1: Contribution graph + Streak + Goals */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
