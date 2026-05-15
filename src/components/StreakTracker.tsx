@@ -42,6 +42,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: data.current > 0,
           icon: "🔥",
+          tooltip: "Current consecutive coding days",
         },
         {
           label: "Longest Streak",
@@ -49,6 +50,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: false,
           icon: "🏆",
+          tooltip: "Your longest streak ever",
         },
         {
           label: "Active Days (90d)",
@@ -56,6 +58,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: false,
           icon: "📅",
+          tooltip: "Your active days count stands at 90",
         },
         {
           label: "Last Commit",
@@ -68,6 +71,7 @@ export default function StreakTracker() {
           unit: "",
           highlight: false,
           icon: "⚡",
+          tooltip: "Your most recent commit",
         },
       ]
     : [];
@@ -85,7 +89,10 @@ export default function StreakTracker() {
                 : "bg-[var(--control)]"
             }`}
           >
-            <div className="text-xl mb-1">{stat.icon}</div>
+            <div className="text-xl mb-1" title={stat.tooltip} aria-label={stat.tooltip} role="img">
+              {stat.icon}
+            </div>
+
             <div
               className={`text-2xl font-bold ${
                 stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
