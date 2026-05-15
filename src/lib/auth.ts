@@ -3,6 +3,7 @@ import GitHubProvider from "next-auth/providers/github";
 import { supabaseAdmin } from "./supabase";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
+const SESSION_UPDATE_AGE = 24 * 60 * 60;
 const useSecureCookies = process.env.NODE_ENV === "production";
 
 export const authOptions: NextAuthOptions = {
@@ -18,7 +19,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
     maxAge: SESSION_MAX_AGE,
-    // updateAge: SESSION_UPDATE_AGE,
+    updateAge: SESSION_UPDATE_AGE,
   },
   jwt: {
     maxAge: SESSION_MAX_AGE,
