@@ -13,14 +13,17 @@ export default function TopRepos() {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
 
-  useEffect(() => {
+  const fetchRepos = () => {
     setLoading(true);
-
     fetch(`/api/metrics/repos?days=${days}`)
       .then((r) => r.json())
       .then((d: { repos: Repo[] }) => setRepos(d.repos ?? []))
       .catch(() => setRepos([]))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchRepos();
   }, [days]);
 
   const maxCommits = repos[0]?.commits ?? 1;
@@ -45,7 +48,6 @@ export default function TopRepos() {
         </select>
       </div>
 
-      {/* Loading State */}
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
@@ -55,7 +57,6 @@ export default function TopRepos() {
             />
           ))}
         </div>
-
       ) : repos.length === 0 ? (
 
         /* Empty State */
