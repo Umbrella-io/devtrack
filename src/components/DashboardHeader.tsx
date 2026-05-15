@@ -13,6 +13,7 @@ export default function DashboardHeader() {
 
     const [isPublic, setIsPublic] = useState<boolean | null>(null);
     const [copied, setCopied] = useState(false);
+    const [copyError, setCopyError] = useState(false);
 
     useEffect(() => {
         if (!session) {
@@ -48,9 +49,13 @@ export default function DashboardHeader() {
             setTimeout(() => {
                 setCopied(false);
             }, 2000);
-        } catch (error) {
-            console.error(error);
-            alert("Copy failed");
+
+        } catch {
+            setCopyError(true);
+
+            setTimeout(() => {
+                setCopyError(false);
+            }, 2000);
         }
     };
 
@@ -90,7 +95,7 @@ export default function DashboardHeader() {
                         aria-label="Copy dashboard link"
                         className="px-3 py-2 rounded-md border border-[var(--border)]"
                     >
-                        {copied ? "Copied!" : "📋"}
+                        {copied ? "✓ Copied!" : copyError ? "Failed" : "📋"}
                     </button>
 
                     <ThemeToggle />
