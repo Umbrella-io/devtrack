@@ -5,6 +5,7 @@ import GoalTracker from "@/components/GoalTracker";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
+import PinnedRepos from "@/components/PinnedRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
@@ -52,7 +53,12 @@ export default async function DashboardPage() {
         <IssueMetrics />
       </div>
 
-      {/* Row 4: Top repos + Language breakdown + Goal tracker */}
+      {/* Row 4: Pinned repositories */}
+      <div className="mt-6">
+        <PinnedRepos />
+      </div>
+
+      {/* Row 5: Top repos + Language breakdown + Goal tracker */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <TopRepos />
         <LanguageBreakdown />
