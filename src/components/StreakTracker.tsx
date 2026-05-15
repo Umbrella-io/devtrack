@@ -30,21 +30,21 @@ export default function StreakTracker() {
   }, []);
 
   if (loading) {
-  return (
-    <div className="bg-slate-800 rounded-xl p-6">
-      <div className="h-6 w-36 bg-slate-700 rounded animate-pulse mb-4" />
+   return (
+     <div className="bg-slate-800 rounded-xl p-6">
+       <div className="h-6 w-36 bg-slate-700 rounded animate-pulse mb-4" />
 
-      <div className="grid grid-cols-2 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="bg-slate-700 rounded-lg h-28 animate-pulse"
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
+       <div className="grid grid-cols-2 gap-4">
+         {[1, 2, 3, 4].map((i) => (
+           <div
+             key={i}
+             className="bg-slate-700 rounded-lg h-28 animate-pulse"
+           />
+         ))}
+       </div>
+     </div>
+   );
+  }
 
   if (error) {
     return (

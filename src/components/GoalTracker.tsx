@@ -64,7 +64,7 @@ export default function GoalTracker() {
       ))}
     </div>
   );
-}
+ }
 
   return (
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
