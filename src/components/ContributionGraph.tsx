@@ -49,29 +49,28 @@ export default function ContributionGraph() {
 
         setData(sorted);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, [days]);
 
   return (
-<div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           Commit Activity
         </h2>
 
         <div className="flex flex-wrap items-center gap-2">
-    
+
           <div className="flex gap-1 rounded-lg bg-[var(--control)] p-1">
             {RANGES.map((r) => (
               <button
                 key={r.days}
                 onClick={() => setDays(r.days)}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  days === r.days
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${days === r.days
                     ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
                     : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
-                }`}
+                  }`}
               >
                 {r.label}
               </button>
@@ -80,16 +79,21 @@ export default function ContributionGraph() {
 
           {/* Chart Toggle Buttons */}
           {data.length > 0 && (
-            <div className="flex gap-1 rounded-lg bg-[var(--control)] p-1 text-sm">
+            <div
+              role="group"
+              aria-label="Chart type"
+              className="flex gap-1 rounded-lg bg-[var(--control)] p-1 text-sm"
+            >
               {charts.map((chart) => (
                 <button
                   key={chart.key}
+                  type="button"
                   onClick={() => setChartType(chart.key)}
-                  className={`px-3 py-1 rounded-md transition-colors duration-200 ${
-                    chartType === chart.key
+                  aria-pressed={chartType === chart.key}
+                  className={`px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${chartType === chart.key
                       ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
                       : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
-                  }`}
+                    }`}
                 >
                   {chart.label}
                 </button>
