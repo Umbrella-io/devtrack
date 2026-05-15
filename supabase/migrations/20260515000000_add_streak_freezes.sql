@@ -1,5 +1,5 @@
 -- Migration: add streak_freezes table
--- Allows users to protect one streak day 
+-- Allows users to protect one streak day (e.g. weekends, sick days)
  
 create table if not exists streak_freezes (
   id          text primary key default gen_random_uuid()::text,
