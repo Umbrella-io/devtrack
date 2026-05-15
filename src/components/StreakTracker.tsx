@@ -18,6 +18,7 @@ export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [freeze, setFreeze] = useState<FreezeData | null>(null);
   const [loading, setLoading] = useState(true);
+<<<<<<< HEAD
   const [freezeLoading, setFreezeLoading] = useState(false);
   const [freezeError, setFreezeError] = useState<string | null>(null);
 
@@ -31,7 +32,23 @@ export default function StreakTracker() {
         setFreeze(freezeData);
       })
       .catch(() => {})
+=======
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStreak = () => {
+    setLoading(true);
+    setError(null);
+
+    fetch("/api/metrics/streak")
+      .then((r) => r.json())
+      .then((d: StreakData) => setData(d))
+      .catch(() => setError("We couldn't load your streak data right now. Please try again in a moment."))
+>>>>>>> upstream/main
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchStreak();
   }, []);
 
   async function handleUseFreeze() {
@@ -72,6 +89,24 @@ export default function StreakTracker() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={fetchStreak}
+            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const stats = data
     ? [
         {
@@ -80,6 +115,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: data.current > 0,
           icon: "🔥",
+          tooltip: "Current consecutive coding days",
         },
         {
           label: "Longest Streak",
@@ -87,6 +123,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: false,
           icon: "🏆",
+          tooltip: "Your longest streak ever",
         },
         {
           label: "Active Days (90d)",
@@ -94,6 +131,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: false,
           icon: "📅",
+          tooltip: "Days you made commits in the last 90 days",
         },
         {
           label: "Last Commit",
@@ -106,6 +144,7 @@ export default function StreakTracker() {
           unit: "",
           highlight: false,
           icon: "⚡",
+          tooltip: "Your most recent commit",
         },
       ]
     : [];
@@ -123,7 +162,7 @@ export default function StreakTracker() {
                 : "bg-[var(--control)]"
             }`}
           >
-            <div className="text-xl mb-1">{stat.icon}</div>
+            <div className="text-xl mb-1" title={stat.tooltip} aria-label={stat.tooltip} role="img">{stat.icon}</div>
             <div
               className={`text-2xl font-bold ${
                 stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
