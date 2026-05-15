@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface PRData {
   open: number;
@@ -9,25 +9,8 @@ interface PRData {
   mergeRate: string;
 }
 
-export default function PRMetrics() {
-  const [metrics, setMetrics] = useState<PRData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchMetrics = () => {
-    setLoading(true);
-    setError(null);
-
-    fetch("/api/metrics/prs")
-      .then((r) => r.json())
-      .then((data: PRData) => setMetrics(data))
-      .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    fetchMetrics();
-  }, []);
+export default function PRMetrics({ metrics }: { metrics: PRData | null }) {
+  const router = useRouter();
 
   const stats = metrics
     ? [
@@ -41,25 +24,20 @@ export default function PRMetrics() {
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-20 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse" />
-          ))}
-        </div>
-      ) : error ? (
+      
+      {!metrics ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
-          <p>{error}</p>
+          <p>We couldn't load your PR analytics right now. Please try again in a moment.</p>
           <button
             type="button"
-            onClick={fetchMetrics}
+            onClick={() => router.refresh()}
             className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
           >
             Try again
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {stats.map((stat) => (
             <div
               key={stat.label}
@@ -68,7 +46,9 @@ export default function PRMetrics() {
               <div className="text-2xl font-bold text-[var(--accent)]">
                 {stat.value}
               </div>
-              <div className="mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
+              <div className="mt-1 text-sm text-[var(--muted-foreground)]">
+                {stat.label}
+              </div>
             </div>
           ))}
         </div>

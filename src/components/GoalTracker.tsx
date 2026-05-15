@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 interface Goal {
   id: string;
@@ -9,24 +10,11 @@ interface Goal {
   current: number;
 }
 
-export default function GoalTracker() {
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function GoalTracker({ goals }: { goals: Goal[] }) {
+  const router = useRouter();
   const [label, setLabel] = useState("");
   const [target, setTarget] = useState(7);
   const [creating, setCreating] = useState(false);
-
-  const loadGoals = useCallback(async () => {
-    const response = await fetch("/api/goals");
-    const data: { goals: Goal[] } = await response.json();
-    setGoals(data.goals ?? []);
-  }, []);
-
-  useEffect(() => {
-    loadGoals()
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [loadGoals]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -45,30 +33,19 @@ export default function GoalTracker() {
 
       setLabel("");
       setTarget(7);
-      await loadGoals();
+      router.refresh();
     } finally {
       setCreating(false);
     }
   }
 
-  if (loading) {
-    return (
-      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
-        <div className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse" />
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="mb-4">
-            <div className="mb-2 h-3 rounded bg-[var(--card-muted)] animate-pulse" />
-            <div className="h-2 rounded bg-[var(--card-muted)] animate-pulse" />
-          </div>
-        ))}
-      </div>
-    );
-  }
+  // Safely check for goals array
+  const hasGoals = Array.isArray(goals) && goals.length > 0;
 
   return (
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Weekly Goals</h2>
-      {goals.length === 0 ? (
+      {!hasGoals || goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No goals yet. Create one via the API or future UI.
         </p>
