@@ -5,6 +5,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
+import IssueMetrics from "@/components/IssueMetrics";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -33,6 +34,11 @@ export default async function DashboardPage() {
       {/* Row 2: PR metrics */}
       <div className="mt-6">
         <PRMetrics />
+      </div>
+
+      {/* Row 3: Issue metrics */}
+      <div className="mt-6">
+        <IssueMetrics />
       </div>
 
       {/* Row 3: Top repos + Language breakdown + Goal tracker */}
