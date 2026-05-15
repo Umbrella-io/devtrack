@@ -52,19 +52,19 @@ export default function GoalTracker() {
   }
 
   if (loading) {
-  return (
-    <div className="bg-slate-800 rounded-xl p-6 h-full">
-      <div className="h-6 w-32 bg-slate-700 rounded animate-pulse mb-4" />
+    return (
+      <div className="bg-[var(--card)] rounded-xl p-6 h-full">
+        <div className="h-6 w-32 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
 
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="mb-4">
-          <div className="h-4 bg-slate-700 rounded animate-pulse mb-2" />
-          <div className="h-2 bg-slate-700 rounded animate-pulse" />
-        </div>
-      ))}
-    </div>
-  );
- }
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="mb-4">
+            <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
+            <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
