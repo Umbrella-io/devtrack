@@ -1,5 +1,6 @@
 import ContributionGraph from "@/components/ContributionGraph";
 import PRMetrics from "@/components/PRMetrics";
+import PRBreakdownChart from "@/components/PRBreakdownChart";
 import GoalTracker from "@/components/GoalTracker";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
@@ -30,9 +31,10 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 2: PR metrics */}
-      <div className="mt-6">
+      {/* Row 2: PR metrics + PR breakdown */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PRMetrics />
+        <PRBreakdownChart />
       </div>
 
       {/* Row 3: Top repos + Language breakdown + Goal tracker */}
