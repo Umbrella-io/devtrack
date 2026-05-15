@@ -14,12 +14,10 @@ export default async function HomePage() {
     <main className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="max-w-2xl text-center">
         <h1 className="text-5xl font-bold mb-4 text-white">DevTrack</h1>
-
         <p className="text-xl text-slate-400 mb-8">
           Open-source developer productivity dashboard. Track coding habits,
           visualize GitHub contributions, and hit your goals.
         </p>
-
         <div className="flex gap-4 justify-center">
           <Link
             href="/api/auth/signin/github?callbackUrl=/dashboard"
@@ -27,7 +25,6 @@ export default async function HomePage() {
           >
             Sign in with GitHub
           </Link>
-
           <a
             href="https://github.com/Priyanshu-byte-coder/devtrack"
             target="_blank"
