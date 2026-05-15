@@ -44,8 +44,6 @@ export default function TopRepos() {
           <option value={90}>Last 90d</option>
         </select>
       </div>
-      {error && <p className="text-red-400 text-sm">{error}</p>}
-
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
