@@ -144,6 +144,15 @@ export default function StreakTracker() {
     );
   }
 
+  const MILESTONES = [
+    { days: 30, label: "30-day streak!", emoji: "🏅" },
+    { days: 14, label: "2-week streak!", emoji: "⭐" },
+    { days: 7, label: "7-day streak!", emoji: "🔥" },
+    { days: 3, label: "3-day streak!", emoji: "✨" },
+  ];
+
+  const badge = MILESTONES.find((m) => (data?.current ?? 0) >= m.days);
+
   const stats = data
     ? [
         {
@@ -253,6 +262,12 @@ export default function StreakTracker() {
           </div>
         ))}
       </div>
+      {badge && (
+        <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2">
+          <span>{badge.emoji}</span>
+          <span className="text-sm font-medium text-indigo-600 dark:text-indigo-300">{badge.label}</span>
+        </div>
+      )}
       {lastUpdated && (
         <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
           {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
