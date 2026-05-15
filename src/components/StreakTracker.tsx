@@ -9,6 +9,15 @@ interface StreakData {
   totalActiveDays: number;
 }
 
+type StreakStat = {
+  label: string;
+  value: number | string;
+  unit: string;
+  highlight: boolean;
+  icon: string;
+  tooltip: string;
+};
+
 export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +43,7 @@ export default function StreakTracker() {
     );
   }
 
-  const stats = data
+  const stats: StreakStat[] = data
     ? [
         {
           label: "Current Streak",
@@ -42,6 +51,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: data.current > 0,
           icon: "🔥",
+          tooltip: "Current consecutive coding days",
         },
         {
           label: "Longest Streak",
@@ -49,6 +59,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: false,
           icon: "🏆",
+          tooltip: "Your longest streak ever",
         },
         {
           label: "Active Days (90d)",
@@ -56,6 +67,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: false,
           icon: "📅",
+          tooltip: "Active coding days in the last 90 days",
         },
         {
           label: "Last Commit",
@@ -68,13 +80,17 @@ export default function StreakTracker() {
           unit: "",
           highlight: false,
           icon: "⚡",
+          tooltip: "Date of your most recent commit",
         },
       ]
     : [];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
+        Commit Streaks
+      </h2>
+
       <div className="grid grid-cols-2 gap-3">
         {stats.map((stat) => (
           <div
@@ -85,7 +101,14 @@ export default function StreakTracker() {
                 : "bg-[var(--control)]"
             }`}
           >
-            <div className="text-xl mb-1">{stat.icon}</div>
+            <div className="group relative mx-auto mb-1 flex w-fit items-center justify-center">
+              <div className="text-xl cursor-help">{stat.icon}</div>
+
+              <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 hidden w-max -translate-x-1/2 rounded-md bg-black px-2 py-1 text-xs text-white shadow-md group-hover:block">
+                {stat.tooltip}
+              </div>
+            </div>
+
             <div
               className={`text-2xl font-bold ${
                 stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
@@ -98,7 +121,10 @@ export default function StreakTracker() {
                 </span>
               )}
             </div>
-            <div className="mt-1 text-xs text-[var(--muted-foreground)]">{stat.label}</div>
+
+            <div className="mt-1 text-xs text-[var(--muted-foreground)]">
+              {stat.label}
+            </div>
           </div>
         ))}
       </div>
