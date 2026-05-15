@@ -15,6 +15,7 @@ export default function GoalTracker() {
   const [label, setLabel] = useState("");
   const [target, setTarget] = useState(7);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const loadGoals = useCallback(async () => {
     const response = await fetch("/api/goals");
@@ -31,6 +32,7 @@ export default function GoalTracker() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
+    setCreateError(null);
 
     try {
       const response = await fetch("/api/goals", {
@@ -42,13 +44,16 @@ export default function GoalTracker() {
       if (!response.ok) {
         throw new Error("Failed to create goal");
       }
-
-      setLabel("");
-      setTarget(7);
-      await loadGoals();
-    } finally {
+    } catch {
+      setCreateError("Failed to create goal. Please try again.");
       setCreating(false);
+      return;
     }
+
+    setLabel("");
+    setTarget(7);
+    await loadGoals().catch(() => {});
+    setCreating(false);
   }
 
   if (loading) {
@@ -139,6 +144,9 @@ export default function GoalTracker() {
             "Add goal"
           )}
         </button>
+        {createError && (
+          <p className="text-sm text-red-500">{createError}</p>
+        )}
       </form>
     </div>
   );
