@@ -1,8 +1,9 @@
 import Link from "next/link";
-
+import GoalTracker from "@/components/GoalTracker";
 export default function HomePage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4">
+      <GoalTracker />
       <div className="max-w-2xl text-center">
         <h1 className="text-5xl font-bold mb-4 text-white">DevTrack</h1>
         <p className="text-xl text-slate-400 mb-8">
