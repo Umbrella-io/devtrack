@@ -2,13 +2,14 @@
 
 import type { ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
-import ThemeSync from "@/components/ThemeSync";
+import { ThemeProvider } from "@/components/ThemeContext";
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
-      <ThemeSync />
-      {children}
+      <ThemeProvider>
+        {children}
+      </ThemeProvider>
     </SessionProvider>
   );
 }
