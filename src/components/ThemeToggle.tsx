@@ -37,7 +37,7 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={() => setDark((current) => !current)}
-      className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]"
+      className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]"
       aria-label="Toggle theme"
       aria-pressed={dark}
     >
