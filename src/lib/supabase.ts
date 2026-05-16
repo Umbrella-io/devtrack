@@ -1,5 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
-
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // Lazy-initialize the Supabase admin client to avoid crashing at module import
