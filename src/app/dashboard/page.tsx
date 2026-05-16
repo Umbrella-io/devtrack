@@ -1,4 +1,5 @@
 import ContributionGraph from "@/components/ContributionGraph";
+import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
 import PRBreakdownChart from "@/components/PRBreakdownChart";
 import GoalTracker from "@/components/GoalTracker";
@@ -38,6 +39,9 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ContributionGraph />
+          <div className="mt-6">
+            <ContributionHeatmap />
+          </div>
         </div>
 
         <div className="flex flex-col gap-6">
