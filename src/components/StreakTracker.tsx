@@ -263,9 +263,9 @@ export default function StreakTracker() {
         ))}
       </div>
       {badge && (
-        <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2">
+        <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
           <span>{badge.emoji}</span>
-          <span className="text-sm font-medium text-indigo-600 dark:text-indigo-300">{badge.label}</span>
+          <span className="text-sm font-medium text-[var(--accent)]">{badge.label}</span>
         </div>
       )}
       {lastUpdated && (
