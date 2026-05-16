@@ -40,16 +40,28 @@ export default function ContributionGraph() {
 
   useEffect(() => {
     setLoading(true);
+
     fetch(`/api/metrics/contributions?days=${days}`)
-      .then((r) => r.json())
-      .then((res: { data: Record<string, number> }) => {
+      .then(async (r) => {
+        const res = await r.json();
+
+        if (!r.ok) {
+          throw new Error(res.error || "Failed to load contributions");
+        }
+
+        return res as { data: Record<string, number> };
+      })
+      .then((res) => {
         const sorted = Object.entries(res.data ?? {})
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([day, commits]) => ({ day, commits }));
 
         setData(sorted);
       })
-      .catch(() => {})
+      .catch((error) => {
+        console.error(error);
+        setData([]);
+      })
       .finally(() => setLoading(false));
   }, [days]);
 

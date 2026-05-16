@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect } from "react";
 import ContributionGraph from "@/components/ContributionGraph";
 import PRMetrics from "@/components/PRMetrics";
 import GoalTracker from "@/components/GoalTracker";
@@ -8,45 +5,22 @@ import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
+import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
-export default function DashboardPage() {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
+export default async function DashboardPage() {
+  const session = await getServerSession(authOptions);
 
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      if (event.key.toLowerCase() === "d") {
-        window.dispatchEvent(new Event("toggle-theme"));
-      }
-
-      if (event.key.toLowerCase() === "b") {
-        window.dispatchEvent(new Event("toggle-chart"));
-      }
-
-      if (event.key.toLowerCase() === "r") {
-        window.location.reload();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
+  if (!session) {
+    redirect("/");
+  }
 
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
+      <KeyboardShortcuts />
+
       <DashboardHeader />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -63,7 +37,6 @@ export default function DashboardPage() {
         <PRMetrics />
       </div>
 
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Row 3: Top repos + Language breakdown + Goal tracker */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <TopRepos />
