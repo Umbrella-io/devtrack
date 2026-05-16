@@ -153,10 +153,10 @@ export default function GoalTracker() {
                     <div className="flex items-center gap-2">
                       <span className="text-[var(--card-foreground)]">{goal.title}</span>
                       {goal.recurrence !== "none" && (
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
                           goal.recurrence === "weekly"
-                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-                            : "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+                            ? "bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/30"
+                            : "bg-[var(--card-muted)] text-[var(--muted-foreground)] border-[var(--border)]"
                         }`}>
                           {RECURRENCE_LABELS[goal.recurrence]}
                         </span>
@@ -181,6 +181,7 @@ export default function GoalTracker() {
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
                           className="text-red-400 hover:text-red-300 font-semibold transition-colors disabled:opacity-50"
+                          aria-label={`Confirm delete goal: ${goal.title}`}
                         >
                           Yes
                         </button>
@@ -188,6 +189,7 @@ export default function GoalTracker() {
                         <button
                           onClick={() => setConfirmingId(null)}
                           className="text-[var(--muted-foreground)] hover:text-[var(--card-foreground)] transition-colors"
+                          aria-label="Cancel delete"
                         >
                           No
                         </button>
@@ -197,6 +199,7 @@ export default function GoalTracker() {
                         onClick={() => setConfirmingId(goal.id)}
                         disabled={isDeleting}
                         className="text-[var(--muted-foreground)] hover:text-red-400 transition-colors disabled:opacity-50"
+                        aria-label={`Delete goal: ${goal.title}`}
                         title="Delete goal"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">

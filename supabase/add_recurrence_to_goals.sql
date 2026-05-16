@@ -4,6 +4,9 @@ ALTER TABLE goals
     CHECK (recurrence IN ('none', 'weekly', 'monthly')),
   ADD COLUMN IF NOT EXISTS period_start TIMESTAMPTZ;
 
+-- Make week_start nullable so existing rows still work
+ALTER TABLE goals ALTER COLUMN week_start DROP NOT NULL;
+
 -- Backfill period_start for existing goals
 UPDATE goals SET period_start = created_at WHERE period_start IS NULL;
 
