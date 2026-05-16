@@ -62,29 +62,38 @@ export default function FriendComparison() {
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+      <div className="mb-6 space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Friend Comparison</h2>
-          <p className="text-sm text-[var(--muted-foreground)]">See how you stack up against others</p>
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+            Friend Comparison
+          </h2>
+
+          <p className="text-sm text-[var(--muted-foreground)]">
+            See how you stack up against others
+          </p>
         </div>
 
-        <form onSubmit={handleCompare} className="flex gap-2">
-          <input
-            type="text"
-            placeholder="GitHub username..."
-            value={friendUsername}
-            onChange={(e) => setFriendUsername(e.target.value)}
-            className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]"
-          />
-          <button
-            type="submit"
-            disabled={loading || !friendUsername.trim()}
-            className="rounded-md bg-[var(--accent)] px-4 py-1.5 text-sm font-medium text-[var(--accent-foreground)] disabled:opacity-50 transition-colors"
-          >
-            {loading ? "Loading..." : "Compare"}
-          </button>
-        </form>
-      </div>
+      <form
+        onSubmit={handleCompare}
+        className="flex flex-col sm:flex-row gap-2 w-full"
+      >
+        <input
+          type="text"
+          placeholder="GitHub username..."
+          value={friendUsername}
+          onChange={(e) => setFriendUsername(e.target.value)}
+          className="min-w-0 flex-1 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+        />
+
+        <button
+          type="submit"
+          disabled={loading || !friendUsername.trim()}
+          className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors disabled:opacity-50"
+        >
+          {loading ? "Loading..." : "Compare"}
+        </button>
+      </form>
+    </div>
 
       {error && (
         <div className="p-4 mb-4 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex justify-between items-center">

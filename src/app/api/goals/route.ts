@@ -4,11 +4,22 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-function currentWeekStart(): string {
+type Recurrence = "none" | "weekly" | "monthly";
+
+function getPeriodStart(recurrence: Recurrence): string {
   const now = new Date();
-  const d = new Date(now);
-  d.setDate(now.getDate() - now.getDay() + 1); // Monday
-  return d.toISOString().slice(0, 10);
+  if (recurrence === "weekly") {
+    const day = now.getDay();
+    const diff = day === 0 ? -6 : 1 - day; // Monday
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diff);
+    monday.setHours(0, 0, 0, 0);
+    return monday.toISOString();
+  }
+  if (recurrence === "monthly") {
+    return new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0).toISOString();
+  }
+  return new Date(0).toISOString(); // 'none' never resets
 }
 
 export async function GET() {
@@ -29,9 +40,33 @@ export async function GET() {
     .from("goals")
     .select("*")
     .eq("user_id", user.id)
-    .eq("week_start", currentWeekStart());
+    .order("created_at", { ascending: false });
 
-  return Response.json({ goals: goals ?? [] });
+  // Reset progress if we're in a new period
+  const processedGoals = await Promise.all(
+    (goals ?? []).map(async (goal) => {
+      if (goal.recurrence === "none") return goal;
+
+      const periodStart = new Date(getPeriodStart(goal.recurrence as Recurrence));
+      const storedPeriodStart = goal.period_start
+        ? new Date(goal.period_start)
+        : new Date(0);
+
+      if (storedPeriodStart < periodStart) {
+        const { data: updated } = await supabaseAdmin
+          .from("goals")
+          .update({ current: 0, period_start: periodStart.toISOString() })
+          .eq("id", goal.id)
+          .select()
+          .single();
+        return updated ?? { ...goal, current: 0, period_start: periodStart.toISOString() };
+      }
+
+      return goal;
+    })
+  );
+
+  return Response.json({ goals: processedGoals });
 }
 
 export async function POST(req: Request) {
@@ -40,9 +75,20 @@ export async function POST(req: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await req.json()) as { label?: string; target?: number };
-  if (!body.label || !body.target) {
-    return Response.json({ error: "label and target required" }, { status: 400 });
+  const body = (await req.json()) as {
+    title?: string;
+    target?: number;
+    unit?: string;
+    recurrence?: Recurrence;
+  };
+
+  if (!body.title || !body.target) {
+    return Response.json({ error: "title and target required" }, { status: 400 });
+  }
+
+  const recurrence: Recurrence = body.recurrence ?? "none";
+  if (!["none", "weekly", "monthly"].includes(recurrence)) {
+    return Response.json({ error: "Invalid recurrence value" }, { status: 400 });
   }
 
   const { data: user } = await supabaseAdmin
@@ -57,14 +103,17 @@ export async function POST(req: Request) {
     .from("goals")
     .insert({
       user_id: user.id,
-      label: body.label,
+      title: body.title,
       target: body.target,
-      week_start: currentWeekStart(),
+      unit: body.unit ?? "commits",
+      recurrence,
+      period_start: getPeriodStart(recurrence),
+      current: 0,
     })
     .select()
     .single();
 
-  if (error) return Response.json({ error: "Failed to create goal" }, { status: 500 });
+  if (error) return Response.json({ error: error.message }, { status: 500 });
 
   return Response.json({ goal }, { status: 201 });
 }
