@@ -144,7 +144,7 @@ export default function RepoCard({
             href={repo.htmlUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-sm font-medium text-[var(--card-foreground)] transition hover:bg-[var(--control-hover)]"
+            className="flex items-center justify-center rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-medium text-slate-100 transition hover:bg-slate-800"
           >
             Repo
           </a>
@@ -152,7 +152,7 @@ export default function RepoCard({
           <button
             type="button"
             onClick={() => onViewAnalytics(repo)}
-            className="flex items-center justify-center rounded-2xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-sm font-medium text-indigo-300 transition hover:bg-indigo-500/20"
+            className="flex items-center justify-center rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-medium text-slate-100 transition hover:bg-slate-800"
           >
             View
           </button>
