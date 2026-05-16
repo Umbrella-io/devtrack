@@ -13,6 +13,7 @@ import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
+import ProjectAnalyticsExplorer from "@/components/project-analytics/ProjectAnalyticsExplorer";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
+    <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
       <DashboardHeader />
       <div className="mb-6 flex justify-end">
         <ExportButton />
@@ -34,41 +35,43 @@ export default async function DashboardPage() {
 
       <WeeklySummaryCard />
 
-      {/* Row 1: Contribution graph + Streak + Friend Comparison */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  
+        {/* LEFT SIDE */}
+        <div className="flex flex-col gap-6 lg:col-span-2">
           <ContributionGraph />
+
+          {/* Repo Explorer BELOW commit activity */}
+          <ProjectAnalyticsExplorer />
         </div>
 
+        {/* RIGHT SIDE */}
         <div className="flex flex-col gap-6">
           <StreakTracker />
           <FriendComparison />
         </div>
       </div>
 
-      {/* Row 2: PR metrics, PR breakdown & Time Chart */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <PRMetrics />
         <PRBreakdownChart />
         <CommitTimeChart />
       </div>
 
-      {/* Row 3: Issue metrics */}
       <div className="mt-6">
         <IssueMetrics />
       </div>
 
-      {/* Row 4: Pinned repositories */}
       <div className="mt-6">
         <PinnedRepos />
       </div>
 
-      {/* Row 5: Top repos + Language breakdown + Goal tracker */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <TopRepos />
         <LanguageBreakdown />
         <GoalTracker />
       </div>
+
     </div>
   );
 }
