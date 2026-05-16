@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
 
 interface Repo {
@@ -10,6 +11,7 @@ interface Repo {
 }
 
 export default function TopRepos() {
+  const { selectedAccount } = useAccount();
   const [repos, setRepos] = useState<Repo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,8 +24,9 @@ export default function TopRepos() {
   const fetchRepos = useCallback(() => {
     setLoading(true);
     setError(null);
-    const accountId = new URLSearchParams(window.location.search).get("accountId");
-    const accountParam = accountId ? `&accountId=${encodeURIComponent(accountId)}` : "";
+    const accountParam = selectedAccount !== null
+      ? `&accountId=${encodeURIComponent(selectedAccount)}`
+      : "";
     fetch(`/api/metrics/repos?days=${days}${accountParam}`)
       .then((r) => r.json())
       .then((d: { repos: Repo[] }) => setRepos(d.repos ?? []))
@@ -33,11 +36,14 @@ export default function TopRepos() {
         setLastUpdated(new Date());
         setMinutesAgo(0);
       });
-  }, [days]);
+  }, [days, selectedAccount]);
 
   const fetchHealthScores = useCallback(() => {
     setHealthLoading(true);
-    fetch(`/api/metrics/repo-health`)
+    const accountParam = selectedAccount !== null
+      ? `?accountId=${encodeURIComponent(selectedAccount)}`
+      : "";
+    fetch(`/api/metrics/repo-health${accountParam}`)
       .then((r) => r.json())
       .then((d: { repos: RepoHealthScore[] }) => {
         const map: Record<string, RepoHealthScore> = {};
@@ -48,7 +54,7 @@ export default function TopRepos() {
       })
       .catch(() => setHealthScores({}))
       .finally(() => setHealthLoading(false));
-  }, []);
+  }, [selectedAccount]);
 
   useEffect(() => {
     if (!lastUpdated) return;
@@ -63,7 +69,7 @@ export default function TopRepos() {
   useEffect(() => {
     fetchRepos();
     fetchHealthScores();
-  }, [fetchRepos, fetchHealthScores]);
+  }, [fetchRepos, fetchHealthScores, selectedAccount]);
 
   const maxCommits = repos[0]?.commits ?? 1;
 

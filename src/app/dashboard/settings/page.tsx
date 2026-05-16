@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { redirect, useSearchParams } from "next/navigation";
 
 interface UserSettings {
   id: string;
@@ -10,12 +10,116 @@ interface UserSettings {
   is_public: boolean;
 }
 
-export default function SettingsPage() {
+interface LinkedAccount {
+  id: string;
+  githubId: string;
+  githubLogin: string;
+  addedAt: string;
+}
+
+interface AccountsResponse {
+  accounts: LinkedAccount[];
+}
+
+function formatAddedDate(addedAt: string): string {
+  return `Added ${new Date(addedAt).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+}
+
+function getStatusMessage(
+  success: string | null,
+  error: string | null
+): { kind: "success" | "error"; message: string } | null {
+  if (success === "account_linked") {
+    return {
+      kind: "success",
+      message: "Account linked successfully",
+    };
+  }
+
+  if (!error) {
+    return null;
+  }
+
+  if (error === "already_linked") {
+    return {
+      kind: "error",
+      message: "This account is already linked",
+    };
+  }
+
+  if (error === "cannot_link_primary_account") {
+    return {
+      kind: "error",
+      message: "You cannot link your primary account",
+    };
+  }
+
+  if (error === "invalid_state") {
+    return {
+      kind: "error",
+      message: "Link failed: invalid state. Please try again.",
+    };
+  }
+
+  if (error === "oauth_cancelled") {
+    return {
+      kind: "error",
+      message: "Account linking was cancelled",
+    };
+  }
+
+  return {
+    kind: "error",
+    message: "Account linking failed. Please try again.",
+  };
+}
+
+function SettingsPageFallback() {
+  return (
+    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
+      <div className="max-w-2xl mx-auto">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div className="h-8 w-48 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-20 bg-[var(--card-muted)] rounded animate-pulse"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsPageContent() {
   const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accountsLoading, setAccountsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const [removingAccountId, setRemovingAccountId] = useState<string | null>(
+    null
+  );
+
+  const statusMessage = useMemo(
+    () =>
+      getStatusMessage(
+        searchParams.get("success"),
+        searchParams.get("error")
+      ),
+    [searchParams]
+  );
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -45,6 +149,32 @@ export default function SettingsPage() {
     }
 
     loadSettings();
+  }, [session, status]);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.githubLogin) {
+      return;
+    }
+
+    async function loadLinkedAccounts() {
+      try {
+        const res = await fetch("/api/user/github-accounts");
+        if (!res.ok) {
+          setLinkedAccounts([]);
+          return;
+        }
+
+        const data = (await res.json()) as AccountsResponse;
+        setLinkedAccounts(data.accounts ?? []);
+      } catch (error) {
+        console.error("Failed to load linked accounts:", error);
+        setLinkedAccounts([]);
+      } finally {
+        setAccountsLoading(false);
+      }
+    }
+
+    loadLinkedAccounts();
   }, [session, status]);
 
   const handleTogglePublic = async (value: boolean) => {
@@ -78,6 +208,31 @@ export default function SettingsPage() {
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRemoveAccount = async (githubId: string) => {
+    setRemoveError(null);
+    setRemovingAccountId(githubId);
+
+    try {
+      const res = await fetch(`/api/user/github-accounts/${githubId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        setRemoveError(data.error ?? "Failed to remove account");
+        return;
+      }
+
+      setLinkedAccounts((current) =>
+        current.filter((account) => account.githubId !== githubId)
+      );
+    } catch {
+      setRemoveError("Failed to remove account");
+    } finally {
+      setRemovingAccountId(null);
+    }
   };
 
   if (status === "loading" || loading) {
@@ -123,6 +278,18 @@ export default function SettingsPage() {
             Manage your profile and preferences
           </p>
         </div>
+
+        {statusMessage && (
+          <div
+            className={`mb-6 rounded-xl border p-4 text-sm ${
+              statusMessage.kind === "success"
+                ? "border-green-500/30 bg-green-500/10 text-green-400"
+                : "border-red-500/30 bg-red-500/10 text-red-400"
+            }`}
+          >
+            {statusMessage.message}
+          </div>
+        )}
 
         {/* Public Profile Section */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -194,7 +361,89 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                Connected Accounts
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                Link additional GitHub accounts and switch between them on the
+                dashboard.
+              </p>
+            </div>
+
+            <a
+              href="/api/auth/link-github"
+              className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+            >
+              Add GitHub Account
+            </a>
+          </div>
+
+          {removeError && (
+            <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+              {removeError}
+            </div>
+          )}
+
+          <div className="mt-6">
+            {accountsLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : linkedAccounts.length === 0 ? (
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)]">
+                No linked GitHub accounts yet.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {linkedAccounts.map((account) => (
+                  <div
+                    key={account.id}
+                    className="flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div>
+                      <div className="text-sm font-semibold text-[var(--card-foreground)]">
+                        {account.githubLogin}
+                      </div>
+                      <div className="mt-1 text-sm text-[var(--muted-foreground)]">
+                        {formatAddedDate(account.addedAt)}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAccount(account.githubId)}
+                      aria-label={`Remove ${account.githubLogin}`}
+                      disabled={removingAccountId === account.githubId}
+                      className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-60"
+                    >
+                      {removingAccountId === account.githubId
+                        ? "Removing..."
+                        : "Remove"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<SettingsPageFallback />}>
+      <SettingsPageContent />
+    </Suspense>
   );
 }
