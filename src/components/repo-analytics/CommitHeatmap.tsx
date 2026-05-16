@@ -1,6 +1,6 @@
 "use client";
 
-import { HeatmapPoint } from "@/lib/projectAnalytics";
+import { HeatmapPoint } from "@/lib/repoAnalytics";
 
 const colorForCount = (count: number) => {
   if (count === 0) return "bg-slate-800";

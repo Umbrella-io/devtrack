@@ -1,5 +1,5 @@
 import { formatDistanceToNow, format } from "date-fns";
-import { RepoHealth } from "./projectAnalytics";
+import { RepoHealth } from "./repoAnalytics";
 
 export function formatRelativeDate(iso: string) {
   return formatDistanceToNow(new Date(iso), { addSuffix: true });

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import RepoCard from "./RepoCard";
 import RepoAnalyticsSheet from "./RepoAnalyticsSheet";
-import { ExplorerRepoCardData } from "@/lib/projectAnalytics";
+import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
 
 export default function RepoGrid({ repos }: { repos: ExplorerRepoCardData[] }) {
   const PAGE_SIZE = 6;
@@ -31,7 +31,7 @@ export default function RepoGrid({ repos }: { repos: ExplorerRepoCardData[] }) {
   }, [filteredRepos, safePage]);
 
   return (
-    <div className="space-y-4 overflow-hidden">
+    <div className="space-y-4">
       <div className="flex flex-col gap-1 md:flex-row md:items-center">
         <input value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="Search repositories..." className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-400 md:max-w-xs" />
         <div className="flex flex-1 flex-wrap gap-2">

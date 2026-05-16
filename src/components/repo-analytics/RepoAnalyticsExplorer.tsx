@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import RepoGrid from "./RepoGrid";
-import { ExplorerRepoCardData } from "@/lib/projectAnalytics";
+import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
 
-export default function ProjectAnalyticsExplorer() {
+export default function RepoAnalyticsExplorer() {
   const [repos, setRepos] = useState<ExplorerRepoCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,13 +13,13 @@ export default function ProjectAnalyticsExplorer() {
     setLoading(true);
     setError(null);
 
-    fetch("/api/metrics/project-explorer")
+    fetch("/api/metrics/repo-explorer")
       .then((res) => {
         if (!res.ok) throw new Error("Failed");
         return res.json();
       })
       .then((json: { repos: ExplorerRepoCardData[] }) => setRepos(json.repos ?? []))
-      .catch(() => setError("Could not load project analytics right now."))
+      .catch(() => setError("Could not load repo analytics right now."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -31,8 +31,8 @@ export default function ProjectAnalyticsExplorer() {
     <section className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-slate-700/70 bg-gradient-to-b from-slate-900 to-slate-950 p-4 shadow-2xl shadow-slate-950/30 md:p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-100">Project Analytics Explorer</h2>
-          <p className="text-sm text-slate-400">Explore repository health, contributors, timeline and tech stack signals.</p>
+          <h2 className="text-lg font-semibold text-slate-100">Repo Analytics</h2>
+          <p className="text-sm text-slate-400">Explore repository health, contributors, timeline, Consistency and tech stack signals.</p>
         </div>
       </div>
 

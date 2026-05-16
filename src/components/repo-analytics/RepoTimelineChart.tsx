@@ -1,7 +1,7 @@
 "use client";
 
 import { BarChart, Bar, LineChart, Line, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
-import { TimelinePoint } from "@/lib/projectAnalytics";
+import { TimelinePoint } from "@/lib/repoAnalytics";
 
 export default function RepoTimelineChart({ timeline }: { timeline: TimelinePoint[] }) {
   return (

@@ -13,7 +13,7 @@ import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
-import ProjectAnalyticsExplorer from "@/components/project-analytics/ProjectAnalyticsExplorer";
+import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
           <ContributionGraph />
 
           {/* Repo Explorer BELOW commit activity */}
-          <ProjectAnalyticsExplorer />
+          <RepoAnalyticsExplorer />
         </div>
 
         {/* RIGHT SIDE */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { RepoHealth } from "@/lib/projectAnalytics";
+import { RepoHealth } from "@/lib/repoAnalytics";
 
 const meterColor = (value: number) => (value >= 75 ? "bg-emerald-400" : value >= 45 ? "bg-amber-400" : "bg-rose-400");
 

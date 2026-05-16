@@ -5,9 +5,8 @@ import { useEffect, useState } from "react";
 import ContributorStats from "./ContributorStats";
 import RepoTimelineChart from "./RepoTimelineChart";
 import RepoHealthMetrics from "./RepoHealthMetrics";
-import CommitHeatmap from "./CommitHeatmap";
-import { RepoAnalyticsResponse } from "@/lib/projectAnalytics";
-import { formatDisplayDate } from "@/lib/projectAnalyticsUtils";
+import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
+import { formatDisplayDate } from "@/lib/repoAnalyticsUtils";
 
 interface RepoAnalyticsSheetProps {
   repoFullName: string | null;
@@ -34,6 +33,15 @@ export default function RepoAnalyticsSheet({ repoFullName, open, onClose }: Repo
       .finally(() => setLoading(false));
   }, [open, repoFullName]);
 
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -44,7 +52,7 @@ export default function RepoAnalyticsSheet({ repoFullName, open, onClose }: Repo
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 260 }}
-            className="fixed right-0 top-0 z-50 h-full w-full max-w-3xl overflow-y-auto border-l border-slate-700 bg-slate-900 p-5 sm:p-6"
+            className="fixed inset-y-0 right-0 z-50 w-full max-w-3xl overflow-y-auto border-l border-slate-700 bg-slate-900 p-5 shadow-2xl shadow-black/60 sm:p-6"
           >
             <div className="mb-4 flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -71,7 +79,6 @@ export default function RepoAnalyticsSheet({ repoFullName, open, onClose }: Repo
 
                 <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4"><h4 className="mb-3 text-sm font-semibold text-slate-100">Contributor Analytics</h4><ContributorStats contributors={data.contributors} /></section>
                 <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4"><h4 className="mb-3 text-sm font-semibold text-slate-100">Timeline Analytics</h4><RepoTimelineChart timeline={data.timeline} /></section>
-                <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4"><h4 className="mb-3 text-sm font-semibold text-slate-100">Commit Heatmap</h4><CommitHeatmap points={data.heatmap} /></section>
                 <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4"><h4 className="mb-3 text-sm font-semibold text-slate-100">Repository Health</h4><RepoHealthMetrics health={data.health} /></section>
                 <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
                   <h4 className="mb-3 text-sm font-semibold text-slate-100">Tech Stack Analytics</h4>

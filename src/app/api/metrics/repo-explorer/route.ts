@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
-import { ExplorerRepoCardData } from "@/lib/projectAnalytics";
-import { percentageFromMap } from "@/lib/projectAnalyticsUtils";
+import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
+import { percentageFromMap } from "@/lib/repoAnalyticsUtils";
 
 const GITHUB_API = "https://api.github.com";
 const LANGUAGE_COLORS: Record<string, string> = {

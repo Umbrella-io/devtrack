@@ -9,11 +9,11 @@ import {
   XAxis,
 } from "recharts";
 
-import { ExplorerRepoCardData } from "@/lib/projectAnalytics";
+import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
 import {
   formatRelativeDate,
   formatDate,
-} from "@/lib/projectAnalyticsUtils";
+} from "@/lib/repoAnalyticsUtils";
 
 interface RepoCardProps {
   repo: ExplorerRepoCardData;

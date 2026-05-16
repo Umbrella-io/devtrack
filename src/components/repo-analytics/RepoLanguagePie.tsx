@@ -1,7 +1,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { LanguageSlice } from "@/lib/projectAnalytics";
+import { LanguageSlice } from "@/lib/repoAnalytics";
 
 export default function RepoLanguagePie({ data }: { data: LanguageSlice[] }) {
   if (!data.length) {

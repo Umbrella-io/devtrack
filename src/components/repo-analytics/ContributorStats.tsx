@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ContributorMetric } from "@/lib/projectAnalytics";
+import { ContributorMetric } from "@/lib/repoAnalytics";
 
 export default function ContributorStats({ contributors }: { contributors: ContributorMetric[] }) {
   return (

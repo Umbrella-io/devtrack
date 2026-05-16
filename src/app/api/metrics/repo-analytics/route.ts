@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { calculateRepoHealth, percentageFromMap } from "@/lib/projectAnalyticsUtils";
-import { RepoAnalyticsResponse } from "@/lib/projectAnalytics";
+import { calculateRepoHealth, percentageFromMap } from "@/lib/repoAnalyticsUtils";
+import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
 
 const GITHUB_API = "https://api.github.com";
 const COLOR_MAP: Record<string, string> = {
