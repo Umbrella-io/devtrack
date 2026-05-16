@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 
 interface StreakData {
   current: number;
@@ -20,6 +21,7 @@ interface FreezeData {
 }
 
 export default function StreakTracker() {
+  const { selectedAccount } = useAccount();
   const [data, setData] = useState<StreakData | null>(null);
   const [contributionData, setContributionData] = useState<ContributionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,14 +35,22 @@ export default function StreakTracker() {
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
-  const fetchStreak = async () => {
+  const fetchStreak = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
+      const streakUrl =
+        selectedAccount !== null
+          ? `/api/metrics/streak?accountId=${encodeURIComponent(selectedAccount)}`
+          : "/api/metrics/streak";
+      const contributionUrl =
+        selectedAccount !== null
+          ? `/api/metrics/contributions?days=365&accountId=${encodeURIComponent(selectedAccount)}`
+          : "/api/metrics/contributions?days=365";
       const [streakRes, contributionRes] = await Promise.all([
-        fetch("/api/metrics/streak"),
-        fetch("/api/metrics/contributions?days=365"),
+        fetch(streakUrl),
+        fetch(contributionUrl),
       ]);
 
       if (!streakRes.ok || !contributionRes.ok) {
@@ -59,7 +69,7 @@ export default function StreakTracker() {
       setLastUpdated(new Date());
       setMinutesAgo(0);
     }
-  };
+  }, [selectedAccount]);
 
   const fetchFreeze = () => {
     setFreezeLoading(true);
@@ -73,14 +83,15 @@ export default function StreakTracker() {
   useEffect(() => {
     fetchStreak();
     fetchFreeze();
-  }, []);
+  }, [fetchStreak]);
+
   useEffect(() => {
     if (!lastUpdated) return;
-    const interval= setInterval(() => {
-     const diff= Math.floor((Date.now()-lastUpdated.getTime())/60000);
-    setMinutesAgo(diff);
-   }, 60000);
-   return ()=> clearInterval(interval);
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
+      setMinutesAgo(diff);
+    }, 60000);
+    return () => clearInterval(interval);
   }, [lastUpdated]);
 
   async function handleCancelFreeze() {
@@ -96,8 +107,12 @@ export default function StreakTracker() {
 
       setConfirmCancel(false);
 
+      const streakUrl =
+        selectedAccount !== null
+          ? `/api/metrics/streak?accountId=${encodeURIComponent(selectedAccount)}`
+          : "/api/metrics/streak";
       const [streakRes, freezeRes] = await Promise.all([
-        fetch("/api/metrics/streak"),
+        fetch(streakUrl),
         fetch("/api/streak/freeze"),
       ]);
       const [streakData, freezeData] = await Promise.all([
@@ -269,8 +284,10 @@ export default function StreakTracker() {
         </div>
       )}
       {lastUpdated && (
-        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
-          {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        <p className="mt-2 text-right text-xs text-[var(--muted-foreground)]">
+          {minutesAgo === 0
+            ? "Updated just now"
+            : `Updated ${minutesAgo} min ago`}
         </p>
       )}
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 
 interface StreakAtRiskBannerProps {
   lastCommitDate?: string | null;
@@ -13,6 +14,7 @@ export default function StreakAtRiskBanner({
   currentStreak: propsCurrentStreak,
   hasStreakFreeze,
 }: StreakAtRiskBannerProps) {
+  const { selectedAccount } = useAccount();
   const [dismissed, setDismissed] = useState(false);
   const [lastCommitDate, setLastCommitDate] = useState(propsLastCommitDate);
   const [currentStreak, setCurrentStreak] = useState(propsCurrentStreak);
@@ -21,7 +23,11 @@ export default function StreakAtRiskBanner({
   useEffect(() => {
     // If props weren't passed (e.g. from a Server Component), fetch them
     if (propsLastCommitDate === undefined || propsCurrentStreak === undefined) {
-      fetch("/api/metrics/streak")
+      const url =
+        selectedAccount !== null
+          ? `/api/metrics/streak?accountId=${encodeURIComponent(selectedAccount)}`
+          : "/api/metrics/streak";
+      fetch(url)
         .then((r) => r.json())
         .then((data) => {
           setLastCommitDate(data.lastCommitDate);
@@ -32,7 +38,7 @@ export default function StreakAtRiskBanner({
       setLastCommitDate(propsLastCommitDate);
       setCurrentStreak(propsCurrentStreak);
     }
-  }, [propsLastCommitDate, propsCurrentStreak]);
+  }, [propsLastCommitDate, propsCurrentStreak, selectedAccount]);
 
   useEffect(() => {
     if (
