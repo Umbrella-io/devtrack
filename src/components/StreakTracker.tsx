@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { useCountUp } from "@/hooks/useCountUp";
 
 interface StreakData {
   current: number;
@@ -34,6 +35,10 @@ export default function StreakTracker() {
   const [freezeLoading, setFreezeLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+
+  const animatedCurrent = useCountUp(data?.current ?? 0);
+  const animatedLongest = useCountUp(data?.longest ?? 0);
+  const animatedActiveDays = useCountUp(data?.totalActiveDays ?? 0);
 
   const fetchStreak = useCallback(async () => {
     setLoading(true);
@@ -172,7 +177,7 @@ export default function StreakTracker() {
     ? [
         {
           label: "Current Streak",
-          value: data.current,
+          value: animatedCurrent,
           unit: "days",
           highlight: data.current > 0,
           icon: "🔥",
@@ -180,7 +185,7 @@ export default function StreakTracker() {
         },
         {
           label: "Longest Streak",
-          value: data.longest,
+          value: animatedLongest,
           unit: "days",
           highlight: false,
           icon: "🏆",
@@ -188,7 +193,7 @@ export default function StreakTracker() {
         },
         {
           label: "Active Days (90d)",
-          value: data.totalActiveDays,
+          value: animatedActiveDays,
           unit: "days",
           highlight: false,
           icon: "📅",
