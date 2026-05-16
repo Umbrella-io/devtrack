@@ -58,6 +58,16 @@ export interface IssuesMetrics {
 export async function fetchIssuesMetrics(
   token: string
 ): Promise<IssuesMetrics> {
+  // Prefer GraphQL implementation when enabled for better pagination and fewer requests
+  try {
+    if (process.env.GITHUB_USE_GRAPHQL === "true") {
+      // dynamic import to avoid changing runtime for environments that don't need it
+      const mod = await import("./githubGraphql");
+      return await mod.fetchIssuesMetricsGraphQL(token);
+    }
+  } catch (err) {
+    console.warn("GraphQL fetch failed, falling back to REST:", err);
+  }
   const headers = {
     Authorization: `Bearer ${token}`,
     Accept: "application/vnd.github+json",
