@@ -52,7 +52,7 @@ export default function PRMetrics() {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
@@ -72,7 +72,7 @@ export default function PRMetrics() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {stats.map((stat) => (
             <div
               key={stat.label}
