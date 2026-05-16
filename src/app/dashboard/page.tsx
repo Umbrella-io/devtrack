@@ -13,6 +13,7 @@ import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
+import PersonalRecords from "@/components/PersonalRecords";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -33,6 +34,10 @@ export default async function DashboardPage() {
       <StreakAtRiskBanner />
 
       <WeeklySummaryCard />
+
+      <div className="mb-6">
+        <PersonalRecords />
+      </div>
 
       {/* Row 1: Contribution graph + Streak + Friend Comparison */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
