@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
-import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +16,9 @@ function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.accessToken || !session.githubLogin) {
+  if (!session?.accessToken || !session.githubLogin || !session.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   const sinceStr = since.toISOString().slice(0, 10);
 
   const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=asc`,
+    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
     {
       headers: {
         Authorization: `Bearer ${session.accessToken}`,
@@ -51,6 +51,28 @@ export async function GET(req: NextRequest) {
   for (const item of data.items) {
     daySet[item.commit.author.date.slice(0, 10)] = true;
   }
+
+  // Fetch the user's freeze dates from Supabase and merge them in as active days
+  const { data: dbUser } = await supabaseAdmin
+    .from("users")
+    .select("id")
+    .eq("github_id", session.githubId)
+    .single();
+
+  if (dbUser) {
+    const { data: freezes } = await supabaseAdmin
+      .from("streak_freezes")
+      .select("freeze_date")
+      .eq("user_id", dbUser.id)
+      .gte("freeze_date", sinceStr);
+
+    if (Array.isArray(freezes)) {
+      for (const row of freezes) {
+        daySet[row.freeze_date] = true;
+      }
+    }
+  }
+
   const commitDays = Object.keys(daySet).sort();
 
   if (commitDays.length === 0) {

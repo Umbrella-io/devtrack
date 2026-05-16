@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface Repo {
   name: string;
@@ -11,27 +11,54 @@ interface Repo {
 export default function TopRepos() {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
 
-  const fetchRepos = () => {
+  const fetchRepos = useCallback(() => {
     setLoading(true);
+    setError(null);
+
     fetch(`/api/metrics/repos?days=${days}`)
-      .then((r) => r.json())
-      .then((d: { repos: Repo[] }) => setRepos(d.repos ?? []))
-      .catch(() => setRepos([]))
-      .finally(() => setLoading(false));
-  };
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed request");
+        return r.json();
+      })
+      .then((d: { repos: Repo[] }) => {
+        setRepos(d.repos ?? []);
+      })
+      .catch(() => {
+        setError("We couldn't load your top repositories right now. Please try again in a moment.");
+        setRepos([]);
+      })
+      .finally(() => {
+        setLoading(false);
+        setLastUpdated(new Date());
+        setMinutesAgo(0);
+      });
+  }, [days]);
 
   useEffect(() => {
     fetchRepos();
-  }, [days]);
+  }, [fetchRepos]);
+
+  useEffect(() => {
+    if (!lastUpdated) return;
+
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
+      setMinutesAgo(diff);
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
 
   const maxCommits = repos[0]?.commits ?? 1;
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      
-      {/* Header */}
+
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           Top Repositories
@@ -40,7 +67,7 @@ export default function TopRepos() {
         <select
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus:outline-none focus:border-[var(--accent)]"
+          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm"
         >
           <option value={7}>Last 7d</option>
           <option value={30}>Last 30d</option>
@@ -51,30 +78,18 @@ export default function TopRepos() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="h-10 rounded bg-[var(--card-muted)] animate-pulse"
-            />
+            <div key={i} className="h-10 rounded bg-[var(--card-muted)] animate-pulse" />
           ))}
         </div>
-      ) : repos.length === 0 ? (
-
-        /* Empty State */
-        <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
-          <div className="text-4xl">📁</div>
-
-          <h3 className="text-lg font-semibold text-[var(--card-foreground)]">
-            No repositories found
-          </h3>
-
-          <p className="text-sm text-[var(--muted-foreground)]">
-            No GitHub activity detected for the last {days} days.
-          </p>
+      ) : error ? (
+        <div className="text-center py-6 text-sm text-red-500">
+          {error}
         </div>
-
+      ) : repos.length === 0 ? (
+        <div className="text-center py-10 text-[var(--muted-foreground)]">
+          No repositories found for the last {days} days.
+        </div>
       ) : (
-
-        /* Repo List */
         <ul className="space-y-3">
           {repos.map((repo, idx) => {
             const barWidth = Math.max(
@@ -82,35 +97,28 @@ export default function TopRepos() {
               4
             );
 
-            const shortName =
-              repo.name.split("/")[1] ?? repo.name;
+            const shortName = repo.name.split("/")[1] ?? repo.name;
 
             return (
               <li key={repo.name}>
                 <div className="flex items-center justify-between text-sm mb-1">
-                  
                   <a
                     href={repo.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
-                    title={repo.name}
+                    className="truncate hover:text-[var(--accent)]"
                   >
-                    <span className="mr-1 text-[var(--muted-foreground)]">
-                      #{idx + 1}
-                    </span>
-                    {shortName}
+                    #{idx + 1} {shortName}
                   </a>
 
-                  <span className="shrink-0 text-[var(--muted-foreground)]">
-                    {repo.commits} commit
-                    {repo.commits !== 1 ? "s" : ""}
+                  <span className="text-[var(--muted-foreground)]">
+                    {repo.commits} commits
                   </span>
                 </div>
 
-                <div className="h-1.5 overflow-hidden rounded-full bg-[var(--control)]">
+                <div className="h-1.5 rounded-full bg-[var(--control)] overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
+                    className="h-full bg-[var(--accent)]"
                     style={{ width: `${barWidth}%` }}
                   />
                 </div>
@@ -118,6 +126,12 @@ export default function TopRepos() {
             );
           })}
         </ul>
+      )}
+
+      {lastUpdated && (
+        <p className="text-xs text-right text-[var(--muted-foreground)] mt-2">
+          {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        </p>
       )}
     </div>
   );

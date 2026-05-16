@@ -37,11 +37,18 @@ export default function ContributionGraph() {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
   const [chartType, setChartType] = useState<ViewMode>("bar");
+  const [lastUpdated, setLastUpdated] = useState<Date|null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     fetch(`/api/metrics/contributions?days=${days}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("API error");
+        return r.json();
+      })
       .then((res: { data: Record<string, number> }) => {
         const sorted = Object.entries(res.data ?? {})
           .sort(([a], [b]) => a.localeCompare(b))
@@ -49,24 +56,41 @@ export default function ContributionGraph() {
 
         setData(sorted);
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {
+        setError("Failed to load contribution data.");
+      })
+      .finally(() => {
+        setLoading(false);
+        setLastUpdated(new Date());
+        setMinutesAgo(0);
+      });
   }, [days]);
 
+  useEffect(() => {
+    if (!lastUpdated) return;
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
+      setMinutesAgo(diff);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
+
   return (
-<div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           Commit Activity
         </h2>
 
         <div className="flex flex-wrap items-center gap-2">
-    
+
           <div className="flex gap-1 rounded-lg bg-[var(--control)] p-1">
             {RANGES.map((r) => (
               <button
                 key={r.days}
                 onClick={() => setDays(r.days)}
+                aria-label={`Show ${r.days}-day range`}
+                aria-pressed={days === r.days}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                   days === r.days
                     ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
@@ -79,17 +103,22 @@ export default function ContributionGraph() {
           </div>
 
           {/* Chart Toggle Buttons */}
-          {data.length > 0 && (
-            <div className="flex gap-1 rounded-lg bg-[var(--control)] p-1 text-sm">
+          {data.length > 0 && !error && (
+            <div
+              role="group"
+              aria-label="Chart type"
+              className="flex gap-1 rounded-lg bg-[var(--control)] p-1 text-sm"
+            >
               {charts.map((chart) => (
                 <button
                   key={chart.key}
+                  type="button"
                   onClick={() => setChartType(chart.key)}
-                  className={`px-3 py-1 rounded-md transition-colors duration-200 ${
-                    chartType === chart.key
+                  aria-pressed={chartType === chart.key}
+                  className={`px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${chartType === chart.key
                       ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
                       : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
-                  }`}
+                    }`}
                 >
                   {chart.label}
                 </button>
@@ -101,6 +130,12 @@ export default function ContributionGraph() {
 
       {loading ? (
         <div className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse" />
+      ) : error ? (
+        <div className="flex h-[200px] items-center rounded-lg border border-red-500/30 bg-red-500/10 px-4">
+          <p className="text-sm text-red-400">
+            {error} Please try refreshing.
+          </p>
+        </div>
       ) : data.length === 0 ? (
         <p className="flex h-[200px] items-center text-sm text-[var(--muted-foreground)]">
           No commits in the last {days} days.
@@ -160,6 +195,11 @@ export default function ContributionGraph() {
           )}
         </ResponsiveContainer>
       )}
+      {lastUpdated && (
+        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
+           {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        </p>
+    )}
     </div>
   );
 }

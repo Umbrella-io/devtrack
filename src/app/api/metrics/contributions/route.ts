@@ -22,14 +22,14 @@ export async function GET(req: NextRequest) {
   // including web UI commits, merge commits, PRs — unlike the events API
   // which only catches PushEvents from direct pushes.
   const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=asc`,
+    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
     {
       headers: {
         Authorization: `Bearer ${session.accessToken}`,
         Accept: "application/vnd.github+json",
       },
       cache: "no-store",
-    }
+    },
   );
 
   if (!searchRes.ok) {
@@ -42,10 +42,34 @@ export async function GET(req: NextRequest) {
   };
 
   const commitsByDay: Record<string, number> = {};
+  const timeBlocks = {
+    morning: 0, // 6-11
+    afternoon: 0, // 12-17
+    evening: 0, // 18-21
+    night: 0, // 22-5
+  };
+
   for (const item of data.items) {
-    const date = item.commit.author.date.slice(0, 10);
+    const rawDate = item.commit.author.date;
+    const date = rawDate.slice(0, 10);
     commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
+
+    const hour = new Date(rawDate).getHours();
+    if (hour >= 6 && hour < 12) {
+      timeBlocks.morning++;
+    } else if (hour >= 12 && hour < 18) {
+      timeBlocks.afternoon++;
+    } else if (hour >= 18 && hour < 22) {
+      timeBlocks.evening++;
+    } else {
+      timeBlocks.night++;
+    }
   }
 
-  return Response.json({ days, total: data.total_count, data: commitsByDay });
+  return Response.json({
+    days,
+    total: data.total_count,
+    data: commitsByDay,
+    timeBlocks,
+  });
 }

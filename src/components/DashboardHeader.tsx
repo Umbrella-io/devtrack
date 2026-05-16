@@ -10,17 +10,14 @@ export default function DashboardHeader() {
 
     const handleCopy = async () => {
         try {
+            if (typeof window === "undefined") return;
+
             await navigator.clipboard.writeText(window.location.href);
 
             setCopied(true);
-
-            setTimeout(() => {
-                setCopied(false);
-            }, 2000);
-
+            setTimeout(() => setCopied(false), 2000);
         } catch (error) {
-            console.error(error);
-            alert("Copy failed");
+            console.error("Copy failed:", error);
         }
     };
 
@@ -42,7 +39,6 @@ export default function DashboardHeader() {
                 <button
                     type="button"
                     onClick={handleCopy}
-                    aria-label="Copy dashboard link"
                     className="px-3 py-2 rounded-md border border-[var(--border)]"
                 >
                     {copied ? "Copied!" : "📋"}
