@@ -1,4 +1,5 @@
 import ContributionGraph from "@/components/ContributionGraph";
+import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
 import PRBreakdownChart from "@/components/PRBreakdownChart";
 import GoalTracker from "@/components/GoalTracker";
@@ -37,13 +38,17 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
   
-        {/* LEFT SIDE */}
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          <ContributionGraph />
+      {/* LEFT SIDE */}
+      <div className="flex flex-col gap-6 lg:col-span-2">
+        <ContributionGraph />
 
-          {/* Repo Explorer BELOW commit activity */}
-          <RepoAnalyticsExplorer />
+        <div className="mt-6">
+          <ContributionHeatmap />
         </div>
+
+        {/* Repo Explorer BELOW commit activity */}
+        <RepoAnalyticsExplorer />
+      </div>
 
         {/* RIGHT SIDE */}
         <div className="flex flex-col gap-6">

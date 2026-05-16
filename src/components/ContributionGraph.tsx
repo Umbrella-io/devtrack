@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 import {
   BarChart,
   Bar,
@@ -33,18 +34,23 @@ const charts: { key: ViewMode; label: string }[] = [
 ];
 
 export default function ContributionGraph() {
+  const { selectedAccount } = useAccount();
   const [data, setData] = useState<DayData[]>([]);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
   const [chartType, setChartType] = useState<ViewMode>("bar");
-  const [lastUpdated, setLastUpdated] = useState<Date|null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch(`/api/metrics/contributions?days=${days}`)
+    const accountParam =
+      selectedAccount !== null
+        ? `&accountId=${encodeURIComponent(selectedAccount)}`
+        : "";
+    fetch(`/api/metrics/contributions?days=${days}${accountParam}`)
       .then((r) => {
         if (!r.ok) throw new Error("API error");
         return r.json();
@@ -64,7 +70,7 @@ export default function ContributionGraph() {
         setLastUpdated(new Date());
         setMinutesAgo(0);
       });
-  }, [days]);
+  }, [days, selectedAccount]);
 
   useEffect(() => {
     if (!lastUpdated) return;
@@ -91,11 +97,10 @@ export default function ContributionGraph() {
                 onClick={() => setDays(r.days)}
                 aria-label={`Show ${r.days}-day range`}
                 aria-pressed={days === r.days}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  days === r.days
-                    ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
-                }`}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${days === r.days
+                  ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
+                  }`}
               >
                 {r.label}
               </button>
@@ -196,10 +201,12 @@ export default function ContributionGraph() {
         </ResponsiveContainer>
       )}
       {lastUpdated && (
-        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
-           {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        <p className="mt-2 text-right text-xs text-[var(--muted-foreground)]">
+          {minutesAgo === 0
+            ? "Updated just now"
+            : `Updated ${minutesAgo} min ago`}
         </p>
-    )}
+      )}
     </div>
   );
 }
