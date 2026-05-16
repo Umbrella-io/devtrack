@@ -68,18 +68,22 @@ export default function FriendComparison() {
           <p className="text-sm text-[var(--muted-foreground)]">See how you stack up against others</p>
         </div>
 
-        <form onSubmit={handleCompare} className="flex gap-2">
+        <form
+          onSubmit={handleCompare}
+          className="flex flex-wrap sm:flex-nowrap items-stretch gap-2 w-full md:w-auto"
+        >
           <input
             type="text"
             placeholder="GitHub username..."
             value={friendUsername}
             onChange={(e) => setFriendUsername(e.target.value)}
-            className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]"
+            className="min-w-0 flex-1 basis-[220px] rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]"
           />
+
           <button
             type="submit"
             disabled={loading || !friendUsername.trim()}
-            className="rounded-md bg-[var(--accent)] px-4 py-1.5 text-sm font-medium text-[var(--accent-foreground)] disabled:opacity-50 transition-colors"
+            className="w-full sm:w-auto shrink-0 rounded-md bg-[var(--accent)] px-4 py-1.5 text-sm font-medium text-[var(--accent-foreground)] transition-colors disabled:opacity-50"
           >
             {loading ? "Loading..." : "Compare"}
           </button>
