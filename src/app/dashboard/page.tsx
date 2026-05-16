@@ -12,6 +12,7 @@ import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
+import ExportButton from "@/components/ExportButton";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -26,7 +27,9 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <DashboardHeader />
-
+      <div className="mb-6 flex justify-end">
+        <ExportButton />
+      </div>
       <StreakAtRiskBanner />
 
       <WeeklySummaryCard />
