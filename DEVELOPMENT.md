@@ -71,6 +71,12 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 
+# Supabase-backed metrics cache and webhook
+# Table used to persist cached GitHub metrics (created via supabase/migrations)
+GITHUB_CACHE_TABLE=github_metrics_cache
+# Webhook secret for GitHub to call /api/webhooks/github
+GITHUB_WEBHOOK_SECRET=your_webhook_secret
+
 # NextAuth
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=generate_with_openssl_rand_base64_32

@@ -1,4 +1,6 @@
 const GRAPHQL_API = "https://api.github.com/graphql";
+import crypto from "crypto";
+import { supabaseAdmin } from "./supabase";
 
 type CacheEntry<T> = { value: T; expiry: number };
 
@@ -51,10 +53,24 @@ export interface IssuesMetrics {
 
 export async function fetchIssuesMetricsGraphQL(token: string): Promise<IssuesMetrics> {
   const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const cacheKey = `issuesMetrics:${token}:${since30d}`;
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const cacheKey = `issuesMetrics:${tokenHash}:${since30d}`;
 
-  const cached = getFromCache<IssuesMetrics>(cacheKey);
-  if (cached) return cached;
+  // Try Supabase persistent cache first, fall back to in-memory
+  try {
+    const table = process.env.GITHUB_CACHE_TABLE || "github_metrics_cache";
+    const { data, error } = await supabaseAdmin
+      .from(table)
+      .select("value,ttl_expires_at")
+      .eq("key", cacheKey)
+      .single();
+    if (!error && data && new Date(data.ttl_expires_at) > new Date()) {
+      return data.value as IssuesMetrics;
+    }
+  } catch (err) {
+    // Supabase unavailable or not configured — continue with in-memory cache
+    // console.warn("Supabase cache read failed, falling back to in-memory:", err);
+  }
 
   const pageCap = process.env.GITHUB_PAGE_CAP ? parseInt(process.env.GITHUB_PAGE_CAP, 10) : 1000;
 
@@ -131,7 +147,17 @@ export async function fetchIssuesMetricsGraphQL(token: string): Promise<IssuesMe
     trend: thisMonthCount - lastMonthCount,
   };
 
-  setCache(cacheKey, result);
+  // Write to Supabase persistent cache if available
+  try {
+    const table = process.env.GITHUB_CACHE_TABLE || "github_metrics_cache";
+    const ttl = process.env.GITHUB_CACHE_TTL ? parseInt(process.env.GITHUB_CACHE_TTL, 10) : 60;
+    const expiresAt = new Date(Date.now() + ttl * 1000).toISOString();
+    await supabaseAdmin.from(table).upsert({ key: cacheKey, value: result, ttl_expires_at: expiresAt });
+  } catch (err) {
+    // ignore cache write failures and fall back to in-memory
+    setCache(cacheKey, result);
+  }
+
   return result;
 }
 
