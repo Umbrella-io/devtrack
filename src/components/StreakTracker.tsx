@@ -167,6 +167,7 @@ export default function StreakTracker() {
   ];
 
   const badge = MILESTONES.find((m) => (data?.current ?? 0) >= m.days);
+  const activeDayData = calculateActiveDayInsights(contributionData?.data);
 
   const stats = data
     ? [
@@ -281,6 +282,50 @@ export default function StreakTracker() {
         <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
           <span>{badge.emoji}</span>
           <span className="text-sm font-medium text-[var(--accent)]">{badge.label}</span>
+        </div>
+      )}
+
+      {activeDayData.isValid && activeDayData.peakDay && (
+        <div className="mt-4 pt-4 border-t border-[var(--border)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="text-xs font-medium text-[var(--muted-foreground)]">Most Active Day</div>
+              <div className="text-sm font-semibold text-[var(--card-foreground)] mt-0.5">
+                {activeDayData.peakDay.label}{" "}
+                <span className="text-xs font-normal text-[var(--muted-foreground)]">
+                  (avg {activeDayData.peakDay.avgCommits.toFixed(1)} commits)
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-end gap-1.5 h-10 pt-2">
+              {activeDayData.insights.map((item) => {
+                const maxAvg = activeDayData.peakDay?.avgCommits ?? 1;
+                const heightPercent = maxAvg > 0 ? Math.max(15, Math.round((item.avgCommits / maxAvg) * 100)) : 15;
+                const isPeak = item.label === activeDayData.peakDay?.label;
+
+                return (
+                  <div
+                    key={item.label}
+                    className="flex flex-col items-center gap-1 group relative cursor-default"
+                    title={`${item.label}: avg ${item.avgCommits.toFixed(1)} commits`}
+                  >
+                    <div className="w-5 bg-[var(--card-muted)] rounded-sm flex items-end h-8 overflow-hidden">
+                      <div
+                        style={{ height: `${heightPercent}%` }}
+                        className={`w-full rounded-sm transition-all duration-300 ${
+                          isPeak ? "bg-[var(--accent)]" : "bg-[var(--accent)]/40 hover:bg-[var(--accent)]/60"
+                        }`}
+                      />
+                    </div>
+                    <span className={`text-[10px] leading-none ${isPeak ? "font-bold text-[var(--card-foreground)]" : "text-[var(--muted-foreground)]"}`}>
+                      {item.shortLabel}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
       {lastUpdated && (
@@ -475,4 +520,67 @@ function StreakCalendar({ contributions, currentMonth, onMonthChange }: StreakCa
       </div>
     </div>
   );
+}
+
+interface WeekdayInsight {
+  label: string;
+  shortLabel: string;
+  totalCommits: number;
+  countDays: number;
+  avgCommits: number;
+}
+
+function calculateActiveDayInsights(data: Record<string, number> | undefined | null): {
+  insights: WeekdayInsight[];
+  peakDay: WeekdayInsight | null;
+  isValid: boolean;
+} {
+  if (!data || Object.keys(data).length < 14) {
+    return { insights: [], peakDay: null, isValid: false };
+  }
+
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const shortNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const totals = [0, 0, 0, 0, 0, 0, 0];
+  const counts = [0, 0, 0, 0, 0, 0, 0];
+
+  for (const [dateStr, commitCount] of Object.entries(data)) {
+    const parts = dateStr.split("-").map(Number);
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      if (!isNaN(d.getTime())) {
+        const dayIdx = d.getDay();
+        totals[dayIdx] += commitCount;
+        counts[dayIdx] += 1;
+      }
+    }
+  }
+
+  const insights: WeekdayInsight[] = [];
+  for (let i = 0; i < 7; i++) {
+    const totalCommits = totals[i];
+    const countDays = counts[i];
+    const avgCommits = countDays > 0 ? totalCommits / countDays : 0;
+    insights.push({
+      label: dayNames[i],
+      shortLabel: shortNames[i],
+      totalCommits,
+      countDays,
+      avgCommits,
+    });
+  }
+
+  let maxAvg = -1;
+  for (const item of insights) {
+    if (item.avgCommits > maxAvg) {
+      maxAvg = item.avgCommits;
+    }
+  }
+
+  const tiedDays = insights.filter((item) => item.avgCommits === maxAvg);
+  tiedDays.sort((a, b) => a.label.localeCompare(b.label));
+  const peakDay = tiedDays.length > 0 ? tiedDays[0] : null;
+
+  return { insights, peakDay, isValid: true };
 }
