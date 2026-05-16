@@ -1,17 +1,39 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-// Server-side only — use in API routes, never import in client components.
-// Service role bypasses RLS; auth is enforced by getServerSession checks.
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error(
-    "Missing Supabase env vars: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set. See DEVELOPMENT.md for setup."
-  );
+// Lazy-initialize the Supabase admin client to avoid crashing at module import
+// time when env vars are not present (e.g., during Next.js static builds).
+let _supabaseClient: SupabaseClient | null = null;
+
+function getSupabaseClient(): SupabaseClient {
+  if (_supabaseClient) return _supabaseClient;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "Missing Supabase env vars: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set. See DEVELOPMENT.md for setup."
+    );
+  }
+  _supabaseClient = createClient(supabaseUrl, serviceRoleKey);
+  return _supabaseClient;
 }
 
-export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+// Export a Proxy that forwards calls to the real client once initialized.
+// This preserves existing import sites that expect `supabaseAdmin` to be the
+// Supabase client while deferring the env-var error until the first use.
+export const supabaseAdmin: any = new Proxy(
+  {},
+  {
+    get(_target, prop) {
+      const client = getSupabaseClient();
+      // @ts-ignore
+      const value = (client as any)[prop];
+      if (typeof value === "function") return value.bind(client);
+      return value;
+    },
+  }
+);
 
 interface User {
   id: string;
