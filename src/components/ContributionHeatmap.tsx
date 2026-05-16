@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 
 interface ContributionHeatmapProps {
   days?: number;
@@ -32,12 +33,16 @@ function formatDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function getHeatmapColor(count: number) {
-  if (count >= 10) return "bg-indigo-400";
-  if (count >= 6) return "bg-indigo-500";
-  if (count >= 3) return "bg-indigo-700";
-  if (count >= 1) return "bg-indigo-900";
-  return "bg-slate-800";
+function getHeatmapCellStyle(count: number): CSSProperties {
+  if (count === 0) {
+    return { backgroundColor: "var(--control)" };
+  }
+
+  const opacity = count >= 10 ? 1 : count >= 6 ? 0.75 : count >= 3 ? 0.5 : 0.25;
+
+  return {
+    backgroundColor: `color-mix(in srgb, var(--accent) ${opacity * 100}%, transparent)`,
+  };
 }
 
 function buildHeatmap(days: number, contributions: Record<string, number>) {
@@ -166,11 +171,9 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
         <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
           <span>Less</span>
           <div className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-sm bg-slate-800" />
-            <span className="h-3 w-3 rounded-sm bg-indigo-900" />
-            <span className="h-3 w-3 rounded-sm bg-indigo-700" />
-            <span className="h-3 w-3 rounded-sm bg-indigo-500" />
-            <span className="h-3 w-3 rounded-sm bg-indigo-400" />
+            {[0, 1, 3, 6, 10].map((count) => (
+              <span key={count} className="h-3 w-3 rounded-sm border border-[var(--border)]" style={getHeatmapCellStyle(count)} />
+            ))}
           </div>
           <span>More</span>
         </div>
@@ -226,10 +229,8 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
                       title={isFuture ? "" : tooltip}
                       aria-label={isFuture ? `${cell.dateKey}: future date` : tooltip}
                       disabled={isFuture}
-                      className={`group relative z-0 h-3 w-3 rounded-[3px] border border-[var(--border)] transition-transform hover:z-20 hover:scale-110 focus:z-20 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:cursor-default disabled:opacity-30 ${getHeatmapColor(
-                        isFuture ? 0 : cell.count,
-                      )} ${cell.inRange ? "" : "opacity-35"}`}
-                      style={{ gridRow: dayIndex + 2, gridColumn: weekIndex + 2 }}
+                      className={`group relative z-0 h-3 w-3 rounded-[3px] border border-[var(--border)] transition-transform hover:z-20 hover:scale-110 focus:z-20 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:cursor-default disabled:opacity-30 ${cell.inRange ? "" : "opacity-35"}`}
+                      style={{ gridRow: dayIndex + 2, gridColumn: weekIndex + 2, ...getHeatmapCellStyle(isFuture ? 0 : cell.count) }}
                     >
                       {!isFuture && (
                         <span
