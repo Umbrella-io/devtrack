@@ -35,25 +35,25 @@ export default function RepoCard({
       layout
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/90 via-slate-900/80 to-slate-800/80 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl"
+      className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm backdrop-blur-xl"
     >
       {/* Border Glow */}
-      <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-white/10" />
+      <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-[var(--border)]" />
 
       <div className="relative flex flex-col gap-5">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h3 className="truncate text-lg font-semibold tracking-tight text-white">
+            <h3 className="truncate text-lg font-semibold tracking-tight text-[var(--card-foreground)]">
               {repo.name}
             </h3>
 
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-              <span className="rounded-full border border-slate-700 bg-slate-800/70 px-2.5 py-1">
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--muted-foreground)]">
+              <span className="rounded-full border border-[var(--border)] bg-[var(--control)] px-2.5 py-1">
                 {repo.commitCount} commits
               </span>
 
-              <span className="rounded-full border border-slate-700 bg-slate-800/70 px-2.5 py-1">
+              <span className="rounded-full border border-[var(--border)] bg-[var(--control)] px-2.5 py-1">
                 Created {formatDate(repo.createdAt)}
               </span>
             </div>
@@ -65,14 +65,14 @@ export default function RepoCard({
               {consistency}%
             </span>
 
-            <span className="text-[11px] text-slate-500">
+            <span className="text-[11px] text-[var(--muted-foreground)]">
               Consistency
             </span>
           </div>
         </div>
 
         {/* Activity Graph */}
-        <div className="h-32 w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/40 p-2">
+        <div className="h-32 w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] p-2">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={activityData}>
               <defs>
@@ -128,7 +128,7 @@ export default function RepoCard({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
           <span>
             Updated {formatRelativeDate(repo.updatedAt)}
           </span>
@@ -144,7 +144,7 @@ export default function RepoCard({
             href={repo.htmlUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
+            className="flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-sm font-medium text-[var(--card-foreground)] transition hover:bg-[var(--control-hover)]"
           >
             Repo
           </a>
