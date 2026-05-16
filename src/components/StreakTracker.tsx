@@ -344,6 +344,10 @@ interface StreakCalendarProps {
   onMonthChange: (date: Date) => void;
 }
 
+function toLocalDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function StreakCalendar({ contributions, currentMonth, onMonthChange }: StreakCalendarProps) {
   const today = new Date();
   const year = currentMonth.getFullYear();
@@ -409,7 +413,7 @@ function StreakCalendar({ contributions, currentMonth, onMonthChange }: StreakCa
             return <div key={`empty-${idx}`} className="aspect-square" />;
           }
 
-          const dateStr = dayData.date.toISOString().slice(0, 10);
+          const dateStr = toLocalDateStr(dayData.date);
           const commitCount = contributions[dateStr] ?? 0;
           const isFuture = dayData.date > today;
           const isToday = dayData.date.toDateString() === today.toDateString();
