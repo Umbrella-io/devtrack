@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 
 interface StreakData {
   current: number;
@@ -146,6 +147,7 @@ function getBusiestRepo(repos: Repo[]): { count: number; repoLabel: string | nul
 }
 
 export default function PersonalRecords() {
+  const { selectedAccount } = useAccount();
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [contributions, setContributions] = useState<ContributionData | null>(null);
   const [repos, setRepos] = useState<Repo[]>([]);
@@ -157,9 +159,15 @@ export default function PersonalRecords() {
     setError(null);
 
     try {
-      const accountId = new URLSearchParams(window.location.search).get("accountId");
-      const paramStreak = accountId ? `?accountId=${encodeURIComponent(accountId)}` : "";
-      const paramContrib = accountId ? `&accountId=${encodeURIComponent(accountId)}` : "";
+      const paramStreak =
+        selectedAccount !== null
+          ? `?accountId=${encodeURIComponent(selectedAccount)}`
+          : "";
+
+      const paramContrib =
+        selectedAccount !== null
+          ? `&accountId=${encodeURIComponent(selectedAccount)}`
+          : "";
 
       const [streakRes, contribRes, reposRes] = await Promise.all([
         fetch(`/api/metrics/streak${paramStreak}`),
@@ -183,11 +191,11 @@ export default function PersonalRecords() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedAccount]);
 
   useEffect(() => {
     fetchRecords();
-  }, [fetchRecords]);
+  }, [fetchRecords, selectedAccount]);
 
   const bestDay = getBestDay(contributions?.data ?? {});
   const bestWeek = getBestWeek(contributions?.data ?? {});
