@@ -1,7 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+const isPlaceholderUrl =
+  !supabaseUrl ||
+  supabaseUrl.includes("dummy.supabase.co") ||
+  supabaseUrl.includes("example.supabase.co");
+const isPlaceholderKey =
+  !serviceRoleKey || serviceRoleKey.toLowerCase().includes("dummy");
+export const isSupabaseConfigured = !isPlaceholderUrl && !isPlaceholderKey;
 
 // Server-side only — use in API routes, never import in client components.
 // Service role bypasses RLS; auth is enforced by getServerSession checks.
