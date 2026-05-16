@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 
 interface BadgeSectionProps {
   username: string;
@@ -48,7 +49,7 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Streak Badge
           </h3>
           <div className="mb-2">
-            <img src={streakBadgePreviewUrl} alt="DevTrack Streak" />
+            <Image src={streakBadgePreviewUrl} alt="DevTrack Streak" width={200} height={36} />
           </div>
           <CopyableCodeBlock code={streakMarkdown} />
         </div>
@@ -59,7 +60,7 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Commits Badge
           </h3>
           <div className="mb-2">
-            <img src={commitsBadgePreviewUrl} alt="DevTrack Commits" />
+            <Image src={commitsBadgePreviewUrl} alt="DevTrack Commits" width={200} height={36} />
           </div>
           <CopyableCodeBlock code={commitsMarkdown} />
         </div>
@@ -70,8 +71,8 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Combined (Both Badges)
           </h3>
           <div className="mb-2 flex gap-1">
-            <img src={streakBadgePreviewUrl} alt="DevTrack Streak" />
-            <img src={commitsBadgePreviewUrl} alt="DevTrack Commits" />
+            <Image src={streakBadgePreviewUrl} alt="DevTrack Streak" width={140} height={32} />
+            <Image src={commitsBadgePreviewUrl} alt="DevTrack Commits" width={140} height={32} />
           </div>
           <CopyableCodeBlock code={combinedMarkdown} />
         </div>

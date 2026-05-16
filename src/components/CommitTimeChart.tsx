@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   BarChart,
   Bar,
@@ -27,7 +27,7 @@ export default function CommitTimeChart() {
   const [days, setDays] = useState(30);
   const [peakTime, setPeakTime] = useState<string | null>(null);
 
-  const fetchContributions = () => {
+  const fetchContributions = useCallback(() => {
     setLoading(true);
     setError(null);
     fetch(`/api/metrics/contributions?days=${days}`)
@@ -77,15 +77,13 @@ export default function CommitTimeChart() {
         setData(chartData);
         setPeakTime(peak.commits > 0 ? peak.name : null);
       })
-      .catch(() =>
-        setError("We couldn't load your time-of-day data right now."),
-      )
+      .catch(() => setError("We couldn't load your time-of-day data right now."))
       .finally(() => setLoading(false));
-  };
+  }, [days]);
 
   useEffect(() => {
     fetchContributions();
-  }, [days]);
+  }, [fetchContributions]);
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full">
