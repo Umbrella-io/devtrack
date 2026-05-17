@@ -1,5 +1,6 @@
 import { type NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
+import GoogleProvider from "next-auth/providers/google";   // ← New Import
 import { supabaseAdmin } from "./supabase";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
@@ -15,7 +16,20 @@ export const authOptions: NextAuthOptions = {
         params: { scope: "read:user user:email repo" },
       },
     }),
+
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
+        },
+      },
+    }),
   ],
+
   session: {
     strategy: "jwt",
     maxAge: SESSION_MAX_AGE,
@@ -56,9 +70,11 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, profile }) {
       if (account?.access_token) token.accessToken = account.access_token;
       if (profile) {
-        const p = profile as { id: number; login: string };
-        token.githubId = String(p.id);
-        token.githubLogin = p.login;
+        if (account?.provider === "github") {
+          const p = profile as { id: number; login: string };
+          token.githubId = String(p.id);
+          token.githubLogin = p.login;
+        }
       }
       return token;
     },

@@ -10,7 +10,7 @@ export default async function HomePage() {
     redirect("/dashboard");
   }
 
-  return (
+   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="max-w-2xl text-center">
         <h1 className="text-5xl font-bold mb-4 text-white">DevTrack</h1>
@@ -18,18 +18,20 @@ export default async function HomePage() {
           Open-source developer productivity dashboard. Track coding habits,
           visualize GitHub contributions, and hit your goals.
         </p>
-        <div className="flex gap-4 justify-center">
+        
+        <div className="flex flex-col items-center gap-6">
           <Link
-            href="/api/auth/signin/github?callbackUrl=/dashboard"
-            className="bg-white text-slate-900 px-6 py-3 rounded-lg font-semibold hover:bg-slate-100 transition"
+            href="/signin"
+            className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
           >
-            Sign in with GitHub
+            Sign In
           </Link>
+
           <a
             href="https://github.com/Priyanshu-byte-coder/devtrack"
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-slate-600 text-white px-6 py-3 rounded-lg font-semibold hover:border-slate-400 transition"
+            className="text-sm text-slate-400 hover:text-slate-300"
           >
             View on GitHub
           </a>
@@ -37,4 +39,5 @@ export default async function HomePage() {
       </div>
     </main>
   );
+  
 }
