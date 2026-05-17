@@ -1,105 +1,93 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-interface IssueData {
-  opened: number;
-  closed: number;
-  currentlyOpen: number;
-  avgCloseTimeDays: number;
-  trend: number;
-}
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function IssueMetrics() {
-  const [metrics, setMetrics] = useState<IssueData | null>(null);
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMetrics = () => {
-    setLoading(true);
-    setError(null);
-
-    fetch("/api/metrics/issues")
-      .then((r) => r.json())
-      .then((data: IssueData) => setMetrics(data))
-      .catch(() =>
-        setError(
-          "We couldn't load your Issues analytics right now. Please try again in a moment."
-        )
-      )
-      .finally(() => setLoading(false));
-  };
-
   useEffect(() => {
+    async function fetchMetrics() {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch(`/api/metrics/issues`);
+        if (!res.ok) throw new Error("Failed to load metrics");
+        const result = await res.json();
+        setData(result);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
     fetchMetrics();
   }, []);
 
-  const stats = metrics
-    ? [
-        { label: "Issues Opened (30d)", value: metrics.opened },
-        { label: "Issues Closed (30d)", value: metrics.closed },
-        { label: "Currently Open", value: metrics.currentlyOpen },
-        { label: "Avg Close Time", value: `${metrics.avgCloseTimeDays}d` },
-      ]
-    : [];
+  if (loading) {
+    return (
+      <div className="w-full p-6 rounded-xl border border-[var(--border)] bg-[var(--card)] animate-pulse space-y-6">
+        <div className="h-6 w-48 bg-[var(--muted)] rounded" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="p-4 rounded-lg bg-[var(--muted)]/20 h-20" />
+          ))}
+        </div>
+        <div className="h-[250px] w-full bg-[var(--muted)]/10 rounded-lg" />
+      </div>
+    );
+  }
 
-  const trendLabel =
-    metrics && metrics.trend !== 0
-      ? metrics.trend > 0
-        ? `↑ ${metrics.trend} more than last month`
-        : `↓ ${Math.abs(metrics.trend)} fewer than last month`
-      : null;
-
-  const trendColor =
-    metrics && metrics.trend > 0 ? "text-green-400" : "text-red-400";
+  if (error || !data) {
+    return (
+      <div className="w-full p-6 rounded-xl border border-red-500/30 bg-red-500/10 text-red-500 text-center">
+        <p>Error loading issue metrics</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
-        Issue Analytics
-      </h2>
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="h-20 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse"
-            />
-          ))}
+    <div className="w-full p-6 rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] space-y-6 shadow-sm">
+      <div>
+        <h3 className="text-lg font-bold tracking-tight">Issue Tracker Metrics</h3>
+        <p className="text-sm text-[var(--muted-foreground)]">Snapshot of issue velocities and timeline histories</p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="p-4 rounded-lg bg-[var(--popover)] border border-[var(--border)]">
+          <p className="text-xs font-medium uppercase text-[var(--muted-foreground)]">Open Issues</p>
+          <p className="text-2xl font-bold text-blue-500 mt-1">{data.stats.totalOpen}</p>
         </div>
-      ) : error ? (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
-          <p>{error}</p>
-          <button
-            type="button"
-            onClick={fetchMetrics}
-            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
-          >
-            Try again
-          </button>
+        <div className="p-4 rounded-lg bg-[var(--popover)] border border-[var(--border)]">
+          <p className="text-xs font-medium uppercase text-[var(--muted-foreground)]">Opened This Week</p>
+          <p className="text-2xl font-bold text-[var(--foreground)] mt-1">{data.stats.openedThisWeek}</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {stats.map((stat, idx) => (
-            <div
-              key={stat.label}
-              className="rounded-lg bg-[var(--control)] p-4 text-center"
-            >
-              <div className="text-2xl font-bold text-[var(--accent)]">
-                {stat.value}
-              </div>
-              <div className="mt-1 text-sm text-[var(--muted-foreground)]">
-                {stat.label}
-              </div>
-              {idx === 0 && trendLabel && (
-                <div className={`mt-1 text-xs font-medium ${trendColor}`}>
-                  {trendLabel}
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="p-4 rounded-lg bg-[var(--popover)] border border-[var(--border)]">
+          <p className="text-xs font-medium uppercase text-[var(--muted-foreground)]">Closed This Week</p>
+          <p className="text-2xl font-bold text-green-500 mt-1">{data.stats.closedThisWeek}</p>
         </div>
-      )}
+        <div className="p-4 rounded-lg bg-[var(--popover)] border border-[var(--border)]">
+          <p className="text-xs font-medium uppercase text-[var(--muted-foreground)]">Avg Days to Close</p>
+          <p className="text-2xl font-bold text-amber-500 mt-1">{data.stats.avgDaysToClose}d</p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-[var(--muted-foreground)]">12-Week Open Issues Trend</p>
+        <div className="h-[250px] w-full pt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data.chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+              <XAxis dataKey="week" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--foreground)", borderRadius: "8px" }} />
+              <Line type="monotone" dataKey="issues" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }
