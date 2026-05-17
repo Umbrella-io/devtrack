@@ -15,6 +15,7 @@ import FriendComparison from "@/components/FriendComparison";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
 import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
+import PersonalRecords from "@/components/PersonalRecords";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -27,17 +28,24 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
-      <DashboardHeader />
-      <div className="mb-6 flex justify-end">
-        <ExportButton />
-      </div>
-      <StreakAtRiskBanner />
+  <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
+    <DashboardHeader />
 
-      <WeeklySummaryCard />
+    <div className="mb-6 flex justify-end">
+      <ExportButton />
+    </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-  
+    <StreakAtRiskBanner />
+
+    <WeeklySummaryCard />
+
+    <div className="mb-6">
+      <PersonalRecords />
+    </div>
+
+    {/* Row 1: Contribution graph + Streak + Friend Comparison */}
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+
       {/* LEFT SIDE */}
       <div className="flex flex-col gap-6 lg:col-span-2">
         <ContributionGraph />
@@ -50,33 +58,33 @@ export default async function DashboardPage() {
         <RepoAnalyticsExplorer />
       </div>
 
-        {/* RIGHT SIDE */}
-        <div className="flex flex-col gap-6">
-          <StreakTracker />
-          <FriendComparison />
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <PRMetrics />
-        <PRBreakdownChart />
-        <CommitTimeChart />
-      </div>
-
-      <div className="mt-6">
-        <IssueMetrics />
-      </div>
-
-      <div className="mt-6">
-        <PinnedRepos />
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <TopRepos />
-        <LanguageBreakdown />
-        <GoalTracker />
+      {/* RIGHT SIDE */}
+      <div className="flex flex-col gap-6">
+        <StreakTracker />
+        <FriendComparison />
       </div>
 
     </div>
-  );
-}
+
+    <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <PRMetrics />
+      <PRBreakdownChart />
+      <CommitTimeChart />
+    </div>
+
+    <div className="mt-6">
+      <IssueMetrics />
+    </div>
+
+    <div className="mt-6">
+      <PinnedRepos />
+    </div>
+
+    <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <TopRepos />
+      <LanguageBreakdown />
+      <GoalTracker />
+    </div>
+
+  </div>
+);
