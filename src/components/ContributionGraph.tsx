@@ -44,6 +44,31 @@ export default function ContributionGraph() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("devtrack:contribution-range");
+        if (stored === "7" || stored === "30" || stored === "90" || stored === "365") {
+          setDays(Number(stored));
+        } else {
+          localStorage.setItem("devtrack:contribution-range", "30");
+          setDays(30);
+        }
+      } catch {
+        setDays(30);
+      }
+    }
+  }, []);
+
+  const handleRangeChange = (newDays: number) => {
+    setDays(newDays);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("devtrack:contribution-range", String(newDays));
+      } catch {}
+    }
+  };
+
+  useEffect(() => {
     setLoading(true);
     setError(null);
     const accountParam =
@@ -94,7 +119,7 @@ export default function ContributionGraph() {
             {RANGES.map((r) => (
               <button
                 key={r.days}
-                onClick={() => setDays(r.days)}
+                onClick={() => handleRangeChange(r.days)}
                 aria-label={`Show ${r.days}-day range`}
                 aria-pressed={days === r.days}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${days === r.days
