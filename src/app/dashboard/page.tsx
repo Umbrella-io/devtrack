@@ -34,7 +34,9 @@ export default async function DashboardPage() {
       </div>
       <StreakAtRiskBanner />
 
-      <WeeklySummaryCard />
+      <div className="mb-6">
+        <WeeklySummaryCard />
+      </div>
 
       <div className="mb-6">
         <PersonalRecords />
