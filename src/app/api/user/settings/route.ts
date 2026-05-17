@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { supabaseAdmin, updateUserPublicFlag } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -12,22 +12,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Fetch user from Supabase
   const { data, error } = await supabaseAdmin
     .from("users")
-    .select("id, github_login, is_public")
+    .select("id, github_login, is_public, pinned_repos")
     .eq("github_id", session.githubId)
     .single();
 
   if (error) {
     console.error("Error fetching user:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch user settings" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch user settings" }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json({
+    id: data.id,
+    github_login: data.github_login,
+    is_public: data.is_public,
+    pinned_repos: data.pinned_repos || [],
+  });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -37,7 +38,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Get user ID from Supabase
   const { data: user, error: fetchError } = await supabaseAdmin
     .from("users")
     .select("id")
@@ -45,47 +45,50 @@ export async function PATCH(req: NextRequest) {
     .single();
 
   if (fetchError || !user) {
-    console.error("Error fetching user:", fetchError);
-    return NextResponse.json(
-      { error: "User not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  // Parse request body
-  let body: { is_public?: boolean };
+  let body: { is_public?: boolean; pinned_repos?: string[] };
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { is_public } = body;
+  const { is_public, pinned_repos } = body;
+  const updates: Record<string, any> = {};
 
-  if (typeof is_public !== "boolean") {
-    return NextResponse.json(
-      { error: "is_public must be a boolean" },
-      { status: 400 }
-    );
+  if (typeof is_public === "boolean") {
+    updates.is_public = is_public;
   }
 
-  // Update user public flag
-  const updated = await updateUserPublicFlag(user.id, is_public);
-
-  if (!updated) {
-    return NextResponse.json(
-      { error: "Failed to update settings" },
-      { status: 500 }
-    );
+  if (Array.isArray(pinned_repos)) {
+    if (pinned_repos.length > 3) {
+      return NextResponse.json({ error: "Maximum 3 pins allowed" }, { status: 400 });
+    }
+    updates.pinned_repos = pinned_repos;
   }
 
-  // Return updated user (only safe fields)
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No updates provided" }, { status: 400 });
+  }
+
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from("users")
+    .update(updates)
+    .eq("id", user.id)
+    .select("id, github_login, is_public, pinned_repos")
+    .single();
+
+  if (updateError || !updated) {
+    console.error("Update error:", updateError);
+    return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
+  }
+
   return NextResponse.json({
     id: updated.id,
     github_login: updated.github_login,
     is_public: updated.is_public,
+    pinned_repos: updated.pinned_repos || [],
   });
 }
