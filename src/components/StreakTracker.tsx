@@ -173,6 +173,7 @@ export default function StreakTracker() {
 
   const badge = MILESTONES.find((m) => (data?.current ?? 0) >= m.days);
   const activeDayData = calculateActiveDayInsights(contributionData?.data);
+  const monthlyTrend = calculateMonthlyTrend(contributionData);
 
   const stats = data
     ? [
@@ -283,6 +284,16 @@ export default function StreakTracker() {
           </div>
         ))}
       </div>
+      {monthlyTrend.isValid && (
+        <div className="mt-3 flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-xs shadow-sm">
+          <span className="text-[var(--muted-foreground)]">
+            This month: <strong className="font-semibold text-[var(--card-foreground)]">{monthlyTrend.thisMonth} active days</strong>
+          </span>
+          <span className={monthlyTrend.colorClass}>
+            ({monthlyTrend.text})
+          </span>
+        </div>
+      )}
       {badge && (
         <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
           <span>{badge.emoji}</span>
@@ -592,4 +603,75 @@ function calculateActiveDayInsights(data: Record<string, number> | undefined | n
   const peakDay = tiedDays.length > 0 ? tiedDays[0] : null;
 
   return { insights, peakDay, isValid: true };
+}
+
+interface MonthlyTrendResult {
+  isValid: boolean;
+  thisMonth: number;
+  lastMonth: number;
+  text: string;
+  colorClass: string;
+}
+
+function calculateMonthlyTrend(contrib: ContributionData | undefined | null): MonthlyTrendResult {
+  if (!contrib || !contrib.data) {
+    return { isValid: false, thisMonth: 0, lastMonth: 0, text: "", colorClass: "" };
+  }
+
+  if (contrib.days < 30) {
+    return { isValid: false, thisMonth: 0, lastMonth: 0, text: "", colorClass: "" };
+  }
+
+  const data = contrib.data;
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  const prevDate = new Date(currentYear, currentMonth - 1, 1);
+  const prevYear = prevDate.getFullYear();
+  const prevMonth = prevDate.getMonth();
+
+  let thisMonth = 0;
+  let lastMonth = 0;
+
+  for (const [dateStr, count] of Object.entries(data)) {
+    if (count > 0) {
+      const parts = dateStr.split("-").map(Number);
+      if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+        const d = new Date(parts[0], parts[1] - 1, parts[2]);
+        if (!isNaN(d.getTime())) {
+          if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+            thisMonth++;
+          } else if (d.getFullYear() === prevYear && d.getMonth() === prevMonth) {
+            lastMonth++;
+          }
+        }
+      }
+    }
+  }
+
+  let text = "";
+  let colorClass = "";
+
+  if (lastMonth === 0) {
+    text = "First month tracked!";
+    colorClass = "text-[var(--accent)] font-medium";
+  } else {
+    const deltaCalc = ((thisMonth - lastMonth) / lastMonth) * 100;
+    const formatted = deltaCalc.toFixed(0);
+
+    if (deltaCalc > 0) {
+      text = `↑${formatted}% vs last month`;
+      colorClass = "text-green-500 font-medium";
+    } else if (deltaCalc < 0) {
+      text = `↓${Math.abs(deltaCalc).toFixed(0)}% vs last month`;
+      colorClass = "text-red-500 font-medium";
+    } else {
+      text = `=0% vs last month`;
+      colorClass = "text-[var(--muted-foreground)] font-medium";
+    }
+  }
+
+  return { isValid: true, thisMonth, lastMonth, text, colorClass };
 }
