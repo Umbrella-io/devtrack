@@ -208,7 +208,7 @@ export default function ContributionGraph() {
       <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold text-[var(--foreground)]">
-            {compareMode && compareUser ? `You vs @${compareUser}` : "Your Commits"}
+            {compareMode && compareUser ? `You vs ${compareUser}` : "Your Commits"}
           </h2>
           {compareMode && compareError && (
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">{compareError}</p>
@@ -326,7 +326,7 @@ export default function ContributionGraph() {
                     dataKey="friend"
                     fill="var(--muted-foreground)"
                     radius={[4, 4, 0, 0]}
-                    name={`@${compareUser}`}
+                    name={`${compareUser}`}
                   />
                 </>
               ) : (
@@ -378,7 +378,7 @@ export default function ContributionGraph() {
                     strokeWidth={2}
                     strokeDasharray="4 4"
                     dot={false}
-                    name={`@${compareUser}`}
+                    name={`${compareUser}`}
                   />
                 </>
               ) : (
@@ -406,7 +406,7 @@ export default function ContributionGraph() {
       
       {compareMode && compareUser && !compareLoading && !compareError && (
         <p className="mt-2 text-right text-xs text-[var(--muted-foreground)]">
-          Comparing with @{compareUser}
+          Comparing with {compareUser}
         </p>
       )}
     </div>
