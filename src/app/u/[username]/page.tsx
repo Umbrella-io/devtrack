@@ -111,13 +111,18 @@ export default async function PublicProfilePage({
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
-          @{profile.username}&apos;s Profile
-        </h1>
-        <p className="mt-2 text-[var(--muted-foreground)]">
-          GitHub activity and coding stats
-        </p>
-      </div>
+  <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
+    @{profile.username}&apos;s Profile
+  </h1>
+  <p className="mt-2 text-[var(--muted-foreground)]">
+    GitHub activity and coding stats
+  </p>
+  {profile.contributions.total > 0 && (
+    <p className="mt-1 text-[var(--muted-foreground)]">
+      {profile.contributions.total.toLocaleString()} total commits in the last 365 days
+    </p>
+  )}
+</div>
 
       {/* Row 1: Contribution graph + Streak */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
