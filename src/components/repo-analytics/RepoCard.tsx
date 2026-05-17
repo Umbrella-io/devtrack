@@ -61,7 +61,7 @@ export default function RepoCard({
 
           {/* Consistency */}
           <div className="flex flex-col items-end">
-            <span className="text-lg font-semibold text-indigo-300">
+            <span className="text-lg font-semibold text-[var(--card-foreground)]">
               {consistency}%
             </span>
 
@@ -85,12 +85,12 @@ export default function RepoCard({
                 >
                   <stop
                     offset="0%"
-                    stopColor="#818cf8"
+                    stopColor="var(--accent)"
                     stopOpacity={0.7}
                   />
                   <stop
                     offset="100%"
-                    stopColor="#818cf8"
+                    stopColor="var(--accent)"
                     stopOpacity={0}
                   />
                 </linearGradient>
@@ -101,7 +101,7 @@ export default function RepoCard({
                 axisLine={false}
                 tickLine={false}
                 tick={{
-                  fill: "#64748b",
+                  fill: "var(--muted-foreground)",
                   fontSize: 11,
                 }}
               />
@@ -109,17 +109,17 @@ export default function RepoCard({
               <Tooltip
                 cursor={false}
                 contentStyle={{
-                  background: "#020617",
-                  border: "1px solid #1e293b",
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
                   borderRadius: "12px",
-                  color: "#fff",
+                  color: "var(--card-foreground)",
                 }}
               />
 
               <Area
                 type="monotone"
                 dataKey="commits"
-                stroke="#818cf8"
+                stroke="var(--accent)"
                 strokeWidth={2.5}
                 fill={`url(#repoActivity-${repo.name})`}
               />
@@ -144,7 +144,7 @@ export default function RepoCard({
             href={repo.htmlUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-medium text-slate-100 transition hover:bg-slate-800"
+            className="flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm font-medium text-[var(--card-foreground)] transition hover:bg-[color:color-mix(in_srgb,var(--card)_80%,var(--accent)_20%)]"
           >
             Repo
           </a>
@@ -152,7 +152,7 @@ export default function RepoCard({
           <button
             type="button"
             onClick={() => onViewAnalytics(repo)}
-            className="flex items-center justify-center rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-medium text-slate-100 transition hover:bg-slate-800"
+            className="flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm font-medium text-[var(--card-foreground)] transition hover:bg-[color:color-mix(in_srgb,var(--card)_80%,var(--accent)_20%)]"
           >
             View
           </button>

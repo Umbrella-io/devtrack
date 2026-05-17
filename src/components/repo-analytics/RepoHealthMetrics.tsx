@@ -14,16 +14,16 @@ export default function RepoHealthMetrics({ health }: { health: RepoHealth }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-slate-200">Development activity</span>
-        <span className="rounded-full border border-slate-600 px-2 py-0.5 text-xs text-slate-300">{health.activityLevel}</span>
+        <span className="text-sm text-[var(--card-foreground)]">Development activity</span>
+        <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--muted-foreground)]">{health.activityLevel}</span>
       </div>
       {metrics.map((metric) => (
         <div key={metric.label}>
-          <div className="mb-1 flex justify-between text-xs text-slate-300">
+          <div className="mb-1 flex justify-between text-xs text-[var(--muted-foreground)]">
             <span>{metric.label}</span>
             <span>{metric.value}%</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-slate-700">
+          <div className="h-1.5 overflow-hidden rounded-full bg-[var(--border)]">
             <div className={`h-full ${meterColor(metric.value)}`} style={{ width: `${metric.value}%` }} />
           </div>
         </div>

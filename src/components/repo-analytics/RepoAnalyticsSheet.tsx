@@ -46,44 +46,66 @@ export default function RepoAnalyticsSheet({ repoFullName, open, onClose }: Repo
     <AnimatePresence>
       {open && (
         <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 bg-slate-950/60" onClick={onClose} />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40"
+            style={{ backgroundColor: "color-mix(in srgb, var(--card) 60%, transparent)" }}
+            onClick={onClose}
+          />
           <motion.aside
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 260 }}
-            className="fixed inset-y-0 right-0 z-50 w-full max-w-3xl overflow-y-auto border-l border-slate-700 bg-slate-900 p-5 shadow-2xl shadow-black/60 sm:p-6"
+            className="fixed inset-y-0 right-0 z-50 w-full max-w-3xl overflow-y-auto border-l border-[var(--border)] bg-[var(--card)] p-5 shadow-2xl shadow-black/60 sm:p-6"
           >
             <div className="mb-4 flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h3 className="truncate text-lg font-semibold text-slate-100">{repoFullName ?? "Repository Analytics"}</h3>
-                <p className="mt-1 text-sm text-slate-400">Advanced insights and health tracking</p>
+                <h3 className="truncate text-lg font-semibold text-[var(--card-foreground)]">{repoFullName ?? "Repository Analytics"}</h3>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">Advanced insights and health tracking</p>
               </div>
-              <button onClick={onClose} className="rounded-lg border border-slate-600 px-3 py-1 text-sm text-slate-300">Close</button>
+              <button onClick={onClose} className="rounded-lg border border-[var(--border)] px-3 py-1 text-sm text-[var(--muted-foreground)]">Close</button>
             </div>
 
-            {loading ? <div className="space-y-3">{[1, 2, 3, 4].map((i) => <div key={i} className="h-20 animate-pulse rounded-xl bg-slate-800" />)}</div> : null}
+            {loading ? <div className="space-y-3">{[1, 2, 3, 4].map((i) => <div key={i} className="h-20 animate-pulse rounded-xl bg-[var(--card)]" />)}</div> : null}
             {error ? <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-300">{error}</div> : null}
 
             {!loading && data && (
               <div className="space-y-5">
-                <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
-                  <h4 className="mb-2 text-sm font-semibold text-slate-100">Repository Overview</h4>
-                  <p className="mb-3 text-sm text-slate-400">{data.overview.description ?? "No description"}</p>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-300 sm:grid-cols-3">
+                <section
+                  className="rounded-xl border border-[var(--border)] p-4"
+                  style={{ backgroundColor: "color-mix(in srgb, var(--card) 60%, transparent)" }}
+                >
+                  <h4 className="mb-2 text-sm font-semibold text-[var(--card-foreground)]">Repository Overview</h4>
+                  <p className="mb-3 text-sm text-[var(--muted-foreground)]">{data.overview.description ?? "No description"}</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-[var(--muted-foreground)] sm:grid-cols-3">
                     <span>Stars: {data.overview.stars}</span><span>Forks: {data.overview.forks}</span><span>Open issues: {data.overview.openIssues}</span>
                     <span>Watchers: {data.overview.watchers}</span><span>License: {data.overview.license}</span><span>Branch: {data.overview.defaultBranch}</span>
                     <span>Created: {formatDisplayDate(data.overview.createdAt)}</span><span>Updated: {formatDisplayDate(data.overview.updatedAt)}</span>
                   </div>
                 </section>
 
-                <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4"><h4 className="mb-3 text-sm font-semibold text-slate-100">Contributor Analytics</h4><ContributorStats contributors={data.contributors} /></section>
-                <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4"><h4 className="mb-3 text-sm font-semibold text-slate-100">Timeline Analytics</h4><RepoTimelineChart timeline={data.timeline} /></section>
-                <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4"><h4 className="mb-3 text-sm font-semibold text-slate-100">Repository Health</h4><RepoHealthMetrics health={data.health} /></section>
-                <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
-                  <h4 className="mb-3 text-sm font-semibold text-slate-100">Tech Stack Analytics</h4>
-                  <div className="mb-2 flex flex-wrap gap-2">{data.primaryStack.map((stack) => <span key={stack} className="rounded-full border border-slate-600 px-2 py-1 text-xs text-slate-200">{stack}</span>)}</div>
-                  <div className="space-y-2">{data.languageBreakdown.map((language) => <div key={language.name} className="text-xs text-slate-300"><div className="mb-1 flex justify-between"><span>{language.name}</span><span>{language.percentage}%</span></div><div className="h-1.5 rounded-full bg-slate-700"><div className="h-full rounded-full" style={{ width: `${language.percentage}%`, backgroundColor: language.color }} /></div></div>)}</div>
+                <section
+                  className="rounded-xl border border-[var(--border)] p-4"
+                  style={{ backgroundColor: "color-mix(in srgb, var(--card) 60%, transparent)" }}
+                ><h4 className="mb-3 text-sm font-semibold text-[var(--card-foreground)]">Contributor Analytics</h4><ContributorStats contributors={data.contributors} /></section>
+                <section
+                  className="rounded-xl border border-[var(--border)] p-4"
+                  style={{ backgroundColor: "color-mix(in srgb, var(--card) 60%, transparent)" }}
+                ><h4 className="mb-3 text-sm font-semibold text-[var(--card-foreground)]">Timeline Analytics</h4><RepoTimelineChart timeline={data.timeline} /></section>
+                <section
+                  className="rounded-xl border border-[var(--border)] p-4"
+                  style={{ backgroundColor: "color-mix(in srgb, var(--card) 60%, transparent)" }}
+                ><h4 className="mb-3 text-sm font-semibold text-[var(--card-foreground)]">Repository Health</h4><RepoHealthMetrics health={data.health} /></section>
+                <section
+                  className="rounded-xl border border-[var(--border)] p-4"
+                  style={{ backgroundColor: "color-mix(in srgb, var(--card) 60%, transparent)" }}
+                >
+                  <h4 className="mb-3 text-sm font-semibold text-[var(--card-foreground)]">Tech Stack Analytics</h4>
+                  <div className="mb-2 flex flex-wrap gap-2">{data.primaryStack.map((stack) => <span key={stack} className="rounded-full border border-[var(--border)] px-2 py-1 text-xs text-[var(--card-foreground)]">{stack}</span>)}</div>
+                  <div className="space-y-2">{data.languageBreakdown.map((language) => <div key={language.name} className="text-xs text-[var(--muted-foreground)]"><div className="mb-1 flex justify-between"><span>{language.name}</span><span>{language.percentage}%</span></div><div className="h-1.5 rounded-full bg-[var(--border)]"><div className="h-full rounded-full" style={{ width: `${language.percentage}%`, backgroundColor: language.color }} /></div></div>)}</div>
                 </section>
               </div>
             )}
