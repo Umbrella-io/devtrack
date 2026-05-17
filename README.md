@@ -125,6 +125,17 @@ GITHUB_ID=your_client_id
 GITHUB_SECRET=your_client_secret
 ```
 
+Optional metric API rate limiting:
+
+```env
+UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token
+METRICS_RATE_LIMIT_MAX=60
+METRICS_RATE_LIMIT_WINDOW_SECONDS=60
+```
+
+When the Upstash variables are present, all `/api/metrics/*` routes are protected by a shared Redis-backed limit. When they are omitted, the middleware safely skips rate limiting for local development.
+
 ### 5. Run
 
 ```bash
