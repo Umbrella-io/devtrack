@@ -20,6 +20,9 @@ export default function TopRepos() {
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [healthScores, setHealthScores] = useState<Record<string, RepoHealthScore>>({});
   const [healthLoading, setHealthLoading] = useState(true);
+  const [repoLanguages, setRepoLanguages] = useState<
+  Record<string, { name: string; percentage: number }[]>
+>({});
 
   const fetchRepos = useCallback(() => {
     setLoading(true);
@@ -37,6 +40,52 @@ export default function TopRepos() {
         setMinutesAgo(0);
       });
   }, [days, selectedAccount]);
+  const fetchRepoLanguages = useCallback(async () => {
+  if (!selectedAccount || repos.length === 0) return;
+
+  try {
+    const languageResults = await Promise.all(
+      repos.map(async (repo) => {
+        try {
+          const response = await fetch(
+            `https://api.github.com/repos/${repo.name}/languages`
+          );
+
+          if (!response.ok) {
+            return [repo.name, []];
+          }
+
+          const data = await response.json();
+
+          const total = Object.values(data).reduce(
+            (sum: number, value: any) => sum + value,
+            0
+          );
+
+          if (total === 0) {
+            return [repo.name, []];
+          }
+
+          const topLanguages = Object.entries(data)
+            .map(([name, bytes]) => ({
+              name,
+              percentage: Math.round((Number(bytes) / total) * 100),
+            }))
+            .sort((a, b) => b.percentage - a.percentage)
+            .slice(0, 3);
+
+          return [repo.name, topLanguages];
+        } catch {
+          return [repo.name, []];
+        }
+      })
+    );
+
+    setRepoLanguages(Object.fromEntries(languageResults));
+  } catch (err) {
+    console.error("Failed to fetch repo languages", err);
+  }
+  }, [repos, selectedAccount]);
 
   const fetchHealthScores = useCallback(() => {
     setHealthLoading(true);
@@ -65,6 +114,9 @@ export default function TopRepos() {
     return () => clearInterval(interval);
   }, [lastUpdated]);
 
+  useEffect(() => {
+  fetchRepoLanguages();
+}, [fetchRepoLanguages]);
 
   useEffect(() => {
     fetchRepos();
@@ -72,6 +124,15 @@ export default function TopRepos() {
   }, [fetchRepos, fetchHealthScores, selectedAccount]);
 
   const maxCommits = repos[0]?.commits ?? 1;
+  const languageColors: Record<string, string> = {
+   TypeScript: "#3178c6",
+   JavaScript: "#f1e05a",
+   HTML: "#e34c26",
+   CSS: "#563d7c",
+   Python: "#3572A5",
+   Java: "#b07219",
+   Shell: "#89e051",
+};
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -164,6 +225,25 @@ export default function TopRepos() {
                     style={{ width: `${barWidth}%` }}
                   />
                 </div>
+                {repoLanguages[repo.name]?.length > 0 && (
+  <div className="mt-2 flex flex-wrap gap-2 text-xs text-[var(--muted-foreground)]">
+    {repoLanguages[repo.name].map((lang) => (
+      <span
+        key={lang.name}
+        className="inline-flex items-center gap-1"
+      >
+        <span
+          className="h-2 w-2 rounded-full"
+          style={{
+            backgroundColor:
+              languageColors[lang.name] || "#888",
+          }}
+        />
+        {lang.name} {lang.percentage}%
+      </span>
+    ))}
+  </div>
+)}
               </li>
             );
           })}

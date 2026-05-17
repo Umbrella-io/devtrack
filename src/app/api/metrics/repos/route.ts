@@ -8,30 +8,41 @@ import {
 } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
 import { supabaseAdmin } from "@/lib/supabase";
+import { url } from "inspector";
 
 export const dynamic = "force-dynamic";
+
+interface RepoLanguage {
+  name: string;
+  percentage: number;
+}
 
 interface RepoSummary {
   name: string;
   commits: number;
+  url: string;
+  languages?: RepoLanguage[];
 }
 
 interface RepoResponse {
   repos: RepoSummary[];
   days: number;
 }
-
 function mergeRepoCommits(
   a: Array<{ name: string; commits: number }>,
   b: Array<{ name: string; commits: number }>
-): Array<{ name: string; commits: number }> {
+) {
   const map = new Map<string, number>();
+
   for (const repo of [...a, ...b]) {
     map.set(repo.name, (map.get(repo.name) ?? 0) + repo.commits);
   }
-  return Array.from(map.entries())
-    .map(([name, commits]) => ({ name, commits }))
-    .sort((x, y) => y.commits - x.commits);
+
+  return Array.from(map.entries()).map(([name, commits]) => ({
+    name,
+    commits,
+    url: "",
+  }));
 }
 
 async function fetchReposForAccount(
@@ -70,13 +81,62 @@ async function fetchReposForAccount(
     const name = item.repository.full_name;
     repoMap[name] = (repoMap[name] ?? 0) + 1;
   }
+const repos = await Promise.all(
+  Object.entries(repoMap).map(async ([name, commits]) => {
+    const repoRes = await fetch(
+      `https://api.github.com/repos/${name}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-  const repos = Object.entries(repoMap)
-    .map(([name, commits]) => ({ name, commits }))
-    .sort((a, b) => b.commits - a.commits)
-    .slice(0, 6);
+    const repoData = await repoRes.json();
 
-  return { repos, days };
+    const languageRes = await fetch(
+      `https://api.github.com/repos/${name}/languages`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    let languages: RepoLanguage[] = [];
+
+    if (languageRes.ok) {
+      const languageData = await languageRes.json();
+
+      const totalBytes = Object.values(languageData).reduce(
+        (sum: number, bytes: any) => sum + Number(bytes),
+        0
+      );
+
+      languages = Object.entries(languageData)
+        .map(([lang, bytes]) => ({
+          name: lang,
+          percentage: Math.round((Number(bytes) / totalBytes) * 100),
+        }))
+        .sort((a, b) => b.percentage - a.percentage)
+        .slice(0, 3);
+    }
+
+    return {
+      name,
+      commits,
+      url: repoData.html_url,
+      languages,
+    };
+  })
+);
+
+repos.sort((a, b) => b.commits - a.commits);
+
+const topRepos = repos.slice(0, 6);
+
+return { repos: topRepos, days };
+
 }
 
 export async function GET(req: NextRequest) {
