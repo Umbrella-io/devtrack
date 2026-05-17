@@ -140,7 +140,7 @@ export default function GoalTracker() {
       ) : (
         <ul className="space-y-4">
           {goals.map((goal) => {
-            const pct = Math.min((goal.current / goal.target) * 100, 100);
+            const pct = goal.target > 0 ? Math.min((goal.current / goal.target) * 100, 100) : 0;
             const isConfirming = confirmingId === goal.id;
             const isDeleting = deletingId === goal.id;
             const completed = goal.current >= goal.target;
