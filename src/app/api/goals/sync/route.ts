@@ -4,21 +4,34 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-/** Returns Monday of the current week as "YYYY-MM-DD" */
+/**
+ * Returns Monday 00:00:00 local time of the current week as a full ISO string.
+ *
+ * Fix for Bug 2 (Sunday + timezone):
+ * - Uses `const diff = day === 0 ? -6 : 1 - day` so Sunday correctly resolves
+ *   to the *previous* Monday, not the *next* one.
+ * - Returns a full ISO timestamp instead of `.slice(0, 10)` to avoid the UTC
+ *   date-shift bug (matching the approach already used in `getPeriodStart()`).
+ */
 function currentWeekStart(): string {
   const now = new Date();
-  const d = new Date(now);
-  d.setDate(now.getDate() - now.getDay() + 1); // Monday
-  return d.toISOString().slice(0, 10);
+  const day = now.getDay();
+  const diff = day === 0 ? -6 : 1 - day; // Monday = 0 offset; Sunday = -6
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday.toISOString();
 }
 
-/** Returns Sunday 23:59:59 of the current week as an ISO string */
+/** Returns Sunday 23:59:59.999 of the current week as a full ISO string. */
 function currentWeekEnd(): string {
   const now = new Date();
-  const d = new Date(now);
-  d.setDate(now.getDate() - now.getDay() + 7); // Sunday
-  d.setHours(23, 59, 59, 999);
-  return d.toISOString();
+  const day = now.getDay();
+  const diff = day === 0 ? 0 : 7 - day; // Sunday of this week
+  const sunday = new Date(now);
+  sunday.setDate(now.getDate() + diff);
+  sunday.setHours(23, 59, 59, 999);
+  return sunday.toISOString();
 }
 
 const GITHUB_API = "https://api.github.com";
@@ -38,13 +51,19 @@ export async function POST() {
 
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
+  const weekStart = currentWeekStart();
+  const weekEnd = currentWeekEnd();
+
   // ── 2. Fetch all commit-based goals for this week ─────────────────────────
+  // Fix for Bug 1: column is `period_start` (full ISO timestamp), not `week_start`.
+  // Use a range filter (.gte / .lte) instead of string equality.
   const { data: commitGoals, error: goalsError } = await supabaseAdmin
     .from("goals")
     .select("id")
     .eq("user_id", user.id)
-    .eq("week_start", currentWeekStart())
-    .eq("unit", "commits");
+    .eq("unit", "commits")
+    .gte("period_start", weekStart)
+    .lte("period_start", weekEnd);
 
   if (goalsError) {
     return Response.json({ error: "Failed to fetch goals" }, { status: 500 });
@@ -55,11 +74,8 @@ export async function POST() {
   }
 
   // ── 3. Count commits for the current week from GitHub ────────────────────
-  const since = `${currentWeekStart()}T00:00:00Z`;
-  const until = currentWeekEnd();
-
   const ghRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:${since}..${until}&per_page=100`,
+    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:${weekStart}..${weekEnd}&per_page=100`,
     {
       headers: {
         Authorization: `Bearer ${session.accessToken}`,
