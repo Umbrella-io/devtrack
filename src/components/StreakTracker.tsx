@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { useCountUp } from "@/hooks/useCountUp";
+import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 
 interface StreakData {
   current: number;
@@ -419,6 +420,7 @@ function StreakCalendar({ contributions, currentMonth, onMonthChange }: StreakCa
   const daysInMonth = lastDay.getDate();
   const startingDayOfWeek = firstDay.getDay();
 
+  const { getCalendarStyle, themeConfig } = useHeatmapTheme();
   const monthName = firstDay.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -478,19 +480,9 @@ function StreakCalendar({ contributions, currentMonth, onMonthChange }: StreakCa
           const commitCount = contributions[dateStr] ?? 0;
           const isFuture = dayData.date > today;
           const isToday = dayData.date.toDateString() === today.toDateString();
-
-          let bgColor = "bg-white dark:bg-transparent";
-          let borderColor = "border border-[var(--border)]";
-
-          if (!isFuture) {
-            if (commitCount > 0) {
-              bgColor = "bg-green-500";
-              borderColor = "border border-green-600";
-            } else {
-              bgColor = "bg-gray-500";
-              borderColor = "border border-gray-600";
-            }
-          }
+          const cellStyle = isFuture
+            ? { backgroundColor: "transparent", borderColor: themeConfig.border }
+            : getCalendarStyle(commitCount);
 
           const tooltipText = !isFuture
             ? `${dayData.date.toLocaleDateString("en-US", {
@@ -503,13 +495,14 @@ function StreakCalendar({ contributions, currentMonth, onMonthChange }: StreakCa
           return (
             <div
               key={dateStr}
-              className={`group relative aspect-square rounded-md ${bgColor} ${borderColor} transition-transform hover:scale-110 cursor-default ${
+              className={`group relative aspect-square rounded-md border transition-transform hover:scale-110 cursor-default ${
                 isToday ? "ring-2 ring-[var(--accent)]" : ""
               }`}
+              style={cellStyle}
               title={tooltipText}
             >
               {!isFuture && (
-                <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-[var(--foreground)] opacity-100 transition-opacity">
                   {dayData.dayOfMonth}
                 </span>
               )}
@@ -526,15 +519,15 @@ function StreakCalendar({ contributions, currentMonth, onMonthChange }: StreakCa
 
       <div className="mt-4 flex flex-wrap gap-4 text-xs text-[var(--muted-foreground)]">
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded bg-green-500" />
+          <div className="h-3 w-3 rounded border border-solid" style={{ backgroundColor: themeConfig.levelTwo, borderColor: themeConfig.border }} />
           <span>Committed</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded bg-gray-500" />
+          <div className="h-3 w-3 rounded border border-solid" style={{ backgroundColor: themeConfig.missed, borderColor: themeConfig.border }} />
           <span>Missed</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded border border-[var(--border)]" />
+          <div className="h-3 w-3 rounded border border-solid" style={{ backgroundColor: "transparent", borderColor: themeConfig.border }} />
           <span>Future</span>
         </div>
       </div>
