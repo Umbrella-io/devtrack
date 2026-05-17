@@ -1,4 +1,4 @@
-const GITHUB_API = "https://api.github.com";
+export const GITHUB_API = "https://api.github.com";
 
 export async function fetchUserEvents(token: string): Promise<GitHubEvent[]> {
   const res = await fetch(`${GITHUB_API}/user/events?per_page=100`, {

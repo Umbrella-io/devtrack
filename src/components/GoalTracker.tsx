@@ -2,20 +2,33 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+type Recurrence = "none" | "weekly" | "monthly";
+
 interface Goal {
   id: string;
-  label: string;
+  title: string;
   target: number;
   current: number;
+  unit: string;
+  recurrence: Recurrence;
+  period_start: string;
 }
+
+const RECURRENCE_LABELS: Record<Recurrence, string> = {
+  none: "One-time",
+  weekly: "Weekly",
+  monthly: "Monthly",
+};
 
 export default function GoalTracker() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
-  const [label, setLabel] = useState("");
+  const [title, setTitle] = useState("");
   const [target, setTarget] = useState(7);
+  const [unit, setUnit] = useState("commits");
+  const [recurrence, setRecurrence] = useState<Recurrence>("none");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -46,7 +59,7 @@ export default function GoalTracker() {
       const response = await fetch("/api/goals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label, target }),
+        body: JSON.stringify({ title, target, unit, recurrence }),
       });
 
       if (!response.ok) {
@@ -58,8 +71,10 @@ export default function GoalTracker() {
       return;
     }
 
-    setLabel("");
+    setTitle("");
     setTarget(7);
+    setUnit("commits");
+    setRecurrence("none");
     await loadGoals().catch(() => {});
     setCreating(false);
   }
@@ -80,6 +95,15 @@ export default function GoalTracker() {
     } finally {
       setDeletingId(null);
     }
+  }
+
+  function getCompletionLabel(goal: Goal): string {
+    if (goal.current >= goal.target) {
+      if (goal.recurrence === "weekly") return "Completed this week ✓";
+      if (goal.recurrence === "monthly") return "Completed this month ✓";
+      return "Completed ✓";
+    }
+    return "";
   }
 
   useEffect(() => {
@@ -108,6 +132,7 @@ export default function GoalTracker() {
   return (
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Weekly Goals</h2>
+
       {goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No goals yet. Create one below.
@@ -118,15 +143,35 @@ export default function GoalTracker() {
             const pct = Math.min((goal.current / goal.target) * 100, 100);
             const isConfirming = confirmingId === goal.id;
             const isDeleting = deletingId === goal.id;
+            const completed = goal.current >= goal.target;
+            const completionLabel = getCompletionLabel(goal);
 
             return (
               <li key={goal.id}>
                 <div className="flex justify-between items-center text-sm mb-1">
-                  <span className="text-[var(--card-foreground)]">{goal.label}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[var(--card-foreground)]">{goal.title}</span>
+                      {goal.recurrence !== "none" && (
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
+                          goal.recurrence === "weekly"
+                            ? "bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/30"
+                            : "bg-[var(--card-muted)] text-[var(--muted-foreground)] border-[var(--border)]"
+                        }`}>
+                          {RECURRENCE_LABELS[goal.recurrence]}
+                        </span>
+                      )}
+                    </div>
+                    {completed && (
+                      <span className="text-xs font-medium text-emerald-500">
+                        {completionLabel}
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-2">
                     <span className="text-[var(--muted-foreground)]">
-                      {goal.current}/{goal.target}
+                      {goal.current}/{goal.target} {goal.unit}
                     </span>
 
                     {isConfirming ? (
@@ -136,7 +181,7 @@ export default function GoalTracker() {
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
                           className="text-red-400 hover:text-red-300 font-semibold transition-colors disabled:opacity-50"
-                          aria-label={`Confirm delete goal: ${goal.label}`}
+                          aria-label={`Confirm delete goal: ${goal.title}`}
                         >
                           Yes
                         </button>
@@ -154,29 +199,20 @@ export default function GoalTracker() {
                         onClick={() => setConfirmingId(goal.id)}
                         disabled={isDeleting}
                         className="text-[var(--muted-foreground)] hover:text-red-400 transition-colors disabled:opacity-50"
-                        aria-label={`Delete goal: ${goal.label}`}
+                        aria-label={`Delete goal: ${goal.title}`}
                         title="Delete goal"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          className="w-4 h-4"
-                          aria-hidden="true"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
-                            clipRule="evenodd"
-                          />
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                          <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
                         </svg>
                       </button>
                     )}
                   </div>
                 </div>
+
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
-                    className="h-full rounded-full bg-[var(--accent)] transition-all"
+                    className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -185,45 +221,94 @@ export default function GoalTracker() {
           })}
         </ul>
       )}
+
       {lastUpdated && (
         <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
           {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
         </p>
       )}
 
+      {/* Goal Creation Form */}
       <form onSubmit={handleCreate} className="mt-6 space-y-3 border-t border-[var(--border)] pt-4">
         <div>
-          <label htmlFor="goal-label" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
-            Goal label
+          <label htmlFor="goal-title" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+            Goal title
           </label>
           <input
-            id="goal-label"
+            id="goal-title"
             type="text"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="Commit every day"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Make 10 commits"
             required
             disabled={creating}
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)]"
           />
         </div>
-        <div>
-          <label htmlFor="goal-target" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
-            Weekly target
-          </label>
-          <input
-            id="goal-target"
-            type="number"
-            min={1}
-            value={target}
-            onChange={(e) => setTarget(Number(e.target.value))}
-            disabled={creating}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
-          />
+
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label htmlFor="goal-target" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+              Target
+            </label>
+            <input
+              id="goal-target"
+              type="number"
+              min={1}
+              value={target}
+              onChange={(e) => setTarget(Number(e.target.value))}
+              disabled={creating}
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+            />
+          </div>
+          <div className="flex-1">
+            <label htmlFor="goal-unit" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+              Unit
+            </label>
+            <input
+              id="goal-unit"
+              type="text"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              placeholder="commits"
+              disabled={creating}
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+            />
+          </div>
         </div>
+
+        {/* Recurrence Picker */}
+        <div>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+            Recurrence
+          </label>
+          <div className="flex gap-2">
+            {(["none", "weekly", "monthly"] as Recurrence[]).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRecurrence(r)}
+                disabled={creating}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium border transition-all ${
+                  recurrence === r
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                    : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
+                }`}
+              >
+                {RECURRENCE_LABELS[r]}
+              </button>
+            ))}
+          </div>
+          {recurrence !== "none" && (
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+              {recurrence === "weekly" ? "Resets every Monday." : "Resets on the 1st of each month."}
+            </p>
+          )}
+        </div>
+
         <button
           type="submit"
-          disabled={creating || !label.trim()}
+          disabled={creating || !title.trim()}
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {creating ? (
@@ -235,6 +320,7 @@ export default function GoalTracker() {
             "Add goal"
           )}
         </button>
+
         {createError && (
           <p className="text-sm text-red-500">{createError}</p>
         )}

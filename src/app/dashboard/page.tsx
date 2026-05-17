@@ -1,4 +1,5 @@
 import ContributionGraph from "@/components/ContributionGraph";
+import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
 import PRBreakdownChart from "@/components/PRBreakdownChart";
 import GoalTracker from "@/components/GoalTracker";
@@ -13,6 +14,7 @@ import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
+import PersonalRecords from "@/components/PersonalRecords";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -34,10 +36,17 @@ export default async function DashboardPage() {
 
       <WeeklySummaryCard />
 
+      <div className="mb-6">
+        <PersonalRecords />
+      </div>
+
       {/* Row 1: Contribution graph + Streak + Friend Comparison */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ContributionGraph />
+          <div className="mt-6">
+            <ContributionHeatmap />
+          </div>
         </div>
 
         <div className="flex flex-col gap-6">

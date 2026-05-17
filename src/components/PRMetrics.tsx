@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 
 interface PRData {
   open: number;
@@ -10,41 +11,34 @@ interface PRData {
 }
 
 export default function PRMetrics() {
+  const { selectedAccount } = useAccount();
   const [metrics, setMetrics] = useState<PRData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMetrics = () => {
+  const fetchMetrics = useCallback(() => {
     setLoading(true);
     setError(null);
 
-    fetch("/api/metrics/prs")
+    const url =
+      selectedAccount !== null
+        ? `/api/metrics/prs?accountId=${encodeURIComponent(selectedAccount)}`
+        : "/api/metrics/prs";
+
+    fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error("API error");
         return r.json();
       })
       .then((data: PRData) => setMetrics(data))
       .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
-      .finally(() => {
-        setLoading(false);
-        setLastUpdated(new Date());
-        setMinutesAgo(0);
-      });
-  };
+      .finally(() => setLoading(false));
+  }, [selectedAccount]);
 
   useEffect(() => {
     fetchMetrics();
-  }, []);
-  useEffect(() => {
-   if (!lastUpdated) return;
-   const interval = setInterval(() => {
-    const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
-    setMinutesAgo(diff);
-  }, 60000);
-  return () => clearInterval(interval);
-  }, [lastUpdated]);
+  }, [fetchMetrics]);
+
   const stats = metrics
     ? [
         { label: "Open PRs", value: metrics.open },
@@ -91,11 +85,6 @@ export default function PRMetrics() {
             </div>
           ))}
         </div>
-      )}
-      {lastUpdated && (
-        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
-          {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
-        </p>
       )}
     </div>
   );
