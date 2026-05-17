@@ -201,6 +201,14 @@ export default function ContributionGraph() {
   }, []);
 
   useEffect(() => {
+    const handleToggleChart = () => {
+      setChartType((prev) => (prev === "bar" ? "line" : "bar"));
+    };
+    window.addEventListener("toggleChart", handleToggleChart);
+    return () => window.removeEventListener("toggleChart", handleToggleChart);
+  }, []);
+
+  useEffect(() => {
     if (!lastUpdated) return;
     const interval = setInterval(() => {
       const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
