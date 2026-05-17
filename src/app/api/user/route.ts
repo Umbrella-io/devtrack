@@ -100,36 +100,49 @@ export async function GET() {
 }
 
 export async function DELETE() {
-  const session = await getServerSession(authOptions);
-  if (!session?.githubId) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
-    return Response.json({ error: "Account deletion unavailable: Supabase not configured on server" }, { status: 501 });
-  }
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.githubId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceRoleKey) {
+      return Response.json({ error: "Account deletion unavailable: Supabase not configured on server" }, { status: 501 });
+    }
 
-  const supabase = supabaseAdmin;
-  if (!supabase) {
-    return Response.json(
-      { error: "Supabase not initialized on server" },
-      { status: 500 }
-    );
+    const supabase = supabaseAdmin;
+    if (!supabase) {
+      return Response.json(
+        { error: "Supabase not initialized on server" },
+        { status: 500 }
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("users")
+      .delete()
+      .eq("github_id", session.githubId)
+      .select("id");
+
+    if (error) {
+      console.error("supabase error deleting user:", error);
+      return Response.json(
+        { error: "Failed to delete account", detail: error.message },
+        { status: 500 }
+      );
+    }
+
+    if (!data || data.length === 0) {
+      return Response.json(
+        { error: "Account not found or already deleted" },
+        { status: 404 }
+      );
+    }
+
+    return Response.json({ success: true, message: "Account deleted successfully" });
+  } catch (err) {
+    console.error("unexpected error in /api/user DELETE:", err);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const { error } = await supabase
-    .from("users")
-    .delete()
-    .eq("github_id", session.githubId);
-
-  if (error) {
-    console.error("supabase error deleting user:", error);
-    return Response.json(
-      { error: "Failed to delete account", detail: error.message },
-      { status: 500 }
-    );
-  }
-
-  return Response.json({ success: true, message: "Account deleted successfully" });
 }

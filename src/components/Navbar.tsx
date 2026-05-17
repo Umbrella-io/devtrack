@@ -25,7 +25,7 @@ export default function Navbar() {
               className={`rounded-lg px-4 py-2 font-semibold transition-colors ${
                 pathname === "/dashboard"
                   ? "bg-blue-600 text-white"
-                  : "text-[var(--foreground)] hover:bg-slate-700"
+                  : "text-[var(--foreground)] hover:bg-[var(--control)]"
               }`}
             >
               Dashboard
@@ -35,7 +35,7 @@ export default function Navbar() {
               className={`rounded-lg px-4 py-2 font-semibold transition-colors ${
                 pathname === "/profile"
                   ? "bg-blue-600 text-white"
-                  : "text-[var(--foreground)] hover:bg-slate-700"
+                  : "text-[var(--foreground)] hover:bg-[var(--control)]"
               }`}
             >
               Profile

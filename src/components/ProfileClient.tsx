@@ -22,6 +22,31 @@ type ProfileClientProps = {
   image: string | null;
 };
 
+type ApiErrorResponse = {
+  error?: string;
+};
+
+function getApiErrorMessage(parsed: unknown, fallback: string): string {
+  if (typeof parsed === "object" && parsed !== null && "error" in parsed) {
+    const maybeError = (parsed as ApiErrorResponse).error;
+    if (typeof maybeError === "string" && maybeError.trim().length > 0) {
+      return maybeError;
+    }
+  }
+
+  if (typeof parsed === "string" && parsed.trim().length > 0) {
+    return parsed;
+  }
+
+  return fallback;
+}
+
+function isProfileUser(obj: unknown): obj is ProfileUser {
+  if (!obj || typeof obj !== "object") return false;
+  const o = obj as Record<string, unknown>;
+  return typeof o.id === "string" && typeof o.username === "string" && typeof o.github_id === "string";
+}
+
 function formatDate(value: string): string {
   return new Date(value).toLocaleDateString("en-US", {
     year: "numeric",
@@ -40,29 +65,33 @@ export default function ProfileClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     async function fetchProfile(): Promise<void> {
       try {
-          const response = await fetch("/api/user", { cache: "no-store" });
-          const text = await response.text();
-          let data: any = null;
-          try {
-            data = text ? JSON.parse(text) : null;
-          } catch (e) {
-            // non-json response
-            data = text;
-          }
+        const response = await fetch("/api/user", { cache: "no-store" });
+        const text = await response.text();
+        let parsed: unknown = null;
+        try {
+          parsed = text ? JSON.parse(text) : null;
+        } catch (e) {
+          parsed = text;
+        }
 
-          if (!response.ok) {
-            const message = data?.error || data?.message || String(data) || `HTTP ${response.status}`;
-            throw new Error(message);
-          }
+        if (!response.ok) {
+          const message = getApiErrorMessage(parsed, `HTTP ${response.status}`);
+          throw new Error(message);
+        }
 
-          setUser(data as ProfileUser);
+        if (!isProfileUser(parsed)) {
+          throw new Error("Unexpected profile shape from server");
+        }
+
+        setUser(parsed);
       } catch (err) {
-          console.error("Profile fetch error:", err);
-          setError(err instanceof Error ? err.message : "Unexpected error");
+        console.error("Profile fetch error:", err);
+        setError(err instanceof Error ? err.message : "Unexpected error");
       } finally {
         setLoading(false);
       }
@@ -71,16 +100,9 @@ export default function ProfileClient({
     fetchProfile();
   }, []);
 
-  async function onDeleteAccount(): Promise<void> {
-    const confirmed = window.confirm(
-      "Are you sure? This action cannot be undone."
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+  async function onConfirmDeleteAccount(): Promise<void> {
     setDeleting(true);
+    setError(null);
 
     try {
       const response = await fetch("/api/user", {
@@ -88,12 +110,17 @@ export default function ProfileClient({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete account");
+        const text = await response.text();
+        let parsed: unknown = null;
+        try { parsed = text ? JSON.parse(text) : null; } catch { parsed = text; }
+        const message = getApiErrorMessage(parsed, `HTTP ${response.status}`);
+        throw new Error(message);
       }
 
       await signOut({ callbackUrl: "/" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete account");
+    } finally {
       setDeleting(false);
     }
   }
@@ -210,14 +237,43 @@ export default function ProfileClient({
                   Deleting your account is permanent and cannot be undone.
                 </p>
 
-                <button
-                  type="button"
-                  onClick={onDeleteAccount}
-                  disabled={deleting}
-                  className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-5 py-3 rounded-lg font-medium transition"
-                >
-                  {deleting ? "Deleting..." : "Delete Account"}
-                </button>
+                {!confirmDelete && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(true)}
+                    disabled={deleting}
+                    className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-5 py-3 rounded-lg font-medium transition"
+                  >
+                    {deleting ? "Deleting..." : "Delete Account"}
+                  </button>
+                )}
+
+                {confirmDelete && (
+                  <div className="rounded-lg border border-red-500/60 bg-red-500/15 p-4">
+                    <p className="text-sm text-red-300 mb-4">
+                      This action will permanently remove your account and all associated data. This cannot be undone.
+                    </p>
+
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={onConfirmDeleteAccount}
+                        disabled={deleting}
+                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium transition"
+                      >
+                        {deleting ? "Deleting..." : "Confirm Delete"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(false)}
+                        disabled={deleting}
+                        className="bg-[var(--control)] hover:bg-[var(--card)] disabled:opacity-50 text-[var(--foreground)] px-4 py-2 rounded-lg font-medium border border-[var(--border)] transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}
