@@ -101,13 +101,36 @@ jobs:
       - name: Check all imports exist in package.json
         run: node scripts/check-deps.js
 
+  # ── 5. End-to-end tests ───────────────────────────────────────────────────
+  # Exercises the public auth entry point and authenticated dashboard flows with
+  # deterministic API fixtures so CI does not depend on GitHub OAuth or Supabase.
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: npm run test:e2e
+
   # ── Summary gate ───────────────────────────────────────────────────────────
   # Single status check to add to branch protection rules.
   # Branch: main → require "CI passed" before merge.
   ci-pass:
     name: CI passed
     runs-on: ubuntu-latest
-    needs: [typecheck, lint, build, dep-check]
+    needs: [typecheck, lint, build, dep-check, e2e]
     if: always()
     steps:
       - name: Check all jobs passed
@@ -115,7 +138,8 @@ jobs:
           if [[ "${{ needs.typecheck.result }}" != "success" ||
                 "${{ needs.lint.result }}"      != "success" ||
                 "${{ needs.build.result }}"     != "success" ||
-                "${{ needs.dep-check.result }}" != "success" ]]; then
+                "${{ needs.dep-check.result }}" != "success" ||
+                "${{ needs.e2e.result }}"       != "success" ]]; then
             echo "One or more CI jobs failed."
             exit 1
           fi
