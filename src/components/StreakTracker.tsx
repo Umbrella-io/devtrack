@@ -1,5 +1,5 @@
 "use client";
-
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { useCountUp } from "@/hooks/useCountUp";
@@ -279,7 +279,18 @@ export default function StreakTracker() {
                 </span>
               )}
             </div>
-            <div className="mt-1 text-xs text-[var(--muted-foreground)]">{stat.label}</div>
+            <div className="mt-1 flex items-center justify-center gap-1 text-xs text-[var(--muted-foreground)]">
+            <span>{stat.label}</span>
+
+            <button
+              type="button"
+              title={stat.tooltip}
+              aria-label={stat.tooltip}
+              className="text-[var(--muted-foreground)] hover:text-[var(--accent)] focus:outline-none"
+            >
+              <InformationCircleIcon className="h-3.5 w-3.5" />
+            </button>
+          </div>
           </div>
         ))}
       </div>
