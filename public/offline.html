@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevTrack Offline</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, sans-serif;
+      background: #0f172a;
+      color: white;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .card {
+      max-width: 420px;
+      padding: 32px;
+      border-radius: 24px;
+      background: #111827;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    h1 {
+      margin-bottom: 12px;
+      font-size: 28px;
+    }
+
+    p {
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 999px;
+      background: white;
+      color: #0f172a;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>You are offline</h1>
+    <p>DevTrack is installed, but this page needs internet. Please reconnect and try again.</p>
+    <button onclick="window.location.reload()">Retry</button>
+  </main>
+</body>
+</html>
