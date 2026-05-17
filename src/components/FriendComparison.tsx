@@ -161,7 +161,7 @@ export default function FriendComparison() {
               onClick={handleCommitActivityClick}
               className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
             >
-              Commit Activity
+              View Commit Activity
             </a>
             <button
               onClick={clearComparison}
