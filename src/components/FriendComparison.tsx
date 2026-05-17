@@ -45,6 +45,11 @@ export default function FriendComparison() {
         setError(data.error || "Failed to fetch user");
       } else {
         setFriendData(data);
+        window.dispatchEvent(
+          new CustomEvent("devtrack:compare-user", {
+            detail: { username: friendUsername.trim() },
+          })
+        );
       }
     } catch (err) {
       setError("An error occurred");
@@ -58,20 +63,21 @@ export default function FriendComparison() {
     setComparingUser("");
     setFriendData(null);
     setError("");
+    window.dispatchEvent(new CustomEvent("devtrack:clear-compare-user"));
   };
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="mb-6 space-y-4">
-        <div>
+        <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
             Friend Comparison
           </h2>
-
-          <p className="text-sm text-[var(--muted-foreground)]">
-            See how you stack up against others
-          </p>
         </div>
+
+        <p className="text-sm text-[var(--muted-foreground)]">
+          See how you stack up against others
+        </p>
 
       <form
         onSubmit={handleCompare}
@@ -135,10 +141,16 @@ export default function FriendComparison() {
             />
           </div>
 
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end items-center gap-3 pt-4">
+            <a
+              href="#contribution-activity"
+              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:opacity-90"
+            >
+              Commit Activity
+            </a>
             <button
               onClick={clearComparison}
-              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:opacity-90"
             >
               Clear Comparison
             </button>
