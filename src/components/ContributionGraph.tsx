@@ -18,6 +18,39 @@ interface DayData {
   commits: number;
 }
 
+interface ContributionSourceData {
+  data?: Record<string, number>;
+}
+
+interface ContributionResponse {
+  data?: Record<string, number>;
+  sources?: {
+    github?: ContributionSourceData;
+    gitlab?: ContributionSourceData | null;
+  };
+}
+
+function mergeContributionSources(
+  response: ContributionResponse
+): Record<string, number> {
+  if (!response.sources) {
+    return response.data ?? {};
+  }
+
+  const merged: Record<string, number> = {};
+  const sources = [response.sources.github?.data, response.sources.gitlab?.data];
+  for (const source of sources) {
+    if (!source) continue;
+    for (const [day, commits] of Object.entries(source)) {
+      const count = typeof commits === "number" ? commits : Number(commits);
+      if (!Number.isFinite(count) || count <= 0) continue;
+      merged[day] = (merged[day] ?? 0) + count;
+    }
+  }
+
+  return merged;
+}
+
 type ViewMode = "bar" | "line";
 
 const RANGES = [
@@ -49,8 +82,9 @@ export default function ContributionGraph() {
         if (!r.ok) throw new Error("API error");
         return r.json();
       })
-      .then((res: { data: Record<string, number> }) => {
-        const sorted = Object.entries(res.data ?? {})
+      .then((res: ContributionResponse) => {
+        const merged = mergeContributionSources(res);
+        const sorted = Object.entries(merged)
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([day, commits]) => ({ day, commits }));
 

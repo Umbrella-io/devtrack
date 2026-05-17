@@ -69,6 +69,8 @@ export const authOptions: NextAuthOptions = {
         session.githubId = token.githubId;
       if (typeof token.githubLogin === "string")
         session.githubLogin = token.githubLogin;
+      if (typeof token.gitlabToken === "string")
+        session.gitlabToken = token.gitlabToken;
       return session;
     },
   },
