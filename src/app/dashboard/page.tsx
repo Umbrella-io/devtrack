@@ -17,6 +17,7 @@ import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
+import ProfileStats from "@/components/ProfileStats";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -31,15 +32,17 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <DashboardHeader />
-      <div className="mb-6 flex justify-end items-center gap-2">
+
+      <div className="mb-6 flex items-center justify-end gap-2">
         <Link
           href="/dashboard/settings"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity"
+          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1 text-sm text-[var(--foreground)] transition-opacity hover:opacity-90"
         >
           Settings
         </Link>
         <ExportButton />
       </div>
+
       <StreakAtRiskBanner />
 
       <div className="mb-6">
@@ -47,11 +50,14 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mb-6">
+        <ProfileStats />
+      </div>
+
+      <div className="mb-6">
         <PersonalRecords />
       </div>
 
-      {/* Row 1: Contribution graph + Streak + Friend Comparison */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ContributionGraph />
           <div className="mt-6">
@@ -65,28 +71,24 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 2: PR metrics, PR breakdown & Time Chart */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <PRMetrics />
         <PRBreakdownChart />
         <CommitTimeChart />
       </div>
 
-      {/* Row 3: Issue metrics + CI analytics */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <IssueMetrics />
         </div>
         <CIAnalytics />
       </div>
 
-      {/* Row 4: Pinned repositories */}
       <div className="mt-6">
         <PinnedRepos />
       </div>
 
-      {/* Row 5: Top repos + Language breakdown + Goal tracker */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <TopRepos />
         <LanguageBreakdown />
         <GoalTracker />
