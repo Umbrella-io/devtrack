@@ -125,53 +125,32 @@ export default function PRMetrics() {
       })
     : [];
 
+  const showSkeleton = loading && !metrics;
+
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm" aria-busy={loading}>
+      <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab("authored")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              activeTab === "authored"
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
-            }`}
-          >
-            PRs Authored
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("reviews")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              activeTab === "reviews"
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
-            }`}
-          >
-            Reviews Given
-          </button>
-        </div>
-      </div>
-      {loading ? (
-        <div
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-          className="space-y-4"
+        <button
+          type="button"
+          onClick={fetchMetrics}
+          disabled={loading}
+          aria-label="Refresh PR Analytics"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] hover:text-[var(--card-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <span className="sr-only">Loading PR analytics</span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                aria-hidden="true"
-                className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
-              />
-            ))}
-          </div>
-          <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
+          <span className={loading ? "inline-block animate-spin" : "inline-block"} aria-hidden="true">
+            ↺
+          </span>
+        </button>
+      </div>
+      {showSkeleton ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
+            />
+          ))}
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
