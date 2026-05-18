@@ -37,6 +37,13 @@ interface ReviewCommentEvent {
   created_at?: string | null;
 }
 
+interface PRTimeDistribution {
+  lessThan1h: number;
+  from1hTo24h: number;
+  from1dTo7d: number;
+  moreThan7d: number;
+}
+
 function getRepoFullName(repositoryUrl: string): string | null {
   const marker = "/repos/";
   const index = repositoryUrl.indexOf(marker);
@@ -54,7 +61,7 @@ function getEarliestTimestamp(values: Array<string | null | undefined>) {
 
 async function fetchFirstReviewTimestamp(
   token: string,
-  pr: PullRequestSearchItem
+  pr: PullRequestSearchItem,
 ): Promise<number | null> {
   const repo = getRepoFullName(pr.repository_url);
 
@@ -92,7 +99,7 @@ async function fetchFirstReviewTimestamp(
 
 async function getAverageFirstReviewHours(
   token: string,
-  prs: PullRequestSearchItem[]
+  prs: PullRequestSearchItem[],
 ): Promise<number | null> {
   const reviewedPrs = await Promise.all(
     prs.slice(0, 30).map(async (pr) => {
@@ -108,10 +115,11 @@ async function getAverageFirstReviewHours(
       }
 
       return (firstReviewAt - openedAt) / 3600000;
-    })
+    }),
   );
+
   const validDurations = reviewedPrs.filter(
-    (value): value is number => typeof value === "number"
+    (value): value is number => typeof value === "number",
   );
 
   if (validDurations.length === 0) {
@@ -125,13 +133,20 @@ async function getAverageFirstReviewHours(
   return Math.round(average * 10) / 10;
 }
 
-async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
+async function fetchPRMetrics(
+  token: string,
+  days: number = 30,
+): Promise<PRMetricsBase & { timeDistribution: PRTimeDistribution }> {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const sinceStr = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, "0")}-${String(since.getDate()).padStart(2, "0")}`;
+
   const searchRes = await fetch(
-    `${GITHUB_API}/search/issues?q=type:pr+author:@me&sort=updated&order=desc&per_page=100`,
+    `${GITHUB_API}/search/issues?q=type:pr+author:@me+created:>=${sinceStr}&per_page=100`,
     {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
-    }
+    },
   );
 
   if (!searchRes.ok) {
@@ -145,18 +160,14 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
 
   const open = data.items.filter((pr) => pr.state === "open").length;
 
-  // A PR with state "closed" may have been merged OR closed without merging
-  // (e.g. rejected, abandoned). Only count those with a non-null merged_at
-  // as truly merged so the dashboard does not inflate the merged count.
   const merged = data.items.filter(
-    (pr) => pr.pull_request?.merged_at != null
+    (pr) => pr.pull_request?.merged_at != null,
   ).length;
 
-  // Average review time: use only actually merged PRs so we measure the time
-  // from open to merge, not open to close-without-merge.
   const mergedPRs = data.items.filter(
-    (pr) => pr.pull_request?.merged_at != null
+    (pr) => pr.pull_request?.merged_at != null,
   );
+
   const avgReviewMs =
     mergedPRs.length > 0
       ? mergedPRs.reduce(
@@ -164,19 +175,37 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
             sum +
             (new Date(pr.pull_request!.merged_at!).getTime() -
               new Date(pr.created_at).getTime()),
-          0
+          0,
         ) / mergedPRs.length
       : 0;
 
-  // Use the number of fetched items as the denominator for mergeRate.
-  // data.total_count is the all-time GitHub total (potentially thousands)
-  // while data.items is capped at 100, so dividing merged/total_count
-  // produces a near-zero rate for any active user. The fetched sample
-  // (open + merged + closed-without-merge) is the correct base.
+  const timeDistribution: PRTimeDistribution = {
+    lessThan1h: 0,
+    from1hTo24h: 0,
+    from1dTo7d: 0,
+    moreThan7d: 0,
+  };
+
+  for (const pr of mergedPRs) {
+    const durationMs =
+      new Date(pr.pull_request!.merged_at!).getTime() -
+      new Date(pr.created_at).getTime();
+
+    if (durationMs < 3600000) {
+      timeDistribution.lessThan1h++;
+    } else if (durationMs < 86400000) {
+      timeDistribution.from1hTo24h++;
+    } else if (durationMs < 604800000) {
+      timeDistribution.from1dTo7d++;
+    } else {
+      timeDistribution.moreThan7d++;
+    }
+  }
+
   const sampleTotal = data.items.length;
   const avgFirstReviewHours = await getAverageFirstReviewHours(
     token,
-    data.items
+    data.items,
   );
 
   return {
@@ -186,10 +215,13 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
     avgReviewHours: Math.round(avgReviewMs / 3600000),
     avgFirstReviewHours,
     mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
+    timeDistribution,
   };
 }
 
-function formatPRMetrics(metrics: PRMetricsBase) {
+function formatPRMetrics(
+  metrics: PRMetricsBase & { timeDistribution: PRTimeDistribution },
+) {
   return {
     open: metrics.open,
     merged: metrics.merged,
@@ -197,9 +229,8 @@ function formatPRMetrics(metrics: PRMetricsBase) {
     avgReviewHours: metrics.avgReviewHours,
     avgFirstReviewHours: metrics.avgFirstReviewHours,
     mergeRate:
-      metrics.total > 0
-        ? `${Math.round(metrics.mergeRate * 100)}%`
-        : "0%",
+      metrics.total > 0 ? `${Math.round(metrics.mergeRate * 100)}%` : "0%",
+    timeDistribution: metrics.timeDistribution,
   };
 }
 
@@ -210,10 +241,11 @@ export async function GET(req: NextRequest) {
   }
 
   const accountId = req.nextUrl.searchParams.get("accountId");
+  const days = Number(req.nextUrl.searchParams.get("days")) || 30;
 
   if (!accountId) {
     try {
-      const result = await fetchPRMetrics(session.accessToken);
+      const result = await fetchPRMetrics(session.accessToken, days);
       return Response.json(formatPRMetrics(result));
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
@@ -241,11 +273,11 @@ export async function GET(req: NextRequest) {
         githubId: session.githubId,
         githubLogin: session.githubLogin,
       },
-      userRow.id
+      userRow.id,
     );
 
     const results = await Promise.allSettled(
-      accounts.map((account) => fetchPRMetrics(account.token))
+      accounts.map((account) => fetchPRMetrics(account.token, days)),
     );
 
     const merged = mergeMetrics(results, (a, b) => {
@@ -276,6 +308,16 @@ export async function GET(req: NextRequest) {
             : Math.round(avgFirstReviewHours * 10) / 10,
         mergeRate:
           total > 0 ? Math.round((mergedCount / total) * 100) / 100 : 0,
+        timeDistribution: {
+          lessThan1h:
+            a.timeDistribution.lessThan1h + b.timeDistribution.lessThan1h,
+          from1hTo24h:
+            a.timeDistribution.from1hTo24h + b.timeDistribution.from1hTo24h,
+          from1dTo7d:
+            a.timeDistribution.from1dTo7d + b.timeDistribution.from1dTo7d,
+          moreThan7d:
+            a.timeDistribution.moreThan7d + b.timeDistribution.moreThan7d,
+        },
       };
     });
 
@@ -296,7 +338,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await fetchPRMetrics(token);
+    const result = await fetchPRMetrics(token, days);
     return Response.json(formatPRMetrics(result));
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
