@@ -33,7 +33,7 @@ export default async function DashboardPage() {
         <ExportButton />
       </div>
       <StreakAtRiskBanner />
-
+      
       <WeeklySummaryCard />
 
       <div className="mb-6">

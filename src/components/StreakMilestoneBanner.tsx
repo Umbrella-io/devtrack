@@ -1,0 +1,28 @@
+"use client";
+type Props = {
+  streak: number;
+  onDismiss?: () => void;
+};
+
+export default function StreakMilestoneBanner({
+  streak,
+  onDismiss,
+}: Props) {
+  return (
+    <div
+      className="rounded-xl p-4 mb-4 flex items-center justify-between"
+      style={{
+        background: "var(--accent)",
+        color: "white",
+      }}
+    >
+      <div>
+        🎉 You reached a {streak}-day streak! Keep it up!
+      </div>
+
+      <button onClick={() => onDismiss?.()}>
+        ✕
+      </button>
+    </div>
+  );
+}

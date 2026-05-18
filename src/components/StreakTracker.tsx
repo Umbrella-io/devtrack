@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { useCountUp } from "@/hooks/useCountUp";
+import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 
 interface StreakData {
   current: number;
@@ -26,6 +27,8 @@ export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [contributionData, setContributionData] = useState<ContributionData | null>(null);
   const [loading, setLoading] = useState(true);
+  const milestones = [7, 30, 50, 100, 200, 365];
+  const [dismissedMilestones, setDismissedMilestones] = useState<number[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -89,6 +92,16 @@ export default function StreakTracker() {
     fetchStreak();
     fetchFreeze();
   }, [fetchStreak]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(
+      "devtrack:dismissed-milestones"
+    );
+
+    if (stored) {
+      setDismissedMilestones(JSON.parse(stored));
+    }
+  }, []);
 
   useEffect(() => {
     if (!lastUpdated) return;
@@ -235,7 +248,37 @@ export default function StreakTracker() {
     }).catch(() => {});
   };
 
+  const currentMilestone =
+    milestones.find(
+      (m) => m === data?.current
+    );
+  const shouldShowBanner =
+    currentMilestone &&
+    !dismissedMilestones.includes(currentMilestone);
+  const handleDismissBanner = () => {
+    if (!currentMilestone) return;
+
+    const updated = [
+      ...dismissedMilestones,
+      currentMilestone,
+    ];
+
+    setDismissedMilestones(updated);
+
+    localStorage.setItem(
+      "devtrack:dismissed-milestones",
+      JSON.stringify(updated)
+    );
+  };
+
   return (
+    <>
+      {shouldShowBanner && currentMilestone && (
+        <StreakMilestoneBanner
+          streak={currentMilestone}
+          onDismiss={handleDismissBanner}
+        />
+      )}
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
@@ -385,6 +428,7 @@ export default function StreakTracker() {
         />
       ) : null}
     </div>
+    </>
   );
 }
 
