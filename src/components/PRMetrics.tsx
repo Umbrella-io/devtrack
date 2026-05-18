@@ -8,6 +8,13 @@ interface PRData {
   merged: number;
   avgReviewHours: number;
   mergeRate: string;
+  prs: PullRequest[];
+}
+interface PullRequest {
+  title: string;
+  created_at: string;
+  html_url: string;
+  state: string;
 }
 
 export default function PRMetrics() {
@@ -15,7 +22,7 @@ export default function PRMetrics() {
   const [metrics, setMetrics] = useState<PRData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+const [staleDays, setStaleDays] = useState(7);
   const fetchMetrics = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -39,6 +46,21 @@ export default function PRMetrics() {
     fetchMetrics();
   }, [fetchMetrics]);
 
+  const isStale = (createdAt: string) => {
+  const createdDate = new Date(createdAt);
+  const now = new Date();
+
+  const diffTime = now.getTime() - createdDate.getTime();
+
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+  return diffDays > staleDays;
+};
+const stalePRs =
+  metrics?.prs.filter(
+    (pr) => pr.state === "open" && isStale(pr.created_at)
+  ) || [];
+
   const stats = metrics
     ? [
         { label: "Open PRs", value: metrics.open },
@@ -52,6 +74,7 @@ export default function PRMetrics() {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
       {loading ? (
+        
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div
@@ -72,20 +95,69 @@ export default function PRMetrics() {
           </button>
         </div>
       ) : (
+  <>
+    <div className="mb-4 flex items-center justify-between">
+      <div className="rounded-full bg-orange-500/10 px-3 py-1 text-sm text-orange-400">
+        {stalePRs.length} PRs stale &gt; {staleDays} days
+      </div>
+
+      <select
+        value={staleDays}
+        onChange={(e) => setStaleDays(Number(e.target.value))}
+        className="rounded-md border border-[var(--border)] bg-[var(--card)] px-2 py-1 text-sm"
+      >
+        <option value={7}>7 days</option>
+        <option value={14}>14 days</option>
+        <option value={30}>30 days</option>
+      </select>
+    </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-lg bg-[var(--control)] p-4 text-center"
-            >
-              <div className="text-2xl font-bold text-[var(--accent)]">
-                {stat.value}
-              </div>
-              <div className="mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
+  {stats.map((stat) => (
+    <div
+      key={stat.label}
+      className="rounded-lg bg-[var(--control)] p-4 text-center"
+    >
+      <div className="text-2xl font-bold text-[var(--accent)]">
+        {stat.value}
+      </div>
+
+      <div className="mt-1 text-sm text-[var(--muted-foreground)]">
+        {stat.label}
+      </div>
+    </div>
+  ))}
+</div>
+
+{stalePRs.length > 0 && (
+  <div className="mt-6">
+    <h3 className="mb-3 text-sm font-semibold text-[var(--card-foreground)]">
+      Stale Pull Requests
+    </h3>
+
+    <div className="space-y-2">
+      {stalePRs.map((pr) => (
+        <a
+          key={pr.html_url}
+          href={pr.html_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between rounded-lg bg-[var(--control)] p-3 transition hover:opacity-90"
+        >
+          <span className="text-sm text-[var(--card-foreground)]">
+            {pr.title}
+          </span>
+
+          <span className="rounded-full bg-orange-500 px-2 py-1 text-xs font-medium text-white">
+            Stale
+          </span>
+        </a>
+      ))}
+    </div>
+  </div>
+)}
+</>
+)}
     </div>
   );
 }

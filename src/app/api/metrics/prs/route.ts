@@ -10,16 +10,23 @@ import { GITHUB_API } from "@/lib/github";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
-
-interface PRMetricsBase {
+interface PullRequest {
+  title: string;
+  created_at: string;
+  html_url: string;
+  state: string;
+}interface PRMetricsBase {
   open: number;
   merged: number;
   total: number;
   avgReviewHours: number;
   mergeRate: number;
+  prs: PullRequest[];
 }
 
 async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
+
+  
   const searchRes = await fetch(
     `${GITHUB_API}/search/issues?q=type:pr+author:@me&per_page=100`,
     {
@@ -34,7 +41,13 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
 
   const data = (await searchRes.json()) as {
     total_count: number;
-    items: Array<{ state: string; created_at: string; closed_at: string | null }>;
+items: Array<{
+  title: string;
+  state: string;
+  created_at: string;
+  closed_at: string | null;
+  html_url: string;
+}>;
   };
 
   const open = data.items.filter((pr) => pr.state === "open").length;
@@ -51,14 +64,21 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
           0
         ) / closedPRs.length
       : 0;
+      const prs = data.items.map((pr) => ({
+  title: pr.title,
+  created_at: pr.created_at,
+  html_url: pr.html_url,
+  state: pr.state,
+}));
 
-  return {
-    open,
-    merged,
-    total: data.total_count,
-    avgReviewHours: Math.round(avgReviewMs / 3600000),
-    mergeRate: data.total_count > 0 ? merged / data.total_count : 0,
-  };
+return {
+  open,
+  merged,
+  total: data.total_count,
+  avgReviewHours: Math.round(avgReviewMs / 3600000),
+  mergeRate: data.total_count > 0 ? merged / data.total_count : 0,
+  prs,
+};
 }
 
 function formatPRMetrics(metrics: PRMetricsBase) {
@@ -71,6 +91,7 @@ function formatPRMetrics(metrics: PRMetricsBase) {
       metrics.total > 0
         ? `${Math.round(metrics.mergeRate * 100)}%`
         : "0%",
+    prs: metrics.prs,
   };
 }
 
@@ -129,6 +150,7 @@ export async function GET(req: NextRequest) {
 
       return {
         open: a.open + b.open,
+        prs: [...a.prs, ...b.prs],
         merged: mergedCount,
         total,
         avgReviewHours: Math.round(avgReviewHours * 10) / 10,
