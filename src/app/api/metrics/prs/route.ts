@@ -27,6 +27,13 @@ interface PRMetricsBase {
   mergeRate: number;
 }
 
+interface PRTimeDistribution {
+  lessThan1h: number;
+  from1hTo24h: number;
+  from1dTo7d: number;
+  moreThan7d: number;
+}
+
 interface PullRequestSearchItem {
   state: string;
   created_at: string;
@@ -132,13 +139,20 @@ async function getAverageFirstReviewHours(
   return Math.round(average * 10) / 10;
 }
 
-async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
+async function fetchPRMetrics(
+  token: string,
+  days: number = 30,
+): Promise<PRMetricsBase & { timeDistribution: PRTimeDistribution }> {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const sinceStr = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, "0")}-${String(since.getDate()).padStart(2, "0")}`;
+
   const searchRes = await fetch(
-    `${GITHUB_API}/search/issues?q=type:pr+author:@me&sort=updated&order=desc&per_page=100`,
+    `${GITHUB_API}/search/issues?q=type:pr+author:@me+created:>=${sinceStr}&per_page=100`,
     {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
-    }
+    },
   );
 
   if (!searchRes.ok) {
@@ -152,15 +166,10 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
 
   const open = data.items.filter((pr) => pr.state === "open").length;
 
-  // A PR with state "closed" may have been merged OR closed without merging
-  // (e.g. rejected, abandoned). Only count those with a non-null merged_at
-  // as truly merged so the dashboard does not inflate the merged count.
   const merged = data.items.filter(
     (pr) => pr.pull_request?.merged_at != null
   ).length;
 
-  // Average review time: use only actually merged PRs so we measure the time
-  // from open to merge, not open to close-without-merge.
   const mergedPRs = data.items.filter(
     (pr) => pr.pull_request?.merged_at != null
   );
@@ -175,16 +184,37 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
         ) / mergedPRs.length
       : 0;
 
-  // Use the number of fetched items as the denominator for mergeRate.
-  // data.total_count is the all-time GitHub total (potentially thousands)
-  // while data.items is capped at 100, so dividing merged/total_count
-  // produces a near-zero rate for any active user. The fetched sample
-  // (open + merged + closed-without-merge) is the correct base.
   const sampleTotal = data.items.length;
   const avgFirstReviewHours = await getAverageFirstReviewHours(
     token,
     data.items
   );
+
+  const closedPRs = data.items.filter(
+    (pr) => pr.state === "closed" && pr.closed_at != null
+  );
+
+  const timeDistribution: PRTimeDistribution = {
+    lessThan1h: 0,
+    from1hTo24h: 0,
+    from1dTo7d: 0,
+    moreThan7d: 0,
+  };
+
+  for (const pr of closedPRs) {
+    const durationMs =
+      new Date(pr.closed_at!).getTime() - new Date(pr.created_at).getTime();
+
+    if (durationMs < 3600000) {
+      timeDistribution.lessThan1h++;
+    } else if (durationMs < 86400000) {
+      timeDistribution.from1hTo24h++;
+    } else if (durationMs < 604800000) {
+      timeDistribution.from1dTo7d++;
+    } else {
+      timeDistribution.moreThan7d++;
+    }
+  }
 
   return {
     open,
@@ -193,13 +223,15 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
     avgReviewHours: Math.round(avgReviewMs / 3600000),
     avgFirstReviewHours,
     mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
+    timeDistribution,
   };
 }
 
 async function fetchCachedPRMetrics(
   token: string,
+  days: number,
   cacheContext: { bypass: boolean; userId: string }
-): Promise<PRMetricsBase> {
+): Promise<PRMetricsBase & { timeDistribution: PRTimeDistribution }> {
   const key = metricsCacheKey(cacheContext.userId, "prs");
 
   return withMetricsCache(
@@ -208,11 +240,13 @@ async function fetchCachedPRMetrics(
       key,
       ttlSeconds: METRICS_CACHE_TTL_SECONDS.prs,
     },
-    () => fetchPRMetrics(token)
+    () => fetchPRMetrics(token, days)
   );
 }
 
-function formatPRMetrics(metrics: PRMetricsBase) {
+function formatPRMetrics(
+  metrics: PRMetricsBase & { timeDistribution: PRTimeDistribution },
+) {
   return {
     open: metrics.open,
     merged: metrics.merged,
@@ -220,9 +254,8 @@ function formatPRMetrics(metrics: PRMetricsBase) {
     avgReviewHours: metrics.avgReviewHours,
     avgFirstReviewHours: metrics.avgFirstReviewHours,
     mergeRate:
-      metrics.total > 0
-        ? `${Math.round(metrics.mergeRate * 100)}%`
-        : "0%",
+      metrics.total > 0 ? `${Math.round(metrics.mergeRate * 100)}%` : "0%",
+    timeDistribution: metrics.timeDistribution,
   };
 }
 
@@ -234,10 +267,11 @@ export async function GET(req: NextRequest) {
 
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
+  const days = Number(req.nextUrl.searchParams.get("days")) || 30;
 
   if (!accountId) {
     try {
-      const result = await fetchCachedPRMetrics(session.accessToken, {
+      const result = await fetchCachedPRMetrics(session.accessToken, days, {
         bypass,
         userId: session.githubId ?? session.githubLogin ?? "primary",
       });
@@ -264,12 +298,12 @@ export async function GET(req: NextRequest) {
         githubId: session.githubId,
         githubLogin: session.githubLogin,
       },
-      userRow.id
+      userRow.id,
     );
 
     const results = await Promise.allSettled(
       accounts.map((account) =>
-        fetchCachedPRMetrics(account.token, { bypass, userId: account.githubId })
+        fetchCachedPRMetrics(account.token, days, { bypass, userId: account.githubId })
       )
     );
 
@@ -301,6 +335,16 @@ export async function GET(req: NextRequest) {
             : Math.round(avgFirstReviewHours * 10) / 10,
         mergeRate:
           total > 0 ? Math.round((mergedCount / total) * 100) / 100 : 0,
+        timeDistribution: {
+          lessThan1h:
+            a.timeDistribution.lessThan1h + b.timeDistribution.lessThan1h,
+          from1hTo24h:
+            a.timeDistribution.from1hTo24h + b.timeDistribution.from1hTo24h,
+          from1dTo7d:
+            a.timeDistribution.from1dTo7d + b.timeDistribution.from1dTo7d,
+          moreThan7d:
+            a.timeDistribution.moreThan7d + b.timeDistribution.moreThan7d,
+        },
       };
     });
 
@@ -321,7 +365,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await fetchCachedPRMetrics(token, {
+    const result = await fetchCachedPRMetrics(token, days, {
       bypass,
       userId: accountId === session.githubId ? session.githubId : accountId,
     });
