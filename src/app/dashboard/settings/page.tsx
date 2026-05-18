@@ -203,11 +203,11 @@ function SettingsPageContent() {
 
   const copyShareLink = () => {
     if (!settings) return;
-
     const link = `${window.location.origin}/u/${settings.github_login}`;
-    navigator.clipboard.writeText(link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => { });
   };
 
   const handleRemoveAccount = async (githubId: string) => {
@@ -343,7 +343,9 @@ function SettingsPageContent() {
                   className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none"
                 />
                 <button
+                  type="button"
                   onClick={copyShareLink}
+                  aria-label="Copy profile URL"
                   className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
                 >
                   {copied ? "Copied!" : "Copy"}
