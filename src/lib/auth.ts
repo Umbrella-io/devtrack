@@ -1,5 +1,6 @@
 import { type NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
+import GitLabProvider from "next-auth/providers/gitlab";
 import { supabaseAdmin } from "./supabase";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
@@ -13,6 +14,13 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GITHUB_SECRET ?? "",
       authorization: {
         params: { scope: "read:user user:email repo read:discussion" },
+      },
+    }),
+    GitLabProvider({
+      clientId: process.env.GITLAB_ID ?? "",
+      clientSecret: process.env.GITLAB_SECRET ?? "",
+      authorization: {
+        params: { scope: "read_user api" },
       },
     }),
   ],
@@ -40,14 +48,32 @@ export const authOptions: NextAuthOptions = {
           { onConflict: "github_id" }
         );
       }
+      if (account?.provider === "gitlab" && profile) {
+        const p = profile as { id: number; username: string };
+        await supabaseAdmin.from("users").upsert(
+          {
+            gitlab_id: String(p.id),
+            gitlab_login: p.username,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "gitlab_id" }
+        );
+      }
       return true;
     },
     async jwt({ token, account, profile }) {
-      if (account?.access_token) token.accessToken = account.access_token;
-      if (profile) {
+      if (account?.provider === "github" && account.access_token)
+        token.accessToken = account.access_token;
+      if (account?.provider === "github" && profile) {
         const p = profile as { id: number; login: string };
         token.githubId = String(p.id);
         token.githubLogin = p.login;
+      }
+      if (account?.provider === "gitlab" && profile) {
+        const p = profile as { id: number; username: string };
+        token.gitlabToken = account.access_token;
+        token.gitlabId = String(p.id);
+        token.gitlabLogin = p.username;
       }
       return token;
     },
@@ -58,6 +84,12 @@ export const authOptions: NextAuthOptions = {
         session.githubId = token.githubId;
       if (typeof token.githubLogin === "string")
         session.githubLogin = token.githubLogin;
+      if (typeof token.gitlabToken === "string")
+        session.gitlabToken = token.gitlabToken;
+      if (typeof token.gitlabId === "string")
+        session.gitlabId = token.gitlabId;
+      if (typeof token.gitlabLogin === "string")
+        session.gitlabLogin = token.gitlabLogin;
       return session;
     },
   },

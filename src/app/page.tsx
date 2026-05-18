@@ -46,7 +46,6 @@ export default async function HomePage() {
           Open-source developer productivity dashboard. Track coding habits,
           visualize GitHub contributions, and hit your goals.
         </p>
-
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="/api/auth/signin/github?callbackUrl=/dashboard"
@@ -54,7 +53,12 @@ export default async function HomePage() {
           >
             Sign in with GitHub
           </Link>
-
+          <Link
+            href="/api/auth/signin/gitlab?callbackUrl=/dashboard"
+            className="border border-[var(--border)] text-[var(--foreground)] px-7 py-3 rounded-xl font-semibold hover:border-[var(--foreground)] hover:bg-[var(--card-muted)] transition-all"
+          >
+            Sign in with GitLab
+          </Link>
           <a
             href="https://github.com/Priyanshu-byte-coder/devtrack"
             target="_blank"
