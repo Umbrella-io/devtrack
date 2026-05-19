@@ -49,14 +49,15 @@ export const authOptions: NextAuthOptions = {
         );
       }
       if (account?.provider === "gitlab" && profile) {
-        const p = profile as { id: number; username: string };
+        const p = profile as { id: number; username: string; email: string };
         await supabaseAdmin.from("users").upsert(
           {
+            email: p.email,
             gitlab_id: String(p.id),
             gitlab_login: p.username,
             updated_at: new Date().toISOString(),
           },
-          { onConflict: "gitlab_id" }
+          { onConflict: "email" }
         );
       }
       return true;
