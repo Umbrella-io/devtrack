@@ -78,6 +78,14 @@ const ContributionHeatmap = dynamic(
   { ssr: false, loading: () => <SkeletonCard /> },
 );
 
+const RepoContributionDistribution = dynamic(
+  () => import("@/components/RepoContributionDistribution"),
+  {
+    ssr: false,
+    loading: () => <SkeletonCard />,
+  },
+);
+
 const PRMetrics = dynamic(() => import("@/components/PRMetrics"), {
   ssr: false,
   loading: () => <PRMetricsSkeleton />,
@@ -173,6 +181,9 @@ export default async function DashboardPage() {
               <div className="w-full overflow-x-auto pb-2">
                 <ContributionHeatmap />
               </div>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <RepoContributionDistribution />
+              </LazyWidget>
               <LazyWidget fallback={<SkeletonCard />}>
                 <ActivityRingChart />
               </LazyWidget>
