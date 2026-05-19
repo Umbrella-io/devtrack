@@ -26,6 +26,16 @@ test.beforeEach(async ({ page }) => {
       secure: false,
       expires: Math.floor(Date.now() / 1000) + 60 * 60,
     },
+    {
+      name: "playwright-dashboard-auth",
+      value: "1",
+      domain: "127.0.0.1",
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax",
+      secure: false,
+      expires: Math.floor(Date.now() / 1000) + 60 * 60,
+    },
   ]);
 
   await page.route("**/api/auth/session", async (route) => {
@@ -102,6 +112,7 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/weekly-summary**",
     "**/api/metrics/compare**",
     "**/api/metrics/repo-health**",
+    "**/api/metrics/ci**",
     "**/api/streak/freeze**",
     "**/api/user/github-accounts**",
   ];
@@ -120,7 +131,7 @@ test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard");
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Commit Activity" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible();
   await expect(page.getByText("Make 10 commits")).toBeVisible();
@@ -164,13 +175,26 @@ test("goal form posts a new goal", async ({ page }) => {
 
 function mockMetricResponse(url) {
   if (url.includes("/api/metrics/prs")) {
-    return { open: 2, merged: 8, avgReviewHours: 6, mergeRate: "80%" };
+    return {
+      open: 2,
+      merged: 8,
+      avgReviewHours: 6,
+      avgFirstReviewHours: 3,
+      mergeRate: "80%",
+    };
   }
   if (url.includes("/api/metrics/pr-breakdown")) {
-    return { merged: 8, open: 2, closed: 1 };
+    return { draft: 1, merged: 8, open: 2, closed: 1 };
   }
   if (url.includes("/api/metrics/issues")) {
-    return { opened: 4, closed: 3, open: 1 };
+    return {
+      opened: 4,
+      closed: 3,
+      currentlyOpen: 1,
+      avgCloseTimeDays: 2,
+      trend: 1,
+      mostActiveRepo: "demo/repo",
+    };
   }
   if (url.includes("/api/metrics/repos") || url.includes("/api/metrics/pinned-repos")) {
     return { repos: [{ name: "demo/repo", commits: 12, url: "https://github.com/demo/repo" }] };
@@ -182,13 +206,22 @@ function mockMetricResponse(url) {
     return { current: 3, longest: 9, lastCommitDate: "2026-05-18", totalActiveDays: 12 };
   }
   if (url.includes("/api/metrics/weekly-summary")) {
-    return { commits: 10, pullRequests: 3, mergedPullRequests: 2 };
+    return {
+      commits: { current: 10, previous: 7, delta: 3, trend: "up" },
+      prs: { opened: 3, merged: 2 },
+      activeDays: 5,
+      streak: 3,
+      topRepo: "demo/repo",
+    };
   }
   if (url.includes("/api/metrics/compare")) {
     return { user: { commits: 10 }, friend: { commits: 8 } };
   }
   if (url.includes("/api/metrics/repo-health")) {
     return { repositories: [] };
+  }
+  if (url.includes("/api/metrics/ci")) {
+    return { success: 6, failed: 1, cancelled: 0, skipped: 0 };
   }
   if (url.includes("/api/streak/freeze")) {
     return { freezes: [] };
