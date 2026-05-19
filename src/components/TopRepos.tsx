@@ -20,6 +20,8 @@ export default function TopRepos() {
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [healthScores, setHealthScores] = useState<Record<string, RepoHealthScore>>({});
   const [healthLoading, setHealthLoading] = useState(true);
+  const [sortColumn, setSortColumn] = useState<"commits" | "name">("commits");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   const fetchRepos = useCallback(() => {
     setLoading(true);
@@ -70,8 +72,30 @@ export default function TopRepos() {
     fetchRepos();
     fetchHealthScores();
   }, [fetchRepos, fetchHealthScores, selectedAccount]);
+  // toggle sort: same column flips direction, new column resets to desc
+  const handleSort = (column: "commits" | "name") => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("desc");
+    }
+  };
+  // sort repos based on selected column and direction before rendering
+  const sortedRepos = [...repos].sort((a, b) => {
+    if (sortColumn === "name") {
+      const nameA = (a.name.split("/")[1] ?? a.name).toLowerCase();
+      const nameB = (b.name.split("/")[1] ?? b.name).toLowerCase();
+      return sortDirection === "asc"
+        ? nameA.localeCompare(nameB)
+        : nameB.localeCompare(nameA);
+    }
+    return sortDirection === "asc"
+      ? a.commits - b.commits
+      : b.commits - a.commits;
+  });
 
-  const maxCommits = repos[0]?.commits ?? 1;
+  const maxCommits = sortedRepos[0]?.commits ?? 1;
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -106,10 +130,37 @@ export default function TopRepos() {
           </button>
         </div>
       ) : repos.length === 0 ? (
+        
         <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
       ) : (
+      /* column headers — clicking sorts the list */
+      <>
+        <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)] mb-2 px-0">
+          <button
+            type="button"
+            onClick={() => handleSort("name")}
+            className="flex items-center gap-1 hover:text-[var(--card-foreground)] transition-colors"
+            aria-label="Sort by repository name"
+          >
+            Repository
+            <span aria-hidden="true">
+              {sortColumn === "name" ? (sortDirection === "asc" ? "↑" : "↓") : "↕"}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSort("commits")}
+            className="flex items-center gap-1 hover:text-[var(--card-foreground)] transition-colors"
+            aria-label="Sort by commit count"
+          >
+            Commits
+            <span aria-hidden="true">
+              {sortColumn === "commits" ? (sortDirection === "asc" ? "↑" : "↓") : "↕"}
+            </span>
+          </button>
+        </div>
         <ul className="space-y-3">
-          {repos.map((repo, idx) => {
+          {sortedRepos.map((repo, idx) => {
             const barWidth = Math.max(
               Math.round((repo.commits / maxCommits) * 100),
               4
@@ -169,6 +220,7 @@ export default function TopRepos() {
             );
           })}
         </ul>
+        </>
       )}
       {lastUpdated && (
         <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
