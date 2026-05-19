@@ -8,7 +8,6 @@ import {
 } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
 import { supabaseAdmin } from "@/lib/supabase";
-import { url } from "inspector";
 
 export const dynamic = "force-dynamic";
 
