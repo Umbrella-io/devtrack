@@ -41,9 +41,14 @@ async function fetchActiveDates(
   }
 
   const data = (await searchRes.json()) as {
-    items: Array<{ commit: { author: { date: string } } }>;
-  };
-
+  items: Array<{
+    commit: {
+      author: {
+        date: string;
+      };
+    };
+  }>;
+};
   const activeDates = new Set<string>();
   for (const item of data.items) {
     activeDates.add(item.commit.author.date.slice(0, 10));
