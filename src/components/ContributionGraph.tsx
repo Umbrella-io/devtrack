@@ -82,6 +82,7 @@ export default function ContributionGraph() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [usesTouchTooltip, setUsesTouchTooltip] = useState(false);
   
   // Compare mode state
   const [compareMode, setCompareMode] = useState(false);
@@ -106,6 +107,18 @@ export default function ContributionGraph() {
         setDays(30);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+
+    const media = window.matchMedia("(hover: none), (pointer: coarse)");
+    const updateTooltipMode = () => setUsesTouchTooltip(media.matches);
+
+    updateTooltipMode();
+    media.addEventListener("change", updateTooltipMode);
+
+    return () => media.removeEventListener("change", updateTooltipMode);
   }, []);
 
   const handleRangeChange = (newDays: number) => {
@@ -235,6 +248,7 @@ export default function ContributionGraph() {
 
   const displayData = compareMode ? mergedData : data;
   const hasFriendData = compareMode && friendData.length > 0 && !compareError;
+  const tooltipTrigger = usesTouchTooltip ? "click" : "hover";
 
   return (
     <div
@@ -335,6 +349,7 @@ export default function ContributionGraph() {
               />
               <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
               <Tooltip
+                trigger={tooltipTrigger}
                 contentStyle={{
                   background: "var(--card)",
                   color: "var(--foreground)",
@@ -382,6 +397,7 @@ export default function ContributionGraph() {
               />
               <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
               <Tooltip
+                trigger={tooltipTrigger}
                 contentStyle={{
                   background: "var(--card)",
                   color: "var(--foreground)",
