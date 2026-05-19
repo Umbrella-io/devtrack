@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   BarChart,
   Bar,
@@ -27,65 +26,52 @@ export default function CommitTimeChart() {
   const [days, setDays] = useState(30);
   const [peakTime, setPeakTime] = useState<string | null>(null);
 
-  const fetchContributions = () => {
-    setLoading(true);
-    setError(null);
-    fetch(`/api/metrics/contributions?days=${days}`)
-      .then((r) => r.json())
-      .then((res: { timeBlocks: TimeBlocks }) => {
-        if (!res.timeBlocks) {
-          setData([]);
-          setPeakTime(null);
-          return;
-        }
+const fetchContributions = useCallback(async () => {
+  setLoading(true);
+  setError(null);
 
-        const blocks = res.timeBlocks;
-        const chartData = [
-          {
-            name: "Morning (6-12)",
-            commits: blocks.morning,
-            icon: "Sun",
-            key: "morning",
-          },
-          {
-            name: "Afternoon (12-18)",
-            commits: blocks.afternoon,
-            icon: "CloudSun",
-            key: "afternoon",
-          },
-          {
-            name: "Evening (18-22)",
-            commits: blocks.evening,
-            icon: "Sunset",
-            key: "evening",
-          },
-          {
-            name: "Night (22-6)",
-            commits: blocks.night,
-            icon: "Moon",
-            key: "night",
-          },
-        ];
+  try {
+    const res = await fetch(
+      `/api/metrics/contributions?days=${days}`
+    );
 
-        let peak = chartData[0];
-        for (const block of chartData) {
-          if (block.commits > peak.commits) {
-            peak = block;
-          }
-        }
+    const data: { timeBlocks: TimeBlocks } = await res.json();
 
-        setData(chartData);
-        setPeakTime(peak.commits > 0 ? peak.name : null);
-      })
-      .catch(() =>
-        setError("We couldn't load your time-of-day data right now."),
-      )
-      .finally(() => setLoading(false));
-  };
+    if (!data.timeBlocks) {
+      setData([]);
+      setPeakTime(null);
+      return;
+    }
+
+    const blocks = data.timeBlocks;
+
+    const chartData = [
+      { name: "Morning (6-12)", commits: blocks.morning, icon: "Sun", key: "morning" },
+      { name: "Afternoon (12-18)", commits: blocks.afternoon, icon: "CloudSun", key: "afternoon" },
+      { name: "Evening (18-22)", commits: blocks.evening, icon: "Sunset", key: "evening" },
+      { name: "Night (22-6)", commits: blocks.night, icon: "Moon", key: "night" },
+    ];
+
+    let peak = chartData[0];
+
+    for (const block of chartData) {
+      if (block.commits > peak.commits) {
+        peak = block;
+      }
+    }
+
+    setData(chartData);
+    setPeakTime(peak.commits > 0 ? peak.name : null);
+  } catch {
+    setError("We couldn't load your time-of-day data right now.");
+  } finally {
+    setLoading(false);
+  }
+}, [days]);
 
   useEffect(() => {
-    fetchContributions();
-  }, [days]);
+  fetchContributions();
+}, [fetchContributions]);
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full">
