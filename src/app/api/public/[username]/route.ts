@@ -19,12 +19,15 @@ const RATE_LIMIT_REQUESTS = 30;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 
 function getRateLimitKey(req: NextRequest): string {
-  return (
-    req.headers.get("x-forwarded-for") ||
-    req.headers.get("x-real-ip") ||
-    req.ip ||
-    "unknown"
-  );
+  // req.ip is populated by the Next.js / Vercel runtime from the verified
+  // network-layer source address and cannot be spoofed by the caller.
+  //
+  // x-forwarded-for is intentionally excluded here: it is a plain request
+  // header that any client can set to an arbitrary value. Trusting it as the
+  // primary key allows an attacker to rotate the header on every request,
+  // bypass the per-IP limit entirely, and exhaust the shared GITHUB_TOKEN
+  // quota (5 000 req/hr), making the endpoint unavailable for all users.
+  return req.ip || req.headers.get("x-real-ip") || "unknown";
 }
 
 function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
