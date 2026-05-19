@@ -21,8 +21,8 @@ interface ChartEntry {
 }
 
 const COLORS = [
-  "var(--accent)",       // Open
-  "#10b981",             // Merged — emerald-500
+  "var(--accent)",           // Open
+  "var(--success)",          // Merged — emerald-500 via CSS token
   "var(--muted-foreground)", // Closed without merge
 ];
 
