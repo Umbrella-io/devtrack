@@ -17,81 +17,103 @@ interface PRMetricsBase {
   total: number;
   avgReviewHours: number;
   mergeRate: number;
+  reviewsGiven: number;
 }
 
-async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
+async function fetchPRMetrics(token: string, githubLogin: string): Promise<PRMetricsBase> {
   const searchRes = await fetch(
-    `${GITHUB_API}/search/issues?q=type:pr+author:@me&per_page=100`,
+    `${GITHUB_API}/search/issues?q=type:pr+author:${githubLogin}&per_page=100`,
     {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     }
   );
 
-  if (!searchRes.ok) {
+  const reviewRes = await fetch(
+    `${GITHUB_API}/search/issues?q=type:pr+reviewed-by:${githubLogin}&per_page=100`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }
+  );
+
+  if (!searchRes.ok || !reviewRes.ok) {
     throw new Error("GitHub API error");
   }
 
   const data = (await searchRes.json()) as {
     total_count: number;
-    items: Array<{ state: string; created_at: string; closed_at: string | null }>;
+    items: Array<{
+      state: string;
+      created_at: string;
+      closed_at: string | null;
+      pull_request?: { merged_at: string | null };
+    }>;
   };
 
-  const open = data.items.filter((pr) => pr.state === "open").length;
-  const merged = data.items.filter((pr) => pr.state === "closed").length;
+  const reviewData = (await reviewRes.json()) as { total_count: number };
 
-  const closedPRs = data.items.filter((pr) => pr.closed_at);
+  const open = data.items.filter((pr) => pr.state === "open").length;
+  const merged = data.items.filter((pr) => pr.pull_request?.merged_at != null).length;
+
+  const mergedPRs = data.items.filter((pr) => pr.pull_request?.merged_at != null);
   const avgReviewMs =
-    closedPRs.length > 0
-      ? closedPRs.reduce(
+    mergedPRs.length > 0
+      ? mergedPRs.reduce(
           (sum, pr) =>
             sum +
-            (new Date(pr.closed_at!).getTime() -
+            (new Date(pr.pull_request!.merged_at!).getTime() -
               new Date(pr.created_at).getTime()),
           0
-        ) / closedPRs.length
+        ) / mergedPRs.length
       : 0;
+
+  const sampleTotal = data.items.length;
 
   return {
     open,
     merged,
     total: data.total_count,
     avgReviewHours: Math.round(avgReviewMs / 3600000),
-    mergeRate: data.total_count > 0 ? merged / data.total_count : 0,
+    mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
+    reviewsGiven: reviewData.total_count,
   };
 }
 
 function formatPRMetrics(metrics: PRMetricsBase) {
+  const ratio = metrics.total > 0 ? (metrics.reviewsGiven / metrics.total).toFixed(2) : "0.00";
+
   return {
     open: metrics.open,
     merged: metrics.merged,
     total: metrics.total,
     avgReviewHours: metrics.avgReviewHours,
-    mergeRate:
-      metrics.total > 0
-        ? `${Math.round(metrics.mergeRate * 100)}%`
-        : "0%",
+    mergeRate: metrics.total > 0 ? `${Math.round(metrics.mergeRate * 100)}%` : "0%",
+    reviewsGiven: metrics.reviewsGiven,
+    reviewRatio: ratio,
   };
 }
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.accessToken) {
+  
+  if (!session?.accessToken || !session?.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const accountId = req.nextUrl.searchParams.get("accountId");
+  const username = req.nextUrl.searchParams.get("username") || session.githubLogin;
 
   if (!accountId) {
     try {
-      const result = await fetchPRMetrics(session.accessToken);
+      const result = await fetchPRMetrics(session.accessToken, username);
       return Response.json(formatPRMetrics(result));
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
 
-  if (!session.githubId || !session.githubLogin) {
+  if (!session.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -116,7 +138,7 @@ export async function GET(req: NextRequest) {
     );
 
     const results = await Promise.allSettled(
-      accounts.map((account) => fetchPRMetrics(account.token))
+      accounts.map((account) => fetchPRMetrics(account.token, username))
     );
 
     const merged = mergeMetrics(results, (a, b) => {
@@ -132,8 +154,8 @@ export async function GET(req: NextRequest) {
         merged: mergedCount,
         total,
         avgReviewHours: Math.round(avgReviewHours * 10) / 10,
-        mergeRate:
-          total > 0 ? Math.round((mergedCount / total) * 100) / 100 : 0,
+        mergeRate: total > 0 ? Math.round((mergedCount / total) * 100) / 100 : 0,
+        reviewsGiven: a.reviewsGiven + b.reviewsGiven,
       };
     });
 
@@ -154,7 +176,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await fetchPRMetrics(token);
+    const result = await fetchPRMetrics(token, username);
     return Response.json(formatPRMetrics(result));
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
