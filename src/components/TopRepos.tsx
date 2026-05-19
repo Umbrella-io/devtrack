@@ -109,14 +109,12 @@ export default function TopRepos() {
         <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
       ) : (
         <ul className="space-y-3">
-            {repos.map((repo, idx) => {
+          {repos.map((repo, idx) => {
             const barWidth = Math.max(
               Math.round((repo.commits / maxCommits) * 100),
               4
             );
             const shortName = repo.name.split("/")[1] ?? repo.name;
-            // Safe href: use repo.url if present, otherwise fall back to github.com/<owner/repo>
-            const repoHref = repo.url && repo.url.trim() !== "" ? repo.url : `https://github.com/${repo.name}`;
             const health = healthScores[repo.name];
             const badgeTitle = health
               ? `Commits: ${health.signals.commitFrequency} | PR Merge Rate: ${Math.round(
@@ -134,19 +132,16 @@ export default function TopRepos() {
             return (
               <li key={repo.name}>
                 <div className="flex items-center justify-between text-sm mb-1">
-                  <div className="max-w-[70%] truncate">
+                  <a
+                    href={repo.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
+                    title={repo.name}
+                  >
                     <span className="mr-1 text-[var(--muted-foreground)]">#{idx + 1}</span>
-                    <a
-                      href={repoHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="Open on GitHub"
-                      title={repo.name}
-                      className="inline-block truncate text-[var(--card-foreground)] transition-colors hover:underline hover:text-[var(--accent)] cursor-pointer z-10"
-                    >
-                      {shortName}
-                    </a>
-                  </div>
+                    {shortName}
+                  </a>
                   <span className="shrink-0 flex items-center gap-2">
                     {healthLoading ? (
                       <div className="h-5 w-9 rounded bg-[var(--card-muted)] animate-pulse" />
