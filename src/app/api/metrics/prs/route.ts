@@ -34,30 +34,55 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
 
   const data = (await searchRes.json()) as {
     total_count: number;
-    items: Array<{ state: string; created_at: string; closed_at: string | null }>;
+    items: Array<{
+      state: string;
+      created_at: string;
+      closed_at: string | null;
+      // GitHub Search API includes a pull_request object on PR items.
+      // merged_at is non-null only when the PR was actually merged, as
+      // opposed to closed without merging.
+      pull_request?: { merged_at: string | null };
+    }>;
   };
 
   const open = data.items.filter((pr) => pr.state === "open").length;
-  const merged = data.items.filter((pr) => pr.state === "closed").length;
 
-  const closedPRs = data.items.filter((pr) => pr.closed_at);
+  // A PR with state "closed" may have been merged OR closed without merging
+  // (e.g. rejected, abandoned). Only count those with a non-null merged_at
+  // as truly merged so the dashboard does not inflate the merged count.
+  const merged = data.items.filter(
+    (pr) => pr.pull_request?.merged_at != null
+  ).length;
+
+  // Average review time: use only actually merged PRs so we measure the time
+  // from open to merge, not open to close-without-merge.
+  const mergedPRs = data.items.filter(
+    (pr) => pr.pull_request?.merged_at != null
+  );
   const avgReviewMs =
-    closedPRs.length > 0
-      ? closedPRs.reduce(
+    mergedPRs.length > 0
+      ? mergedPRs.reduce(
           (sum, pr) =>
             sum +
-            (new Date(pr.closed_at!).getTime() -
+            (new Date(pr.pull_request!.merged_at!).getTime() -
               new Date(pr.created_at).getTime()),
           0
-        ) / closedPRs.length
+        ) / mergedPRs.length
       : 0;
+
+  // Use the number of fetched items as the denominator for mergeRate.
+  // data.total_count is the all-time GitHub total (potentially thousands)
+  // while data.items is capped at 100, so dividing merged/total_count
+  // produces a near-zero rate for any active user. The fetched sample
+  // (open + merged + closed-without-merge) is the correct base.
+  const sampleTotal = data.items.length;
 
   return {
     open,
     merged,
     total: data.total_count,
     avgReviewHours: Math.round(avgReviewMs / 3600000),
-    mergeRate: data.total_count > 0 ? merged / data.total_count : 0,
+    mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
   };
 }
 

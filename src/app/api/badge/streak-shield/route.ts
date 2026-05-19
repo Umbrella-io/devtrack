@@ -151,17 +151,18 @@ export async function GET(req: NextRequest) {
 
     // Generate SVG badge
     const svg = generateBadgeSVG({
-      label: "🔥 Streak",
-      value: `${streak.current} days`,
-      color: streak.current > 0 ? "#f59e0b" : "#6366f1", // Orange for active streak, indigo for none
-      labelColor: "#333333",
-    });
+  label: "DevTrack",
+  value: `🔥 ${streak.current} day streak`,
+  color: streak.current > 0 ? "#4c1" : "#e05d44",
+  labelColor: "#555",
+});
 
     return new NextResponse(svg, {
       status: 200,
       headers: {
         "Content-Type": "image/svg+xml;charset=utf-8",
-        "Cache-Control": "max-age=3600, public",
+        "Cache-Control":
+  "s-maxage=3600, stale-while-revalidate",
         "X-Content-Type-Options": "nosniff",
       },
     });
@@ -170,12 +171,11 @@ export async function GET(req: NextRequest) {
 
     // Return error badge
     const svg = generateBadgeSVG({
-      label: "Streak",
-      value: "Error",
-      color: "#ef4444",
-      labelColor: "#333333",
-    });
-
+  label: "DevTrack",
+  value: "Error",
+  color: "#ef4444",
+  labelColor: "#555",
+});
     return new NextResponse(svg, {
       status: 500,
       headers: {
