@@ -6,6 +6,8 @@ import { useCountUp } from "@/hooks/useCountUp";
 import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 
+const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
+
 interface StreakData {
   current: number;
   longest: number;
@@ -28,7 +30,6 @@ export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [contributionData, setContributionData] = useState<ContributionData | null>(null);
   const [loading, setLoading] = useState(true);
-  const milestones = [7, 30, 50, 100, 200, 365];
   const [dismissedMilestones, setDismissedMilestones] = useState<number[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
@@ -255,7 +256,7 @@ export default function StreakTracker() {
   };
 
   const currentMilestone =
-    milestones.find(
+    STREAK_MILESTONES.find(
       (m) => m === data?.current
     );
   const shouldShowBanner =

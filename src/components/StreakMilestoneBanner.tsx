@@ -24,6 +24,7 @@ export default function StreakMilestoneBanner({
         type="button"
         onClick={() => onDismiss?.()}
         aria-label="Dismiss milestone banner"
+        className="ml-4 rounded-md p-1 opacity-70 hover:opacity-100 transition-opacity"
       >
         ✕
       </button>
