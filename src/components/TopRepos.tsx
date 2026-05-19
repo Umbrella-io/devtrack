@@ -136,7 +136,8 @@ export default function TopRepos() {
                     href={repo.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
+                    aria-label="Open on GitHub"
+                    className="max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] hover:underline"
                     title={repo.name}
                   >
                     <span className="mr-1 text-[var(--muted-foreground)]">#{idx + 1}</span>
