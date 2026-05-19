@@ -21,10 +21,11 @@ const RECURRENCE_LABELS: Record<Recurrence, string> = {
 };
 
 export default function GoalTracker() {
+  const [mounted, setMounted] = useState(false);
+const [reducedMotion, setReducedMotion] = useState(false);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [minutesAgo, setMinutesAgo] = useState(0);
   const [title, setTitle] = useState("");
   const [target, setTarget] = useState(7);
   const [unit, setUnit] = useState("commits");
@@ -46,9 +47,21 @@ export default function GoalTracker() {
       .finally(() => {
         setLoading(false);
         setLastUpdated(new Date());
-        setMinutesAgo(0);
       });
   }, [loadGoals]);
+  useEffect(() => {
+  const mediaQuery = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  );
+
+  setReducedMotion(mediaQuery.matches);
+
+  const timeout = setTimeout(() => {
+    setMounted(true);
+  }, 50);
+
+  return () => clearTimeout(timeout);
+}, []);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -106,14 +119,6 @@ export default function GoalTracker() {
     return "";
   }
 
-  useEffect(() => {
-    if (!lastUpdated) return;
-    const interval = setInterval(() => {
-      const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
-      setMinutesAgo(diff);
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [lastUpdated]);
 
   if (loading) {
     return (
@@ -212,9 +217,16 @@ export default function GoalTracker() {
 
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
-                    className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
-                    style={{ width: `${pct}%` }}
-                  />
+  className={`h-full rounded-full transition-all duration-700 ease-out ${
+    completed ? "bg-emerald-500" : "bg-[var(--accent)]"
+  }`}
+  style={{
+    width:
+      reducedMotion || mounted
+        ? `${pct}%`
+        : "0%",
+  }}
+/>
                 </div>
               </li>
             );
@@ -222,11 +234,6 @@ export default function GoalTracker() {
         </ul>
       )}
 
-      {lastUpdated && (
-        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
-          {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
-        </p>
-      )}
 
       {/* Goal Creation Form */}
       <form onSubmit={handleCreate} className="mt-6 space-y-3 border-t border-[var(--border)] pt-4">
