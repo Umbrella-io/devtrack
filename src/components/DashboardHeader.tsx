@@ -6,6 +6,7 @@ import AccountToggle from "@/components/AccountToggle";
 import SignOutButton from "@/components/SignOutButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
+import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 
 export default function DashboardHeader() {
   const { data: session } = useSession();
@@ -59,6 +60,7 @@ export default function DashboardHeader() {
               Share Profile
             </a>
           )}
+          <KeyboardShortcuts />
           <UserAvatar />
           <ThemeToggle />
           <SignOutButton />

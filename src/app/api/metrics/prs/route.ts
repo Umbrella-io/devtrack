@@ -16,12 +16,118 @@ interface PRMetricsBase {
   merged: number;
   total: number;
   avgReviewHours: number;
+  avgFirstReviewHours: number | null;
   mergeRate: number;
+}
+
+interface PullRequestSearchItem {
+  state: string;
+  created_at: string;
+  closed_at: string | null;
+  number: number;
+  repository_url: string;
+  pull_request?: { merged_at: string | null };
+}
+
+interface ReviewEvent {
+  submitted_at?: string | null;
+}
+
+interface ReviewCommentEvent {
+  created_at?: string | null;
+}
+
+function getRepoFullName(repositoryUrl: string): string | null {
+  const marker = "/repos/";
+  const index = repositoryUrl.indexOf(marker);
+  return index >= 0 ? repositoryUrl.slice(index + marker.length) : null;
+}
+
+function getEarliestTimestamp(values: Array<string | null | undefined>) {
+  const timestamps = values
+    .filter((value): value is string => Boolean(value))
+    .map((value) => new Date(value).getTime())
+    .filter((value) => !Number.isNaN(value));
+
+  return timestamps.length > 0 ? Math.min(...timestamps) : null;
+}
+
+async function fetchFirstReviewTimestamp(
+  token: string,
+  pr: PullRequestSearchItem
+): Promise<number | null> {
+  const repo = getRepoFullName(pr.repository_url);
+
+  if (!repo) {
+    return null;
+  }
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+  };
+  const [reviewsRes, commentsRes] = await Promise.all([
+    fetch(`${GITHUB_API}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`, {
+      headers,
+      cache: "no-store",
+    }),
+    fetch(`${GITHUB_API}/repos/${repo}/pulls/${pr.number}/comments?per_page=100`, {
+      headers,
+      cache: "no-store",
+    }),
+  ]);
+
+  if (!reviewsRes.ok || !commentsRes.ok) {
+    return null;
+  }
+
+  const reviews = (await reviewsRes.json()) as ReviewEvent[];
+  const comments = (await commentsRes.json()) as ReviewCommentEvent[];
+
+  return getEarliestTimestamp([
+    ...reviews.map((review) => review.submitted_at),
+    ...comments.map((comment) => comment.created_at),
+  ]);
+}
+
+async function getAverageFirstReviewHours(
+  token: string,
+  prs: PullRequestSearchItem[]
+): Promise<number | null> {
+  const reviewedPrs = await Promise.all(
+    prs.slice(0, 30).map(async (pr) => {
+      const firstReviewAt = await fetchFirstReviewTimestamp(token, pr);
+
+      if (!firstReviewAt) {
+        return null;
+      }
+
+      const openedAt = new Date(pr.created_at).getTime();
+      if (Number.isNaN(openedAt) || firstReviewAt < openedAt) {
+        return null;
+      }
+
+      return (firstReviewAt - openedAt) / 3600000;
+    })
+  );
+  const validDurations = reviewedPrs.filter(
+    (value): value is number => typeof value === "number"
+  );
+
+  if (validDurations.length === 0) {
+    return null;
+  }
+
+  const average =
+    validDurations.reduce((sum, value) => sum + value, 0) /
+    validDurations.length;
+
+  return Math.round(average * 10) / 10;
 }
 
 async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
   const searchRes = await fetch(
-    `${GITHUB_API}/search/issues?q=type:pr+author:@me&per_page=100`,
+    `${GITHUB_API}/search/issues?q=type:pr+author:@me&sort=updated&order=desc&per_page=100`,
     {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
@@ -34,15 +140,7 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
 
   const data = (await searchRes.json()) as {
     total_count: number;
-    items: Array<{
-      state: string;
-      created_at: string;
-      closed_at: string | null;
-      // GitHub Search API includes a pull_request object on PR items.
-      // merged_at is non-null only when the PR was actually merged, as
-      // opposed to closed without merging.
-      pull_request?: { merged_at: string | null };
-    }>;
+    items: PullRequestSearchItem[];
   };
 
   const open = data.items.filter((pr) => pr.state === "open").length;
@@ -76,12 +174,17 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
   // produces a near-zero rate for any active user. The fetched sample
   // (open + merged + closed-without-merge) is the correct base.
   const sampleTotal = data.items.length;
+  const avgFirstReviewHours = await getAverageFirstReviewHours(
+    token,
+    data.items
+  );
 
   return {
     open,
     merged,
     total: data.total_count,
     avgReviewHours: Math.round(avgReviewMs / 3600000),
+    avgFirstReviewHours,
     mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
   };
 }
@@ -92,6 +195,7 @@ function formatPRMetrics(metrics: PRMetricsBase) {
     merged: metrics.merged,
     total: metrics.total,
     avgReviewHours: metrics.avgReviewHours,
+    avgFirstReviewHours: metrics.avgFirstReviewHours,
     mergeRate:
       metrics.total > 0
         ? `${Math.round(metrics.mergeRate * 100)}%`
@@ -151,12 +255,25 @@ export async function GET(req: NextRequest) {
         total > 0
           ? (a.avgReviewHours * a.total + b.avgReviewHours * b.total) / total
           : 0;
+      const reviewedTotal =
+        (a.avgFirstReviewHours === null ? 0 : a.total) +
+        (b.avgFirstReviewHours === null ? 0 : b.total);
+      const avgFirstReviewHours =
+        reviewedTotal > 0
+          ? ((a.avgFirstReviewHours ?? 0) * a.total +
+              (b.avgFirstReviewHours ?? 0) * b.total) /
+            reviewedTotal
+          : null;
 
       return {
         open: a.open + b.open,
         merged: mergedCount,
         total,
         avgReviewHours: Math.round(avgReviewHours * 10) / 10,
+        avgFirstReviewHours:
+          avgFirstReviewHours === null
+            ? null
+            : Math.round(avgFirstReviewHours * 10) / 10,
         mergeRate:
           total > 0 ? Math.round((mergedCount / total) * 100) / 100 : 0,
       };

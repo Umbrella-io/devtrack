@@ -7,6 +7,8 @@ import {
   Bar,
   LineChart,
   Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -26,7 +28,7 @@ interface GraphPoint {
   friend: number;
 }
 
-type ViewMode = "bar" | "line";
+type ViewMode = "bar" | "line" | "area";
 
 const RANGES = [
   { label: "7d", days: 7 },
@@ -37,6 +39,7 @@ const RANGES = [
 const charts: { key: ViewMode; label: string }[] = [
   { key: "bar", label: "Bar" },
   { key: "line", label: "Line" },
+  { key: "area", label: "Area" },
 ];
 
 function mergeContributionData(
@@ -79,6 +82,7 @@ export default function ContributionGraph() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [usesTouchTooltip, setUsesTouchTooltip] = useState(false);
   
   // Compare mode state
   const [compareMode, setCompareMode] = useState(false);
@@ -103,6 +107,18 @@ export default function ContributionGraph() {
         setDays(30);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+
+    const media = window.matchMedia("(hover: none), (pointer: coarse)");
+    const updateTooltipMode = () => setUsesTouchTooltip(media.matches);
+
+    updateTooltipMode();
+    media.addEventListener("change", updateTooltipMode);
+
+    return () => media.removeEventListener("change", updateTooltipMode);
   }, []);
 
   const handleRangeChange = (newDays: number) => {
@@ -201,6 +217,14 @@ export default function ContributionGraph() {
   }, []);
 
   useEffect(() => {
+    const handleToggleChart = () => {
+      setChartType((prev) => (prev === "bar" ? "line" : "bar"));
+    };
+    window.addEventListener("toggleChart", handleToggleChart);
+    return () => window.removeEventListener("toggleChart", handleToggleChart);
+  }, []);
+
+  useEffect(() => {
     if (!lastUpdated) return;
     const interval = setInterval(() => {
       const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
@@ -224,6 +248,7 @@ export default function ContributionGraph() {
 
   const displayData = compareMode ? mergedData : data;
   const hasFriendData = compareMode && friendData.length > 0 && !compareError;
+  const tooltipTrigger = usesTouchTooltip ? "click" : "hover";
 
   return (
     <div
@@ -324,6 +349,7 @@ export default function ContributionGraph() {
               />
               <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
               <Tooltip
+                trigger={tooltipTrigger}
                 contentStyle={{
                   background: "var(--card)",
                   color: "var(--foreground)",
@@ -362,7 +388,7 @@ export default function ContributionGraph() {
                 />
               )}
             </BarChart>
-          ) : (
+          ) : chartType === "line" ? (
             <LineChart data={displayData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis 
@@ -371,6 +397,7 @@ export default function ContributionGraph() {
               />
               <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
               <Tooltip
+                trigger={tooltipTrigger}
                 contentStyle={{
                   background: "var(--card)",
                   color: "var(--foreground)",
@@ -416,6 +443,59 @@ export default function ContributionGraph() {
                 />
               )}
             </LineChart>
+          ) : (
+            <AreaChart data={displayData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis 
+                dataKey={compareMode ? "date" : "day"} 
+                hide 
+              />
+              <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--card)",
+                  color: "var(--foreground)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                }}
+                labelStyle={{
+                  color: "var(--foreground)",
+                  fontSize: "12px",
+                }}
+                cursor={{ fill: "var(--background)" }}
+              />
+              {hasFriendData && (
+                <Legend wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }} />
+              )}
+              {compareMode && hasFriendData ? (
+                <>
+                  <Area
+                    type="monotone"
+                    dataKey="you"
+                    stroke="var(--accent)"
+                    fill="var(--accent)"
+                    fillOpacity={0.3}
+                    name="You"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="friend"
+                    stroke="var(--muted-foreground)"
+                    fill="var(--muted-foreground)"
+                    fillOpacity={0.3}
+                    name={`${compareUser}`}
+                  />
+                </>
+              ) : (
+                <Area
+                  type="monotone"
+                  dataKey="commits"
+                  stroke="var(--accent)"
+                  fill="var(--accent)"
+                  fillOpacity={0.3}
+                />
+              )}
+            </AreaChart>
           )}
         </ResponsiveContainer>
         </div>
