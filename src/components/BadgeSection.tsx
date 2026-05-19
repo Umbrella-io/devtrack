@@ -11,8 +11,9 @@ interface BadgeSectionProps {
  */
 export default function BadgeSection({ username }: BadgeSectionProps) {
   // Relative URLs for preview images — always correct regardless of env vars
-  const streakBadgePreviewUrl = `/api/badge/streak-shield?user=${username}`;
-  const commitsBadgePreviewUrl = `/api/badge/commits?user=${username}`;
+  const encodedUsername = encodeURIComponent(username);
+  const streakBadgePreviewUrl = `/api/badge/streak-shield?user=${encodedUsername}`;
+  const commitsBadgePreviewUrl = `/api/badge/commits?user=${encodedUsername}`;
 
   // Absolute URLs for copy markdown — resolved on client only to avoid hydration mismatch
   const [baseUrl, setBaseUrl] = useState("");
@@ -22,10 +23,10 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
   }, []);
 
   const streakBadgeUrl = baseUrl
-   ? `${baseUrl}/api/badge/streak-shield?user=${username}`
+    ? `${baseUrl}/api/badge/streak-shield?user=${encodedUsername}`
     : streakBadgePreviewUrl;
   const commitsBadgeUrl = baseUrl
-    ? `${baseUrl}/api/badge/commits?user=${username}`
+    ? `${baseUrl}/api/badge/commits?user=${encodedUsername}`
     : commitsBadgePreviewUrl;
 
   const streakMarkdown = `![DevTrack Streak](${streakBadgeUrl})`;
