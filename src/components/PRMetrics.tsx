@@ -192,6 +192,18 @@ export default function PRMetrics() {
               </div>
             )}
           </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-lg bg-[var(--control)] p-4 text-center min-w-0"
+            >
+              <div className="truncate text-2xl font-bold text-[var(--accent)]">
+                {stat.value}
+              </div>
+              <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
+            </div>
+          ))}
         </div>
       )}
     </div>

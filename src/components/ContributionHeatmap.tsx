@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
+import { useHeatmapTheme, getHeatmapCellStyle } from "@/hooks/useHeatmapTheme";
 
 interface ContributionHeatmapProps {
   days?: number;
@@ -33,17 +34,6 @@ function formatDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function getHeatmapCellStyle(count: number): CSSProperties {
-  if (count === 0) {
-    return { backgroundColor: "var(--control)" };
-  }
-
-  const opacity = count >= 10 ? 1 : count >= 6 ? 0.75 : count >= 3 ? 0.5 : 0.25;
-
-  return {
-    backgroundColor: `color-mix(in srgb, var(--accent) ${opacity * 100}%, transparent)`,
-  };
-}
 
 function buildHeatmap(days: number, contributions: Record<string, number>) {
   const endDate = new Date();
@@ -130,6 +120,7 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
     return () => clearInterval(interval);
   }, [lastUpdated]);
 
+  const { themeConfig, theme, setTheme } = useHeatmapTheme();
   const cells = useMemo(() => buildHeatmap(days, data), [days, data]);
   const weekCount = Math.ceil(cells.length / 7);
   const monthMarkers = useMemo(() => {
@@ -162,18 +153,54 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Contribution Heatmap</h2>
           <p className="text-sm text-[var(--muted-foreground)]">Last {days} days of commit activity.</p>
         </div>
 
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setTheme("default")}
+              style={theme === "default" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}
+              className="px-2 py-1 text-xs rounded"
+            >
+              Default
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme("colour-blind-friendly")}
+              style={theme === "colour-blind-friendly" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}
+              className="px-2 py-1 text-xs rounded"
+            >
+              Colour-blind
+            </button>
+          </div>
+
         <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
           <span>Less</span>
-          <div className="flex items-center gap-1">
-            {[0, 1, 3, 6, 10].map((count) => (
-              <span key={count} className="h-3 w-3 rounded-sm border border-[var(--border)]" style={getHeatmapCellStyle(count)} />
-            ))}
+                <div className="flex items-center gap-1">
+            {[0, 1, 3, 6, 10].map((count) => {
+              const swatch =
+                count === 0
+                  ? themeConfig.missed
+                  : count < 3
+                  ? themeConfig.levelOne
+                  : count < 6
+                  ? themeConfig.levelTwo
+                  : count < 10
+                  ? themeConfig.levelThree
+                  : themeConfig.levelFour;
+
+              return (
+                <span
+                  key={count}
+                  className="h-3 w-3 rounded-sm border"
+                  style={{ backgroundColor: swatch, borderColor: themeConfig.border }}
+                />
+              );
+            })}
           </div>
           <span>More</span>
         </div>
@@ -229,8 +256,14 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
                       title={isFuture ? "" : tooltip}
                       aria-label={isFuture ? `${cell.dateKey}: future date` : tooltip}
                       disabled={isFuture}
-                      className={`group relative z-0 h-3 w-3 rounded-[3px] border border-[var(--border)] transition-transform hover:z-20 hover:scale-110 focus:z-20 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:cursor-default disabled:opacity-30 ${cell.inRange ? "" : "opacity-35"}`}
-                      style={{ gridRow: dayIndex + 2, gridColumn: weekIndex + 2, ...getHeatmapCellStyle(isFuture ? 0 : cell.count) }}
+                      className={`group relative z-0 h-3 w-3 rounded-[3px] border transition-transform hover:z-20 hover:scale-110 focus:z-20 focus:outline-none focus:ring-2 focus:ring-[var(--heatmap-focus-ring)] disabled:cursor-default disabled:opacity-30 ${cell.inRange ? "" : "opacity-35"}`}
+                        style={{
+                          gridRow: dayIndex + 2,
+                          gridColumn: weekIndex + 2,
+                          backgroundColor: isFuture ? "transparent" : (cell.count === 0 ? themeConfig.missed : cell.count < 3 ? themeConfig.levelOne : cell.count < 6 ? themeConfig.levelTwo : cell.count < 10 ? themeConfig.levelThree : themeConfig.levelFour),
+                          borderColor: themeConfig.border,
+                          ["--heatmap-focus-ring" as any]: themeConfig.accent,
+                        }}
                     >
                       {!isFuture && (
                         <span
