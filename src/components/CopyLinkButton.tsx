@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react"
 
 export default function CopyLinkButton() {
+  const { data: session } = useSession();
   const [ isCopied, setCopied ] = useState(false);
-
+  
   const dataCopy = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    await navigator.clipboard.writeText(`${window.location.origin}/u/${session?.githubLogin}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
