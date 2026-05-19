@@ -1,10 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
-import {
-  getAllAccounts,
-  mergeMetrics,
-} from "@/lib/github-accounts";
+import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
 import {
   isMetricsCacheBypassed,
@@ -12,20 +9,9 @@ import {
   metricsCacheKey,
   withMetricsCache,
 } from "@/lib/metrics-cache";
-import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
-
-const STALE_THRESHOLD_OPTIONS = [7, 14, 30] as const;
-const DEFAULT_STALE_THRESHOLD_DAYS = 7;
-
-interface ReviewMetrics {
-  totalReviews: number;
-  approvalRate: string;
-  avgFirstReviewHours: number | null;
-  topRepos: { repo: string; count: number }[];
-}
 
 interface PRMetricsBase {
   open: number;
@@ -35,9 +21,15 @@ interface PRMetricsBase {
   avgReviewHours: number;
   avgFirstReviewHours: number | null;
   mergeRate: number;
-  staleCount: number;
-  staleThresholdDays: number;
-  staleSearchUrl: string | null;
+  avgCycleTime: number;
+  weeklyTrend: { week: string; avgHours: number }[];
+  slowestRepos: { repo: string; avgHours: number }[];
+}
+
+function getWeekLabel(dateStr: string): string {
+  const date = new Date(dateStr);
+  const week = Math.floor(date.getDate() / 7) + 1;
+  return `${date.toLocaleString("default", { month: "short" })} W${week}`;
 }
 
 interface PullRequestSearchItem {
@@ -55,6 +47,22 @@ interface ReviewEvent {
 
 interface ReviewCommentEvent {
   created_at?: string | null;
+}
+
+interface GraphQLPullRequestNode {
+  createdAt: string;
+  reviews: {
+    nodes: { submittedAt: string }[];
+  };
+  repository: { nameWithOwner: string };
+}
+
+interface GraphQLSearchResponse {
+  data?: {
+    search?: {
+      nodes?: GraphQLPullRequestNode[];
+    };
+  };
 }
 
 interface GitLabMergeRequestItem {
@@ -77,35 +85,6 @@ function getEarliestTimestamp(values: Array<string | null | undefined>) {
     .filter((value) => !Number.isNaN(value));
 
   return timestamps.length > 0 ? Math.min(...timestamps) : null;
-}
-
-function getStaleThresholdDays(req: NextRequest): number {
-  const requestedThreshold = Number(
-    req.nextUrl.searchParams.get("staleThresholdDays") ??
-      DEFAULT_STALE_THRESHOLD_DAYS
-  );
-
-  return STALE_THRESHOLD_OPTIONS.includes(
-    requestedThreshold as (typeof STALE_THRESHOLD_OPTIONS)[number]
-  )
-    ? requestedThreshold
-    : DEFAULT_STALE_THRESHOLD_DAYS;
-}
-
-function getStaleSearchUrl(
-  githubLogin: string | null | undefined,
-  staleCutoffMs: number
-): string | null {
-  if (!githubLogin) {
-    return null;
-  }
-
-  const cutoffDate = new Date(staleCutoffMs).toISOString().slice(0, 10);
-  const params = new URLSearchParams({
-    q: `is:pr is:open author:${githubLogin} created:<${cutoffDate}`,
-  });
-
-  return `https://github.com/pulls?${params.toString()}`;
 }
 
 async function fetchFirstReviewTimestamp(
@@ -206,6 +185,7 @@ async function fetchPRMetrics(
   // Concurrent widget loads (prs + streak + repos all fetching at once) can
   // exhaust it quickly. The withMetricsCache wrapper in fetchCachedPRMetrics
   // protects against this by reusing results within the cache TTL window.
+async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
   const searchRes = await fetch(
     `${GITHUB_API}/search/issues?q=type:pr+author:@me&sort=updated&order=desc&per_page=100`,
     {
@@ -226,6 +206,7 @@ async function fetchPRMetrics(
   if (!searchRes.ok) {
     throw new Error("GitHub API error");
   }
+  if (!searchRes.ok) throw new Error("GitHub API error");
 
   const data = (await searchRes.json()) as {
     total_count: number;
@@ -233,55 +214,119 @@ async function fetchPRMetrics(
   };
 
   const open = data.items.filter((pr) => pr.state === "open").length;
-  const staleCutoffMs =
-    Date.now() - options.staleThresholdDays * 24 * 60 * 60 * 1000;
-  const staleCount = data.items.filter((pr) => {
-    if (pr.state !== "open") {
-      return false;
-    }
 
-    const createdAt = new Date(pr.created_at).getTime();
-    return !Number.isNaN(createdAt) && createdAt < staleCutoffMs;
-  }).length;
-
-  // A PR with state "closed" may have been merged OR closed without merging
-  // (e.g. rejected, abandoned). Only count those with a non-null merged_at
-  // as truly merged so the dashboard does not inflate the merged count.
   const merged = data.items.filter(
     (pr) => pr.pull_request?.merged_at != null
   ).length;
 
-  // Closed without merging (rejected / abandoned)
   const closed = data.items.filter(
     (pr) => pr.state === "closed" && pr.pull_request?.merged_at == null
   ).length;
 
-  // Average review time: use only actually merged PRs so we measure the time
-  // from open to merge, not open to close-without-merge.
   const mergedPRs = data.items.filter(
     (pr) => pr.pull_request?.merged_at != null
   );
+  
   const avgReviewMs =
     mergedPRs.length > 0
       ? mergedPRs.reduce(
           (sum, pr) =>
             sum +
-            (new Date(pr.pull_request!.merged_at!).getTime() -
+            (new Date(pr.closed_at!).getTime() -
               new Date(pr.created_at).getTime()),
           0
         ) / mergedPRs.length
       : 0;
 
-  // Use the number of fetched items as the denominator for mergeRate.
-  // data.total_count is the all-time GitHub total (potentially thousands)
-  // while data.items is capped at 100, so dividing merged/total_count
-  // produces a near-zero rate for any active user. The fetched sample
-  // (open + merged + closed-without-merge) is the correct base.
   const sampleTotal = data.items.length;
-  const avgFirstReviewHours = await getAverageFirstReviewHours(
-    token,
-    data.items
+  const avgFirstReviewHours = await getAverageFirstReviewHours(token, data.items);
+
+  // GraphQL for review cycle time
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const since = ninetyDaysAgo.toISOString().split("T")[0];
+
+  const query = `
+    query {
+      search(query: "type:pr reviewed-by:@me created:>${since}", type: ISSUE, first: 100) {
+        nodes {
+          ... on PullRequest {
+            createdAt
+            reviews(first: 1) {
+              nodes {
+                submittedAt
+              }
+            }
+            repository { nameWithOwner }
+          }
+        }
+      }
+    }
+  `;
+
+  const gqlRes = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query }),
+    cache: "no-store",
+  });
+
+  const gqlJson = (await gqlRes.json()) as GraphQLSearchResponse;
+  const prs = gqlJson.data?.search?.nodes ?? [];
+
+  const reviewedPRs = prs.filter(
+    (pr) => pr.reviews?.nodes && pr.reviews.nodes.length > 0
   );
+
+  const cycleTimes = reviewedPRs.map((pr) => ({
+    hours: Math.round(
+      (new Date(pr.reviews.nodes[0].submittedAt).getTime() -
+        new Date(pr.createdAt).getTime()) /
+        3600000
+    ),
+    week: getWeekLabel(pr.createdAt),
+    repo: pr.repository.nameWithOwner,
+  }));
+
+  const avgCycleTime =
+    cycleTimes.length > 0
+      ? Math.round(
+          cycleTimes.reduce((sum, ct) => sum + ct.hours, 0) /
+            cycleTimes.length
+        )
+      : 0;
+
+  const weeklyMap: Record<string, number[]> = {};
+  cycleTimes.forEach((ct) => {
+    if (!weeklyMap[ct.week]) weeklyMap[ct.week] = [];
+    weeklyMap[ct.week].push(ct.hours);
+  });
+  
+  const weeklyTrend = Object.entries(weeklyMap).map(([week, times]) => ({
+    week,
+    avgHours: Math.round(
+      times.reduce((a, b) => a + b, 0) / times.length
+    ),
+  }));
+
+  const repoMap: Record<string, number[]> = {};
+  cycleTimes.forEach((ct) => {
+    if (!repoMap[ct.repo]) repoMap[ct.repo] = [];
+    repoMap[ct.repo].push(ct.hours);
+  });
+  
+  const slowestRepos = Object.entries(repoMap)
+    .map(([repo, times]) => ({
+      repo,
+      avgHours: Math.round(
+        times.reduce((a, b) => a + b, 0) / times.length
+      ),
+    }))
+    .sort((a, b) => b.avgHours - a.avgHours)
+    .slice(0, 3);
 
   return {
     open,
@@ -291,9 +336,9 @@ async function fetchPRMetrics(
     avgReviewHours: Math.round(avgReviewMs / 3600000),
     avgFirstReviewHours,
     mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
-    staleCount,
-    staleThresholdDays: options.staleThresholdDays,
-    staleSearchUrl: getStaleSearchUrl(options.githubLogin, staleCutoffMs),
+    avgCycleTime,
+    weeklyTrend,
+    slowestRepos,
   };
 }
 
@@ -407,26 +452,22 @@ async function fetchGitLabMRMetrics(token: string): Promise<PRMetricsBase> {
     avgReviewHours: Math.round(avgReviewMs / 3600000),
     avgFirstReviewHours: null,
     mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
-    staleCount: 0,
-    staleThresholdDays: DEFAULT_STALE_THRESHOLD_DAYS,
-    staleSearchUrl: null,
+    avgCycleTime: 0,
+    weeklyTrend: [],
+    slowestRepos: [],
   };
 }
 
 async function fetchCachedPRMetrics(
   token: string,
-  cacheContext: {
-    bypass: boolean;
-    githubLogin?: string | null;
-    staleThresholdDays: number;
-    userId: string;
-  }
+  cacheContext: { bypass: boolean; userId: string }
 ): Promise<PRMetricsBase> {
   // Cache key is scoped per user + staleThresholdDays so different threshold
   // settings don't return each other's cached results.
   const key = metricsCacheKey(cacheContext.userId, "prs", {
     staleThresholdDays: cacheContext.staleThresholdDays,
   });
+  const key = metricsCacheKey(cacheContext.userId, "prs");
 
   // withMetricsCache checks for a cached result first.
   // If found and not bypassed, the GitHub Search API is never called —
@@ -437,11 +478,7 @@ async function fetchCachedPRMetrics(
       key,
       ttlSeconds: METRICS_CACHE_TTL_SECONDS.prs,
     },
-    () =>
-      fetchPRMetrics(token, {
-        githubLogin: cacheContext.githubLogin,
-        staleThresholdDays: cacheContext.staleThresholdDays,
-      })
+    () => fetchPRMetrics(token)
   );
 }
 
@@ -471,13 +508,13 @@ function formatPRMetrics(metrics: PRMetricsBase) {
     total: metrics.total,
     avgReviewHours: metrics.avgReviewHours,
     avgFirstReviewHours: metrics.avgFirstReviewHours,
-    staleCount: metrics.staleCount,
-    staleThresholdDays: metrics.staleThresholdDays,
-    staleSearchUrl: metrics.staleSearchUrl,
     mergeRate:
       metrics.total > 0
         ? `${Math.round(metrics.mergeRate * 100)}%`
         : "0%",
+    avgCycleTime: metrics.avgCycleTime,
+    weeklyTrend: metrics.weeklyTrend,
+    slowestRepos: metrics.slowestRepos,
   };
 }
 
@@ -587,6 +624,7 @@ async function fetchReviewMetrics(token: string): Promise<ReviewMetrics> {
   };
 }
 
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken) {
@@ -598,7 +636,6 @@ export async function GET(req: NextRequest) {
 
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
-  const staleThresholdDays = getStaleThresholdDays(req);
   const gitlabCacheContext = {
     bypass,
     userId: session.githubId ?? session.githubLogin ?? "primary",
@@ -608,8 +645,6 @@ export async function GET(req: NextRequest) {
     try {
       const result = await fetchCachedPRMetrics(session.accessToken, {
         bypass,
-        githubLogin: session.githubLogin,
-        staleThresholdDays,
         userId: session.githubId ?? session.githubLogin ?? "primary",
       });
       const [gitlab, reviews] = await Promise.all([
@@ -620,6 +655,8 @@ export async function GET(req: NextRequest) {
         fetchReviewMetrics(session.accessToken).catch(() => null),
       ]);
       return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
+      const gitlab = await getGitLabMetrics(gitlabToken, gitlabCacheContext);
+      return Response.json(formatPRMetricsResponse(result, gitlab));
     } catch {
       // Catches errors from fetchCachedPRMetrics (GitHub Search API failures).
       // Returns 502 so the client knows the data is unavailable, not just empty.
@@ -638,14 +675,16 @@ export async function GET(req: NextRequest) {
   }
 
   if (accountId === "combined") {
-    const accounts = await getAllAccounts(
-      {
-        token: session.accessToken,
-        githubId: session.githubId,
-        githubLogin: session.githubLogin,
-      },
-      userRow.id
-    );
+    try {
+      const allAccounts = await getAllAccounts(userRow.id);
+      
+      const metricsPromises = allAccounts.map(async (acc) => {
+        const token = acc.github_id === session.githubId
+          ? session.accessToken
+          : await getAccountToken(userRow.id, acc.github_id);
+        if (!token) return null;
+        return fetchCachedPRMetrics(token, { bypass, userId: acc.github_id });
+      });
 
     // Each account makes its own Search API call — N accounts = N requests
     // against the 30 req/min Search API limit. Promise.allSettled is used so
@@ -660,81 +699,86 @@ export async function GET(req: NextRequest) {
         })
       )
     );
+      const resultsRaw = await Promise.allSettled(metricsPromises);
+      const results = resultsRaw
+        .filter((r): r is PromiseFulfilledResult<PRMetricsBase> => r.status === "fulfilled" && r.value !== null)
+        .map(r => r.value);
 
-    const merged = mergeMetrics(results, (a, b) => {
-      const total = a.total + b.total;
-      const mergedCount = a.merged + b.merged;
-      const closedCount = a.closed + b.closed;
-      const avgReviewHours =
-        total > 0
-          ? (a.avgReviewHours * a.total + b.avgReviewHours * b.total) / total
-          : 0;
-      const reviewedTotal =
-        (a.avgFirstReviewHours === null ? 0 : a.total) +
-        (b.avgFirstReviewHours === null ? 0 : b.total);
-      const avgFirstReviewHours =
-        reviewedTotal > 0
-          ? ((a.avgFirstReviewHours ?? 0) * a.total +
-              (b.avgFirstReviewHours ?? 0) * b.total) /
-            reviewedTotal
-          : null;
+      if (results.length === 0) {
+        return Response.json({ error: "No accounts found" }, { status: 404 });
+      }
 
-      return {
-        open: a.open + b.open,
-        merged: mergedCount,
-        closed: closedCount,
-        total,
+      const combinedTotal = results.reduce((sum, r) => sum + r.total, 0);
+      const combinedMerged = results.reduce((sum, r) => sum + r.merged, 0);
+      const combinedClosed = results.reduce((sum, r) => sum + r.closed, 0);
+      const combinedOpen = results.reduce((sum, r) => sum + r.open, 0);
+
+      const avgReviewHours = combinedTotal > 0
+        ? results.reduce((sum, r) => sum + (r.avgReviewHours * r.total), 0) / combinedTotal
+        : 0;
+
+      const reviewedTotal = results.reduce((sum, r) => sum + (r.avgFirstReviewHours === null ? 0 : r.total), 0);
+      const avgFirstReviewHours = reviewedTotal > 0
+        ? results.reduce((sum, r) => sum + ((r.avgFirstReviewHours ?? 0) * r.total), 0) / reviewedTotal
+        : null;
+
+      const combinedCycleTime = results.length > 0
+        ? Math.round(results.reduce((sum, r) => sum + r.avgCycleTime, 0) / results.length)
+        : 0;
+
+      const weeklyTrendsMap: Record<string, number[]> = {};
+      results.forEach(r => {
+        r.weeklyTrend.forEach(wt => {
+          if (!weeklyTrendsMap[wt.week]) weeklyTrendsMap[wt.week] = [];
+          weeklyTrendsMap[wt.week].push(wt.avgHours);
+        });
+      });
+      const combinedWeeklyTrend = Object.entries(weeklyTrendsMap).map(([week, hoursArray]) => ({
+        week,
+        avgHours: Math.round(hoursArray.reduce((a, b) => a + b, 0) / hoursArray.length)
+      }));
+
+      const combinedSlowest = results
+        .flatMap(r => r.slowestRepos)
+        .sort((a, b) => b.avgHours - a.avgHours)
+        .slice(0, 3);
+
+      const combinedMetrics: PRMetricsBase = {
+        open: combinedOpen,
+        merged: combinedMerged,
+        closed: combinedClosed,
+        total: combinedTotal,
         avgReviewHours: Math.round(avgReviewHours * 10) / 10,
-        avgFirstReviewHours:
-          avgFirstReviewHours === null
-            ? null
-            : Math.round(avgFirstReviewHours * 10) / 10,
-        staleCount: a.staleCount + b.staleCount,
-        staleThresholdDays,
-        staleSearchUrl: null,
-        mergeRate:
-          total > 0 ? Math.round((mergedCount / total) * 100) / 100 : 0,
+        avgFirstReviewHours: avgFirstReviewHours === null ? null : Math.round(avgFirstReviewHours * 10) / 10,
+        mergeRate: combinedTotal > 0 ? combinedMerged / combinedTotal : 0,
+        avgCycleTime: combinedCycleTime,
+        weeklyTrend: combinedWeeklyTrend,
+        slowestRepos: combinedSlowest
       };
-    });
 
-    if (!merged) {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+      const gitlab = await getGitLabMetrics(gitlabToken, gitlabCacheContext);
+      return Response.json(formatPRMetricsResponse(combinedMetrics, gitlab));
+    } catch {
+      return Response.json({ error: "Failed to compile combined profile metrics" }, { status: 502 });
     }
-    const [gitlab, reviews] = await Promise.all([
-      getGitLabMetrics(gitlabToken, gitlabCacheContext),
-      fetchReviewMetrics(session.accessToken).catch(() => null),
-    ]);
-    return Response.json({ ...formatPRMetricsResponse(merged, gitlab), reviews });
   }
 
-  const accounts = await getAllAccounts(
-    {
-      token: session.accessToken,
-      githubId: session.githubId,
-      githubLogin: session.githubLogin,
-    },
-    userRow.id
-  );
-  const selectedAccount = accounts.find(
-    (account) => account.githubId === accountId
-  );
+  const token =
+    !accountId || accountId === session.githubId
+      ? session.accessToken
+      : await getAccountToken(userRow.id, accountId);
 
-  if (!selectedAccount) {
+  if (!token) {
     return Response.json({ error: "Account not found" }, { status: 404 });
   }
 
   try {
-    const result = await fetchCachedPRMetrics(selectedAccount.token, {
+    const result = await fetchCachedPRMetrics(token, {
       bypass,
-      githubLogin: selectedAccount.githubLogin,
-      staleThresholdDays,
-      userId: selectedAccount.githubId,
+      userId: accountId === session.githubId ? session.githubId : accountId,
     });
-    const [gitlab, reviews] = await Promise.all([
-      getGitLabMetrics(gitlabToken, gitlabCacheContext),
-      fetchReviewMetrics(selectedAccount.token).catch(() => null),
-    ]);
-    return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
+    const gitlab = await getGitLabMetrics(gitlabToken, gitlabCacheContext);
+    return Response.json(formatPRMetricsResponse(result, gitlab));
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
