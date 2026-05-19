@@ -13,6 +13,7 @@
     "@supabase/supabase-js": "^2.43.4",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
+    "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "next": "^14.2.35",

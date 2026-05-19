@@ -12,8 +12,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-      <DashboardWidgets />
+    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">      <DashboardWidgets />
     </div>
   );
 }
