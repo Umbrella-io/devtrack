@@ -74,10 +74,17 @@ export default function CIAnalytics() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 gap-4">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="grid grid-cols-2 gap-4"
+        >
+          <span className="sr-only">Loading CI analytics</span>
           {[1, 2, 3, 4].map((item) => (
             <div
               key={item}
+              aria-hidden="true"
               className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
             />
           ))}

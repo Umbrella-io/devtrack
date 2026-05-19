@@ -70,10 +70,17 @@ export default function PRMetrics() {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+          <span className="sr-only">Loading PR analytics</span>
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
+              aria-hidden="true"
               className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
             />
           ))}

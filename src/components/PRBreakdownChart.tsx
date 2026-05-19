@@ -49,8 +49,17 @@ export default function PRBreakdownChart() {
   if (loading) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <div className="mb-4 h-5 w-40 rounded bg-[var(--card-muted)] animate-pulse" />
-        <div className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse" />
+        <div role="status" aria-live="polite" aria-busy="true">
+          <span className="sr-only">Loading PR breakdown</span>
+          <div
+            aria-hidden="true"
+            className="mb-4 h-5 w-40 rounded bg-[var(--card-muted)] animate-pulse"
+          />
+          <div
+            aria-hidden="true"
+            className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse"
+          />
+        </div>
       </div>
     );
   }
