@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
 import { supabaseAdmin } from "@/lib/supabase";
+import { githubFetch, RateLimitError } from "@/lib/githubFetch";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ async function fetchActiveDates(
   since.setDate(since.getDate() - 90);
   const sinceStr = since.toISOString().slice(0, 10);
 
-  const searchRes = await fetch(
+  const searchRes = await githubFetch(
     `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
     {
       headers: {
@@ -177,7 +178,13 @@ export async function GET(req: NextRequest) {
       return Response.json(
         calculateStreakFromDates(activeDates, freezeDates)
       );
-    } catch {
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        return Response.json(
+          { error: "rate_limited", resetAt: err.resetAt },
+          { status: 429 }
+        );
+      }
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -240,7 +247,13 @@ export async function GET(req: NextRequest) {
   try {
     const activeDates = await fetchActiveDates(resolvedLogin, resolvedToken);
     return Response.json(calculateStreakFromDates(activeDates, freezeDates));
-  } catch {
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return Response.json(
+        { error: "rate_limited", resetAt: err.resetAt },
+        { status: 429 }
+      );
+    }
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import RateLimitBanner from "@/components/RateLimitBanner";
 
 interface PRData {
   open: number;
@@ -15,10 +16,12 @@ export default function PRMetrics() {
   const [metrics, setMetrics] = useState<PRData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rateLimitResetAt, setRateLimitResetAt] = useState<number | null>(null);
 
   const fetchMetrics = useCallback(() => {
     setLoading(true);
     setError(null);
+    setRateLimitResetAt(null);
 
     const url =
       selectedAccount !== null
@@ -27,6 +30,11 @@ export default function PRMetrics() {
 
     fetch(url)
       .then((r) => {
+        if (r.status === 429) {
+          return r.json().then((d: { error: string; resetAt: number }) => {
+            setRateLimitResetAt(d.resetAt);
+          });
+        }
         if (!r.ok) throw new Error("API error");
         return r.json();
       })
@@ -60,6 +68,8 @@ export default function PRMetrics() {
             />
           ))}
         </div>
+      ) : rateLimitResetAt ? (
+        <RateLimitBanner resetAt={rateLimitResetAt} />
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
           <p>{error}</p>

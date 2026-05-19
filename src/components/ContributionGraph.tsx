@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import RateLimitBanner from "@/components/RateLimitBanner";
 import {
   BarChart,
   Bar,
@@ -42,16 +43,23 @@ export default function ContributionGraph() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [rateLimitResetAt, setRateLimitResetAt] = useState<number | null>(null);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setRateLimitResetAt(null);
     const accountParam =
       selectedAccount !== null
         ? `&accountId=${encodeURIComponent(selectedAccount)}`
         : "";
     fetch(`/api/metrics/contributions?days=${days}${accountParam}`)
       .then((r) => {
+        if (r.status === 429) {
+          return r.json().then((d: { error: string; resetAt: number }) => {
+            setRateLimitResetAt(d.resetAt);
+          });
+        }
         if (!r.ok) throw new Error("API error");
         return r.json();
       })
@@ -135,6 +143,8 @@ export default function ContributionGraph() {
 
       {loading ? (
         <div className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse" />
+      ) : rateLimitResetAt ? (
+        <RateLimitBanner resetAt={rateLimitResetAt} />
       ) : error ? (
         <div className="flex h-[200px] items-center rounded-lg border border-red-500/30 bg-red-500/10 px-4">
           <p className="text-sm text-red-400">

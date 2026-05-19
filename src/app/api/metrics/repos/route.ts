@@ -8,6 +8,7 @@ import {
 } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
 import { supabaseAdmin } from "@/lib/supabase";
+import { githubFetch, RateLimitError } from "@/lib/githubFetch";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ async function fetchReposForAccount(
   since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString().slice(0, 10);
 
-  const searchRes = await fetch(
+  const searchRes = await githubFetch(
     `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
     {
       headers: {
@@ -96,7 +97,13 @@ export async function GET(req: NextRequest) {
         days
       );
       return Response.json(result);
-    } catch {
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        return Response.json(
+          { error: "rate_limited", resetAt: err.resetAt },
+          { status: 429 }
+        );
+      }
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -151,7 +158,13 @@ export async function GET(req: NextRequest) {
         days
       );
       return Response.json(result);
-    } catch {
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        return Response.json(
+          { error: "rate_limited", resetAt: err.resetAt },
+          { status: 429 }
+        );
+      }
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -180,7 +193,13 @@ export async function GET(req: NextRequest) {
       days
     );
     return Response.json(result);
-  } catch {
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return Response.json(
+        { error: "rate_limited", resetAt: err.resetAt },
+        { status: 429 }
+      );
+    }
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

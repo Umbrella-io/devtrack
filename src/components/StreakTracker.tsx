@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import RateLimitBanner from "@/components/RateLimitBanner";
 
 interface StreakData {
   current: number;
@@ -34,10 +35,12 @@ export default function StreakTracker() {
   const [freezeLoading, setFreezeLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [rateLimitResetAt, setRateLimitResetAt] = useState<number | null>(null);
 
   const fetchStreak = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setRateLimitResetAt(null);
 
     try {
       const streakUrl =
@@ -52,6 +55,13 @@ export default function StreakTracker() {
         fetch(streakUrl),
         fetch(contributionUrl),
       ]);
+
+      if (streakRes.status === 429 || contributionRes.status === 429) {
+        const rateLimitRes = streakRes.status === 429 ? streakRes : contributionRes;
+        const d = await rateLimitRes.json() as { error: string; resetAt: number };
+        setRateLimitResetAt(d.resetAt);
+        return;
+      }
 
       if (!streakRes.ok || !contributionRes.ok) {
         throw new Error("Failed to fetch data");
@@ -137,6 +147,15 @@ export default function StreakTracker() {
             <div key={i} className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (rateLimitResetAt) {
+    return (
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
+        <RateLimitBanner resetAt={rateLimitResetAt} />
       </div>
     );
   }

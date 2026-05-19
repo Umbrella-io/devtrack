@@ -8,6 +8,7 @@ import {
 } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
 import { supabaseAdmin } from "@/lib/supabase";
+import { githubFetch, RateLimitError } from "@/lib/githubFetch";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ interface PRMetricsBase {
 }
 
 async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
-  const searchRes = await fetch(
+  const searchRes = await githubFetch(
     `${GITHUB_API}/search/issues?q=type:pr+author:@me&per_page=100`,
     {
       headers: { Authorization: `Bearer ${token}` },
@@ -86,7 +87,13 @@ export async function GET(req: NextRequest) {
     try {
       const result = await fetchPRMetrics(session.accessToken);
       return Response.json(formatPRMetrics(result));
-    } catch {
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        return Response.json(
+          { error: "rate_limited", resetAt: err.resetAt },
+          { status: 429 }
+        );
+      }
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -156,7 +163,13 @@ export async function GET(req: NextRequest) {
   try {
     const result = await fetchPRMetrics(token);
     return Response.json(formatPRMetrics(result));
-  } catch {
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return Response.json(
+        { error: "rate_limited", resetAt: err.resetAt },
+        { status: 429 }
+      );
+    }
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import RateLimitBanner from "@/components/RateLimitBanner";
 import type { RepoHealthScore } from "@/types/repo-health";
 
 interface Repo {
@@ -20,16 +21,29 @@ export default function TopRepos() {
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [healthScores, setHealthScores] = useState<Record<string, RepoHealthScore>>({});
   const [healthLoading, setHealthLoading] = useState(true);
+  const [rateLimitResetAt, setRateLimitResetAt] = useState<number | null>(null);
 
   const fetchRepos = useCallback(() => {
     setLoading(true);
     setError(null);
+    setRateLimitResetAt(null);
     const accountParam = selectedAccount !== null
       ? `&accountId=${encodeURIComponent(selectedAccount)}`
       : "";
     fetch(`/api/metrics/repos?days=${days}${accountParam}`)
-      .then((r) => r.json())
-      .then((d: { repos: Repo[] }) => setRepos(d.repos ?? []))
+      .then((r) => {
+        if (r.status === 429) {
+          return r.json().then((d: { error: string; resetAt: number }) => {
+            setRateLimitResetAt(d.resetAt);
+          });
+        }
+        return r.json();
+      })
+      .then((d: { repos: Repo[] } | undefined) => {
+        if (d && 'repos' in d) {
+          setRepos(d.repos ?? []);
+        }
+      })
       .catch(() => setError("We couldn't load your top repositories right now. Please try again in a moment."))
       .finally(() => {
         setLoading(false);
@@ -94,6 +108,8 @@ export default function TopRepos() {
             <div key={i} className="h-10 rounded bg-[var(--card-muted)] animate-pulse" />
           ))}
         </div>
+      ) : rateLimitResetAt ? (
+        <RateLimitBanner resetAt={rateLimitResetAt} />
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
           <p>{error}</p>
