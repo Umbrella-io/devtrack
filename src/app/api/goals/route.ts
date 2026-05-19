@@ -115,7 +115,7 @@ export async function POST(req: Request) {
   }
 
   // Only 'commits' triggers auto-progress; everything else is manual
-  const unit = body.unit === "commits" ? "commits" : body.unit ?? "commits";
+  const unit = body.unit ?? "commits";
 
   const { data: user } = await supabaseAdmin
     .from("users")

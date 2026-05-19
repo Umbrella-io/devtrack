@@ -43,7 +43,9 @@ export default function GoalTracker() {
   const loadGoals = useCallback(async () => {
     const response = await fetch("/api/goals");
     const data: { goals: Goal[] } = await response.json();
-    setGoals(data.goals ?? []);
+    const fetchedGoals = data.goals ?? [];
+    setGoals(fetchedGoals);
+    return fetchedGoals;
   }, []);
 
   /** Sync commit-based goals from GitHub, then reload */
@@ -61,12 +63,20 @@ export default function GoalTracker() {
     }
   }, [loadGoals]);
 
-  // On mount: load goals then immediately auto-sync commit-based ones
+  // On mount: load goals then auto-sync if stale
   useEffect(() => {
     loadGoals()
-      .then(async () => {
-        await fetch("/api/goals/sync", { method: "POST" }).catch(() => {});
-        await loadGoals().catch(() => {});
+      .then(async (fetchedGoals) => {
+        const needsSync = fetchedGoals.some((g: Goal) => {
+          if (g.unit !== "commits") return false;
+          if (!g.last_synced_at) return true;
+          const syncedAt = new Date(g.last_synced_at).getTime();
+          return Date.now() - syncedAt > 15 * 60 * 1000; // > 15 mins
+        });
+        if (needsSync) {
+          await fetch("/api/goals/sync", { method: "POST" }).catch(() => {});
+          await loadGoals().catch(() => {});
+        }
       })
       .catch(() => {})
       .finally(() => {
