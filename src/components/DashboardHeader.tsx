@@ -101,6 +101,7 @@ export default function DashboardHeader() {
               Share Profile
             </a>
           )}
+          
           <KeyboardShortcuts />
 
           {/* Sync button */}
@@ -113,7 +114,6 @@ export default function DashboardHeader() {
           >
             {syncing ? "Syncing..." : "Sync"}
           </button>
-
 
           <UserAvatar />
           <ThemeToggle />
