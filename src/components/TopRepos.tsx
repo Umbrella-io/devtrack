@@ -143,15 +143,6 @@ export default function TopRepos() {
                       aria-label="Open on GitHub"
                       title={repo.name}
                       className="inline-block truncate text-[var(--card-foreground)] transition-colors hover:underline hover:text-[var(--accent)] cursor-pointer z-10"
-                      onClick={(e) => {
-                        // fallback open in case something stops the default navigation
-                        try {
-                          e.stopPropagation();
-                          window.open(repoHref, "_blank", "noopener,noreferrer");
-                        } catch {
-                          /* ignore */
-                        }
-                      }}
                     >
                       {shortName}
                     </a>
