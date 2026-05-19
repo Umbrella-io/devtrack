@@ -22,8 +22,13 @@ type RepoChartItem = {
 
 type ChartType = "pie" | "bar";
 
+type ChartTooltipPayload = {
+  payload?: RepoChartItem;
+  value?: number;
+};
+
 const COLORS = [
-  "#6366f1",
+  "var(--accent)",
   "#22c55e",
   "#f97316",
   "#06b6d4",
@@ -40,23 +45,28 @@ function asRecord(value: unknown): Record<string, unknown> {
 function getStringValue(record: Record<string, unknown>, keys: string[], fallback: string) {
   for (const key of keys) {
     const value = record[key];
+
     if (typeof value === "string" && value.trim().length > 0) {
       return value;
     }
   }
+
   return fallback;
 }
 
 function getNumberValue(record: Record<string, unknown>, keys: string[]) {
   for (const key of keys) {
     const value = record[key];
+
     if (typeof value === "number" && Number.isFinite(value)) {
       return value;
     }
+
     if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
       return Number(value);
     }
   }
+
   return 0;
 }
 
@@ -107,8 +117,34 @@ function normalizeRepos(payload: unknown): RepoChartItem[] {
   }));
 }
 
-function renderPieLabel(props: { payload?: RepoChartItem }) {
-  return props.payload ? `${props.payload.percentage}%` : "";
+function renderPieLabel(props: unknown) {
+  const record = asRecord(props);
+  const payload = asRecord(record.payload);
+  const percentage = payload.percentage;
+
+  return typeof percentage === "number" ? `${percentage}%` : "";
+}
+
+function ChartTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: ChartTooltipPayload[];
+}) {
+  if (!active || !payload?.length || !payload[0]?.payload) {
+    return null;
+  }
+
+  const repo = payload[0].payload;
+
+  return (
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 text-sm shadow-lg">
+      <p className="font-medium text-[var(--card-foreground)]">{repo.name}</p>
+      <p className="text-[var(--muted-foreground)]">{repo.commits} commits</p>
+      <p className="text-[var(--muted-foreground)]">{repo.percentage}% contribution</p>
+    </div>
+  );
 }
 
 export default function RepoContributionDistribution({ days = 365 }: { days?: number }) {
@@ -159,21 +195,25 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
   const totalCommits = useMemo(() => data.reduce((sum, repo) => sum + repo.commits, 0), [data]);
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Repository Contribution Distribution</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+            Repository Contribution Distribution
+          </h2>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             Repo-wise contribution share based on recent commit activity.
           </p>
         </div>
 
-        <div className="flex w-fit rounded-lg border border-white/10 bg-black/10 p-1 text-sm">
+        <div className="flex w-fit rounded-lg border border-[var(--border)] bg-[var(--control)] p-1 text-sm">
           <button
             type="button"
             onClick={() => setChartType("pie")}
             className={`rounded-md px-3 py-1 transition ${
-              chartType === "pie" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+              chartType === "pie"
+                ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                : "text-[var(--muted-foreground)]"
             }`}
           >
             Pie
@@ -182,7 +222,9 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
             type="button"
             onClick={() => setChartType("bar")}
             className={`rounded-md px-3 py-1 transition ${
-              chartType === "bar" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+              chartType === "bar"
+                ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                : "text-[var(--muted-foreground)]"
             }`}
           >
             Bar
@@ -191,7 +233,7 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
       </div>
 
       {loading ? (
-        <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-white/10 text-sm text-muted-foreground">
+        <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-[var(--border)] text-sm text-[var(--muted-foreground)]">
           Loading repository distribution...
         </div>
       ) : error ? (
@@ -199,23 +241,27 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
           {error}
         </div>
       ) : data.length === 0 ? (
-        <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-white/10 text-sm text-muted-foreground">
+        <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-[var(--border)] text-sm text-[var(--muted-foreground)]">
           No repository contribution data available yet.
         </div>
       ) : (
         <>
           <div className="mb-4 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-white/10 bg-black/10 p-3">
-              <p className="text-xs text-muted-foreground">Repositories</p>
-              <p className="text-xl font-semibold">{data.length}</p>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--control)] p-3">
+              <p className="text-xs text-[var(--muted-foreground)]">Repositories</p>
+              <p className="text-xl font-semibold text-[var(--card-foreground)]">{data.length}</p>
             </div>
-            <div className="rounded-xl border border-white/10 bg-black/10 p-3">
-              <p className="text-xs text-muted-foreground">Total commits</p>
-              <p className="text-xl font-semibold">{totalCommits}</p>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--control)] p-3">
+              <p className="text-xs text-[var(--muted-foreground)]">Total commits</p>
+              <p className="text-xl font-semibold text-[var(--card-foreground)]">
+                {totalCommits}
+              </p>
             </div>
-            <div className="rounded-xl border border-white/10 bg-black/10 p-3">
-              <p className="text-xs text-muted-foreground">Top repo</p>
-              <p className="truncate text-xl font-semibold">{data[0]?.name}</p>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--control)] p-3">
+              <p className="text-xs text-[var(--muted-foreground)]">Top repo</p>
+              <p className="truncate text-xl font-semibold text-[var(--card-foreground)]">
+                {data[0]?.name}
+              </p>
             </div>
           </div>
 
@@ -236,12 +282,7 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip
-                    formatter={(value, _name, item) => {
-                      const payload = item.payload as RepoChartItem;
-                      return [`${value} commits (${payload.percentage}%)`, payload.name];
-                    }}
-                  />
+                  <Tooltip content={<ChartTooltip />} />
                 </PieChart>
               ) : (
                 <BarChart data={data}>
@@ -255,12 +296,7 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
                     height={70}
                   />
                   <YAxis allowDecimals={false} />
-                  <Tooltip
-                    formatter={(value, _name, item) => {
-                      const payload = item.payload as RepoChartItem;
-                      return [`${value} commits (${payload.percentage}%)`, payload.name];
-                    }}
-                  />
+                  <Tooltip content={<ChartTooltip />} />
                   <Bar dataKey="commits" radius={[6, 6, 0, 0]}>
                     {data.map((_, index) => (
                       <Cell key={`bar-${index}`} fill={COLORS[index % COLORS.length]} />
