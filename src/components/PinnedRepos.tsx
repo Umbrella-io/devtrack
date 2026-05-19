@@ -44,9 +44,19 @@ export default function PinnedRepos() {
         Pinned Repositories
       </h2>
       {loading ? (
-        <div className="space-y-3">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="space-y-3"
+        >
+          <span className="sr-only">Loading pinned repositories</span>
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-24 rounded-lg bg-[var(--card-muted)] animate-pulse" />
+            <div
+              key={i}
+              aria-hidden="true"
+              className="h-24 rounded-lg bg-[var(--card-muted)] animate-pulse"
+            />
           ))}
         </div>
       ) : error ? (

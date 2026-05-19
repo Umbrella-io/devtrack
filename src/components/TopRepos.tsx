@@ -113,9 +113,19 @@ export default function TopRepos() {
         </select>
       </div>
       {loading ? (
-        <div className="space-y-3">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="space-y-3"
+        >
+          <span className="sr-only">Loading top repositories</span>
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-10 rounded bg-[var(--card-muted)] animate-pulse" />
+            <div
+              key={i}
+              aria-hidden="true"
+              className="h-10 rounded bg-[var(--card-muted)] animate-pulse"
+            />
           ))}
         </div>
       ) : error ? (
@@ -187,8 +197,7 @@ export default function TopRepos() {
                     href={repo.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="Open on GitHub"
-                    className="max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] hover:underline"
+                    className="max-w-[60%] sm:max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
                     title={repo.name}
                   >
                     <span className="mr-1 text-[var(--muted-foreground)]">#{idx + 1}</span>

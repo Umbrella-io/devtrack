@@ -326,7 +326,17 @@ export default function ContributionGraph() {
       </div>
 
       {loading ? (
-        <div className="h-[220px] rounded border border-[var(--border)] bg-[var(--background)] animate-pulse" />
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <span className="sr-only">Loading contribution graph</span>
+          <div
+            aria-hidden="true"
+            className="h-[220px] rounded border border-[var(--border)] bg-[var(--background)] animate-pulse"
+          />
+        </div>
       ) : error ? (
         <div className="flex h-[220px] items-center rounded-lg border border-[var(--border)] bg-[var(--background)] px-4">
           <p className="text-sm text-[var(--muted-foreground)]">

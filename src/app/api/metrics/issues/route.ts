@@ -15,7 +15,6 @@ function getWeekNumber(d: Date) {
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   
-  // Enforce rigid server-side authorization lookup check
   const username = session?.githubLogin;
   if (!username || !session?.accessToken) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
