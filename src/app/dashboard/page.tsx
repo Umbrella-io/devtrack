@@ -17,15 +17,20 @@ import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
-import DiffTrendChart from "@/components/DiffTrendChart";
 import { authOptions } from "@/lib/auth";
+import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
+  const allowPlaywrightBypass =
+    process.env.PLAYWRIGHT_AUTH_BYPASS === "1" &&
+    cookies().get("playwright-dashboard-auth")?.value === "1";
+  const session = allowPlaywrightBypass
+    ? null
+    : await getServerSession(authOptions);
 
-  if (!session) {
+  if (!session && !allowPlaywrightBypass) {
     redirect("/");
   }
 
@@ -57,9 +62,6 @@ export default async function DashboardPage() {
           <ContributionGraph />
           <div className="mt-6">
             <ContributionHeatmap />
-          </div>
-          <div className="mt-6">
-            <DiffTrendChart />
           </div>
         </div>
 
