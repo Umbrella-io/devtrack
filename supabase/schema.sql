@@ -5,6 +5,7 @@ create table if not exists users (
   github_id    text unique not null,
   github_login text not null,
   is_public    boolean default false,
+
   user_widget_prefs jsonb default jsonb_build_object(
     'contributionGraph', true,
     'streakTracker', true,
@@ -16,6 +17,8 @@ create table if not exists users (
     'issuesTracker', true,
     'friendComparison', true
   ),
+
+
   created_at   timestamptz default now(),
   updated_at   timestamptz default now()
 );
