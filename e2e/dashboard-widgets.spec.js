@@ -178,6 +178,7 @@ function mockMetricResponse(url) {
     return {
       open: 2,
       merged: 8,
+      closed: 1,
       avgReviewHours: 6,
       avgFirstReviewHours: 3,
       mergeRate: "80%",
