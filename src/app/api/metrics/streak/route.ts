@@ -25,28 +25,42 @@ async function fetchActiveDates(
   since.setDate(since.getDate() - 90);
   const sinceStr = since.toISOString().slice(0, 10);
 
-  const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    }
-  );
-
-  if (!searchRes.ok) {
-    throw new Error("GitHub API error");
-  }
-
-  const data = (await searchRes.json()) as {
-    items: Array<{ commit: { author: { date: string } } }>;
-  };
-
   const activeDates = new Set<string>();
-  for (const item of data.items) {
-    activeDates.add(item.commit.author.date.slice(0, 10));
+  // Paginate through all results. GitHub Search API caps responses at 100
+  // items per page and 1000 items total (10 pages). Without pagination,
+  // active users with more than 100 commits in the window have their oldest
+  // commits silently dropped, introducing phantom gaps that shorten the
+  // calculated streak.
+  let page = 1;
+  while (true) {
+    const searchRes = await fetch(
+      `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!searchRes.ok) {
+      throw new Error("GitHub API error");
+    }
+
+    const data = (await searchRes.json()) as {
+      items: Array<{ commit: { author: { date: string } } }>;
+    };
+
+    for (const item of data.items) {
+      activeDates.add(item.commit.author.date.slice(0, 10));
+    }
+
+    // Stop when the page is not full (last page) or we reach GitHub's
+    // 1000-item hard cap (page 10). Since we only need unique dates,
+    // 90 days is the theoretical maximum we will ever collect.
+    if (data.items.length < 100 || page >= 10) break;
+    page++;
   }
 
   return activeDates;
