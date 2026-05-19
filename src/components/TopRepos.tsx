@@ -96,7 +96,6 @@ export default function TopRepos() {
   });
 
   const maxCommits = repos[0]?.commits ?? 1;
-  // throw new Error("Test widget crash");
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">

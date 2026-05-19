@@ -43,13 +43,13 @@ class WidgetErrorBoundary extends React.Component<Props, State> {
             Something went wrong
           </h2>
 
-          <p className="mb-4 text-sm text-gray-400">
+          <p className="mb-4 text-sm text-[var(--muted-foreground)]">
             This widget failed to load.
           </p>
 
           <button
             onClick={this.handleRetry}
-            className="rounded-lg bg-white px-4 py-2 text-black transition hover:opacity-80"
+            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-[var(--accent-foreground)] transition hover:opacity-80"
           >
             Retry
           </button>

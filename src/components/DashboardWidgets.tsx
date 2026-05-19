@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+
+import CIAnalytics from "@/components/CIAnalytics";
 import ContributionGraph from "@/components/ContributionGraph";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
@@ -26,7 +29,16 @@ export default function DashboardWidgets() {
         <DashboardHeader />
       </WidgetErrorBoundary>
 
-      <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex justify-end gap-3">
+        <WidgetErrorBoundary>
+          <Link
+            href="/dashboard/settings"
+            className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm transition-colors hover:bg-[var(--card-muted)]"
+          >
+            Settings
+          </Link>
+        </WidgetErrorBoundary>
+
         <WidgetErrorBoundary>
           <ExportButton />
         </WidgetErrorBoundary>
@@ -46,7 +58,8 @@ export default function DashboardWidgets() {
         </WidgetErrorBoundary>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Row 1 */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <WidgetErrorBoundary>
             <ContributionGraph />
@@ -70,7 +83,8 @@ export default function DashboardWidgets() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Row 2 */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <WidgetErrorBoundary>
           <PRMetrics />
         </WidgetErrorBoundary>
@@ -84,19 +98,29 @@ export default function DashboardWidgets() {
         </WidgetErrorBoundary>
       </div>
 
+      {/* Row 3 */}
       <div className="mt-6">
         <WidgetErrorBoundary>
           <IssueMetrics />
         </WidgetErrorBoundary>
       </div>
 
+      {/* CI Analytics */}
+      <div className="mt-6">
+        <WidgetErrorBoundary>
+          <CIAnalytics />
+        </WidgetErrorBoundary>
+      </div>
+
+      {/* Row 4 */}
       <div className="mt-6">
         <WidgetErrorBoundary>
           <PinnedRepos />
         </WidgetErrorBoundary>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Row 5 */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <WidgetErrorBoundary>
           <TopRepos />
         </WidgetErrorBoundary>
