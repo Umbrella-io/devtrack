@@ -123,6 +123,7 @@ NEXTAUTH_SECRET=run_openssl_rand_base64_32
 
 GITHUB_ID=your_client_id
 GITHUB_SECRET=your_client_secret
+GITHUB_WEBHOOK_SECRET=your_random_webhook_secret
 ```
 
 ### 5. Run
@@ -132,6 +133,17 @@ npm run dev
 ```
 
 Visit `http://localhost:3000`.
+
+### GitHub Webhook Refresh
+
+DevTrack can accept GitHub push webhooks at `/api/webhooks/github` to mark a user's metrics for refresh as soon as new commits land.
+
+1. Generate `GITHUB_WEBHOOK_SECRET` and add it to your deployment environment.
+2. In the GitHub repository, open **Settings -> Webhooks -> Add webhook**.
+3. Set the payload URL to `{NEXTAUTH_URL}/api/webhooks/github`.
+4. Set content type to `application/json`, paste the same secret, and select the **Push** event.
+
+Webhook requests are verified with GitHub's `X-Hub-Signature-256` HMAC header before DevTrack touches user metrics.
 
 ---
 

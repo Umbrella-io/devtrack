@@ -9,15 +9,21 @@ type Recurrence = "none" | "weekly" | "monthly";
 function getPeriodStart(recurrence: Recurrence): string {
   const now = new Date();
   if (recurrence === "weekly") {
-    const day = now.getDay();
+    // Use UTC methods so the Monday boundary is the same regardless of the
+    // server's local timezone. getDay() / setDate() / setHours() all operate
+    // in local time, which can push the reset boundary a day early or late
+    // on servers that are not running in UTC.
+    const day = now.getUTCDay();
     const diff = day === 0 ? -6 : 1 - day; // Monday
     const monday = new Date(now);
-    monday.setDate(now.getDate() + diff);
-    monday.setHours(0, 0, 0, 0);
+    monday.setUTCDate(now.getUTCDate() + diff);
+    monday.setUTCHours(0, 0, 0, 0);
     return monday.toISOString();
   }
   if (recurrence === "monthly") {
-    return new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0).toISOString();
+    // Date.UTC avoids the local-timezone offset that the Date constructor
+    // applies when month/day/hour arguments are passed directly.
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
   }
   return new Date(0).toISOString(); // 'none' never resets
 }
@@ -53,13 +59,30 @@ export async function GET() {
         : new Date(0);
 
       if (storedPeriodStart < periodStart) {
+        // Use a conditional update that only succeeds when the DB row still
+        // has the old period_start. If two concurrent GET requests both see
+        // a stale period_start and race to reset the goal, only one update
+        // will match the lt() filter — the second finds no row and returns
+        // null, after which we re-fetch the already-reset row to avoid
+        // silently zeroing out any progress written between the two reads.
         const { data: updated } = await supabaseAdmin
           .from("goals")
           .update({ current: 0, period_start: periodStart.toISOString() })
           .eq("id", goal.id)
+          .lt("period_start", periodStart.toISOString())
           .select()
           .single();
-        return updated ?? { ...goal, current: 0, period_start: periodStart.toISOString() };
+
+        if (updated) return updated;
+
+        // Another concurrent request already reset this goal — re-fetch
+        // the current state so we return accurate data without clobbering it.
+        const { data: current } = await supabaseAdmin
+          .from("goals")
+          .select("*")
+          .eq("id", goal.id)
+          .single();
+        return current ?? goal;
       }
 
       return goal;

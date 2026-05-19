@@ -8,6 +8,7 @@ interface IssueData {
   currentlyOpen: number;
   avgCloseTimeDays: number;
   trend: number;
+  mostActiveRepo: string | null;
 }
 
 export default function IssueMetrics() {
@@ -40,6 +41,7 @@ export default function IssueMetrics() {
         { label: "Issues Closed (30d)", value: metrics.closed },
         { label: "Currently Open", value: metrics.currentlyOpen },
         { label: "Avg Close Time", value: `${metrics.avgCloseTimeDays}d` },
+        { label: "Most Active Repo", value: metrics.mostActiveRepo ?? "—" },
       ]
     : [];
 
@@ -59,8 +61,8 @@ export default function IssueMetrics() {
         Issue Analytics
       </h2>
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
               className="h-20 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse"
@@ -79,13 +81,13 @@ export default function IssueMetrics() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {stats.map((stat, idx) => (
             <div
               key={stat.label}
               className="rounded-lg bg-[var(--control)] p-4 text-center"
             >
-              <div className="text-2xl font-bold text-[var(--accent)]">
+              <div className="text-2xl font-bold text-[var(--accent)] truncate" title={String(stat.value)}>
                 {stat.value}
               </div>
               <div className="mt-1 text-sm text-[var(--muted-foreground)]">
