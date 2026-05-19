@@ -21,6 +21,7 @@ const RECURRENCE_LABELS: Record<Recurrence, string> = {
 };
 
 export default function GoalTracker() {
+  
   const [mounted, setMounted] = useState(false);
 const [reducedMotion, setReducedMotion] = useState(false);
   const [goals, setGoals] = useState<Goal[]>([]);
