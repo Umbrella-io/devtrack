@@ -137,11 +137,17 @@ export default function StreakTracker() {
   if (loading) {
     return (
       <div className="bg-[var(--card)] rounded-xl p-6">
-        <div className="h-6 w-36 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
-        <div className="grid grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse" />
-          ))}
+        <div role="status" aria-live="polite" aria-busy="true">
+          <span className="sr-only">Loading streak tracker</span>
+          <div
+            aria-hidden="true"
+            className="h-6 w-36 bg-[var(--card-muted)] rounded animate-pulse mb-4"
+          />
+          <div aria-hidden="true" className="grid grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse" />
+            ))}
+          </div>
         </div>
       </div>
     );

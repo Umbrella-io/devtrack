@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +13,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const user = await resolveAppUser(session.githubId, session.githubLogin);
+  if (!user) {
+    return NextResponse.json(
+      { error: "Failed to fetch user settings" },
+      { status: 500 }
+    );
+  }
+
   // Fetch user from Supabase
   const { data, error } = await supabaseAdmin
     .from("users")
     .select("id, github_login, is_public, leaderboard_opt_in")
-    .eq("github_id", session.githubId)
+    .eq("id", user.id)
     .single();
 
   if (error) {
@@ -38,14 +47,9 @@ export async function PATCH(req: NextRequest) {
   }
 
   // Get user ID from Supabase
-  const { data: user, error: fetchError } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
+  const user = await resolveAppUser(session.githubId, session.githubLogin);
 
-  if (fetchError || !user) {
-    console.error("Error fetching user:", fetchError);
+  if (!user) {
     return NextResponse.json(
       { error: "User not found" },
       { status: 404 }

@@ -61,10 +61,17 @@ export default function IssueMetrics() {
         Issue Analytics
       </h2>
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="grid grid-cols-2 md:grid-cols-5 gap-4"
+        >
+          <span className="sr-only">Loading issue analytics</span>
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
+              aria-hidden="true"
               className="h-20 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse"
             />
           ))}

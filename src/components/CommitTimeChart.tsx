@@ -111,10 +111,17 @@ export default function CommitTimeChart() {
 
       <div className="flex-1 min-h-[250px]">
         {loading ? (
-          <div className="flex h-full flex-col justify-end space-y-3 pt-6 pb-2">
+          <div
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            className="flex h-full flex-col justify-end space-y-3 pt-6 pb-2"
+          >
+            <span className="sr-only">Loading commit time chart</span>
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
+                aria-hidden="true"
                 className="h-10 rounded bg-[var(--card-muted)] animate-pulse"
               />
             ))}
