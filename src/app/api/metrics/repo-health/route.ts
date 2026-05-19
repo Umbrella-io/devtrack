@@ -95,17 +95,18 @@ async function fetchJson<T>(url: string, token: string, accept?: string): Promis
 
 async function fetchSignalsForRepo(
   token: string,
-  repoFullName: string
+  repoFullName: string,
+  days: number
 ): Promise<RepoHealthSignals> {
-  const since30 = new Date();
-  since30.setDate(since30.getDate() - 30);
-  const since30Str = toDateStr(since30);
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
 
   // a) commit frequency in last 30 days (sampled to 100 via per_page=100)
   const commitSearch = await fetchJson<{
     items: unknown[];
   }>(
-    `${GITHUB_API}/search/commits?q=repo:${repoFullName}+committer-date:>${since30Str}&per_page=100&sort=committer-date&order=desc`,
+    `${GITHUB_API}/search/commits?q=repo:${repoFullName}+committer-date:>${since}&per_page=100&sort=committer-date&order=desc`,
     token,
     "application/vnd.github+json"
   );
@@ -116,14 +117,14 @@ async function fetchSignalsForRepo(
     total_count: number;
     items: Array<{ created_at: string; closed_at: string | null }>;
   }>(
-    `${GITHUB_API}/search/issues?q=repo:${repoFullName}+type:pr+created:>${since30Str}&per_page=100&sort=created&order=desc`,
+    `${GITHUB_API}/search/issues?q=repo:${repoFullName}+type:pr+created:>${since}&per_page=100&sort=created&order=desc`,
     token
   );
 
   const mergedPrs = await fetchJson<{
     total_count: number;
   }>(
-    `${GITHUB_API}/search/issues?q=repo:${repoFullName}+type:pr+is:merged+merged:>${since30Str}&per_page=100&sort=updated&order=desc`,
+    `${GITHUB_API}/search/issues?q=repo:${repoFullName}+type:pr+is:merged+merged:>${since}&per_page=100&sort=updated&order=desc`,
     token
   );
 
@@ -170,10 +171,16 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const requestedDays = parseInt(
+    req.nextUrl.searchParams.get("days") ?? "30", 10
+  );
+  const days = requestedDays === 7 || requestedDays === 30
+    || requestedDays === 90 ? requestedDays : 30;
+
   // 1) Determine top repos (top 6 by commit count).
   let topRepos: RepoSummary[] = [];
   try {
-    topRepos = (await fetchReposForAccount(session.accessToken, session.githubLogin, 30)).repos;
+    topRepos = (await fetchReposForAccount(session.accessToken, session.githubLogin, days)).repos;
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
@@ -183,7 +190,7 @@ export async function GET(req: NextRequest) {
   // 2) Fetch per-repo signals sequentially to preserve rate limits.
   for (const repo of topRepos) {
     try {
-      const signals = await fetchSignalsForRepo(session.accessToken, repo.name);
+      const signals = await fetchSignalsForRepo(session.accessToken, repo.name, days);
       scores.push(computeHealthScore(repo.name, signals));
     } catch {
       // Skip repo on any failure.

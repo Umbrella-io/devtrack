@@ -78,6 +78,21 @@ export async function GET(req: NextRequest) {
 
   const days = Number(req.nextUrl.searchParams.get("days")) || 30;
   const accountId = req.nextUrl.searchParams.get("accountId");
+  const username = req.nextUrl.searchParams.get("username")?.trim();
+
+  // Compare mode path: explicitly fetch contributions for a target username.
+  if (username) {
+    try {
+      const result = await fetchContributionsForAccount(
+        session.accessToken,
+        username,
+        days
+      );
+      return Response.json(result);
+    } catch {
+      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    }
+  }
 
   if (!accountId) {
     try {
