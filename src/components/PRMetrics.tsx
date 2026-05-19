@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useAccount } from "@/components/AccountContext";
+import PRStatusDonutChart from "./PRStatusDonutChart";
 
 interface TimeDistribution {
   lessThan1h: number;
@@ -22,6 +23,7 @@ interface TimeDistribution {
 interface PRData {
   open: number;
   merged: number;
+  closed: number;
   avgReviewHours: number;
   avgFirstReviewHours: number | null;
   mergeRate: string;
@@ -122,14 +124,14 @@ export default function PRMetrics() {
         PR Analytics
       </h2>
       {loading ? (
-        <div className="space-y-6">
-          <div
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-            className="grid grid-cols-2 md:grid-cols-5 gap-4"
-          >
-            <span className="sr-only">Loading PR analytics</span>
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="space-y-4"
+        >
+          <span className="sr-only">Loading PR analytics</span>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[1, 2, 3, 4, 5].map((i) => (
               <div
                 key={i}
@@ -138,7 +140,7 @@ export default function PRMetrics() {
               />
             ))}
           </div>
-          <div className="bg-[var(--card-muted)] rounded-lg p-4 h-64 animate-pulse" />
+          <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
@@ -153,6 +155,7 @@ export default function PRMetrics() {
         </div>
       ) : (
         <div className="space-y-6">
+          {/* Stat grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {stats.map((stat) => (
               <div
@@ -216,6 +219,20 @@ export default function PRMetrics() {
               </div>
             )}
           </div>
+
+          {/* PR status donut chart */}
+          {metrics && (
+            <div>
+              <p className="mb-2 text-sm font-medium text-[var(--muted-foreground)]">
+                PR Status Distribution
+              </p>
+              <PRStatusDonutChart
+                open={metrics.open}
+                merged={metrics.merged}
+                closed={metrics.closed}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
