@@ -326,7 +326,7 @@ export default function GoalTracker() {
                 disabled={creating}
                 className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium border transition-all ${
                   recurrence === r
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
                     : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
                 }`}
               >
@@ -357,7 +357,7 @@ export default function GoalTracker() {
         </button>
 
         {createError && (
-          <p className="text-sm text-red-500">{createError}</p>
+         <p className="text-sm text-[var(--destructive)]">{createError}</p>
         )}
       </form>
     </div>
