@@ -33,41 +33,82 @@ const COLORS = [
   "#14b8a6",
 ];
 
-function normalizeRepos(payload: any): RepoChartItem[] {
-  const repos = Array.isArray(payload) ? payload : payload?.repos || payload?.data || [];
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function getStringValue(record: Record<string, unknown>, keys: string[], fallback: string) {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value;
+    }
+  }
+  return fallback;
+}
+
+function getNumberValue(record: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
+      return Number(value);
+    }
+  }
+  return 0;
+}
+
+function getRepoArray(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) return payload;
+
+  const record = asRecord(payload);
+
+  if (Array.isArray(record.repos)) return record.repos;
+  if (Array.isArray(record.data)) return record.data;
+  if (Array.isArray(record.repositories)) return record.repositories;
+
+  return [];
+}
+
+function normalizeRepos(payload: unknown): RepoChartItem[] {
+  const repos = getRepoArray(payload);
 
   const mapped = repos
-    .map((repo: any) => {
-      const name =
-        repo.name ||
-        repo.repo ||
-        repo.repository ||
-        repo.full_name ||
-        repo.fullName ||
-        "Unknown repository";
+    .map((item) => {
+      const repo = asRecord(item);
 
-      const commits =
-        Number(
-          repo.commits ??
-            repo.commitCount ??
-            repo.contributions ??
-            repo.count ??
-            repo.totalCommits ??
-            0
-        ) || 0;
+      const name = getStringValue(
+        repo,
+        ["name", "repo", "repository", "full_name", "fullName"],
+        "Unknown repository"
+      );
+
+      const commits = getNumberValue(repo, [
+        "commits",
+        "commitCount",
+        "contributions",
+        "count",
+        "totalCommits",
+      ]);
 
       return { name, commits };
     })
-    .filter((repo: { commits: number }) => repo.commits > 0)
-    .sort((a: { commits: number }, b: { commits: number }) => b.commits - a.commits)
+    .filter((repo) => repo.commits > 0)
+    .sort((a, b) => b.commits - a.commits)
     .slice(0, 8);
 
-  const total = mapped.reduce((sum: number, repo: { commits: number }) => sum + repo.commits, 0);
+  const total = mapped.reduce((sum, repo) => sum + repo.commits, 0);
 
-  return mapped.map((repo: { name: string; commits: number }) => ({
+  return mapped.map((repo) => ({
     ...repo,
     percentage: total > 0 ? Number(((repo.commits / total) * 100).toFixed(1)) : 0,
   }));
+}
+
+function renderPieLabel(props: { payload?: RepoChartItem }) {
+  return props.payload ? `${props.payload.percentage}%` : "";
 }
 
 export default function RepoContributionDistribution({ days = 365 }: { days?: number }) {
@@ -84,13 +125,13 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
         setLoading(true);
         setError("");
 
-        const res = await fetch(`/api/metrics/repos?days=${days}`);
+        const response = await fetch(`/api/metrics/repos?days=${days}`);
 
-        if (!res.ok) {
+        if (!response.ok) {
           throw new Error("Failed to fetch repository metrics.");
         }
 
-        const payload = await res.json();
+        const payload: unknown = await response.json();
         const normalized = normalizeRepos(payload);
 
         if (!cancelled) {
@@ -108,17 +149,14 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
       }
     }
 
-    loadRepos();
+    void loadRepos();
 
     return () => {
       cancelled = true;
     };
   }, [days]);
 
-  const totalCommits = useMemo(
-    () => data.reduce((sum, repo) => sum + repo.commits, 0),
-    [data]
-  );
+  const totalCommits = useMemo(() => data.reduce((sum, repo) => sum + repo.commits, 0), [data]);
 
   return (
     <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
@@ -192,17 +230,17 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
                     innerRadius={60}
                     outerRadius={105}
                     paddingAngle={2}
-                    label={({ percentage }) => `${percentage}%`}
+                    label={renderPieLabel}
                   >
                     {data.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number, _name, props: any) => [
-                      `${value} commits (${props.payload.percentage}%)`,
-                      props.payload.name,
-                    ]}
+                    formatter={(value, _name, item) => {
+                      const payload = item.payload as RepoChartItem;
+                      return [`${value} commits (${payload.percentage}%)`, payload.name];
+                    }}
                   />
                 </PieChart>
               ) : (
@@ -218,10 +256,10 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
                   />
                   <YAxis allowDecimals={false} />
                   <Tooltip
-                    formatter={(value: number, _name, props: any) => [
-                      `${value} commits (${props.payload.percentage}%)`,
-                      props.payload.name,
-                    ]}
+                    formatter={(value, _name, item) => {
+                      const payload = item.payload as RepoChartItem;
+                      return [`${value} commits (${payload.percentage}%)`, payload.name];
+                    }}
                   />
                   <Bar dataKey="commits" radius={[6, 6, 0, 0]}>
                     {data.map((_, index) => (
