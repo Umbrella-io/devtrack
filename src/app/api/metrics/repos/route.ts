@@ -14,6 +14,7 @@ import {
   withMetricsCache,
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
@@ -128,11 +129,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: userRow } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
+  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
 
   if (!userRow) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
