@@ -59,9 +59,18 @@ export default function LanguageBreakdown() {
       </h2>
 
       {loading ? (
-        <div className="space-y-3">
-          <div className="h-6 rounded-full bg-[var(--card-muted)] animate-pulse" />
-          <div className="grid grid-cols-2 gap-2 mt-3">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="space-y-3"
+        >
+          <span className="sr-only">Loading language breakdown</span>
+          <div
+            aria-hidden="true"
+            className="h-6 rounded-full bg-[var(--card-muted)] animate-pulse"
+          />
+          <div aria-hidden="true" className="grid grid-cols-2 gap-2 mt-3">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-5 rounded bg-[var(--card-muted)] animate-pulse" />
             ))}
