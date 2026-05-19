@@ -37,6 +37,34 @@ interface CIAnalyticsResponse {
   reposChecked: number;
 }
 
+class GitHubApiError extends Error {
+  status: number;
+  endpoint: string;
+  details: string;
+
+  constructor(endpoint: string, status: number, details: string) {
+    super("GitHub API failed");
+    this.status = status;
+    this.endpoint = endpoint;
+    this.details = details;
+  }
+}
+
+function toGitHubErrorResponse(error: unknown) {
+  if (error instanceof GitHubApiError) {
+    return Response.json(
+      {
+        error: "GitHub API failed",
+        endpoint: error.endpoint,
+        status: error.status,
+        details: error.details,
+      },
+      { status: error.status }
+    );
+  }
+  return Response.json({ error: "GitHub API error" }, { status: 502 });
+}
+
 function toIsoDate(daysAgo: number): string {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
@@ -83,19 +111,23 @@ async function fetchTopRepos(
   githubLogin: string
 ): Promise<TopRepo[]> {
   const since = toIsoDate(30);
-  const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${since}&per_page=100&sort=author-date&order=desc`,
-    {
+  const endpoint = `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${since}&per_page=100&sort=author-date&order=desc`;
+  const searchRes = await fetch(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/vnd.github+json",
       },
       cache: "no-store",
-    }
-  );
+    });
 
   if (!searchRes.ok) {
-    throw new Error("GitHub API error");
+    const body = await searchRes.text();
+    console.error("GitHub API failed", {
+      endpoint,
+      status: searchRes.status,
+      body,
+    });
+    throw new GitHubApiError(endpoint, searchRes.status, body);
   }
 
   const data = (await searchRes.json()) as {
@@ -123,23 +155,27 @@ async function fetchWorkflowRuns(
     per_page: "100",
     created: `>=${created}`,
   });
-  const res = await fetch(
-    `${GITHUB_API}/repos/${repo}/actions/runs?${params.toString()}`,
-    {
+  const endpoint = `${GITHUB_API}/repos/${repo}/actions/runs?${params.toString()}`;
+  const res = await fetch(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/vnd.github+json",
       },
       cache: "no-store",
-    }
-  );
+    });
 
   if (res.status === 404 || res.status === 403) {
     return [];
   }
 
   if (!res.ok) {
-    throw new Error("GitHub API error");
+    const body = await res.text();
+    console.error("GitHub API failed", {
+      endpoint,
+      status: res.status,
+      body,
+    });
+    throw new GitHubApiError(endpoint, res.status, body);
   }
 
   const data = (await res.json()) as { workflow_runs?: WorkflowRun[] };
@@ -223,13 +259,13 @@ export async function GET(req: NextRequest) {
         session.githubLogin
       );
       return Response.json(result);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return toGitHubErrorResponse(error);
     }
   }
 
   if (!session.githubId) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json({ error: "User not found" }, { status: 404 });
   }
 
   const userRow = await resolveAppUser(session.githubId, session.githubLogin);
@@ -268,8 +304,8 @@ export async function GET(req: NextRequest) {
         session.githubLogin
       );
       return Response.json(result);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return toGitHubErrorResponse(error);
     }
   }
 
@@ -284,7 +320,7 @@ export async function GET(req: NextRequest) {
     .select("github_login")
     .eq("user_id", userRow.id)
     .eq("github_id", accountId)
-    .single();
+    .maybeSingle();
 
   if (!accountRow?.github_login) {
     return Response.json({ error: "Account not found" }, { status: 404 });
@@ -296,7 +332,7 @@ export async function GET(req: NextRequest) {
       accountRow.github_login
     );
     return Response.json(result);
-  } catch {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  } catch (error) {
+    return toGitHubErrorResponse(error);
   }
 }

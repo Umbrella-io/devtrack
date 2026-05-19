@@ -145,7 +145,7 @@ export async function getAccountToken(
     .select("access_token_encrypted, access_token_iv")
     .eq("user_id", userId)
     .eq("github_id", accountGithubId)
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     return null;

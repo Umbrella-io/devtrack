@@ -42,7 +42,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {
         const p = profile as { id: number; login: string };
-        await supabaseAdmin.from("users").upsert(
+        const { error } = await supabaseAdmin.from("users").upsert(
           {
             github_id: String(p.id),
             github_login: p.login,
@@ -50,6 +50,14 @@ export const authOptions: NextAuthOptions = {
           },
           { onConflict: "github_id" }
         );
+        if (error) {
+          console.error("Failed to upsert user during GitHub sign in", {
+            githubId: String(p.id),
+            githubLogin: p.login,
+            error,
+          });
+          return false;
+        }
       }
       return true;
     },

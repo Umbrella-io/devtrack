@@ -33,6 +33,10 @@ export async function GET() {
     .order("added_at", { ascending: true });
 
   if (error) {
+    // Backward compatibility: table may not exist before migration.
+    if (error.code === "42P01") {
+      return NextResponse.json({ accounts: [] });
+    }
     return NextResponse.json(
       { error: "Failed to fetch accounts" },
       { status: 500 }

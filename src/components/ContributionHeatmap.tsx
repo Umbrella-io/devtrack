@@ -76,6 +76,7 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -108,7 +109,7 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
     return () => {
       active = false;
     };
-  }, [days]);
+  }, [days, reloadKey]);
 
   useEffect(() => {
     if (!lastUpdated) return;
@@ -209,8 +210,16 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
       {loading ? (
         <div className="h-[180px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
       ) : error ? (
-        <div className="flex h-[180px] items-center rounded-lg border border-red-500/30 bg-red-500/10 px-4">
-          <p className="text-sm text-red-400">{error} Please try refreshing.</p>
+        <div className="flex h-[180px] items-center justify-between gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4">
+          <p className="text-sm text-red-400">{error} Please try again.</p>
+          <button
+            type="button"
+            onClick={() => setReloadKey((key) => key + 1)}
+            disabled={loading}
+            className="rounded-md border border-red-400/40 bg-red-500/20 px-3 py-1 text-xs text-red-200 transition hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? "Reloading..." : "Reload"}
+          </button>
         </div>
       ) : (
         <>
@@ -285,7 +294,17 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
             <p>
               {cells.filter((cell) => cell.inRange).reduce((total, cell) => total + cell.count, 0)} commits shown across {days} days.
             </p>
-            {lastUpdated && <p>{minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}</p>}
+            <div className="flex items-center gap-3">
+              {lastUpdated && <p>{minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}</p>}
+              <button
+                type="button"
+                onClick={() => setReloadKey((key) => key + 1)}
+                disabled={loading}
+                className="rounded-md border border-[var(--border)] px-2 py-1 text-[11px] text-[var(--muted-foreground)] transition hover:bg-[var(--card-muted)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? "Reloading..." : "Reload"}
+              </button>
+            </div>
           </div>
         </>
       )}

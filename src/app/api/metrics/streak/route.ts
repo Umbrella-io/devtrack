@@ -14,6 +14,34 @@ import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
+class GitHubApiError extends Error {
+  status: number;
+  endpoint: string;
+  details: string;
+
+  constructor(endpoint: string, status: number, details: string) {
+    super("GitHub API failed");
+    this.status = status;
+    this.endpoint = endpoint;
+    this.details = details;
+  }
+}
+
+function toGitHubErrorResponse(error: unknown) {
+  if (error instanceof GitHubApiError) {
+    return Response.json(
+      {
+        error: "GitHub API failed",
+        endpoint: error.endpoint,
+        status: error.status,
+        details: error.details,
+      },
+      { status: error.status }
+    );
+  }
+  return Response.json({ error: "GitHub API error" }, { status: 502 });
+}
+
 function dateDiffDays(a: string, b: string): number {
   return (
     (new Date(b).getTime() - new Date(a).getTime()) / (1000 * 60 * 60 * 24)
@@ -44,19 +72,23 @@ async function fetchActiveDates(
       const activeDates = new Set<string>();
       let page = 1;
       while (true) {
-        const searchRes = await fetch(
-          `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
-          {
+        const endpoint = `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`;
+        const searchRes = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${token}`,
               Accept: "application/vnd.github+json",
             },
             cache: "no-store",
-          }
-        );
+          });
 
         if (!searchRes.ok) {
-          throw new Error("GitHub API error");
+          const body = await searchRes.text();
+          console.error("GitHub API failed", {
+            endpoint,
+            status: searchRes.status,
+            body,
+          });
+          throw new GitHubApiError(endpoint, searchRes.status, body);
         }
 
         const data = (await searchRes.json()) as {
@@ -188,8 +220,8 @@ export async function GET(req: NextRequest) {
       return Response.json(
         calculateStreakFromDates(activeDates, freezeDates)
       );
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return toGitHubErrorResponse(error);
     }
   }
 
@@ -241,7 +273,7 @@ export async function GET(req: NextRequest) {
       .select("github_login")
       .eq("user_id", appUserId)
       .eq("github_id", accountId)
-      .single();
+      .maybeSingle();
 
     if (!accountRow?.github_login) {
       return Response.json({ error: "Account not found" }, { status: 404 });
@@ -257,7 +289,7 @@ export async function GET(req: NextRequest) {
       userId: accountId,
     });
     return Response.json(calculateStreakFromDates(activeDates, freezeDates));
-  } catch {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  } catch (error) {
+    return toGitHubErrorResponse(error);
   }
 }

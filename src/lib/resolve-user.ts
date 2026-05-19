@@ -8,15 +8,23 @@ export async function resolveAppUser(
   githubId: string,
   githubLogin?: string
 ): Promise<AppUser | null> {
-  const { data: existing } = await supabaseAdmin
+  const { data: existing, error: existingError } = await supabaseAdmin
     .from("users")
     .select("id")
     .eq("github_id", githubId)
-    .single();
+    .maybeSingle();
+
+  if (existingError) {
+    console.error("Failed to resolve existing user", {
+      githubId,
+      error: existingError,
+    });
+    return null;
+  }
 
   if (existing) return existing;
 
-  const { data: upserted } = await supabaseAdmin
+  const { data: upserted, error: upsertError } = await supabaseAdmin
     .from("users")
     .upsert(
       {
@@ -27,7 +35,16 @@ export async function resolveAppUser(
       { onConflict: "github_id" }
     )
     .select("id")
-    .single();
+    .maybeSingle();
+
+  if (upsertError) {
+    console.error("Failed to upsert user", {
+      githubId,
+      githubLogin,
+      error: upsertError,
+    });
+    return null;
+  }
 
   return upserted ?? null;
 }

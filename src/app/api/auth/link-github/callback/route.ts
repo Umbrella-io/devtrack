@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { encryptToken } from "@/lib/crypto";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 interface GitHubTokenResponse {
   access_token?: string;
@@ -107,13 +108,8 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const { data: user, error: userError } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
-
-  if (userError || !user) {
+  const user = await resolveAppUser(session.githubId, session.githubLogin);
+  if (!user) {
     return NextResponse.redirect(
       buildSettingsRedirect("error", "user_not_found"),
       { status: 302 }

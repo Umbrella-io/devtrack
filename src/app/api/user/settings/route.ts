@@ -16,17 +16,30 @@ export async function GET(req: NextRequest) {
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) {
     return NextResponse.json(
-      { error: "Failed to fetch user settings" },
-      { status: 500 }
+      { error: "User not found" },
+      { status: 404 }
     );
   }
 
   // Fetch user from Supabase
-  const { data, error } = await supabaseAdmin
+  let { data, error } = await supabaseAdmin
     .from("users")
     .select("id, github_login, is_public, leaderboard_opt_in")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
+
+  // Backward compatibility: older DBs may not have leaderboard_opt_in yet.
+  if (error?.code === "42703") {
+    const fallback = await supabaseAdmin
+      .from("users")
+      .select("id, github_login, is_public")
+      .eq("id", user.id)
+      .maybeSingle();
+    data = fallback.data
+      ? { ...fallback.data, leaderboard_opt_in: false }
+      : null;
+    error = fallback.error;
+  }
 
   if (error) {
     console.error("Error fetching user:", error);
@@ -34,6 +47,9 @@ export async function GET(req: NextRequest) {
       { error: "Failed to fetch user settings" },
       { status: 500 }
     );
+  }
+  if (!data) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
   return NextResponse.json(data);
@@ -90,12 +106,35 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  const { data: updated, error: updateError } = await supabaseAdmin
+  let { data: updated, error: updateError } = await supabaseAdmin
     .from("users")
     .update(updates)
     .eq("id", user.id)
     .select("id, github_login, is_public, leaderboard_opt_in")
-    .single();
+    .maybeSingle();
+
+  // Backward compatibility: older DBs may not have leaderboard_opt_in yet.
+  if (
+    updateError?.code === "42703" &&
+    Object.prototype.hasOwnProperty.call(updates, "leaderboard_opt_in")
+  ) {
+    const fallbackUpdates: { is_public?: boolean } = {};
+    if (typeof updates.is_public === "boolean") {
+      fallbackUpdates.is_public = updates.is_public;
+    }
+
+    const fallback = await supabaseAdmin
+      .from("users")
+      .update(fallbackUpdates)
+      .eq("id", user.id)
+      .select("id, github_login, is_public")
+      .maybeSingle();
+
+    updated = fallback.data
+      ? { ...fallback.data, leaderboard_opt_in: false }
+      : null;
+    updateError = fallback.error;
+  }
 
   if (updateError || !updated) {
     console.error("Error updating settings:", updateError);

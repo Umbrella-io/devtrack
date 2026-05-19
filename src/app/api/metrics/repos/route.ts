@@ -28,6 +28,34 @@ interface RepoResponse {
   days: number;
 }
 
+class GitHubApiError extends Error {
+  status: number;
+  endpoint: string;
+  details: string;
+
+  constructor(endpoint: string, status: number, details: string) {
+    super("GitHub API failed");
+    this.status = status;
+    this.endpoint = endpoint;
+    this.details = details;
+  }
+}
+
+function toGitHubErrorResponse(error: unknown) {
+  if (error instanceof GitHubApiError) {
+    return Response.json(
+      {
+        error: "GitHub API failed",
+        endpoint: error.endpoint,
+        status: error.status,
+        details: error.details,
+      },
+      { status: error.status }
+    );
+  }
+  return Response.json({ error: "GitHub API error" }, { status: 502 });
+}
+
 function mergeRepoCommits(
   a: Array<{ name: string; commits: number }>,
   b: Array<{ name: string; commits: number }>
@@ -63,19 +91,23 @@ async function fetchReposForAccount(
       since.setDate(since.getDate() - days);
       const sinceStr = since.toISOString().slice(0, 10);
 
-      const searchRes = await fetch(
-        `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
-        {
+      const endpoint = `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`;
+      const searchRes = await fetch(endpoint, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: "application/vnd.github+json",
           },
           cache: "no-store",
-        }
-      );
+        });
 
       if (!searchRes.ok) {
-        throw new Error("GitHub API error");
+        const body = await searchRes.text();
+        console.error("GitHub API failed", {
+          endpoint,
+          status: searchRes.status,
+          body,
+        });
+        throw new GitHubApiError(endpoint, searchRes.status, body);
       }
 
       const data = (await searchRes.json()) as {
@@ -120,13 +152,13 @@ export async function GET(req: NextRequest) {
         { bypass, userId: session.githubId ?? session.githubLogin }
       );
       return Response.json(result);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return toGitHubErrorResponse(error);
     }
   }
 
   if (!session.githubId) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json({ error: "User not found" }, { status: 404 });
   }
 
   const userRow = await resolveAppUser(session.githubId, session.githubLogin);
@@ -175,8 +207,8 @@ export async function GET(req: NextRequest) {
         { bypass, userId: session.githubId }
       );
       return Response.json(result);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return toGitHubErrorResponse(error);
     }
   }
 
@@ -191,7 +223,7 @@ export async function GET(req: NextRequest) {
     .select("github_login")
     .eq("user_id", userRow.id)
     .eq("github_id", accountId)
-    .single();
+    .maybeSingle();
 
   if (!accountRow?.github_login) {
     return Response.json({ error: "Account not found" }, { status: 404 });
@@ -205,7 +237,7 @@ export async function GET(req: NextRequest) {
       { bypass, userId: accountId }
     );
     return Response.json(result);
-  } catch {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  } catch (error) {
+    return toGitHubErrorResponse(error);
   }
 }
