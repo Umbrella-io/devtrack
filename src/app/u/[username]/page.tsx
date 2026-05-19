@@ -3,7 +3,9 @@ import BadgeSection from "@/components/BadgeSection";
 import ContributionGraph from "@/components/ContributionGraph";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
-import BackToDashboard from "@/components/BackToDashboard";
+
+import StatsCard from "@/components/StatsCard";
+
 interface PublicProfileData {
   username: string;
   userId: string;
@@ -107,21 +109,31 @@ if (!profile) {
   );
 }
 
+  const avatarUrl = `https://avatars.githubusercontent.com/${profile.username}`;
+  const topRepo = profile.repos[0]?.name ?? "";
+
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       {/* Header */}
-    {/* Header */}
-<div className="mb-8">
-  <BackToDashboard username={username} />
-
-  <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
-    @{profile.username}&apos;s Profile
-  </h1>
-
-  <p className="mt-2 text-[var(--muted-foreground)]">
-    GitHub activity and coding stats
-  </p>
-</div>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
+            @{profile.username}&apos;s Profile
+          </h1>
+          <p className="mt-2 text-[var(--muted-foreground)]">
+            GitHub activity and coding stats
+          </p>
+        </div>
+        {/* Download stats card button — client component */}
+        <StatsCard
+          username={profile.username}
+          avatarUrl={avatarUrl}
+          currentStreak={profile.streak.current}
+          longestStreak={profile.streak.longest}
+          totalCommits={profile.contributions.total}
+          topRepo={topRepo}
+        />
+      </div>
 
       {/* Row 1: Contribution graph + Streak */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

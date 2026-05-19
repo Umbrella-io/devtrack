@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { supabaseAdmin, updateUserPublicFlag } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   // Fetch user from Supabase
   const { data, error } = await supabaseAdmin
     .from("users")
-    .select("id, github_login, is_public")
+    .select("id, github_login, is_public, leaderboard_opt_in")
     .eq("github_id", session.githubId)
     .single();
 
@@ -53,7 +53,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   // Parse request body
-  let body: { is_public?: boolean };
+  let body: { is_public?: boolean; leaderboard_opt_in?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -63,19 +63,38 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  const { is_public } = body;
+  const { is_public, leaderboard_opt_in } = body;
 
-  if (typeof is_public !== "boolean") {
+  if (
+    typeof is_public !== "boolean" &&
+    typeof leaderboard_opt_in !== "boolean"
+  ) {
     return NextResponse.json(
-      { error: "is_public must be a boolean" },
+      { error: "At least one boolean setting is required" },
       { status: 400 }
     );
   }
 
-  // Update user public flag
-  const updated = await updateUserPublicFlag(user.id, is_public);
+  const updates: { is_public?: boolean; leaderboard_opt_in?: boolean } = {};
+  if (typeof is_public === "boolean") {
+    updates.is_public = is_public;
+  }
+  if (typeof leaderboard_opt_in === "boolean") {
+    updates.leaderboard_opt_in = leaderboard_opt_in;
+    if (leaderboard_opt_in) {
+      updates.is_public = true;
+    }
+  }
 
-  if (!updated) {
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from("users")
+    .update(updates)
+    .eq("id", user.id)
+    .select("id, github_login, is_public, leaderboard_opt_in")
+    .single();
+
+  if (updateError || !updated) {
+    console.error("Error updating settings:", updateError);
     return NextResponse.json(
       { error: "Failed to update settings" },
       { status: 500 }
@@ -87,5 +106,6 @@ export async function PATCH(req: NextRequest) {
     id: updated.id,
     github_login: updated.github_login,
     is_public: updated.is_public,
+    leaderboard_opt_in: updated.leaderboard_opt_in ?? false,
   });
 }
