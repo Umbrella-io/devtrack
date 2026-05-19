@@ -45,7 +45,7 @@ export default function TopRepos() {
     const accountParam = selectedAccount !== null
       ? `?accountId=${encodeURIComponent(selectedAccount)}`
       : "";
-    fetch(`/api/metrics/repo-health${accountParam}`)
+    fetch(`/api/metrics/repo-health${accountParam}${accountParam ? "&" : "?"}days=${days}`)
       .then((r) => r.json())
       .then((d: { repos: RepoHealthScore[] }) => {
         const map: Record<string, RepoHealthScore> = {};
@@ -56,7 +56,7 @@ export default function TopRepos() {
       })
       .catch(() => setHealthScores({}))
       .finally(() => setHealthLoading(false));
-  }, [selectedAccount]);
+  }, [days, selectedAccount]);
 
   useEffect(() => {
     if (!lastUpdated) return;
@@ -187,8 +187,7 @@ export default function TopRepos() {
                     href={repo.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="Open on GitHub"
-                    className="max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] hover:underline"
+                    className="max-w-[60%] sm:max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
                     title={repo.name}
                   >
                     <span className="mr-1 text-[var(--muted-foreground)]">#{idx + 1}</span>
@@ -204,7 +203,14 @@ export default function TopRepos() {
                       >
                         {health.score}
                       </span>
-                    ) : null}
+                    ) : (
+                      <span
+                        className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-2 py-0.5 text-xs font-semibold text-[var(--muted-foreground)]"
+                        title="Not enough data to calculate health score"
+                      >
+                        --
+                      </span>
+                    )}
                     <span className="text-[var(--muted-foreground)]">
                       {repo.commits} commit{repo.commits !== 1 ? "s" : ""}
                     </span>
