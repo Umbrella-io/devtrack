@@ -57,7 +57,7 @@ export const authOptions: NextAuthOptions = {
             gitlab_login: p.username,
             updated_at: new Date().toISOString(),
           },
-          { onConflict: "email" }
+          { onConflict: "gitlab_id" }
         );
       }
       return true;
