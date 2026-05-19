@@ -156,8 +156,8 @@ export async function GET(req: NextRequest) {
     );
 
     const results = await Promise.allSettled(
-      accounts.map((account) => fetchPRMetrics(account.token, username))
-    );
+  accounts.map((account) => fetchPRMetrics(account.token, account.githubLogin))
+);
 
     const merged = mergeMetrics(results, (a, b) => {
       const total = a.total + b.total;

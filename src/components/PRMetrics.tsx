@@ -8,6 +8,8 @@ interface PRData {
   merged: number;
   avgReviewHours: number;
   mergeRate: string;
+  reviewsGiven: number; // Added reviews given counter
+  reviewRatio: string;  // Added review-to-author ratio score
 }
 
 export default function PRMetrics() {
@@ -45,6 +47,8 @@ export default function PRMetrics() {
         { label: "Merged (30d)", value: metrics.merged },
         { label: "Avg Review Time", value: `${metrics.avgReviewHours}h` },
         { label: "Merge Rate", value: metrics.mergeRate },
+        { label: "Reviews Given", value: metrics.reviewsGiven }, // Displays total code reviews given
+        { label: "Review Ratio", value: metrics.reviewRatio },   // Displays individual code participation ratio
       ]
     : [];
 
@@ -52,8 +56,8 @@ export default function PRMetrics() {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
               className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
@@ -72,7 +76,7 @@ export default function PRMetrics() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {stats.map((stat) => (
             <div
               key={stat.label}
