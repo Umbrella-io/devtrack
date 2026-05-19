@@ -127,7 +127,7 @@ async function getAverageFirstReviewHours(
 
 async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
   const searchRes = await fetch(
-    `${GITHUB_API}/search/issues?q=type:pr+author:@me&per_page=100`,
+    `${GITHUB_API}/search/issues?q=type:pr+author:@me&sort=updated&order=desc&per_page=100`,
     {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
