@@ -10,15 +10,12 @@ import { GITHUB_API } from "@/lib/github";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
-
 interface PullRequest {
   title: string;
   created_at: string;
   html_url: string;
   state: string;
-}
-
-interface PRMetricsBase {
+}interface PRMetricsBase {
   open: number;
   merged: number;
   total: number;
@@ -50,7 +47,6 @@ interface ReviewCommentEvent {
 function getRepoFullName(repositoryUrl: string): string | null {
   const marker = "/repos/";
   const index = repositoryUrl.indexOf(marker);
-
   return index >= 0 ? repositoryUrl.slice(index + marker.length) : null;
 }
 
@@ -77,22 +73,15 @@ async function fetchFirstReviewTimestamp(
     Authorization: `Bearer ${token}`,
     Accept: "application/vnd.github+json",
   };
-
   const [reviewsRes, commentsRes] = await Promise.all([
-    fetch(
-      `${GITHUB_API}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`,
-      {
-        headers,
-        cache: "no-store",
-      }
-    ),
-    fetch(
-      `${GITHUB_API}/repos/${repo}/pulls/${pr.number}/comments?per_page=100`,
-      {
-        headers,
-        cache: "no-store",
-      }
-    ),
+    fetch(`${GITHUB_API}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`, {
+      headers,
+      cache: "no-store",
+    }),
+    fetch(`${GITHUB_API}/repos/${repo}/pulls/${pr.number}/comments?per_page=100`, {
+      headers,
+      cache: "no-store",
+    }),
   ]);
 
   if (!reviewsRes.ok || !commentsRes.ok) {
@@ -121,7 +110,6 @@ async function getAverageFirstReviewHours(
       }
 
       const openedAt = new Date(pr.created_at).getTime();
-
       if (Number.isNaN(openedAt) || firstReviewAt < openedAt) {
         return null;
       }
@@ -129,7 +117,6 @@ async function getAverageFirstReviewHours(
       return (firstReviewAt - openedAt) / 3600000;
     })
   );
-
   const validDurations = reviewedPrs.filter(
     (value): value is number => typeof value === "number"
   );
@@ -146,6 +133,8 @@ async function getAverageFirstReviewHours(
 }
 
 async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
+
+  
   const searchRes = await fetch(
     `${GITHUB_API}/search/issues?q=type:pr+author:@me&sort=updated&order=desc&per_page=100`,
     {
@@ -158,28 +147,25 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
     throw new Error("GitHub API error");
   }
 
-  const data = (await searchRes.json()) as {
-    total_count: number;
-    items: PullRequestSearchItem[];
-  };
+ const data = (await searchRes.json()) as {
+  total_count: number;
+  items: PullRequestSearchItem[];
+};
 
   const open = data.items.filter((pr) => pr.state === "open").length;
 
+  // A PR with state "closed" may have been merged OR closed without merging
+  // (e.g. rejected, abandoned). Only count those with a non-null merged_at
+  // as truly merged so the dashboard does not inflate the merged count.
   const merged = data.items.filter(
     (pr) => pr.pull_request?.merged_at != null
   ).length;
 
+  // Average review time: use only actually merged PRs so we measure the time
+  // from open to merge, not open to close-without-merge.
   const mergedPRs = data.items.filter(
     (pr) => pr.pull_request?.merged_at != null
   );
-
-  const prs = data.items.map((pr) => ({
-    title: pr.title,
-    created_at: pr.created_at,
-    html_url: pr.html_url,
-    state: pr.state,
-  }));
-
   const avgReviewMs =
     mergedPRs.length > 0
       ? mergedPRs.reduce(
@@ -190,23 +176,33 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
           0
         ) / mergedPRs.length
       : 0;
+      const prs = data.items.map((pr) => ({
+  title: pr.title,
+  created_at: pr.created_at,
+  html_url: pr.html_url,
+  state: pr.state,
+}));
 
+  // Use the number of fetched items as the denominator for mergeRate.
+  // data.total_count is the all-time GitHub total (potentially thousands)
+  // while data.items is capped at 100, so dividing merged/total_count
+  // produces a near-zero rate for any active user. The fetched sample
+  // (open + merged + closed-without-merge) is the correct base.
   const sampleTotal = data.items.length;
-
   const avgFirstReviewHours = await getAverageFirstReviewHours(
     token,
     data.items
   );
 
-  return {
-    open,
-    merged,
-    total: data.total_count,
-    avgReviewHours: Math.round(avgReviewMs / 3600000),
-    avgFirstReviewHours,
-    mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
-    prs,
-  };
+return {
+  open,
+  merged,
+  total: data.total_count,
+  avgReviewHours: Math.round(avgReviewMs / 3600000),
+  avgFirstReviewHours,
+  mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
+  prs,
+};
 }
 
 function formatPRMetrics(metrics: PRMetricsBase) {
@@ -216,17 +212,16 @@ function formatPRMetrics(metrics: PRMetricsBase) {
     total: metrics.total,
     avgReviewHours: metrics.avgReviewHours,
     avgFirstReviewHours: metrics.avgFirstReviewHours,
-    prs: metrics.prs,
     mergeRate:
       metrics.total > 0
         ? `${Math.round(metrics.mergeRate * 100)}%`
         : "0%",
+    prs: metrics.prs,
   };
 }
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-
   if (!session?.accessToken) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -236,7 +231,6 @@ export async function GET(req: NextRequest) {
   if (!accountId) {
     try {
       const result = await fetchPRMetrics(session.accessToken);
-
       return Response.json(formatPRMetrics(result));
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
@@ -274,16 +268,13 @@ export async function GET(req: NextRequest) {
     const merged = mergeMetrics(results, (a, b) => {
       const total = a.total + b.total;
       const mergedCount = a.merged + b.merged;
-
       const avgReviewHours =
         total > 0
           ? (a.avgReviewHours * a.total + b.avgReviewHours * b.total) / total
           : 0;
-
       const reviewedTotal =
         (a.avgFirstReviewHours === null ? 0 : a.total) +
         (b.avgFirstReviewHours === null ? 0 : b.total);
-
       const avgFirstReviewHours =
         reviewedTotal > 0
           ? ((a.avgFirstReviewHours ?? 0) * a.total +
@@ -293,6 +284,7 @@ export async function GET(req: NextRequest) {
 
       return {
         open: a.open + b.open,
+        prs: [...a.prs, ...b.prs],
         merged: mergedCount,
         total,
         avgReviewHours: Math.round(avgReviewHours * 10) / 10,
@@ -302,7 +294,6 @@ export async function GET(req: NextRequest) {
             : Math.round(avgFirstReviewHours * 10) / 10,
         mergeRate:
           total > 0 ? Math.round((mergedCount / total) * 100) / 100 : 0,
-        prs: [...a.prs, ...b.prs],
       };
     });
 
@@ -324,7 +315,6 @@ export async function GET(req: NextRequest) {
 
   try {
     const result = await fetchPRMetrics(token);
-
     return Response.json(formatPRMetrics(result));
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
