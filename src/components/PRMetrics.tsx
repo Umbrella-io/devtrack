@@ -7,14 +7,25 @@ interface PRData {
   open: number;
   merged: number;
   avgReviewHours: number;
+  avgFirstReviewHours: number | null;
   mergeRate: string;
+  prs: PullRequest[];
+}
+
+interface PullRequest {
+  title: string;
+  created_at: string;
+  html_url: string;
+  state: string;
 }
 
 export default function PRMetrics() {
   const { selectedAccount } = useAccount();
+
   const [metrics, setMetrics] = useState<PRData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [staleDays, setStaleDays] = useState(7);
 
   const fetchMetrics = useCallback(() => {
     setLoading(true);
@@ -31,7 +42,11 @@ export default function PRMetrics() {
         return r.json();
       })
       .then((data: PRData) => setMetrics(data))
-      .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
+      .catch(() =>
+        setError(
+          "We couldn't load your PR analytics right now. Please try again in a moment."
+        )
+      )
       .finally(() => setLoading(false));
   }, [selectedAccount]);
 
@@ -39,30 +54,61 @@ export default function PRMetrics() {
     fetchMetrics();
   }, [fetchMetrics]);
 
+  const isStale = (createdAt: string) => {
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+
+    const diffTime = now.getTime() - createdDate.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+    return diffDays > staleDays;
+  };
+
+  const stalePRs =
+    metrics?.prs.filter(
+      (pr) => pr.state === "open" && isStale(pr.created_at)
+    ) || [];
+
   const stats = metrics
     ? [
         { label: "Open PRs", value: metrics.open },
         { label: "Merged (30d)", value: metrics.merged },
-        { label: "Avg Review Time", value: `${metrics.avgReviewHours}h` },
+        {
+          label: "Avg Review Time",
+          value: `${metrics.avgReviewHours}h`,
+        },
+        {
+          label: "Avg First Review",
+          value:
+            metrics.avgFirstReviewHours === null
+              ? "—"
+              : metrics.avgFirstReviewHours < 24
+                ? `${metrics.avgFirstReviewHours}h`
+                : `${Math.round((metrics.avgFirstReviewHours / 24) * 10) / 10}d`,
+        },
         { label: "Merge Rate", value: metrics.mergeRate },
       ]
     : [];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
+        PR Analytics
+      </h2>
+
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
+              className="h-24 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse"
             />
           ))}
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
           <p>{error}</p>
+
           <button
             type="button"
             onClick={fetchMetrics}
@@ -72,19 +118,68 @@ export default function PRMetrics() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-lg bg-[var(--control)] p-4 text-center"
-            >
-              <div className="text-2xl font-bold text-[var(--accent)]">
-                {stat.value}
-              </div>
-              <div className="mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
+        <>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="rounded-full bg-orange-500/10 px-3 py-1 text-sm text-orange-400">
+              {stalePRs.length} PRs stale &gt; {staleDays} days
             </div>
-          ))}
-        </div>
+
+            <select
+              value={staleDays}
+              onChange={(e) => setStaleDays(Number(e.target.value))}
+              className="rounded-md border border-[var(--border)] bg-[var(--card)] px-2 py-1 text-sm"
+            >
+              <option value={7}>7 days</option>
+              <option value={14}>14 days</option>
+              <option value={30}>30 days</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+            {stats.map((stat) => (
+              <div
+                key={stat.label}
+                className="min-w-0 rounded-lg bg-[var(--control)] p-4 text-center"
+              >
+                <div className="truncate text-2xl font-bold text-[var(--accent)]">
+                  {stat.value}
+                </div>
+
+                <div className="mt-1 truncate text-sm text-[var(--muted-foreground)]">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {stalePRs.length > 0 && (
+            <div className="mt-6">
+              <h3 className="mb-3 text-sm font-semibold text-[var(--card-foreground)]">
+                Stale Pull Requests
+              </h3>
+
+              <div className="space-y-2">
+                {stalePRs.map((pr) => (
+                  <a
+                    key={pr.html_url}
+                    href={pr.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between rounded-lg bg-[var(--control)] p-3 transition hover:opacity-90"
+                  >
+                    <span className="text-sm text-[var(--card-foreground)]">
+                      {pr.title}
+                    </span>
+
+                    <span className="rounded-full bg-orange-500/10 px-2 py-1 text-xs font-medium text-orange-400">
+                      Stale
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
