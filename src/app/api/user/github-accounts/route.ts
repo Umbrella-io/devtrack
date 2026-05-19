@@ -5,6 +5,13 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
+interface LinkedAccount {
+  id: string;
+  github_id: string;
+  github_login: string;
+  added_at: string;
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions);
 
@@ -36,7 +43,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    accounts: (accounts ?? []).map((account) => ({
+    accounts: (accounts ?? []).map((account: LinkedAccount) => ({
       id: account.id,
       githubId: account.github_id,
       githubLogin: account.github_login,

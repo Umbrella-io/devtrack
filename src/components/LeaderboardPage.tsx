@@ -1,8 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import { Trophy, Flame, GitCommit, AlertCircle, Loader2, Award } from "lucide-react";
+
+const Trophy = ({ className }: { className?: string }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7c0 6 6 8 6 8s6-2 6-8V2Z"/></svg>
+);
+
+const Loader2 = ({ className }: { className?: string }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+);
+
+const AlertCircle = ({ className }: { className?: string }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+);
 
 export interface Contributor {
   id: string;
@@ -20,125 +30,27 @@ export function useLeaderboard() {
 
   useEffect(() => {
     async function fetchLeaderboard() {
-      const mockContributors: Contributor[] = [
-        {
-          id: "1",
-          username: "AdityaM-IITH",
-          avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
-          streak_count: 42,
-          total_commits: 156,
-          rank: 1,
-        },
-        {
-          id: "2",
-          username: "alex_dev",
-          avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-          streak_count: 28,
-          total_commits: 98,
-          rank: 2,
-        },
-        {
-          id: "3",
-          username: "sofia_codes",
-          avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-          streak_count: 24,
-          total_commits: 84,
-          rank: 3,
-        },
-        {
-          id: "4",
-          username: "dev_wizard",
-          avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
-          streak_count: 19,
-          total_commits: 73,
-          rank: 4,
-        },
-        {
-          id: "5",
-          username: "git_guru",
-          avatar_url: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80",
-          streak_count: 15,
-          total_commits: 62,
-          rank: 5,
-        },
-        {
-          id: "6",
-          username: "pixel_pioneer",
-          avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80",
-          streak_count: 12,
-          total_commits: 51,
-          rank: 6,
-        },
-        {
-          id: "7",
-          username: "clara_t",
-          avatar_url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
-          streak_count: 10,
-          total_commits: 44,
-          rank: 7,
-        },
-        {
-          id: "8",
-          username: "dan_builds",
-          avatar_url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80",
-          streak_count: 9,
-          total_commits: 39,
-          rank: 8,
-        },
-        {
-          id: "9",
-          username: "elena_k",
-          avatar_url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=150&q=80",
-          streak_count: 8,
-          total_commits: 35,
-          rank: 9,
-        },
-        {
-          id: "10",
-          username: "sam_smith",
-          avatar_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80",
-          streak_count: 7,
-          total_commits: 31,
-          rank: 10,
-        }
-      ];
-
       try {
         setLoading(true);
         setError(null);
-
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || !supabase) {
-          setContributors(mockContributors);
-          return;
-        }
-
-        const { data, error: fetchError } = await supabase
-          .from("contributors")
-          .select("id, username, avatar_url, streak_count, total_commits")
-          .order("streak_count", { ascending: false })
-          .order("total_commits", { ascending: false })
-          .limit(50);
-
-        if (fetchError) throw fetchError;
-
-        if (!data || data.length === 0) {
-          setContributors(mockContributors);
-          return;
-        }
-
-        const rankedData: Contributor[] = data.map((user: any, index: number) => ({
+        
+        const response = await fetch('/api/leaderboard');
+        if (!response.ok) throw new Error('Failed to fetch leaderboard data');
+        
+        const data = await response.json();
+        const rankedData: Contributor[] = (data.contributors || []).map((user: any, index: number) => ({
           id: user.id,
           username: user.username,
           avatar_url: user.avatar_url,
           streak_count: user.streak_count,
           total_commits: user.total_commits,
-          rank: index + 1,
+          rank: user.rank || index + 1,
         }));
 
         setContributors(rankedData);
       } catch (err: unknown) {
-        console.warn("Supabase fetch failed, falling back to mock leaderboard data:", err);
-        setContributors(mockContributors);
+        console.error("Leaderboard fetch error:", err);
+        setError("Failed to fetch leaderboard data");
       } finally {
         setLoading(false);
       }

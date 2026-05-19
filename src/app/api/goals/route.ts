@@ -4,6 +4,18 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
+interface Goal {
+  id: string;
+  user_id: string;
+  title: string;
+  target: number;
+  current: number;
+  unit: string;
+  recurrence: string;
+  period_start: string | null;
+  created_at: string;
+}
+
 type Recurrence = "none" | "weekly" | "monthly";
 
 function getPeriodStart(recurrence: Recurrence): string {
@@ -50,7 +62,7 @@ export async function GET() {
 
   // Reset progress if we're in a new period
   const processedGoals = await Promise.all(
-    (goals ?? []).map(async (goal) => {
+    (goals ?? []).map(async (goal: Goal) => {
       if (goal.recurrence === "none") return goal;
 
       const periodStart = new Date(getPeriodStart(goal.recurrence as Recurrence));
