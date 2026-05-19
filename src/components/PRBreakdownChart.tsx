@@ -22,6 +22,13 @@ export default function PRBreakdownChart() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const getCSSVariable = (varName: string): string => {
+    if (typeof window === "undefined") return "#000";
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue(varName)
+      .trim();
+  };
+
   const fetchBreakdown = () => {
     setLoading(true);
     setError(null);
@@ -99,9 +106,9 @@ export default function PRBreakdownChart() {
               </Pie>
               <Tooltip
                 contentStyle={{
-                  background: "var(--tooltip)",
-                  color: "var(--tooltip-foreground)",
-                  border: "1px solid var(--border)",
+                  background: getCSSVariable("--tooltip"),
+                  color: getCSSVariable("--tooltip-foreground"),
+                  border: `1px solid ${getCSSVariable("--border")}`,
                   borderRadius: "8px",
                   fontSize: "12px",
                 }}

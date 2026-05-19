@@ -4,6 +4,7 @@ import ContributionGraph from "@/components/ContributionGraph";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
 import BackToDashboard from "@/components/BackToDashboard";
+
 interface PublicProfileData {
   username: string;
   userId: string;
@@ -107,6 +108,7 @@ if (!profile) {
   );
 }
 
+  
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       {/* Header */}
