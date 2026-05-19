@@ -44,6 +44,19 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // Verify the state was generated for this session's user.
+  // The state format is `<nonce>.<githubId>` (set in the initiation handler).
+  // Without this check, an attacker who places their state cookie on a
+  // victim's browser can trick the callback into linking the attacker's
+  // secondary GitHub account to the victim's devtrack profile.
+  const embeddedGithubId = state.split(".").slice(1).join(".");
+  if (!embeddedGithubId || embeddedGithubId !== session.githubId) {
+    return NextResponse.redirect(
+      buildSettingsRedirect("error", "invalid_state"),
+      { status: 302 }
+    );
+  }
+
   const redirectUri = `${process.env.NEXTAUTH_URL ?? ""}/api/auth/link-github/callback`;
 
   const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
