@@ -1,5 +1,4 @@
 "use client";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 
@@ -132,18 +131,20 @@ function getBestMonth(data: Record<string, number>): { count: number; monthLabel
   return { count: maxCount, monthLabel };
 }
 
-function getBusiestRepo(repos: Repo[]): { count: number; repoLabel: string | null } {
+function getBusiestRepo(
+  repos: Repo[]
+): { count: number; repoLabel: string | null; repoUrl: string | null } {
   if (!repos || repos.length === 0) {
-    return { count: 0, repoLabel: null };
+    return { count: 0, repoLabel: null, repoUrl: null };
   }
 
   const best = repos[0];
   if (!best) {
-    return { count: 0, repoLabel: null };
+    return { count: 0, repoLabel: null, repoUrl: null };
   }
 
   const shortName = best.name.split("/")[1] ?? best.name;
-  return { count: best.commits, repoLabel: shortName };
+  return { count: best.commits, repoLabel: shortName, repoUrl: best.url };
 }
 
 export default function PersonalRecords() {
@@ -240,6 +241,7 @@ export default function PersonalRecords() {
       value: busiestRepo.count,
       unit: "commits",
       subtext: busiestRepo.repoLabel ?? "—",
+      repoUrl: busiestRepo.repoUrl,
       icon: "⭐",
       isRepo: true,
     },
@@ -306,18 +308,32 @@ export default function PersonalRecords() {
               }`}
               title={rec.subtext}
             >
-              {rec.isRepo && repos[0]?.url ? (
+              {rec.isRepo && rec.repoUrl ? (
                 <div className="flex items-center justify-center gap-1 truncate">
                   <span className="truncate">{rec.subtext}</span>
 
                   <a
-                    href={repos[0].url}
+                    href={rec.repoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Open on GitHub"
                     className="shrink-0 text-[var(--muted-foreground)] hover:text-[var(--accent)] transition-colors"
                   >
-                    <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
                   </a>
                 </div>
               ) : (
