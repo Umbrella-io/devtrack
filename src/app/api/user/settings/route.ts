@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { is_public, pinned_repos } = body;
-  const updates: Record<string, any> = {};
+  const updates: { is_public?: boolean; pinned_repos?: string[] } = {};
 
   if (typeof is_public === "boolean") {
     updates.is_public = is_public;

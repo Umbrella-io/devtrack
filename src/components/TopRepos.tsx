@@ -23,6 +23,7 @@ export default function TopRepos() {
   const [sortColumn, setSortColumn] = useState<"commits" | "name">("commits");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [pinnedRepos, setPinnedRepos] = useState<string[]>([]);
+  const [pinError, setPinError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/user/settings")
@@ -39,11 +40,13 @@ export default function TopRepos() {
       newPinsArray = pinnedRepos.filter(name => name !== repoFullName);
     } else {
       if (pinnedRepos.length >= 3) {
-        alert("Maximum 3 pins allowed");
+        setPinError("Maximum 3 pins allowed");
         return;
       }
       newPinsArray = [...pinnedRepos, repoFullName];
     }
+    
+    setPinError(null);
 
     const prevPins = [...pinnedRepos];
     setPinnedRepos(newPinsArray);
@@ -146,7 +149,12 @@ export default function TopRepos() {
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Top Repositories</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Top Repositories</h2>
+          {pinError && (
+            <p className="text-xs text-[var(--destructive)]">{pinError}</p>
+          )}
+        </div>
         <select
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
