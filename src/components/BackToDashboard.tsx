@@ -10,8 +10,7 @@ interface Props {
 export default function BackToDashboard({ username }: Props) {
   const { data: session } = useSession();
 
-  const currentUser = session?.user?.name;
-
+const currentUser = session?.githubLogin;
   const isOwner = currentUser === username;
 
   if (!isOwner) return null;

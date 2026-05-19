@@ -4,6 +4,7 @@ import ContributionGraph from "@/components/ContributionGraph";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
 import BackToDashboard from "@/components/BackToDashboard";
+import StatsCard from "@/components/StatsCard";
 interface PublicProfileData {
   username: string;
   userId: string;
@@ -49,8 +50,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { username } = params;
   const profile = await fetchPublicProfile(username);
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
   const profileUrl = `${baseUrl}/u/${username}`;
 
   if (!profile) {
@@ -85,7 +85,9 @@ export default async function PublicProfilePage({
 }) {
   const { username } = params;
   const profile = await fetchPublicProfile(username);
-
+const avatarUrl = `https://avatars.githubusercontent.com/${profile?.username}`;
+const topRepo = profile?.repos[0]?.name ?? "";
+ 
 if (!profile) {
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors flex items-center justify-center">
@@ -111,16 +113,27 @@ if (!profile) {
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       {/* Header */}
     {/* Header */}
-<div className="mb-8">
-  <BackToDashboard username={username} />
+<div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <BackToDashboard username={username} />
 
-  <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
-    @{profile.username}&apos;s Profile
-  </h1>
+    <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
+      @{profile.username}&apos;s Profile
+    </h1>
 
-  <p className="mt-2 text-[var(--muted-foreground)]">
-    GitHub activity and coding stats
-  </p>
+    <p className="mt-2 text-[var(--muted-foreground)]">
+      GitHub activity and coding stats
+    </p>
+  </div>
+
+  <StatsCard
+    username={profile.username}
+    avatarUrl={avatarUrl}
+    currentStreak={profile.streak.current}
+    longestStreak={profile.streak.longest}
+    totalCommits={profile.contributions.total}
+    topRepo={topRepo}
+  />
 </div>
 
       {/* Row 1: Contribution graph + Streak */}
