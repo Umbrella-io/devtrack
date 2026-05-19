@@ -164,7 +164,7 @@ export default function PersonalRecords() {
   }, [selectedAccount]);
   useEffect(() => {
     fetchRecords();
-  }, [fetchRecords, selectedAccount]);
+  }, [fetchRecords]);
   const bestDay = getBestDay(contributions?.data ?? {});
   const bestWeek = getBestWeek(contributions?.data ?? {});
   const bestMonth = getBestMonth(contributions?.data ?? {});
