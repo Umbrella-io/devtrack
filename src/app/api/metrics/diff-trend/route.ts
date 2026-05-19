@@ -126,19 +126,15 @@ export async function GET(req: NextRequest) {
   }
 
   const accountId = req.nextUrl.searchParams.get("accountId");
+  const accessToken = session.accessToken as string;
 
   try {
     if (!accountId) {
       // Fetch for main account
-      const repos = await getUserTopRepos(
-        session.accessToken,
-        session.githubLogin,
-      );
+      const repos = await getUserTopRepos(accessToken, session.githubLogin);
 
       const repoStats = await Promise.all(
-        repos.map((repo) =>
-          fetchRepoStats(session.accessToken, repo.owner, repo.name),
-        ),
+        repos.map((repo) => fetchRepoStats(accessToken, repo.owner, repo.name)),
       );
 
       const { weeks, isComputing } = aggregateWeeks(repoStats);
@@ -168,7 +164,7 @@ export async function GET(req: NextRequest) {
     if (accountId === "combined") {
       const accounts = await getAllAccounts(
         {
-          token: session.accessToken,
+          token: accessToken,
           githubId: session.githubId,
           githubLogin: session.githubLogin,
         },
@@ -179,7 +175,10 @@ export async function GET(req: NextRequest) {
 
       for (const account of accounts) {
         try {
-          const repos = await getUserTopRepos(account.token, account.login);
+          const repos = await getUserTopRepos(
+            account.token,
+            account.githubLogin,
+          );
           const repoStats = await Promise.all(
             repos.map((repo) =>
               fetchRepoStats(account.token, repo.owner, repo.name),
@@ -202,7 +201,7 @@ export async function GET(req: NextRequest) {
 
     const token =
       accountId === session.githubId
-        ? session.accessToken
+        ? accessToken
         : await getAccountToken(userRow.id, accountId);
 
     if (!token) {
