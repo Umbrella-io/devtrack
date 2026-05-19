@@ -1,8 +1,21 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
+
+interface Goal {
+  id: string;
+  user_id: string;
+  title: string;
+  target: number;
+  current: number;
+  unit: string;
+  recurrence: string;
+  period_start: string | null;
+  created_at: string;
+}
 
 type Recurrence = "none" | "weekly" | "monthly";
 
@@ -34,12 +47,7 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
-
+  const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
   const { data: goals } = await supabaseAdmin
@@ -50,7 +58,7 @@ export async function GET() {
 
   // Reset progress if we're in a new period
   const processedGoals = await Promise.all(
-    (goals ?? []).map(async (goal) => {
+    (goals ?? []).map(async (goal: Goal) => {
       if (goal.recurrence === "none") return goal;
 
       const periodStart = new Date(getPeriodStart(goal.recurrence as Recurrence));
@@ -114,12 +122,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "Invalid recurrence value" }, { status: 400 });
   }
 
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
-
+  const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
   const { data: goal, error } = await supabaseAdmin

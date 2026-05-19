@@ -2,8 +2,16 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
+
+interface LinkedAccount {
+  id: string;
+  github_id: string;
+  github_login: string;
+  added_at: string;
+}
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -12,11 +20,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: userRow } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
+  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
 
   if (!userRow) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -36,7 +40,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    accounts: (accounts ?? []).map((account) => ({
+    accounts: (accounts ?? []).map((account: LinkedAccount) => ({
       id: account.id,
       githubId: account.github_id,
       githubLogin: account.github_login,

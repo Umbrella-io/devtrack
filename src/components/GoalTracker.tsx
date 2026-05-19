@@ -152,13 +152,19 @@ export default function GoalTracker() {
   if (loading) {
     return (
       <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <div className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse" />
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="mb-4">
-            <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
-            <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
-          </div>
-        ))}
+        <div role="status" aria-live="polite" aria-busy="true">
+          <span className="sr-only">Loading weekly goals</span>
+          <div
+            aria-hidden="true"
+            className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse"
+          />
+          {[1, 2, 3].map((i) => (
+            <div key={i} aria-hidden="true" className="mb-4">
+              <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
+              <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -326,7 +332,7 @@ export default function GoalTracker() {
                 disabled={creating}
                 className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium border transition-all ${
                   recurrence === r
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                     : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
                 }`}
               >
@@ -344,7 +350,7 @@ export default function GoalTracker() {
         <button
           type="submit"
           disabled={creating || !title.trim()}
-          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {creating ? (
             <>
@@ -357,7 +363,7 @@ export default function GoalTracker() {
         </button>
 
         {createError && (
-         <p className="text-sm text-[var(--destructive)]">{createError}</p>
+          <p className="text-sm text-[var(--destructive)]">{createError}</p>
         )}
       </form>
     </div>
