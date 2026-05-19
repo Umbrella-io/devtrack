@@ -7,26 +7,28 @@ import SignOutButton from "@/components/SignOutButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
 
-interface UserSettings {
-  is_public: boolean;
-}
-
 export default function DashboardHeader() {
   const { data: session } = useSession();
-  const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [isPublic, setIsPublic] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      setIsPublic(null);
+      return;
+    }
 
     async function loadSettings() {
       try {
         const res = await fetch("/api/user/settings");
         if (res.ok) {
           const data = await res.json();
-          setSettings(data);
+          setIsPublic(data.is_public === true);
+        } else {
+          setIsPublic(false);
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
+        setIsPublic(false);
       }
     }
 
@@ -46,7 +48,7 @@ export default function DashboardHeader() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {settings?.is_public && session?.githubLogin && (
+          {isPublic === true && session?.githubLogin && (
             <a
               href={`/u/${session.githubLogin}`}
               target="_blank"
