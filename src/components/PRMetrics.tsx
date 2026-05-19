@@ -6,6 +6,7 @@ import { useAccount } from "@/components/AccountContext";
 interface PRData {
   open: number;
   merged: number;
+  total: number;
   avgReviewHours: number;
   avgFirstReviewHours: number | null;
   mergeRate: string;
@@ -89,8 +90,16 @@ export default function PRMetrics() {
             Try again
           </button>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        ) : metrics?.total === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="mb-3 text-4xl">📭</div>
+
+            <p className="text-sm text-[var(--muted-foreground)]">
+              No pull requests found. Open your first PR to see metrics here.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {stats.map((stat) => (
             <div
               key={stat.label}
