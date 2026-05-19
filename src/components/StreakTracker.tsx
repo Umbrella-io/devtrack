@@ -99,7 +99,11 @@ export default function StreakTracker() {
     );
 
     if (stored) {
-      setDismissedMilestones(JSON.parse(stored));
+      try {
+        setDismissedMilestones(JSON.parse(stored));
+      }catch {
+        // ignore invalid localStorage data
+      }
     }
   }, []);
 
