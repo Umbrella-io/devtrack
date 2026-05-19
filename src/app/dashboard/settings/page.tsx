@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
+import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 
 interface UserSettings {
   id: string;
@@ -121,6 +122,8 @@ function SettingsPageContent() {
     [searchParams]
   );
 
+  const { theme, setTheme } = useHeatmapTheme();
+
   // Redirect to signin if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -203,11 +206,11 @@ function SettingsPageContent() {
 
   const copyShareLink = () => {
     if (!settings) return;
-
     const link = `${window.location.origin}/u/${settings.github_login}`;
-    navigator.clipboard.writeText(link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => { });
   };
 
   const handleRemoveAccount = async (githubId: string) => {
@@ -343,7 +346,9 @@ function SettingsPageContent() {
                   className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none"
                 />
                 <button
+                  type="button"
                   onClick={copyShareLink}
+                  aria-label="Copy profile URL"
                   className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
                 >
                   {copied ? "Copied!" : "Copy"}
@@ -351,6 +356,39 @@ function SettingsPageContent() {
               </div>
             </div>
           )}
+
+          <div className="mt-6 pt-6 border-t border-[var(--border)]">
+            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+              Heatmap colour scheme
+            </h3>
+            <p className="text-sm text-[var(--muted-foreground)] mb-4">
+              Choose a colour scheme for the contribution and streak heatmaps.
+            </p>
+            <div className="space-y-3">
+              <label className="flex cursor-pointer items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-[var(--foreground)]">
+                <span>Default</span>
+                <input
+                  type="radio"
+                  name="heatmap-theme"
+                  value="default"
+                  checked={theme === "default"}
+                  onChange={() => setTheme("default")}
+                  className="accent-[var(--accent)] focus:ring-[var(--accent)]"
+                />
+              </label>
+              <label className="flex cursor-pointer items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-[var(--foreground)]">
+                <span>Colour-blind friendly</span>
+                <input
+                  type="radio"
+                  name="heatmap-theme"
+                  value="colour-blind-friendly"
+                  checked={theme === "colour-blind-friendly"}
+                  onChange={() => setTheme("colour-blind-friendly")}
+                  className="accent-[var(--accent)] focus:ring-[var(--accent)]"
+                />
+              </label>
+            </div>
+          </div>
 
           {!settings.is_public && (
             <div className="mt-4 p-3 rounded-lg bg-[var(--control)] border border-[var(--border)]">

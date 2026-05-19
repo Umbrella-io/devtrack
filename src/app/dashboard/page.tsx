@@ -9,11 +9,13 @@ import TopRepos from "@/components/TopRepos";
 import PinnedRepos from "@/components/PinnedRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CommitTimeChart from "@/components/CommitTimeChart";
+import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
+import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
@@ -29,12 +31,20 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <DashboardHeader />
-      <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex justify-end items-center gap-2">
+        <Link
+          href="/dashboard/settings"
+          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity"
+        >
+          Settings
+        </Link>
         <ExportButton />
       </div>
       <StreakAtRiskBanner />
 
-      <WeeklySummaryCard />
+      <div className="mb-6">
+        <WeeklySummaryCard />
+      </div>
 
       <div className="mb-6">
         <PersonalRecords />
@@ -62,9 +72,12 @@ export default async function DashboardPage() {
         <CommitTimeChart />
       </div>
 
-      {/* Row 3: Issue metrics */}
-      <div className="mt-6">
-        <IssueMetrics />
+      {/* Row 3: Issue metrics + CI analytics */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <IssueMetrics />
+        </div>
+        <CIAnalytics />
       </div>
 
       {/* Row 4: Pinned repositories */}
