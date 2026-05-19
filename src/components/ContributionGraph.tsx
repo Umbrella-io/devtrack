@@ -7,6 +7,8 @@ import {
   Bar,
   LineChart,
   Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -26,7 +28,7 @@ interface GraphPoint {
   friend: number;
 }
 
-type ViewMode = "bar" | "line";
+type ViewMode = "bar" | "line" | "area";
 
 const RANGES = [
   { label: "7d", days: 7 },
@@ -37,6 +39,7 @@ const RANGES = [
 const charts: { key: ViewMode; label: string }[] = [
   { key: "bar", label: "Bar" },
   { key: "line", label: "Line" },
+  { key: "area", label: "Area" },
 ];
 
 function mergeContributionData(
@@ -370,7 +373,7 @@ export default function ContributionGraph() {
                 />
               )}
             </BarChart>
-          ) : (
+          ) : chartType === "line" ? (
             <LineChart data={displayData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis 
@@ -424,6 +427,59 @@ export default function ContributionGraph() {
                 />
               )}
             </LineChart>
+          ) : (
+            <AreaChart data={displayData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis 
+                dataKey={compareMode ? "date" : "day"} 
+                hide 
+              />
+              <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--card)",
+                  color: "var(--foreground)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                }}
+                labelStyle={{
+                  color: "var(--foreground)",
+                  fontSize: "12px",
+                }}
+                cursor={{ fill: "var(--background)" }}
+              />
+              {hasFriendData && (
+                <Legend wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }} />
+              )}
+              {compareMode && hasFriendData ? (
+                <>
+                  <Area
+                    type="monotone"
+                    dataKey="you"
+                    stroke="var(--accent)"
+                    fill="var(--accent)"
+                    fillOpacity={0.3}
+                    name="You"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="friend"
+                    stroke="var(--muted-foreground)"
+                    fill="var(--muted-foreground)"
+                    fillOpacity={0.3}
+                    name={`${compareUser}`}
+                  />
+                </>
+              ) : (
+                <Area
+                  type="monotone"
+                  dataKey="commits"
+                  stroke="var(--accent)"
+                  fill="var(--accent)"
+                  fillOpacity={0.3}
+                />
+              )}
+            </AreaChart>
           )}
         </ResponsiveContainer>
         </div>
