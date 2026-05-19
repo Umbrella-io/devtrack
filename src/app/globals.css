@@ -4,20 +4,20 @@
 
 :root {
   color-scheme: light;
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --muted-foreground: #475569;
+  --background: #fdfdfd;
+  --foreground: #000000;
+  --muted-foreground: #71717a;
   --card: #ffffff;
-  --card-foreground: #0f172a;
-  --card-muted: #e2e8f0;
-  --border: #cbd5e1;
-  --accent: #6366f1;
-  --accent-soft: rgba(99, 102, 241, 0.15);
+  --card-foreground: #09090b;
+  --card-muted: #f4f4f5;
+  --border: #e4e4e7;
+  --accent: #6366f1; 
+  --accent-soft: rgba(99, 102, 241, 0.08);
   --accent-foreground: #ffffff;
-  --control: #e2e8f0;
-  --control-hover: #cbd5e1;
-  --tooltip: #ffffff;
-  --tooltip-foreground: #0f172a;
+  --control: #f4f4f5;
+  --control-hover: #e4e4e7;
+  --tooltip: #09090b;
+  --tooltip-foreground: #fafafa;
 }
 
 .dark {
