@@ -131,7 +131,7 @@ test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard");
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Commit Activity" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible();
   await expect(page.getByText("Make 10 commits")).toBeVisible();
