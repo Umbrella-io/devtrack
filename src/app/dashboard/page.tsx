@@ -9,6 +9,7 @@ import TopRepos from "@/components/TopRepos";
 import PinnedRepos from "@/components/PinnedRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CommitTimeChart from "@/components/CommitTimeChart";
+import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
@@ -71,9 +72,12 @@ export default async function DashboardPage() {
         <CommitTimeChart />
       </div>
 
-      {/* Row 3: Issue metrics */}
-      <div className="mt-6">
-        <IssueMetrics />
+      {/* Row 3: Issue metrics + CI analytics */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <IssueMetrics />
+        </div>
+        <CIAnalytics />
       </div>
 
       {/* Row 4: Pinned repositories */}
