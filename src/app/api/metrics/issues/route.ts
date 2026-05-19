@@ -21,17 +21,18 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get("range") || "30";
-    const username = searchParams.get("username") || session.user?.name || "";
+    const username = searchParams.get("username") || session.githubLogin || "";
 
     const daysLimit = parseInt(range, 10);
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - daysLimit);
     const sinceIso = sinceDate.toISOString().split("T")[0];
 
-    const githubUrl = `https://api.github.com/search/issues?q=involves:${username}+type:issue+created:>=${sinceIso}&per_page=100`;
+    // Changed 'involves:' to 'author:' to narrow down the query
+    const githubUrl = `https://api.github.com/search/issues?q=author:${username}+type:issue+created:>=${sinceIso}&per_page=100`;
 
     const res = await fetch(githubUrl, {
-      headers: { Authorization: `token ${session.accessToken}` },
+      headers: { Authorization: `Bearer ${session.accessToken}` },
     });
     
     if (!res.ok) throw new Error("GitHub API error");
@@ -54,7 +55,8 @@ export async function GET(request: NextRequest) {
       weeklyTrendMap.set(`Wk ${getWeekNumber(d)}`, 0);
     }
 
-    issues.forEach((issue: any) => {
+    // Changed '(issue: any)' to explicit type safety casting
+    issues.forEach((issue: { state: string; created_at: string; closed_at: string | null }) => {
       const createdAt = new Date(issue.created_at);
       const closedAt = issue.closed_at ? new Date(issue.closed_at) : null;
 
