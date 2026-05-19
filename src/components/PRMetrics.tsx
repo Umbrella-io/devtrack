@@ -19,6 +19,18 @@ interface PullRequest {
   state: string;
 }
 
+function formatReviewCycle(hours: number | null): string {
+  if (hours === null) {
+    return "—";
+  }
+
+  if (hours < 24) {
+    return `${hours}h`;
+  }
+
+  return `${Math.round((hours / 24) * 10) / 10}d`;
+}
+
 export default function PRMetrics() {
   const { selectedAccount } = useAccount();
 
@@ -73,18 +85,11 @@ export default function PRMetrics() {
     ? [
         { label: "Open PRs", value: metrics.open },
         { label: "Merged (30d)", value: metrics.merged },
-        {
-          label: "Avg Review Time",
-          value: `${metrics.avgReviewHours}h`,
-        },
+        { label: "Avg Review Time", value: `${metrics.avgReviewHours}h` },
         {
           label: "Avg First Review",
-          value:
-            metrics.avgFirstReviewHours === null
-              ? "—"
-              : metrics.avgFirstReviewHours < 24
-                ? `${metrics.avgFirstReviewHours}h`
-                : `${Math.round((metrics.avgFirstReviewHours / 24) * 10) / 10}d`,
+          value: formatReviewCycle(metrics.avgFirstReviewHours),
+          title: "Average time from PR open to first review comment or approval",
         },
         { label: "Merge Rate", value: metrics.mergeRate },
       ]
@@ -140,6 +145,7 @@ export default function PRMetrics() {
               <div
                 key={stat.label}
                 className="min-w-0 rounded-lg bg-[var(--control)] p-4 text-center"
+                title={stat.title}
               >
                 <div className="truncate text-2xl font-bold text-[var(--accent)]">
                   {stat.value}
