@@ -5,6 +5,7 @@ import GoalTracker from "@/components/GoalTracker";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
+import PinnedRepos from "@/components/PinnedRepos";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
 import InactiveRepositoriesCard from "@/components/InactiveRepositoriesCard";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
@@ -21,6 +22,7 @@ import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
 import CodingTimeWidget from "@/components/CodingTimeWidget";
 import RecentActivity from "@/components/RecentActivity";
+import BadgeSection from "@/components/BadgeSection";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -257,6 +259,67 @@ export default async function DashboardPage() {
             <RecentActivity />
           </LazyWidget>
         </div>
+      </div>
+
+      {/* Row 2: PR metrics, community metrics, PR breakdown & Time Chart */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <PRMetrics />
+        <CommunityMetrics />
+        <PRBreakdownChart />
+        <CommitTimeChart />
+      </div>
+      {/* Row 2b: Activity Ring Chart */}
+      <div className="mt-6">
+        <ActivityRingChart />
+      </div>
+
+      <div className="mt-6">
+        <CodingActivityInsightsCard />
+      </div>
+
+      <div className="mt-6">
+        <PRReviewTrendChart />
+      </div>
+
+      {/* Row 3: Issue metrics + CI analytics */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <IssueMetrics />
+        </div>
+        <CIAnalytics />
+      </div>
+      {/* Row 3b: Discussion activity */}
+      <div className="mt-6">
+        <DiscussionsWidget />
+      </div>
+
+      {/* Row 4: Pinned repositories */}
+      <div className="mt-6">
+        <PinnedRepos />
+      </div>
+
+      {/* Row 5: Inactive repository reminder */}
+      <div className="mt-6">
+        <InactiveRepositoriesCard />
+      </div>
+
+      {/* Row 6: Top repos + Language breakdown + Goal tracker */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <TopRepos />
+        <LanguageBreakdown />
+        <GoalTracker />
+      </div>
+      {/* Row 6: Recent GitHub activity + Badge Section */}
+      <div className="mt-6 space-y-6">
+        <RecentActivity />
+        <BadgeSection
+          username={
+            (session as any).githubLogin ??
+            session.user?.name ??
+            session.user?.email?.split("@")[0] ??
+            "you"
+          }
+        />
       </div>
     </DashboardSSEProvider>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 interface BadgeSectionProps {
   username: string;
@@ -17,10 +17,29 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
 
   // Absolute URLs for copy markdown — resolved on client only to avoid hydration mismatch
   const [baseUrl, setBaseUrl] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     setBaseUrl(window.location.origin);
+
+    return () => {
+      if (toastTimeoutRef.current) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+    };
   }, []);
+
+  const showToast = () => {
+    setToastVisible(true);
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = window.setTimeout(() => {
+      setToastVisible(false);
+      toastTimeoutRef.current = null;
+    }, 2000);
+  };
 
   const streakBadgeUrl = baseUrl
     ? `${baseUrl}/api/badge/streak-shield?user=${encodedUsername}`
@@ -52,7 +71,7 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={streakBadgePreviewUrl} alt="DevTrack Streak" />
           </div>
-          <CopyableCodeBlock code={streakMarkdown} />
+          <CopyableCodeBlock code={streakMarkdown} onCopySuccess={showToast} />
         </div>
 
         {/* Commits Badge */}
@@ -64,7 +83,7 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={commitsBadgePreviewUrl} alt="DevTrack Commits" />
           </div>
-          <CopyableCodeBlock code={commitsMarkdown} />
+          <CopyableCodeBlock code={commitsMarkdown} onCopySuccess={showToast} />
         </div>
 
         {/* Combined */}
@@ -78,9 +97,19 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={commitsBadgePreviewUrl} alt="DevTrack Commits" />
           </div>
-          <CopyableCodeBlock code={combinedMarkdown} />
+          <CopyableCodeBlock code={combinedMarkdown} onCopySuccess={showToast} />
         </div>
       </div>
+
+      {toastVisible && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed left-1/2 bottom-6 z-50 -translate-x-1/2 rounded-full bg-[var(--foreground)] px-4 py-3 text-sm text-[var(--background)] shadow-lg"
+        >
+          Badge markdown copied to clipboard
+        </div>
+      )}
 
       <div className="mt-4 p-3 rounded-lg bg-[var(--accent)]/10 border border-[var(--accent)]/20">
         <p className="text-xs text-[var(--card-foreground)]">
@@ -94,13 +123,20 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
 /**
  * Copyable code block component
  */
-function CopyableCodeBlock({ code }: { code: string }) {
+function CopyableCodeBlock({
+  code,
+  onCopySuccess,
+}: {
+  code: string;
+  onCopySuccess?: () => void;
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
+      onCopySuccess?.();
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
