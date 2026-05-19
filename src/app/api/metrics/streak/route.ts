@@ -3,6 +3,12 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
+import {
+  isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
+  metricsCacheKey,
+  withMetricsCache,
+} from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -19,51 +25,56 @@ function toDateStr(d: Date): string {
 
 async function fetchActiveDates(
   githubLogin: string,
-  token: string
+  token: string,
+  cacheContext: { bypass: boolean; userId: string }
 ): Promise<Set<string>> {
-  const since = new Date();
-  since.setDate(since.getDate() - 90);
-  const sinceStr = since.toISOString().slice(0, 10);
+  const key = metricsCacheKey(cacheContext.userId, "streak", { githubLogin });
+  const dates = await withMetricsCache(
+    {
+      bypass: cacheContext.bypass,
+      key,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.streak,
+    },
+    async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - 90);
+      const sinceStr = since.toISOString().slice(0, 10);
 
-  const activeDates = new Set<string>();
-  // Paginate through all results. GitHub Search API caps responses at 100
-  // items per page and 1000 items total (10 pages). Without pagination,
-  // active users with more than 100 commits in the window have their oldest
-  // commits silently dropped, introducing phantom gaps that shorten the
-  // calculated streak.
-  let page = 1;
-  while (true) {
-    const searchRes = await fetch(
-      `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github+json",
-        },
-        cache: "no-store",
+      const activeDates = new Set<string>();
+      let page = 1;
+      while (true) {
+        const searchRes = await fetch(
+          `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/vnd.github+json",
+            },
+            cache: "no-store",
+          }
+        );
+
+        if (!searchRes.ok) {
+          throw new Error("GitHub API error");
+        }
+
+        const data = (await searchRes.json()) as {
+          items: Array<{ commit: { author: { date: string } } }>;
+        };
+
+        for (const item of data.items) {
+          activeDates.add(item.commit.author.date.slice(0, 10));
+        }
+
+        if (data.items.length < 100 || page >= 10) break;
+        page++;
       }
-    );
 
-    if (!searchRes.ok) {
-      throw new Error("GitHub API error");
+      return Array.from(activeDates);
     }
+  );
 
-    const data = (await searchRes.json()) as {
-      items: Array<{ commit: { author: { date: string } } }>;
-    };
-
-    for (const item of data.items) {
-      activeDates.add(item.commit.author.date.slice(0, 10));
-    }
-
-    // Stop when the page is not full (last page) or we reach GitHub's
-    // 1000-item hard cap (page 10). Since we only need unique dates,
-    // 90 days is the theoretical maximum we will ever collect.
-    if (data.items.length < 100 || page >= 10) break;
-    page++;
-  }
-
-  return activeDates;
+  return new Set(dates);
 }
 
 function calculateStreakFromDates(
@@ -137,6 +148,7 @@ export async function GET(req: NextRequest) {
   }
 
   const accountId = req.nextUrl.searchParams.get("accountId");
+  const bypass = isMetricsCacheBypassed(req);
   let appUserId: string | null = null;
 
   if (accountId) {
@@ -186,7 +198,8 @@ export async function GET(req: NextRequest) {
     try {
       const activeDates = await fetchActiveDates(
         session.githubLogin,
-        session.accessToken
+        session.accessToken,
+        { bypass, userId: session.githubId }
       );
       return Response.json(
         calculateStreakFromDates(activeDates, freezeDates)
@@ -212,7 +225,10 @@ export async function GET(req: NextRequest) {
 
     const dateResults = await Promise.allSettled(
       accounts.map((account) =>
-        fetchActiveDates(account.githubLogin, account.token)
+        fetchActiveDates(account.githubLogin, account.token, {
+          bypass,
+          userId: account.githubId,
+        })
       )
     );
 
@@ -252,7 +268,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const activeDates = await fetchActiveDates(resolvedLogin, resolvedToken);
+    const activeDates = await fetchActiveDates(resolvedLogin, resolvedToken, {
+      bypass,
+      userId: accountId,
+    });
     return Response.json(calculateStreakFromDates(activeDates, freezeDates));
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
