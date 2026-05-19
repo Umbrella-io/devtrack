@@ -9,10 +9,14 @@ export default function PWARegister() {
         navigator.serviceWorker
           .register("/sw.js")
           .then(() => {
-            console.log("Service worker registered");
+            if(process.env.NODE_ENV !== "production"){
+              console.log("Service worker registered");
+            }
           })
           .catch((error) => {
+           if(process.env.NODE_ENV !== "production"){
             console.error("Service worker registration failed:", error);
+           }
           });
       });
     }

@@ -61,7 +61,7 @@ export default function RootLayout({
           }}
         />
       </head>
- <body className={inter.className}>
+      <body className={inter.className}>
         <PWARegister />
         <Providers>{children}</Providers>
       </body>
