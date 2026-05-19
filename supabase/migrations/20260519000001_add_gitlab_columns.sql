@@ -1,2 +1,0 @@
-ALTER TABLE users ADD COLUMN IF NOT EXISTS gitlab_id text UNIQUE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS gitlab_login text;

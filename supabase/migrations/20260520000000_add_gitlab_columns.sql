@@ -1,3 +1,4 @@
-sqlalter table users add column if not exists gitlab_id text unique;
-alter table users add column if not exists gitlab_login text;
-alter table users alter column github_id drop not null;
+sqlALTER TABLE users ADD COLUMN IF NOT EXISTS gitlab_id text UNIQUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS gitlab_login text;
+ALTER TABLE users ALTER COLUMN github_id DROP NOT NULL;
+ALTER TABLE users ALTER COLUMN github_login DROP NOT NULL;
