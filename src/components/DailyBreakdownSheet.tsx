@@ -27,7 +27,6 @@ export default function DailyBreakdownSheet({
     fetch(`/api/metrics/contributions?days=365`)
       .then((res) => res.json())
       .then((result) => {
-        // Extract per-repo breakdown for the selected date
         const repoData = result.repos?.[date] ?? [];
         setCommits(repoData);
       })
@@ -35,7 +34,6 @@ export default function DailyBreakdownSheet({
       .finally(() => setLoading(false));
   }, [date]);
 
-  // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -57,21 +55,17 @@ export default function DailyBreakdownSheet({
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-black/40"
         onClick={onClose}
         aria-hidden="true"
       />
-
-      {/* Slide-in panel */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label={`Daily breakdown for ${formattedDate}`}
-        className="fixed right-0 top-0 z-50 flex h-full w-80 flex-col border-l border-[var(--border)] bg-[var(--card)] shadow-xl transition-transform"
+        className="fixed right-0 top-0 z-50 flex h-full w-80 flex-col border-l border-[var(--border)] bg-[var(--card)] shadow-xl"
       >
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--border)] p-4">
           <div>
             <h2 className="font-semibold text-[var(--card-foreground)]">
@@ -85,13 +79,11 @@ export default function DailyBreakdownSheet({
             type="button"
             onClick={onClose}
             aria-label="Close panel"
-            className="rounded p-1 text-[var(--muted-foreground)] hover:bg-[var(--accent)]/10 hover:text-[var(--card-foreground)]"
+            className="rounded p-1 text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
           >
             ✕
           </button>
         </div>
-
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
             <div className="space-y-2">
@@ -111,14 +103,14 @@ export default function DailyBreakdownSheet({
           ) : (
             <div className="space-y-2">
               {commits.map((item) => (
-                
+                  <a
                   key={item.repo}
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between rounded-lg border border-[var(--border)] p-3 hover:bg-[var(--accent)]/10 transition-colors"
+                  className="flex items-center justify-between rounded-lg border border-[var(--border)] p-3 hover:bg-[var(--accent)]/10"
                 >
-                  <span className="text-sm font-medium text-[var(--card-foreground)] truncate">
+                  <span className="truncate text-sm font-medium text-[var(--card-foreground)]">
                     {item.repo}
                   </span>
                   <span className="ml-2 shrink-0 rounded-full bg-[var(--accent)]/20 px-2 py-0.5 text-xs font-semibold text-[var(--accent-foreground)]">
