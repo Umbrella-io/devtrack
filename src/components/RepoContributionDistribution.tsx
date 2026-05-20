@@ -27,6 +27,9 @@ type ChartTooltipPayload = {
   value?: number;
 };
 
+// First color follows the active theme accent.
+// Remaining colors are chart-specific categorical hues used to distinguish repositories;
+// there are no matching project semantic tokens for every chart slice/bar.
 const COLORS = [
   "var(--accent)",
   "#22c55e",
@@ -237,7 +240,7 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
           Loading repository distribution...
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-[var(--destructive)]">
           {error}
         </div>
       ) : data.length === 0 ? (
