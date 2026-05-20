@@ -8,13 +8,13 @@ export default function KeyboardShortcuts() {
   const [isOpen, setIsOpen] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const { theme, toggleTheme } = useTheme();
-  const prevThemeRef = useRef<string | undefined>(undefined);
+  const keyboardToggleRef = useRef(false);
 
   useEffect(() => {
-    if (prevThemeRef.current !== undefined && theme !== undefined && prevThemeRef.current !== theme) {
+    if (keyboardToggleRef.current && theme !== undefined) {
       setAnnouncement(theme === "dark" ? "Dark mode enabled" : "Light mode enabled");
     }
-    prevThemeRef.current = theme;
+    keyboardToggleRef.current = false;
   }, [theme]);
 
   useEffect(() => {
@@ -32,7 +32,8 @@ export default function KeyboardShortcuts() {
         return;
       }
 
-      if (e.key.toLowerCase() === "t" || e.key.toLowerCase() === "d") {
+      if (e.key.toLowerCase() === "t") {
+        keyboardToggleRef.current = true;
         toggleTheme();
         e.preventDefault();
         return;
