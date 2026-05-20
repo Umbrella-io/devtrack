@@ -5,8 +5,13 @@ const isDev = process.env.NODE_ENV === "development";
 const WINDOW_SECONDS = 60;
 
 /* ============================================================
-   Massively bumps limits so refreshing the dashboard locally 
-   never triggers a 429 Too Many Requests error.
+   SECURITY NOTICE: DEVELOPMENT MODE RATE-LIMIT SCALING
+   These high thresholds are configured STRICTLY for local mock 
+   testing pipelines to handle high concurrent local dashboard refreshes. 
+   
+   CRITICAL: This evaluates dynamically at build compilation runtime. 
+   When compiled for a production build instance, it evaluates to false, 
+   restoring the rigid default production bounds (60 / 10).
    ============================================================ */
 const AUTHENTICATED_LIMIT = isDev ? 5000 : 60;
 const ANONYMOUS_LIMIT = isDev ? 1000 : 10;

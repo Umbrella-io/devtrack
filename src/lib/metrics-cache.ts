@@ -111,7 +111,9 @@ export async function cacheSet<T>(
   if (redis) {
     try {
       await redis.set(key, value, { ex: ttlSeconds });
-    } catch {}
+    } catch {
+      // Cache failures must not break dashboard metrics.
+    }
     return;
   }
 
@@ -120,10 +122,14 @@ if (typeof ttlSeconds !== "number" || ttlSeconds <= 0 || !Number.isFinite(ttlSec
     return;
   }
 
-  try {
-    if (redis) await redis.set(key, value, { ex: ttlSeconds });
-  } catch {
-    // Cache failures must not break dashboard metrics.
+  /* 🌟 ULTIMATE FIX: Bound the Memory Cache size to prevent OOM 🌟 */
+  const MAX_CACHE_ENTRIES = 1000;
+  if (memoryCache.size >= MAX_CACHE_ENTRIES) {
+    // Evict the oldest entry (First In, First Out approach)
+    const firstKey = memoryCache.keys().next().value;
+    if (firstKey !== undefined) {
+      memoryCache.delete(firstKey);
+    }
   }
 
   memoryCache.set(key, {

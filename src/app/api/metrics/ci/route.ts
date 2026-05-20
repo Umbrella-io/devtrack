@@ -39,8 +39,8 @@ async function fetchCIAnalyticsForAccount(token: string, githubLogin: string): P
     const d = await res.json(); return d.workflow_runs ?? [];
   }));
 
-  const runs = runsByRepo.flat().filter((r: any) => r.conclusion);
-  const successfulRuns = runs.filter((r: any) => r.conclusion === "success");
+  const runs = runsByRepo.flat().filter((r: WorkflowRun) => r.conclusion);
+  const successfulRuns = runs.filter((r: WorkflowRun) => r.conclusion === "success");
   const workflowStats = new Map<string, { failures: number, total: number }>();
 
   for (const run of runs) {
