@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 
 interface BadgeSectionProps {
-  username: string;
+  username?: string;
 }
 
 /**

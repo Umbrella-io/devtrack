@@ -46,17 +46,15 @@ export function generateBadgeSVG({
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#000" flood-opacity="0.12"/>
     </filter>
+<clipPath id="badge-mask">
+  <rect width="${totalWidth}" height="${height}" rx="${rx}" />
+</clipPath>
+</defs>
 
-    <linearGradient id="s" x2="0" y2="100%">
-      <stop offset="0" stop-color="#bbb"/>
-      <stop offset="1" stop-color="#999"/>
-    </linearGradient>
-  </defs>
-
-  <g filter="url(#shadow)">
-<rect width="${labelWidth}" height="${height}" rx="${rx}" fill="${labelColor}" />
-<rect x="${labelWidth}" width="${valueWidth}" height="${height}" rx="${rx}" fill="${color}" />
-<rect width="${totalWidth}" height="${height}" rx="${rx}" fill="url(#g)" opacity="0.1" />
+<g filter="url(#shadow)" clipPath="url(#badge-mask)">
+  <rect width="${totalWidth}" height="${height}" rx="${rx}" fill="${labelColor}" />
+  <rect x="${labelWidth}" width="${valueWidth}" height="${height}" fill="${color}" />
+  <rect width="${totalWidth}" height="${height}" rx="${rx}" fill="url(#g)" />
   </g>
 
   <g fill="#fff" text-anchor="middle" font-family="Segoe UI, Roboto, 'Helvetica Neue', Arial, sans-serif" text-rendering="geometricPrecision" font-size="12" font-weight="600">
