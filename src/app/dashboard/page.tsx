@@ -309,10 +309,11 @@ export default async function DashboardPage() {
         <LanguageBreakdown />
         <GoalTracker />
       </div>
-<<<<<<< HEAD
+
       {/* Row 6: Recent GitHub activity + Badge Section */}
       <div className="mt-6 space-y-6">
         <RecentActivity />
+
         <BadgeSection
           username={
             (session as any).githubLogin ??
@@ -321,12 +322,6 @@ export default async function DashboardPage() {
             "you"
           }
         />
-=======
-
-      {/* Badge Section: show user's badge snippets */}
-      <div className="mt-6">
-        <BadgeSection username={session?.githubLogin ?? session?.user?.name ?? session?.user?.email?.split('@')[0] ?? "you"} />
->>>>>>> 8d97804 (Fix nullable session type error)
       </div>
     </DashboardSSEProvider>
   );
