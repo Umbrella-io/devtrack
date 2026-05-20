@@ -11,7 +11,7 @@ interface BadgeSectionProps {
  */
 export default function BadgeSection({ username }: BadgeSectionProps) {
   // Relative URLs for preview images — always correct regardless of env vars
-  const encodedUsername = encodeURIComponent(username);
+  const encodedUsername = encodeURIComponent(username ?? "");
   const streakBadgePreviewUrl = `/api/badge/streak-shield?user=${encodedUsername}`;
   const commitsBadgePreviewUrl = `/api/badge/commits?user=${encodedUsername}`;
 
