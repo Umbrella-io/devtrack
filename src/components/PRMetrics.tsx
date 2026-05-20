@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import PRStatusDonutChart from "./PRStatusDonutChart";
 
 interface PRData {
   open: number;
   merged: number;
+  closed: number;
   avgReviewHours: number;
   avgFirstReviewHours: number | null;
   mergeRate: string;
@@ -74,16 +76,19 @@ export default function PRMetrics() {
           role="status"
           aria-live="polite"
           aria-busy="true"
-          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+          className="space-y-4"
         >
           <span className="sr-only">Loading PR analytics</span>
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              aria-hidden="true"
-              className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
-            />
-          ))}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                aria-hidden="true"
+                className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
+              />
+            ))}
+          </div>
+          <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
@@ -97,19 +102,36 @@ export default function PRMetrics() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-lg bg-[var(--control)] p-4 text-center min-w-0"
-              title={stat.title}
-            >
-              <div className="truncate text-2xl font-bold text-[var(--accent)]">
-                {stat.value}
+        <div className="space-y-6">
+          {/* Stat grid */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {stats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-lg bg-[var(--control)] p-4 text-center min-w-0"
+                title={stat.title}
+              >
+                <div className="truncate text-2xl font-bold text-[var(--accent)]">
+                  {stat.value}
+                </div>
+                <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
               </div>
-              <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
+            ))}
+          </div>
+
+          {/* PR status donut chart */}
+          {metrics && (
+            <div>
+              <p className="mb-2 text-sm font-medium text-[var(--muted-foreground)]">
+                PR Status Distribution
+              </p>
+              <PRStatusDonutChart
+                open={metrics.open}
+                merged={metrics.merged}
+                closed={metrics.closed}
+              />
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
