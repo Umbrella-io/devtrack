@@ -22,6 +22,17 @@ interface ContributionResponse {
   days: number;
   total: number;
   data: Record<string, number>;
+  sources?: {
+    github: Record<string, number>;
+    gitlab?: Record<string, number>;
+  };
+}
+
+interface GitLabEvent {
+  created_at: string;
+  push_data?: {
+    commit_count?: number;
+  };
 }
 
 function toLocalDateStr(d: Date): string {
@@ -37,6 +48,10 @@ function mergeContributionDays(
     result[date] = (result[date] ?? 0) + count;
   }
   return result;
+}
+
+function sumContributionDays(data: Record<string, number>): number {
+  return Object.values(data).reduce((total, count) => total + count, 0);
 }
 
 async function fetchContributionsForAccount(
@@ -87,7 +102,83 @@ async function fetchContributionsForAccount(
         commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
       }
 
-      return { days, total: data.total_count, data: commitsByDay };
+      return { days, total: sumContributionDays(commitsByDay), data: commitsByDay };
+    }
+  );
+}
+
+async function fetchGitLabContributions(
+  token: string,
+  days: number,
+  cacheContext: { bypass: boolean; userId: string }
+): Promise<ContributionResponse> {
+  const key = metricsCacheKey(cacheContext.userId, "contributions", {
+    days,
+    source: "gitlab",
+  });
+
+  return withMetricsCache(
+    {
+      bypass: cacheContext.bypass,
+      key,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.contributions,
+    },
+    async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      since.setHours(0, 0, 0, 0);
+
+      let page = 1;
+      const commitsByDay: Record<string, number> = {};
+
+      while (page > 0) {
+        const url = new URL("https://gitlab.com/api/v4/events");
+        url.searchParams.set("action", "pushed");
+        url.searchParams.set("per_page", "100");
+        url.searchParams.set("page", String(page));
+
+        const response = await fetch(url.toString(), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("GitLab API error");
+        }
+
+        const events = (await response.json()) as GitLabEvent[];
+        if (events.length === 0) break;
+
+        let reachedCutoff = false;
+        for (const event of events) {
+          const eventDate = new Date(event.created_at);
+          if (eventDate < since) {
+            reachedCutoff = true;
+            continue;
+          }
+
+          const count = event.push_data?.commit_count ?? 0;
+          if (!count) continue;
+
+          const dateKey = event.created_at.slice(0, 10);
+          commitsByDay[dateKey] = (commitsByDay[dateKey] ?? 0) + count;
+        }
+
+        if (reachedCutoff) break;
+
+        const nextPage = response.headers.get("x-next-page");
+        if (!nextPage || nextPage === "0") break;
+        const parsedNext = Number(nextPage);
+        page = Number.isFinite(parsedNext) ? parsedNext : 0;
+      }
+
+      return {
+        days,
+        total: sumContributionDays(commitsByDay),
+        data: commitsByDay,
+      };
     }
   );
 }
@@ -102,6 +193,8 @@ export async function GET(req: NextRequest) {
   const accountId = req.nextUrl.searchParams.get("accountId");
   const username = req.nextUrl.searchParams.get("username")?.trim();
   const bypass = isMetricsCacheBypassed(req);
+  const gitlabToken =
+    typeof session.gitlabToken === "string" ? session.gitlabToken : undefined;
 
   // Compare mode path: explicitly fetch contributions for a target username.
   if (username) {
@@ -126,7 +219,35 @@ export async function GET(req: NextRequest) {
         days,
         { bypass, userId: session.githubId ?? session.githubLogin }
       );
-      return Response.json(result);
+
+      if (!gitlabToken) {
+        return Response.json(result);
+      }
+
+      const gitlabResult = await fetchGitLabContributions(
+        gitlabToken,
+        days,
+        { bypass, userId: session.githubId ?? session.githubLogin }
+      ).catch(() => null);
+
+      if (!gitlabResult) {
+        return Response.json(result);
+      }
+
+      const combinedData = mergeContributionDays(
+        result.data,
+        gitlabResult.data
+      );
+
+      return Response.json({
+        days: result.days,
+        total: sumContributionDays(combinedData),
+        data: combinedData,
+        sources: {
+          github: result.data,
+          gitlab: gitlabResult.data,
+        },
+      });
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
@@ -171,7 +292,33 @@ export async function GET(req: NextRequest) {
       return Response.json({ error: "All accounts failed" }, { status: 502 });
     }
 
-    return Response.json(merged);
+    if (!gitlabToken) {
+      return Response.json(merged);
+    }
+
+    const gitlabResult = await fetchGitLabContributions(gitlabToken, days, {
+      bypass,
+      userId: session.githubId,
+    }).catch(() => null);
+
+    if (!gitlabResult) {
+      return Response.json(merged);
+    }
+
+    const combinedData = mergeContributionDays(
+      merged.data,
+      gitlabResult.data
+    );
+
+    return Response.json({
+      days: merged.days,
+      total: sumContributionDays(combinedData),
+      data: combinedData,
+      sources: {
+        github: merged.data,
+        gitlab: gitlabResult.data,
+      },
+    });
   }
 
   if (accountId === session.githubId) {
@@ -182,7 +329,35 @@ export async function GET(req: NextRequest) {
         days,
         { bypass, userId: session.githubId }
       );
-      return Response.json(result);
+
+      if (!gitlabToken) {
+        return Response.json(result);
+      }
+
+      const gitlabResult = await fetchGitLabContributions(
+        gitlabToken,
+        days,
+        { bypass, userId: session.githubId }
+      ).catch(() => null);
+
+      if (!gitlabResult) {
+        return Response.json(result);
+      }
+
+      const combinedData = mergeContributionDays(
+        result.data,
+        gitlabResult.data
+      );
+
+      return Response.json({
+        days: result.days,
+        total: sumContributionDays(combinedData),
+        data: combinedData,
+        sources: {
+          github: result.data,
+          gitlab: gitlabResult.data,
+        },
+      });
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
