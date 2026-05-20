@@ -2,40 +2,53 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-
-async function getMetric(path: string, cookie: string) {
-  try {
-    const res = await fetch(`http://localhost:3000${path}`, {
-      headers: { cookie },
-      cache: "no-store",
-    });
-
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
+import {
+  fetchCIForChatbot,
+  fetchContributionsForChatbot,
+  fetchIssuesForChatbot,
+  fetchLanguagesForChatbot,
+  fetchPRsForChatbot,
+  fetchReposForChatbot,
+  fetchStreakForChatbot,
+  fetchWeeklySummaryForChatbot,
+} from "@/lib/chatbot-metrics";
 
 export async function POST(req: Request) {
   try {
     const { message } = await req.json();
     const session = await getServerSession(authOptions);
 
-    if (!session?.user) {
+    if (!session?.accessToken || !session.githubLogin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     if (!message || typeof message !== "string") {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Message is required" },
+        { status: 400 }
+      );
+    }
+
+    if (message.length > 2000) {
+      return NextResponse.json(
+        { error: "Message too long" },
+        { status: 400 }
+      );
     }
 
     if (!process.env.GROQ_API_KEY) {
-      return NextResponse.json({ error: "GROQ_API_KEY is missing" }, { status: 500 });
+      return NextResponse.json(
+        { error: "AI service unavailable" },
+        { status: 500 }
+      );
     }
 
-    const userId = session.user.email || session.user.name || "unknown-user";
-    const cookie = req.headers.get("cookie") || "";
+    const userId = session.githubId ?? session.githubLogin;
+
+    const cacheContext = {
+      bypass: false,
+      userId,
+    };
 
     const { data: previousChats, error: historyError } = await supabaseAdmin
       .from("chatbot_messages")
@@ -68,42 +81,63 @@ export async function POST(req: Request) {
       console.error("Failed to save user message:", userInsertError);
     }
 
-    const [
-      contributions,
-      streak,
-      repos,
-      prs,
-      weeklySummary,
-      prBreakdown,
-      languages,
-      issues,
-      repoHealth,
-      ci,
-    ] = await Promise.all([
-      getMetric("/api/metrics/contributions?days=365", cookie),
-      getMetric("/api/metrics/streak", cookie),
-      getMetric("/api/metrics/repos?days=365", cookie),
-      getMetric("/api/metrics/prs", cookie),
-      getMetric("/api/metrics/weekly-summary", cookie),
-      getMetric("/api/metrics/pr-breakdown", cookie),
-      getMetric("/api/metrics/languages", cookie),
-      getMetric("/api/metrics/issues", cookie),
-      getMetric("/api/metrics/repo-health?days=365", cookie),
-      getMetric("/api/metrics/ci", cookie),
-    ]);
+    const contributions = await fetchContributionsForChatbot(
+      session.accessToken,
+      session.githubLogin,
+      365,
+      cacheContext
+    );
+
+    const repos = await fetchReposForChatbot(
+      session.accessToken,
+      session.githubLogin,
+      365,
+      cacheContext
+    );
+
+    const streak = await fetchStreakForChatbot(
+      session.accessToken,
+      session.githubLogin,
+      cacheContext
+    );
+
+    const prs = await fetchPRsForChatbot(
+      session.accessToken,
+      cacheContext
+    );
+
+    const languages = await fetchLanguagesForChatbot(
+      session.accessToken,
+      session.githubLogin
+    );
+
+    const issues = await fetchIssuesForChatbot(
+      session.accessToken
+    );
+
+    const ci = await fetchCIForChatbot(
+      session.accessToken,
+      session.githubLogin,
+      cacheContext
+    );
+
+    const weeklySummary = await fetchWeeklySummaryForChatbot(
+      session.accessToken,
+      session.githubLogin
+    );
 
     const dashboardContext = {
-      user: session.user,
+      user: {
+        githubLogin: session.githubLogin,
+      },
       contributions,
       streak,
       repos,
       prs,
-      weeklySummary,
-      prBreakdown,
       languages,
       issues,
-      repoHealth,
       ci,
+      weeklySummary,
     };
 
     const groqResponse = await fetch(
@@ -200,7 +234,7 @@ ${JSON.stringify(dashboardContext)}
 
     if (!groqResponse.ok) {
       return NextResponse.json(
-        { error: data?.error?.message || "Failed to get Groq response" },
+        { error: "Failed to get AI response" },
         { status: groqResponse.status }
       );
     }

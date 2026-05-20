@@ -11,11 +11,20 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
-async function fetchActiveDates(
+function dateDiffDays(a: string, b: string): number {
+  return (
+    (new Date(b).getTime() - new Date(a).getTime()) / (1000 * 60 * 60 * 24)
+  );
+}
+
+function toDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+export async function fetchActiveDates(
   githubLogin: string,
   token: string,
   cacheContext: { bypass: boolean; userId: string }
@@ -69,7 +78,7 @@ async function fetchActiveDates(
   return new Set(dates);
 }
 
-function calculateStreakFromDates(
+export function calculateStreakFromDates(
   activeDates: Set<string>,
   freezeDates: Set<string>
 ): {
@@ -77,7 +86,6 @@ function calculateStreakFromDates(
   longest: number;
   lastCommitDate: string | null;
   totalActiveDays: number;
-  freezeDates: string[];
 } {
   const combinedDates = new Set<string>([
     ...Array.from(activeDates),
@@ -91,7 +99,6 @@ function calculateStreakFromDates(
       longest: 0,
       lastCommitDate: null,
       totalActiveDays: 0,
-      freezeDates: Array.from(freezeDates),
     };
   }
 
@@ -132,7 +139,6 @@ function calculateStreakFromDates(
     longest: longestStreak,
     lastCommitDate: lastDay,
     totalActiveDays: commitDays.length,
-    freezeDates: Array.from(freezeDates),
   };
 }
 
