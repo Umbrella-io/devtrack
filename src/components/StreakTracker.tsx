@@ -254,7 +254,9 @@ export default function StreakTracker() {
       setTimeout(() => setCopied(false), 2000);
     }).catch(() => {});
   };
-
+  // Banner only appears on exact milestone days.
+  // If a user skips visiting on a milestone day,
+  // earlier milestone celebrations are not shown later.
   const currentMilestone =
     STREAK_MILESTONES.find(
       (m) => m === data?.current

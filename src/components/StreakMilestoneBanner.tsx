@@ -10,6 +10,8 @@ export default function StreakMilestoneBanner({
 }: Props) {
   return (
     <div
+      role="status"
+      aria-live="polite"
       className="rounded-xl p-4 mb-4 flex items-center justify-between"
       style={{
         background: "var(--accent)",
@@ -31,3 +33,4 @@ export default function StreakMilestoneBanner({
     </div>
   );
 }
+
