@@ -251,10 +251,17 @@ export default function PersonalRecords() {
         Personal Records
       </h2>
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-stretch">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-stretch"
+        >
+          <span className="sr-only">Loading personal records</span>
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
+              aria-hidden="true"
               className="h-32 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse"
             />
           ))}
