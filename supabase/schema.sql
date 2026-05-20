@@ -35,6 +35,16 @@ create table if not exists metric_snapshots (
 );
 
 create index if not exists snapshots_user_time on metric_snapshots(user_id, snapshot_at);
+create table if not exists chatbot_messages (
+  id         text primary key default gen_random_uuid()::text,
+  user_id    text not null,
+  role       text not null check (role in ('user', 'bot')),
+  message    text not null,
+  created_at timestamptz default now()
+);
+
+create index if not exists chatbot_messages_user_time
+  on chatbot_messages(user_id, created_at);
 
 -- -------------------------------------------------------
 -- AI Mentor: cached insights & Claude-generated summaries
@@ -42,15 +52,25 @@ create index if not exists snapshots_user_time on metric_snapshots(user_id, snap
 create table if not exists ai_insights (
   id           text primary key default gen_random_uuid()::text,
   user_id      text not null,
-  insight_type text not null check (insight_type in ('weekly_summary', 'pattern', 'recommendation')),
+  insight_type text not null check (
+    insight_type in (
+      'weekly_summary',
+      'pattern',
+      'recommendation'
+    )
+  ),
   content      jsonb not null,
   generated_at timestamptz default now(),
   expires_at   timestamptz default now() + interval '24 hours'
 );
 
-create index if not exists idx_ai_insights_user_id on ai_insights(user_id);
-create index if not exists idx_ai_insights_type    on ai_insights(insight_type);
+create index if not exists idx_ai_insights_user_id
+  on ai_insights(user_id);
 
--- Unique index required by the upsert conflict target in /api/ai-insights
+create index if not exists idx_ai_insights_type
+  on ai_insights(insight_type);
+
 create unique index if not exists idx_ai_insights_user_type
   on ai_insights(user_id, insight_type);
+
+  

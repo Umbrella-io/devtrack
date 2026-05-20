@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 async function getMetric(path: string, cookie: string) {
   try {
@@ -43,7 +44,29 @@ export async function POST(req: Request) {
       );
     }
 
+    const userId = session.user.email || session.user.name || "unknown-user";
     const cookie = req.headers.get("cookie") || "";
+
+    const { data: previousChats } = await supabaseAdmin
+      .from("chatbot_messages")
+      .select("role,message")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    const chatHistory =
+      previousChats
+        ?.reverse()
+        .map((chat) => ({
+          role: chat.role === "bot" ? "assistant" : "user",
+          content: chat.message,
+        })) || [];
+
+    await supabaseAdmin.from("chatbot_messages").insert({
+      user_id: userId,
+      role: "user",
+      message,
+    });
 
     const [
       contributions,
@@ -141,11 +164,13 @@ Data rules:
 - If some data is unavailable or failed to load, clearly mention it.
 - Repository and contribution data currently represents up to 365 days of data.
 - Do NOT call 365-day data "all-time" unless explicitly available.
+- Use recent chat history only for conversational context, not as a replacement for dashboard data.
 
 Dashboard data:
 ${JSON.stringify(dashboardContext)}
 `,
             },
+            ...chatHistory,
             {
               role: "user",
               content: message,
@@ -166,10 +191,16 @@ ${JSON.stringify(dashboardContext)}
       );
     }
 
-    return NextResponse.json({
-      reply:
-        data?.choices?.[0]?.message?.content || "No response generated.",
+    const reply =
+      data?.choices?.[0]?.message?.content || "No response generated.";
+
+    await supabaseAdmin.from("chatbot_messages").insert({
+      user_id: userId,
+      role: "bot",
+      message: reply,
     });
+
+    return NextResponse.json({ reply });
   } catch {
     return NextResponse.json(
       {
