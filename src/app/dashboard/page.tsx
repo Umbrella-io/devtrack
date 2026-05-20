@@ -17,6 +17,7 @@ import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
+import ProjectMetrics from "@/components/ProjectMetrics";
 import { authOptions } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
@@ -86,12 +87,17 @@ export default async function DashboardPage() {
         <CIAnalytics />
       </div>
 
-      {/* Row 4: Pinned repositories */}
+      {/* Row 4: Project tracking (Jira integration) */}
+      <div className="mt-6">
+        <ProjectMetrics />
+      </div>
+
+      {/* Row 5: Pinned repositories */}
       <div className="mt-6">
         <PinnedRepos />
       </div>
 
-      {/* Row 5: Top repos + Language breakdown + Goal tracker */}
+      {/* Row 6: Top repos + Language breakdown + Goal tracker */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <TopRepos />
         <LanguageBreakdown />

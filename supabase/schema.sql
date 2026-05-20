@@ -35,3 +35,17 @@ create table if not exists metric_snapshots (
 );
 
 create index if not exists snapshots_user_time on metric_snapshots(user_id, snapshot_at);
+
+create table if not exists jira_credentials (
+  id           text primary key default gen_random_uuid()::text,
+  user_id      text not null references users(id) on delete cascade,
+  jira_domain  text not null,
+  email        text not null,
+  api_token    text not null,
+  project_key  text,
+  is_active    boolean default true,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+
+create index if not exists jira_credentials_user on jira_credentials(user_id);
