@@ -46,6 +46,11 @@ function getPeriodStart(recurrence: Recurrence): string {
 
 export async function GET() {
   const session = await getServerSession(authOptions);
+  /*
+   * GitLab-only auth is not yet supported in this route.
+   * Until these queries can resolve users without githubId, this route
+   * falls back to GitHub session data only.
+   */
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -100,6 +105,11 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
+  /*
+   * GitLab-only auth is not yet supported in this route.
+   * Until these queries can resolve users without githubId, this route
+   * falls back to GitHub session data only.
+   */
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

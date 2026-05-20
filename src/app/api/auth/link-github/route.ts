@@ -6,6 +6,11 @@ import { authOptions } from "@/lib/auth";
 export async function GET() {
   const session = await getServerSession(authOptions);
 
+  /*
+   * GitLab-only auth is not yet supported in this route.
+   * Until this account-link flow can resolve users without githubId, it
+   * falls back to GitHub session data only.
+   */
   if (!session?.githubId) {
     return NextResponse.json(
       { error: "Must be signed in to link an account" },

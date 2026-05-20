@@ -49,10 +49,9 @@ export const authOptions: NextAuthOptions = {
         );
       }
       if (account?.provider === "gitlab" && profile) {
-        const p = profile as { id: number; username: string; email: string };
+        const p = profile as { id: number; username: string };
         await supabaseAdmin.from("users").upsert(
           {
-            email: p.email,
             gitlab_id: String(p.id),
             gitlab_login: p.username,
             updated_at: new Date().toISOString(),

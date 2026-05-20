@@ -138,6 +138,11 @@ function calculateStreakFromDates(
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
+  /*
+   * GitLab-only auth is not yet supported in this route.
+   * Until this flow can resolve users and GitHub metrics without githubId,
+   * it falls back to GitHub session data only.
+   */
   if (!session?.accessToken || !session.githubLogin || !session.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

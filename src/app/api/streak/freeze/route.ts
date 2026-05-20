@@ -20,6 +20,11 @@ function todayStr(): string {
 // Returns whether the user currently has an unused freeze available.
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
+  /*
+   * GitLab-only auth is not yet supported in this route.
+   * Until these queries can resolve users without githubId, this route
+   * falls back to GitHub session data only.
+   */
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -61,6 +66,11 @@ async function getFreezeStatus(userId: string) {
 // Inserts a freeze for today. Fails if the user already holds an unused freeze.
 export async function POST() {
   const session = await getServerSession(authOptions);
+  /*
+   * GitLab-only auth is not yet supported in this route.
+   * Until these queries can resolve users without githubId, this route
+   * falls back to GitHub session data only.
+   */
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -101,6 +111,11 @@ export async function POST() {
 // Removes today's active freeze for the authenticated user.
 export async function DELETE() {
   const session = await getServerSession(authOptions);
+  /*
+   * GitLab-only auth is not yet supported in this route.
+   * Until these queries can resolve users without githubId, this route
+   * falls back to GitHub session data only.
+   */
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

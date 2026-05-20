@@ -288,6 +288,11 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  /*
+   * GitLab-only auth is not yet supported in this route.
+   * Until account resolution can work without githubId, this route falls
+   * back to GitHub session data only.
+   */
   if (!session.githubId || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

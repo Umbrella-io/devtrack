@@ -16,6 +16,11 @@ interface LinkedAccount {
 export async function GET() {
   const session = await getServerSession(authOptions);
 
+  /*
+   * GitLab-only auth is not yet supported in this route.
+   * Until these queries can resolve users without githubId, this route
+   * falls back to GitHub session data only.
+   */
   if (!session?.githubId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
