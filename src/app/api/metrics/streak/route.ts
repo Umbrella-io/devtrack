@@ -12,6 +12,7 @@ import {
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { dispatchToAllWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
 
@@ -179,6 +180,27 @@ function calculateStreakFromDates(
   };
 }
 
+async function checkAndRecordMilestone(
+  userId: string,
+  currentStreak: number
+): Promise<void> {
+  if (currentStreak < 7 || currentStreak % 7 !== 0) return;
+
+  const { error } = await supabaseAdmin
+    .from("streak_milestones")
+    .upsert(
+      { user_id: userId, streak_count: currentStreak },
+      { onConflict: "user_id,streak_count" }
+    );
+
+  if (!error) {
+    dispatchToAllWebhooks(userId, "streak.milestone", {
+      streakCount: currentStreak,
+      achievedAt: new Date().toISOString(),
+    }).catch(() => {});
+  }
+}
+
 export async function GET(req: NextRequest) {
   // Session contains the GitHub OAuth token issued at sign-in.
   // githubLogin and githubId are both required: login for the Search API query,
@@ -231,9 +253,13 @@ export async function GET(req: NextRequest) {
         session.accessToken,
         { bypass, userId: session.githubId }
       );
-      return Response.json(
-        calculateStreakFromDates(activeDates, freezeDates)
-      );
+      const streakData = calculateStreakFromDates(activeDates, freezeDates);
+
+      if (appUserId && streakData.current > 0) {
+        checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
+      }
+
+      return Response.json(streakData);
     } catch {
       // fetchActiveDates throws on GitHub API errors (rate limit, network failure).
       // Return 502 so the client shows an error state rather than a false 0-day streak.
@@ -276,7 +302,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return Response.json(calculateStreakFromDates(unifiedDates, freezeDates));
+    const streakData = calculateStreakFromDates(unifiedDates, freezeDates);
+
+    if (streakData.current > 0) {
+      checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
+    }
+
+    return Response.json(streakData);
   }
 
   // Single specific account — resolve its token and login from Supabase.
@@ -310,7 +342,13 @@ export async function GET(req: NextRequest) {
       bypass,
       userId: accountId,
     });
-    return Response.json(calculateStreakFromDates(activeDates, freezeDates));
+    const streakData = calculateStreakFromDates(activeDates, freezeDates);
+
+    if (accountId === session.githubId && streakData.current > 0) {
+      checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
+    }
+
+    return Response.json(streakData);
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }

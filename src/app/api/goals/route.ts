@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { dispatchToAllWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
 
@@ -188,6 +189,14 @@ try {
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  dispatchToAllWebhooks(user.id, "goal.created", {
+    goalId: goal.id,
+    title: goal.title,
+    target: goal.target,
+    unit: goal.unit,
+    recurrence: goal.recurrence,
+  }).catch(() => {});
 
   return Response.json({ goal }, { status: 201 });
 }
