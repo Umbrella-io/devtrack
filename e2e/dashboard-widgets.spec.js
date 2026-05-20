@@ -128,7 +128,30 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
+  const consoleLogs = [];
+  const pageErrors = [];
+
+  page.on("console", (msg) => {
+    consoleLogs.push(`${msg.type()}: ${msg.text()}`);
+  });
+
+  page.on("pageerror", (err) => {
+    pageErrors.push(err.toString());
+  });
+
   await page.goto("/dashboard");
+
+  // Debug output
+  console.log("Current URL:", await page.url());
+  console.log("Page console logs:", consoleLogs);
+  console.log("Page errors:", pageErrors);
+  if (consoleLogs.length > 0 || pageErrors.length > 0) {
+    const pageContent = await page.content();
+    console.log("Page content length:", pageContent.length);
+    if (pageContent.length < 1000) {
+      console.log("Page content:", pageContent);
+    }
+  }
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible();
@@ -208,8 +231,14 @@ function mockMetricResponse(url) {
   if (url.includes("/api/metrics/weekly-summary")) {
     return {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
-      prs: { opened: 3, merged: 2 },
-      activeDays: 5,
+      prs: {
+        thisWeek: { opened: 3, merged: 2 },
+        lastWeek: { opened: 2, merged: 1 },
+      },
+      activeDays: {
+        thisWeek: 5,
+        lastWeek: 4,
+      },
       streak: 3,
       topRepo: "demo/repo",
     };
