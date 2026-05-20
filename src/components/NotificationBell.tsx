@@ -107,7 +107,7 @@ export default function NotificationBell() {
 
         {/* badge */}
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent)] text-[9px] font-bold text-white">
+          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent)] text-[9px] font-bold text-[var(--accent-foreground)]">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -152,14 +152,7 @@ export default function NotificationBell() {
             )}
           </ul>
 
-          <div className="px-4 py-2 border-t border-[var(--border)]">
-            <a
-              href="/notifications"
-              className="text-xs text-[var(--accent)] hover:underline"
-            >
-              See all notifications →
-            </a>
-          </div>
+          
         </div>
       )}
     </div>
