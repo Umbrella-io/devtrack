@@ -9,6 +9,7 @@ import TopRepos from "@/components/TopRepos";
 import PinnedRepos from "@/components/PinnedRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CommitTimeChart from "@/components/CommitTimeChart";
+import PRReviewTrendChart from "@/components/PRReviewTrendChart";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
@@ -41,7 +42,7 @@ export default async function DashboardPage() {
       <div className="mb-6 flex justify-end items-center gap-2">
         <Link
           href="/dashboard/settings"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity"
+          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
         >
           Settings
         </Link>
@@ -76,6 +77,7 @@ export default async function DashboardPage() {
         <FriendComparison />
       </div>
 
+<<<<<<< HEAD
     </div>
 
     <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -83,6 +85,11 @@ export default async function DashboardPage() {
       <PRBreakdownChart />
       <CommitTimeChart />
     </div>
+=======
+      <div className="mt-6">
+        <PRReviewTrendChart />
+      </div>
+>>>>>>> 371c5fe6e801f173110dd13f906d7fefc65ea584
 
       {/* Row 3: Issue metrics + CI analytics */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
