@@ -6,14 +6,11 @@ import { supabaseAdmin } from "@/lib/supabase";
 async function getMetric(path: string, cookie: string) {
   try {
     const res = await fetch(`http://localhost:3000${path}`, {
-      headers: {
-        cookie,
-      },
+      headers: { cookie },
       cache: "no-store",
     });
 
     if (!res.ok) return null;
-
     return await res.json();
   } catch {
     return null;
@@ -23,7 +20,6 @@ async function getMetric(path: string, cookie: string) {
 export async function POST(req: Request) {
   try {
     const { message } = await req.json();
-
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
@@ -31,28 +27,26 @@ export async function POST(req: Request) {
     }
 
     if (!message || typeof message !== "string") {
-      return NextResponse.json(
-        { error: "Message is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
     if (!process.env.GROQ_API_KEY) {
-      return NextResponse.json(
-        { error: "GROQ_API_KEY is missing" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "GROQ_API_KEY is missing" }, { status: 500 });
     }
 
     const userId = session.user.email || session.user.name || "unknown-user";
     const cookie = req.headers.get("cookie") || "";
 
-    const { data: previousChats } = await supabaseAdmin
+    const { data: previousChats, error: historyError } = await supabaseAdmin
       .from("chatbot_messages")
       .select("role,message")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(30);
+
+    if (historyError) {
+      console.error("Failed to load chat history:", historyError);
+    }
 
     const chatHistory =
       previousChats
@@ -62,11 +56,17 @@ export async function POST(req: Request) {
           content: chat.message,
         })) || [];
 
-    await supabaseAdmin.from("chatbot_messages").insert({
-      user_id: userId,
-      role: "user",
-      message,
-    });
+    const { error: userInsertError } = await supabaseAdmin
+      .from("chatbot_messages")
+      .insert({
+        user_id: userId,
+        role: "user",
+        message,
+      });
+
+    if (userInsertError) {
+      console.error("Failed to save user message:", userInsertError);
+    }
 
     const [
       contributions,
@@ -160,13 +160,27 @@ Recommendation responses MUST follow this format:
 - Recommendation 3
 
 Data rules:
-- ONLY answer using this logged-in user's dashboard data.
-- If some data is unavailable or failed to load, clearly mention it.
+- Use dashboard data as the primary source for analytics and metrics.
+- You may also use recent conversation history for contextual follow-up questions.
+- If the user previously mentioned information in chat history, reference it clearly as user-provided information.
+- Distinguish between dashboard facts and conversational facts.
+- If some dashboard data is unavailable or failed to load, clearly mention it.
 - Repository and contribution data currently represents up to 365 days of data.
 - Do NOT call 365-day data "all-time" unless explicitly available.
-- Use recent chat history to answer follow-up questions about this chatbot conversation.
-  If the user asks about people or topics mentioned earlier in this chatbot, check chat history first.
-  If the information is not in chat history or dashboard data, clearly say it is not available.
+
+Conversation memory rules:
+- When the user refers to "it", "that", "he", "she", "they", or similar follow-up references, infer the reference using recent chat history.
+- Prefer conversational continuity over generic dashboard summaries for short follow-up questions.
+- If the user previously mentioned a repository, person, project, or metric, use that context in later replies.
+- If the information is not in chat history or dashboard data, clearly say it is not available.
+
+Example:
+User says: "My friend Rahul has 400 commits"
+Later user asks: "How many more commits does Rahul have than me?"
+Correct behavior:
+- Use Rahul's 400 commits from chat history as user-provided information.
+- Compare it against the logged-in user's dashboard commits.
+- Mention that Rahul's commit count came from the conversation, not dashboard data.
 
 Dashboard data:
 ${JSON.stringify(dashboardContext)}
@@ -186,9 +200,7 @@ ${JSON.stringify(dashboardContext)}
 
     if (!groqResponse.ok) {
       return NextResponse.json(
-        {
-          error: data?.error?.message || "Failed to get Groq response",
-        },
+        { error: data?.error?.message || "Failed to get Groq response" },
         { status: groqResponse.status }
       );
     }
@@ -196,18 +208,24 @@ ${JSON.stringify(dashboardContext)}
     const reply =
       data?.choices?.[0]?.message?.content || "No response generated.";
 
-    await supabaseAdmin.from("chatbot_messages").insert({
-      user_id: userId,
-      role: "bot",
-      message: reply,
-    });
+    const { error: botInsertError } = await supabaseAdmin
+      .from("chatbot_messages")
+      .insert({
+        user_id: userId,
+        role: "bot",
+        message: reply,
+      });
+
+    if (botInsertError) {
+      console.error("Failed to save bot message:", botInsertError);
+    }
 
     return NextResponse.json({ reply });
-  } catch {
+  } catch (error) {
+    console.error("Chatbot route error:", error);
+
     return NextResponse.json(
-      {
-        error: "Something went wrong while processing chatbot request",
-      },
+      { error: "Something went wrong while processing chatbot request" },
       { status: 500 }
     );
   }
