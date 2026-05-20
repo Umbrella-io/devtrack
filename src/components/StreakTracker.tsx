@@ -31,6 +31,7 @@ export default function StreakTracker() {
   const [contributionData, setContributionData] = useState<ContributionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [dismissedMilestones, setDismissedMilestones] = useState<number[]>([]);
+  const [lastCelebratedMilestone, setLastCelebratedMilestone] = useState<number>(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -100,15 +101,24 @@ export default function StreakTracker() {
       "devtrack:dismissed-milestones"
     );
 
+    const storedLastCelebrated = localStorage.getItem(
+      "devtrack:last-celebrated-milestone"
+    );
+
     if (stored) {
       try {
         setDismissedMilestones(JSON.parse(stored));
-      }catch {
+      } catch {
         // ignore invalid localStorage data
       }
     }
-  }, []);
 
+    if (storedLastCelebrated) {
+      setLastCelebratedMilestone(
+        Number(storedLastCelebrated)
+      );
+    }
+  }, []);
   useEffect(() => {
     if (!lastUpdated) return;
     const interval = setInterval(() => {
@@ -254,14 +264,17 @@ export default function StreakTracker() {
       setTimeout(() => setCopied(false), 2000);
     }).catch(() => {});
   };
-  // Banner only appears on exact milestone days.
-  // If a user skips visiting on a milestone day,
-  // earlier milestone celebrations are not shown later.
-  const currentMilestone =
-    STREAK_MILESTONES.find(
-      (m) => m === data?.current
-    );
-  const shouldShowBanner =
+
+  const currentMilestone = 
+    [...STREAK_MILESTONES]
+      .reverse()
+      .find(
+        (m) =>
+          data?.current &&
+          data.current >= m &&
+          m > lastCelebratedMilestone
+      );
+  const shouldShowBanner = 
     currentMilestone &&
     !dismissedMilestones.includes(currentMilestone);
   const handleDismissBanner = () => {
@@ -273,6 +286,13 @@ export default function StreakTracker() {
     ];
 
     setDismissedMilestones(updated);
+
+    setLastCelebratedMilestone(currentMilestone);
+
+    localStorage.setItem(
+      "devtrack:last-celebrated-milestone",
+      String(currentMilestone)
+    );
 
     localStorage.setItem(
       "devtrack:dismissed-milestones",
