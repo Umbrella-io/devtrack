@@ -1,17 +1,18 @@
 const STATIC_CACHE = "devtrack-static-v1";
 const API_CACHE = "devtrack-api-v1";
+const SKIP_CACHE_PATHS = ["/api/auth"];
 
 const STATIC_ASSETS = [
   "/",
   "/offline.html",
   "/manifest.json",
-    "/android-chrome-192x192.png",
-    "/android-chrome-512x512.png",
+  "/android-chrome-192x192.png",
+  "/android-chrome-512x512.png",
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS)),
   );
 
   self.skipWaiting();
@@ -21,13 +22,15 @@ self.addEventListener("activate", (event) => {
   const allowedCaches = [STATIC_CACHE, API_CACHE];
 
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => !allowedCaches.includes(key))
-          .map((key) => caches.delete(key))
-      )
-    )
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => !allowedCaches.includes(key))
+            .map((key) => caches.delete(key)),
+        ),
+      ),
   );
 
   self.clients.claim();
@@ -57,6 +60,10 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
+  if (SKIP_CACHE_PATHS.some((path) => url.pathname.startsWith(path))) {
+    return;
+  }
+
   // API responses: stale-while-revalidate
   if (url.origin === self.location.origin && url.pathname.startsWith("/api/")) {
     event.respondWith(staleWhileRevalidate(request));
@@ -66,7 +73,7 @@ self.addEventListener("fetch", (event) => {
   // Page navigation: show offline fallback on network failure
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match("/offline.html"))
+      fetch(request).catch(() => caches.match("/offline.html")),
     );
     return;
   }
@@ -88,7 +95,7 @@ self.addEventListener("fetch", (event) => {
 
           return response;
         });
-      })
+      }),
     );
   }
 });
