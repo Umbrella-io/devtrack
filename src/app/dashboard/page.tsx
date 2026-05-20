@@ -9,6 +9,7 @@ import TopRepos from "@/components/TopRepos";
 import PinnedRepos from "@/components/PinnedRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CommitTimeChart from "@/components/CommitTimeChart";
+import PRReviewTrendChart from "@/components/PRReviewTrendChart";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
@@ -76,6 +77,10 @@ export default async function DashboardPage() {
         <PRMetrics />
         <PRBreakdownChart />
         <CommitTimeChart />
+      </div>
+
+      <div className="mt-6">
+        <PRReviewTrendChart />
       </div>
 
       {/* Row 3: Issue metrics + CI analytics */}
