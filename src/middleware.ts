@@ -1,9 +1,16 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
+const isDev = process.env.NODE_ENV === "development";
 const WINDOW_SECONDS = 60;
-const AUTHENTICATED_LIMIT = 60;
-const ANONYMOUS_LIMIT = 10;
+
+/* ============================================================
+   Massively bumps limits so refreshing the dashboard locally 
+   never triggers a 429 Too Many Requests error.
+   ============================================================ */
+const AUTHENTICATED_LIMIT = isDev ? 5000 : 60;
+const ANONYMOUS_LIMIT = isDev ? 1000 : 10;
+
 const memoryBuckets = new Map<string, number[]>();
 
 type RateLimitResult = {
