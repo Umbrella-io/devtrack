@@ -1,6 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 interface WeeklySummaryData {
   commits: {
@@ -10,12 +20,27 @@ interface WeeklySummaryData {
     trend: "up" | "down" | "same";
   };
   prs: {
-    opened: number;
-    merged: number;
+    thisWeek: {
+      opened: number;
+      merged: number;
+    };
+    lastWeek: {
+      opened: number;
+      merged: number;
+    };
   };
-  activeDays: number;
+  activeDays: {
+    thisWeek: number;
+    lastWeek: number;
+  };
   streak: number;
   topRepo: string | null;
+}
+
+interface ChartDataPoint {
+  name: string;
+  "Last Week": number;
+  "This Week": number;
 }
 
 export default function WeeklySummaryCard() {
@@ -41,6 +66,40 @@ export default function WeeklySummaryCard() {
       )
       .finally(() => setLoading(false));
   }, []);
+
+  const getChartColor = (varName: string): string => {
+    if (typeof window === "undefined") return "#000";
+    const color = getComputedStyle(document.documentElement)
+      .getPropertyValue(varName)
+      .trim();
+    return color || "#000";
+  };
+
+  const chartData: ChartDataPoint[] = summary
+    ? [
+        {
+          name: "Commits",
+          "Last Week": summary.commits.previous,
+          "This Week": summary.commits.current,
+        },
+        {
+          name: "PRs Merged",
+          "Last Week": summary.prs.lastWeek.merged,
+          "This Week": summary.prs.thisWeek.merged,
+        },
+        {
+          name: "Active Days",
+          "Last Week": summary.activeDays.lastWeek,
+          "This Week": summary.activeDays.thisWeek,
+        },
+      ]
+    : [];
+
+  const getTrendColor = (trend: string): string => {
+    if (trend === "up") return "var(--success)";
+    if (trend === "down") return "var(--destructive)";
+    return "var(--muted-foreground)";
+  };
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -83,68 +142,134 @@ export default function WeeklySummaryCard() {
             {error}
           </div>
         ) : summary ? (
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
-              <span className="text-sm text-[var(--muted-foreground)]">
-                Commits
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-base font-semibold text-[var(--card-foreground)]">
-                  {summary.commits.current}
+          <div className="mt-4 space-y-6">
+            {/* Comparison Chart */}
+            <div className="rounded-lg bg-[var(--control)] p-4">
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={chartData}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--border)"
+                    opacity={0.3}
+                  />
+                  <XAxis
+                    dataKey="name"
+                    stroke="var(--muted-foreground)"
+                    style={{ fontSize: "12px" }}
+                  />
+                  <YAxis
+                    stroke="var(--muted-foreground)"
+                    style={{ fontSize: "12px" }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      color: "var(--card-foreground)",
+                    }}
+                    cursor={{ fill: "var(--control)" }}
+                  />
+                  <Legend
+                    wrapperStyle={{ color: "var(--card-foreground)" }}
+                    iconType="square"
+                  />
+                  <Bar
+                    dataKey="Last Week"
+                    fill="var(--muted-foreground)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="This Week"
+                    fill="var(--accent)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="space-y-3">
+              {/* Commits */}
+              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
+                <span className="text-sm text-[var(--muted-foreground)]">
+                  Commits
                 </span>
-                {summary.commits.trend === "up" && (
-                  <span className="text-sm font-medium text-green-400">
-                    + {summary.commits.delta}
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-semibold text-[var(--card-foreground)]">
+                    {summary.commits.current}
                   </span>
-                )}
-                {summary.commits.trend === "down" && (
-                  <span className="text-sm font-medium text-red-400">
-                    - {Math.abs(summary.commits.delta)}
-                  </span>
-                )}
-                {summary.commits.trend === "same" && (
-                  <span className="text-sm font-medium text-[var(--muted-foreground)]">
-                    0
-                  </span>
-                )}
+                  {summary.commits.trend === "up" && (
+                    <span
+                      className="text-sm font-medium"
+                      style={{ color: getTrendColor("up") }}
+                    >
+                      + {summary.commits.delta}
+                    </span>
+                  )}
+                  {summary.commits.trend === "down" && (
+                    <span
+                      className="text-sm font-medium"
+                      style={{ color: getTrendColor("down") }}
+                    >
+                      - {Math.abs(summary.commits.delta)}
+                    </span>
+                  )}
+                  {summary.commits.trend === "same" && (
+                    <span
+                      className="text-sm font-medium"
+                      style={{ color: getTrendColor("same") }}
+                    >
+                      0
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
-              <span className="text-sm text-[var(--muted-foreground)]">PRs</span>
-              <span className="text-base font-semibold text-[var(--card-foreground)]">
-                {summary.prs.opened} opened / {summary.prs.merged} merged
-              </span>
-            </div>
+              {/* PRs */}
+              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
+                <span className="text-sm text-[var(--muted-foreground)]">
+                  PRs
+                </span>
+                <span className="text-base font-semibold text-[var(--card-foreground)]">
+                  {summary.prs.thisWeek.opened} opened /{" "}
+                  {summary.prs.thisWeek.merged} merged
+                </span>
+              </div>
 
-            <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
-              <span className="text-sm text-[var(--muted-foreground)]">
-                Active days
-              </span>
-              <span className="text-base font-semibold text-[var(--card-foreground)]">
-                {summary.activeDays} / 7 days
-              </span>
-            </div>
+              {/* Active Days */}
+              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
+                <span className="text-sm text-[var(--muted-foreground)]">
+                  Active days
+                </span>
+                <span className="text-base font-semibold text-[var(--card-foreground)]">
+                  {summary.activeDays.thisWeek} / 7 days
+                </span>
+              </div>
 
-            <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
-              <span className="text-sm text-[var(--muted-foreground)]">
-                Streak
-              </span>
-              <span className="text-base font-semibold text-[var(--card-foreground)]">
-                {summary.streak} day streak
-              </span>
-            </div>
+              {/* Streak */}
+              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
+                <span className="text-sm text-[var(--muted-foreground)]">
+                  Streak
+                </span>
+                <span className="text-base font-semibold text-[var(--card-foreground)]">
+                  {summary.streak} day streak
+                </span>
+              </div>
 
-            <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
-              <span className="text-sm text-[var(--muted-foreground)]">
-                Top repo
-              </span>
-              <span className="text-base font-semibold text-[var(--card-foreground)]">
-                {summary.topRepo ?? "-"}
-              </span>
+              {/* Top Repo */}
+              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
+                <span className="text-sm text-[var(--muted-foreground)]">
+                  Top repo
+                </span>
+                <span className="text-base font-semibold text-[var(--card-foreground)]">
+                  {summary.topRepo ?? "-"}
+                </span>
+              </div>
             </div>
           </div>
         ) : null)}
     </div>
   );
 }
+

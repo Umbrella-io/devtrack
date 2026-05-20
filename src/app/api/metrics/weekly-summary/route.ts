@@ -133,6 +133,7 @@ export async function GET() {
     let commitsThisWeek = 0;
     let commitsPrevWeek = 0;
     const activeDaysThisWeek = new Set<string>();
+    const activeDaysLastWeek = new Set<string>();
     const repoCounts = new Map<string, number>();
 
     for (const item of commitsData.items) {
@@ -146,6 +147,7 @@ export async function GET() {
         repoCounts.set(repoName, (repoCounts.get(repoName) ?? 0) + 1);
       } else if (commitDate >= prevWeekStart && commitDate <= prevWeekEnd) {
         commitsPrevWeek++;
+        activeDaysLastWeek.add(item.commit.author.date.slice(0, 10));
       }
     }
 
@@ -182,6 +184,8 @@ export async function GET() {
 
     let prsOpenedThisWeek = 0;
     let prsMergedThisWeek = 0;
+    let prsOpenedLastWeek = 0;
+    let prsMergedLastWeek = 0;
 
     for (const item of prsData.items) {
       const createdAt = new Date(item.created_at);
@@ -189,6 +193,11 @@ export async function GET() {
         prsOpenedThisWeek++;
         if (item.state === "closed") {
           prsMergedThisWeek++;
+        }
+      } else if (createdAt >= prevWeekStart && createdAt <= prevWeekEnd) {
+        prsOpenedLastWeek++;
+        if (item.state === "closed") {
+          prsMergedLastWeek++;
         }
       }
     }
@@ -209,10 +218,19 @@ export async function GET() {
           commitDelta > 0 ? "up" : commitDelta < 0 ? "down" : "same",
       },
       prs: {
-        opened: prsOpenedThisWeek,
-        merged: prsMergedThisWeek,
+        thisWeek: {
+          opened: prsOpenedThisWeek,
+          merged: prsMergedThisWeek,
+        },
+        lastWeek: {
+          opened: prsOpenedLastWeek,
+          merged: prsMergedLastWeek,
+        },
       },
-      activeDays: activeDaysThisWeek.size,
+      activeDays: {
+        thisWeek: activeDaysThisWeek.size,
+        lastWeek: activeDaysLastWeek.size,
+      },
       streak: currentStreak,
       topRepo,
     });
