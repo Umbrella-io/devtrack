@@ -50,8 +50,8 @@ function getBestWeek(data: Record<string, number>): { count: number; weekLabel: 
     const parts = dateStr.split("-").map(Number);
     if (parts.length === 3) {
       const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
-      const day = d.getUTCDay();
-      const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+      const day = d.getUTCDay(); // 0 is Sunday, 1 is Monday
+      const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1); // Monday week start
       const weekStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff));
       const weekStr = weekStart.toISOString().slice(0, 10);
       weeks[weekStr] = (weeks[weekStr] ?? 0) + count;
@@ -85,7 +85,7 @@ function getBestWeek(data: Record<string, number>): { count: number; weekLabel: 
 function getBestMonth(data: Record<string, number>): { count: number; monthLabel: string | null } {
   const months: Record<string, number> = {};
   for (const [dateStr, count] of Object.entries(data)) {
-    const monthKey = dateStr.slice(0, 7);
+    const monthKey = dateStr.slice(0, 7); // YYYY-MM
     months[monthKey] = (months[monthKey] ?? 0) + count;
   }
   let maxCount = 0;
