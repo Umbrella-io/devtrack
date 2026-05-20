@@ -314,14 +314,7 @@ export default async function DashboardPage() {
       <div className="mt-6 space-y-6">
         <RecentActivity />
 
-        <BadgeSection
-          username={
-            (session as any).githubLogin ??
-            session.user?.name ??
-            session.user?.email?.split("@")[0] ??
-            "you"
-          }
-        />
+        <BadgeSection username={session?.githubLogin ?? ""} />
       </div>
     </DashboardSSEProvider>
   );
