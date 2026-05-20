@@ -240,6 +240,9 @@ export async function POST(req: Request) {
     return Response.json({ error: "Invalid recurrence value" }, { status: 400 });
   }
 
+  // Only 'commits' triggers auto-progress; everything else is manual
+  const unit = body.unit ?? "commits";
+
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
@@ -249,7 +252,7 @@ export async function POST(req: Request) {
       user_id: user.id,
       title: body.title,
       target: body.target,
-      unit: body.unit ?? "commits",
+      unit,
       recurrence,
       period_start: getPeriodStart(recurrence),
       current: 0,

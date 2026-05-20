@@ -134,7 +134,7 @@ test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible();
   await expect(page.getByText("Make 10 commits")).toBeVisible();
 });
 
@@ -163,14 +163,14 @@ test("goal form posts a new goal", async ({ page }) => {
   await page.goto("/dashboard");
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
-  await page.getByLabel("Unit").fill("PR");
+  await page.getByLabel("Unit").selectOption("prs");
   await page.getByRole("button", { name: "Add goal" }).click();
 
   await expect.poll(() => goalPosts).toHaveLength(1);
   expect(goalPosts[0]).toMatchObject({
     title: "Ship one PR",
     target: 1,
-    unit: "PR",
+    unit: "prs",
   });
 });
 
