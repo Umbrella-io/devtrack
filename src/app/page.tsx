@@ -50,7 +50,7 @@ export default async function HomePage() {
         <div className="flex gap-4 justify-center fade-up">
           <Link
             href="/api/auth/signin/github?callbackUrl=/dashboard"
-            className="bg-[var(--card)] text-[var(--card-foreground)] px-6 py-3 rounded-lg font-semibold hover:bg-[var(--control)] border border-[var(--border)] hover:border-[var(--foreground)] hover:scale-105 transition fade-up"
+            className="bg-[var(--card)] text-[var(--card-foreground)] px-6 py-3 rounded-lg font-semibold hover:bg-[var(--control)] border border-[var(--border)] hover:border-[var(--foreground)] hover:scale-105 transition "
           >
             Sign in with GitHub
           </Link>
@@ -58,15 +58,15 @@ export default async function HomePage() {
             href="https://github.com/Priyanshu-byte-coder/devtrack"
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-[var(--border)] text-[var(--foreground)] px-6 py-3 rounded-lg font-semibold hover:border-[var(--foreground)] transition hover:bg-[var(--control)] hover:scale-105 fade-up"
+            className="border border-[var(--border)] text-[var(--foreground)] px-6 py-3 rounded-lg font-semibold hover:border-[var(--foreground)] transition hover:bg-[var(--control)] hover:scale-105 "
           >
             View on GitHub
           </a>
         </div>
       </div>
 
-      <section className="w-full max-w-6xl mt-24">
-        <h2 className="text-3xl font-bold text-center text-[var(--foreground)] mb-12 fade-up ">
+      <section className="w-full max-w-6xl mt-24 ">
+        <h2 className="text-3xl font-bold text-center text-[var(--foreground)] mb-12 fade-up">
           Everything you need to track your coding growth
         </h2>
 
