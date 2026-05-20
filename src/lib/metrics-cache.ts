@@ -14,6 +14,14 @@ type CacheParamValue = boolean | number | string | null | undefined;
 
 let redisClient: Redis | null | undefined;
 
+function isTruthyCacheBypass(value: string | null): boolean {
+  if (!value) {
+    return false;
+  }
+
+  return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
+}
+
 function getRedisClient(): Redis | null {
   if (redisClient !== undefined) {
     return redisClient;
@@ -38,7 +46,7 @@ export function isMetricsCacheBypassed(req: NextRequest): boolean {
     req.nextUrl.searchParams.get("sync");
   const bypassHeader = req.headers.get("x-devtrack-cache-bypass");
 
-  return bypassParam === "1" || bypassParam === "true" || bypassHeader === "1";
+  return isTruthyCacheBypass(bypassParam) || isTruthyCacheBypass(bypassHeader);
 }
 
 export function metricsCacheKey(
