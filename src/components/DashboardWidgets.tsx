@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import CIAnalytics from "@/components/CIAnalytics";
+
 import ContributionGraph from "@/components/ContributionGraph";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
@@ -105,12 +105,7 @@ export default function DashboardWidgets() {
         </WidgetErrorBoundary>
       </div>
 
-      {/* CI Analytics */}
-      <div className="mt-6">
-        <WidgetErrorBoundary>
-          <CIAnalytics />
-        </WidgetErrorBoundary>
-      </div>
+      
 
       {/* Row 4 */}
       <div className="mt-6">
@@ -136,3 +131,4 @@ export default function DashboardWidgets() {
     </>
   );
 }
+

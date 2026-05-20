@@ -38,7 +38,7 @@ class WidgetErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-center">
+        <div className="rounded-xl border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-center">
           <h2 className="mb-2 text-lg font-semibold">
             Something went wrong
           </h2>
@@ -62,3 +62,4 @@ class WidgetErrorBoundary extends React.Component<Props, State> {
 }
 
 export default WidgetErrorBoundary;
+
