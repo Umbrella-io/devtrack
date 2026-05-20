@@ -29,6 +29,7 @@ import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import DashboardChatbot from "@/components/DashboardChatbot";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -37,6 +38,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <DashboardHeader />
+
       <div className="mb-6 flex justify-end items-center gap-2">
         <Link
           href="/dashboard/settings"
@@ -46,6 +48,7 @@ export default async function DashboardPage() {
         </Link>
         <ExportButton />
       </div>
+
       <StreakAtRiskBanner />
 
       <div className="mb-6">
@@ -85,6 +88,7 @@ export default async function DashboardPage() {
         <PRBreakdownChart />
         <CommitTimeChart />
       </div>
+
       {/* Row 2b: Activity Ring Chart */}
       <div className="mt-6">
         <ActivityRingChart />
@@ -105,6 +109,7 @@ export default async function DashboardPage() {
         </div>
         <CIAnalytics />
       </div>
+
       {/* Row 3b: Discussion activity */}
       <div className="mt-6">
         <DiscussionsWidget />
@@ -131,6 +136,8 @@ export default async function DashboardPage() {
       <div className="mt-6">
         <RecentActivity />
       </div>
+
+      <DashboardChatbot />
     </div>
   );
 }
