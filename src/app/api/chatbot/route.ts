@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       .select("role,message")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(30);
 
     const chatHistory =
       previousChats
@@ -164,7 +164,9 @@ Data rules:
 - If some data is unavailable or failed to load, clearly mention it.
 - Repository and contribution data currently represents up to 365 days of data.
 - Do NOT call 365-day data "all-time" unless explicitly available.
-- Use recent chat history only for conversational context, not as a replacement for dashboard data.
+- Use recent chat history to answer follow-up questions about this chatbot conversation.
+  If the user asks about people or topics mentioned earlier in this chatbot, check chat history first.
+  If the information is not in chat history or dashboard data, clearly say it is not available.
 
 Dashboard data:
 ${JSON.stringify(dashboardContext)}
