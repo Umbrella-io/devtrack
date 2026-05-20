@@ -238,7 +238,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (!session.githubId) {
-    return Response.json({ error: "User not found" }, { status: 404 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const userRow = await resolveAppUser(session.githubId, session.githubLogin);

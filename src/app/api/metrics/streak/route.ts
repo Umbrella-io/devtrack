@@ -11,36 +11,11 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { GitHubApiError, toGitHubErrorResponse } from "@/lib/github-error";
 
 export const dynamic = "force-dynamic";
 
-class GitHubApiError extends Error {
-  status: number;
-  endpoint: string;
-  details: string;
 
-  constructor(endpoint: string, status: number, details: string) {
-    super("GitHub API failed");
-    this.status = status;
-    this.endpoint = endpoint;
-    this.details = details;
-  }
-}
-
-function toGitHubErrorResponse(error: unknown) {
-  if (error instanceof GitHubApiError) {
-    return Response.json(
-      {
-        error: "GitHub API failed",
-        endpoint: error.endpoint,
-        status: error.status,
-        details: error.details,
-      },
-      { status: error.status }
-    );
-  }
-  return Response.json({ error: "GitHub API error" }, { status: 502 });
-}
 
 function dateDiffDays(a: string, b: string): number {
   return (
