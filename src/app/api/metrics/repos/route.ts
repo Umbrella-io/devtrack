@@ -7,13 +7,21 @@ import {
   mergeMetrics,
 } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
+import {
+  isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
+  metricsCacheKey,
+  withMetricsCache,
+} from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
 interface RepoSummary {
   name: string;
   commits: number;
+  description: string | null;
 }
 
 interface RepoResponse {
@@ -22,61 +30,83 @@ interface RepoResponse {
 }
 
 function mergeRepoCommits(
-  a: Array<{ name: string; commits: number }>,
-  b: Array<{ name: string; commits: number }>
-): Array<{ name: string; commits: number }> {
-  const map = new Map<string, number>();
+  a: Array<{ name: string; commits: number; description: string | null }>,
+  b: Array<{ name: string; commits: number; description: string | null }>
+): Array<{ name: string; commits: number; description: string | null }> {
+  const map = new Map<string, { commits: number; description: string | null }>();
   for (const repo of [...a, ...b]) {
-    map.set(repo.name, (map.get(repo.name) ?? 0) + repo.commits);
+    const existing = map.get(repo.name);
+    map.set(repo.name, {
+      commits: (existing?.commits ?? 0) + repo.commits,
+      description: existing?.description ?? repo.description,
+    });
   }
   return Array.from(map.entries())
-    .map(([name, commits]) => ({ name, commits }))
+    .map(([name, { commits, description }]) => ({ name, commits, description }))
     .sort((x, y) => y.commits - x.commits);
 }
 
 async function fetchReposForAccount(
   token: string,
   githubLogin: string,
-  days: number
+  days: number,
+  cacheContext: { bypass: boolean; userId: string }
 ): Promise<RepoResponse> {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  const sinceStr = since.toISOString().slice(0, 10);
+  const key = metricsCacheKey(cacheContext.userId, "repos", {
+    days,
+    githubLogin,
+  });
 
-  const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
+  return withMetricsCache(
     {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
+      bypass: cacheContext.bypass,
+      key,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.repos,
+    },
+    async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      const sinceStr = since.toISOString().slice(0, 10);
+
+      const searchRes = await fetch(
+        `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (!searchRes.ok) {
+        throw new Error("GitHub API error");
+      }
+
+      const data = (await searchRes.json()) as {
+        items: Array<{
+          repository: { full_name: string; html_url: string; description: string | null };
+          commit: { author: { date: string } };
+        }>;
+      };
+
+      const repoMap: Record<string, { commits: number; description: string | null }> = {};
+      for (const item of data.items) {
+        const name = item.repository.full_name;
+        repoMap[name] = {
+          commits: (repoMap[name]?.commits ?? 0) + 1,
+          description: item.repository.description,
+        };
+      }
+
+      const repos = Object.entries(repoMap)
+        .map(([name, { commits, description }]) => ({ name, commits, description }))
+        .sort((a, b) => b.commits - a.commits)
+        .slice(0, 6);
+
+      return { repos, days };
     }
   );
-
-  if (!searchRes.ok) {
-    throw new Error("GitHub API error");
-  }
-
-  const data = (await searchRes.json()) as {
-    items: Array<{
-      repository: { full_name: string; html_url: string };
-      commit: { author: { date: string } };
-    }>;
-  };
-
-  const repoMap: Record<string, number> = {};
-  for (const item of data.items) {
-    const name = item.repository.full_name;
-    repoMap[name] = (repoMap[name] ?? 0) + 1;
-  }
-
-  const repos = Object.entries(repoMap)
-    .map(([name, commits]) => ({ name, commits }))
-    .sort((a, b) => b.commits - a.commits)
-    .slice(0, 6);
-
-  return { repos, days };
 }
 
 export async function GET(req: NextRequest) {
@@ -87,13 +117,15 @@ export async function GET(req: NextRequest) {
 
   const days = Number(req.nextUrl.searchParams.get("days")) || 30;
   const accountId = req.nextUrl.searchParams.get("accountId");
+  const bypass = isMetricsCacheBypassed(req);
 
   if (!accountId) {
     try {
       const result = await fetchReposForAccount(
         session.accessToken,
         session.githubLogin,
-        days
+        days,
+        { bypass, userId: session.githubId ?? session.githubLogin }
       );
       return Response.json(result);
     } catch {
@@ -105,11 +137,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: userRow } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
+  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
 
   if (!userRow) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -127,7 +155,10 @@ export async function GET(req: NextRequest) {
 
     const results = await Promise.allSettled(
       accounts.map((account) =>
-        fetchReposForAccount(account.token, account.githubLogin, days)
+        fetchReposForAccount(account.token, account.githubLogin, days, {
+          bypass,
+          userId: account.githubId,
+        })
       )
     );
 
@@ -148,7 +179,8 @@ export async function GET(req: NextRequest) {
       const result = await fetchReposForAccount(
         session.accessToken,
         session.githubLogin,
-        days
+        days,
+        { bypass, userId: session.githubId }
       );
       return Response.json(result);
     } catch {
@@ -177,7 +209,8 @@ export async function GET(req: NextRequest) {
     const result = await fetchReposForAccount(
       accountToken,
       accountRow.github_login,
-      days
+      days,
+      { bypass, userId: accountId }
     );
     return Response.json(result);
   } catch {

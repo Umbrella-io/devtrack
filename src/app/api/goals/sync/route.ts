@@ -15,22 +15,22 @@ export const dynamic = "force-dynamic";
  */
 function currentWeekStart(): string {
   const now = new Date();
-  const day = now.getDay();
+  const day = now.getUTCDay();
   const diff = day === 0 ? -6 : 1 - day; // Monday = 0 offset; Sunday = -6
   const monday = new Date(now);
-  monday.setDate(now.getDate() + diff);
-  monday.setHours(0, 0, 0, 0);
+  monday.setUTCDate(now.getUTCDate() + diff);
+  monday.setUTCHours(0, 0, 0, 0);
   return monday.toISOString();
 }
 
 /** Returns Sunday 23:59:59.999 of the current week as a full ISO string. */
 function currentWeekEnd(): string {
   const now = new Date();
-  const day = now.getDay();
+  const day = now.getUTCDay();
   const diff = day === 0 ? 0 : 7 - day; // Sunday of this week
   const sunday = new Date(now);
-  sunday.setDate(now.getDate() + diff);
-  sunday.setHours(23, 59, 59, 999);
+  sunday.setUTCDate(now.getUTCDate() + diff);
+  sunday.setUTCHours(23, 59, 59, 999);
   return sunday.toISOString();
 }
 

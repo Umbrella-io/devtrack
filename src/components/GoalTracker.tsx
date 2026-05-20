@@ -25,6 +25,7 @@ export default function GoalTracker() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [title, setTitle] = useState("");
@@ -51,13 +52,30 @@ export default function GoalTracker() {
   /** Sync commit-based goals from GitHub, then reload */
   const handleSync = useCallback(async () => {
     setSyncing(true);
+    setSyncError(null);
     try {
-      await fetch("/api/goals/sync", { method: "POST" });
+      const res = await fetch("/api/goals/sync", { method: "POST" });
+      if (!res.ok) {
+        let msg = "Sync failed. Please try again.";
+        try {
+          const errData = await res.json();
+          if (errData && errData.error) {
+            msg = errData.error;
+          }
+        } catch {}
+        if (res.status === 401) {
+          msg = "Unauthorized. Please log in again.";
+        } else if (res.status === 502) {
+          msg = "GitHub sync failed: Expired token or missing repo scope.";
+        }
+        setSyncError(msg);
+        return;
+      }
       await loadGoals();
       setLastUpdated(new Date());
       setMinutesAgo(0);
     } catch {
-      // silently ignore — goals still show stale data
+      setSyncError("Network error. Failed to sync goals.");
     } finally {
       setSyncing(false);
     }
@@ -74,8 +92,7 @@ export default function GoalTracker() {
           return Date.now() - syncedAt > 15 * 60 * 1000; // > 15 mins
         });
         if (needsSync) {
-          await fetch("/api/goals/sync", { method: "POST" }).catch(() => {});
-          await loadGoals().catch(() => {});
+          await handleSync();
         }
       })
       .catch(() => {})
@@ -84,7 +101,7 @@ export default function GoalTracker() {
         setLastUpdated(new Date());
         setMinutesAgo(0);
       });
-  }, [loadGoals]);
+  }, [loadGoals, handleSync]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -113,9 +130,10 @@ export default function GoalTracker() {
     setRecurrence("none");
     // Immediately sync if it was a commit-based goal
     if (unit === "commits") {
-      await fetch("/api/goals/sync", { method: "POST" }).catch(() => {});
+      await handleSync();
+    } else {
+      await loadGoals().catch(() => {});
     }
-    await loadGoals().catch(() => {});
     setCreating(false);
   }
 
@@ -188,13 +206,19 @@ export default function GoalTracker() {
   if (loading) {
     return (
       <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <div className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse" />
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="mb-4">
-            <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
-            <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
-          </div>
-        ))}
+        <div role="status" aria-live="polite" aria-busy="true">
+          <span className="sr-only">Loading weekly goals</span>
+          <div
+            aria-hidden="true"
+            className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse"
+          />
+          {[1, 2, 3].map((i) => (
+            <div key={i} aria-hidden="true" className="mb-4">
+              <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
+              <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -227,6 +251,21 @@ export default function GoalTracker() {
           {syncing ? "Syncing…" : "Refresh"}
         </button>
       </div>
+
+      {/* Sync Error Display */}
+      {syncError && (
+        <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          <span>⚠️ {syncError}</span>
+          <button
+            type="button"
+            onClick={() => setSyncError(null)}
+            className="text-red-400 hover:text-red-300 font-semibold"
+            aria-label="Dismiss error"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* ── Goal list ───────────────────────────────────────────────── */}
       {goals.length === 0 ? (
