@@ -21,6 +21,7 @@ export const dynamic = "force-dynamic";
 interface PRMetricsBase {
   open: number;
   merged: number;
+  closed: number;
   total: number;
   avgReviewHours: number;
   mergeRate: number;
@@ -73,6 +74,11 @@ async function fetchPRMetrics(
   // as truly merged so the dashboard does not inflate the merged count.
   const merged = data.items.filter(
     (pr) => pr.pull_request?.merged_at != null
+  ).length;
+
+  // Closed without merging (rejected / abandoned)
+  const closed = data.items.filter(
+    (pr) => pr.state === "closed" && pr.pull_request?.merged_at == null
   ).length;
 
   // Average review time: use only actually merged PRs so we measure the time
@@ -132,6 +138,7 @@ async function fetchPRMetrics(
   return {
     open,
     merged,
+    closed,
     total: data.total_count,
     avgReviewHours: Math.round(avgReviewMs / 3600000),
     mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
@@ -165,6 +172,7 @@ function formatPRMetrics(metrics: PRMetricsBase) {
   return {
     open: metrics.open,
     merged: metrics.merged,
+    closed: metrics.closed,
     total: metrics.total,
     avgReviewHours: metrics.avgReviewHours,
     mergeRate:
@@ -235,6 +243,7 @@ export async function GET(req: NextRequest) {
     const merged = mergeMetrics(results, (a, b) => {
       const total = a.total + b.total;
       const mergedCount = a.merged + b.merged;
+      const closedCount = a.closed + b.closed;
       const avgReviewHours =
         total > 0
           ? (a.avgReviewHours * a.total + b.avgReviewHours * b.total) / total
@@ -243,6 +252,7 @@ export async function GET(req: NextRequest) {
       return {
         open: a.open + b.open,
         merged: mergedCount,
+        closed: closedCount,
         total,
         avgReviewHours: Math.round(avgReviewHours * 10) / 10,
         mergeRate:
