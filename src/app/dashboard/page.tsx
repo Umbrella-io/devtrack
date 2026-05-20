@@ -17,6 +17,7 @@ import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
+import LocalCodingTime from "@/components/LocalCodingTime";
 import { authOptions } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
@@ -56,7 +57,7 @@ export default async function DashboardPage() {
         <PersonalRecords />
       </div>
 
-      {/* Row 1: Contribution graph + Streak + Friend Comparison */}
+      {/* Row 1: Contribution graph + Streak + Local Coding Time */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ContributionGraph />
@@ -67,7 +68,7 @@ export default async function DashboardPage() {
 
         <div className="flex flex-col gap-6">
           <StreakTracker />
-          <FriendComparison />
+          <LocalCodingTime />
         </div>
       </div>
 

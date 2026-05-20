@@ -1,0 +1,62 @@
+import { getServerSession } from "next-auth";
+import { NextRequest } from "next/server";
+import { authOptions } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.githubId) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await resolveAppUser(session.githubId, session.githubLogin);
+  if (!user) return Response.json({ error: "User not found" }, { status: 404 });
+
+  const { searchParams } = new URL(req.url);
+  const days = parseInt(searchParams.get("days") || "30", 10);
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - days);
+  const fromDateStr = fromDate.toISOString().slice(0, 10);
+
+  const { data: sessions } = await supabaseAdmin
+    .from("local_coding_sessions")
+    .select("*")
+    .eq("user_id", user.id)
+    .gte("date", fromDateStr)
+    .order("date", { ascending: false });
+
+  if (!sessions || sessions.length === 0) {
+    return Response.json({
+      dailyData: [],
+      totals: {
+        totalSeconds: 0,
+        totalDays: 0,
+        avgSecondsPerDay: 0,
+      },
+      hasData: false,
+    });
+  }
+
+  const dailyData = sessions.map((s) => ({
+    date: s.date,
+    totalSeconds: s.total_seconds,
+    fileCount: s.file_count,
+    projectCount: s.project_count,
+  }));
+
+  const totalSeconds = dailyData.reduce((sum, d) => sum + d.totalSeconds, 0);
+  const totalDays = dailyData.length;
+
+  return Response.json({
+    dailyData,
+    totals: {
+      totalSeconds,
+      totalDays,
+      avgSecondsPerDay: Math.round(totalSeconds / totalDays),
+    },
+    hasData: true,
+  });
+}
