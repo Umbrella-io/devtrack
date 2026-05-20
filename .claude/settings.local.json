@@ -15,9 +15,8 @@
       "Bash(git stash:*)",
       "Bash(git push:*)",
       "Bash(gh release:*)",
-      "Bash(git rm:*)",
-      "Bash(git -C /Users/advikdivekar/Desktop/GSSoC26/devtrack-advik add .claude/settings.local.json)",
-      "Bash(git -C /Users/advikdivekar/Desktop/GSSoC26/devtrack-advik commit -m \"chore: remove verification artifacts from settings.local.json\")"
+      "Bash(git rm:*)"
+      
     ]
   }
 }
