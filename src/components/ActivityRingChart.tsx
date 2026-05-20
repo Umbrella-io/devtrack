@@ -1,62 +1,84 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  Radar,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+import { useEffect, useState, useRef } from "react";
 
-interface TimeBlocks {
-  morning: number;
-  afternoon: number;
-  evening: number;
-  night: number;
-}
-
-interface ChartData {
-  hour: string;
+interface HourData {
+  hour: number;
   commits: number;
 }
 
+function formatHour(hour: number): string {
+  if (hour === 0) return "12am";
+  if (hour < 12) return `${hour}am`;
+  if (hour === 12) return "12pm";
+  return `${hour - 12}pm`;
+}
+
 export default function ActivityRingChart() {
-  const [data, setData] = useState<ChartData[]>([]);
+  const [data, setData] = useState<HourData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
-  const [peakHour, setPeakHour] = useState<string | null>(null);
+  const [hoveredHour, setHoveredHour] = useState<HourData | null>(null);
+  const [animated, setAnimated] = useState(false);
+  const prefersReduced = useRef(
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false
+  );
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch(`/api/metrics/contributions?days=${days}`)
+    setAnimated(false);
+    fetch(`/api/metrics/contributions/hourly?days=${days}`)
       .then((r) => r.json())
-      .then((res: { timeBlocks?: TimeBlocks }) => {
-        if (!res.timeBlocks) {
-          setData([]);
-          return;
-        }
-
-        const blocks = res.timeBlocks;
-        const chartData: ChartData[] = [
-          { hour: "Morning\n6–12", commits: blocks.morning },
-          { hour: "Afternoon\n12–18", commits: blocks.afternoon },
-          { hour: "Evening\n18–22", commits: blocks.evening },
-          { hour: "Night\n22–6", commits: blocks.night },
-        ];
-
-        const peak = chartData.reduce((a, b) =>
-          b.commits > a.commits ? b : a
-        );
-        setPeakHour(peak.commits > 0 ? peak.hour.split("\n")[0] : null);
-        setData(chartData);
+      .then((res: { hours?: HourData[] }) => {
+        setData(res.hours ?? []);
+        setTimeout(() => setAnimated(true), 50);
       })
       .catch(() => setError("Failed to load activity data."))
       .finally(() => setLoading(false));
   }, [days]);
+
+  const maxCommits = Math.max(...data.map((d) => d.commits), 1);
+  const peakHour = data.reduce(
+    (a, b) => (b.commits > a.commits ? b : a),
+    { hour: 0, commits: 0 }
+  );
+
+  const cx = 150;
+  const cy = 150;
+  const innerR = 55;
+  const outerMaxR = 120;
+  const segments = 24;
+  const anglePerSegment = (2 * Math.PI) / segments;
+  const gap = 0.04;
+
+  function polarToCartesian(angle: number, r: number) {
+    return {
+      x: cx + r * Math.cos(angle - Math.PI / 2),
+      y: cy + r * Math.sin(angle - Math.PI / 2),
+    };
+  }
+
+  function segmentPath(index: number, outerR: number) {
+    const startAngle = index * anglePerSegment + gap;
+    const endAngle = (index + 1) * anglePerSegment - gap;
+    const o1 = polarToCartesian(startAngle, outerR);
+    const o2 = polarToCartesian(endAngle, outerR);
+    const i1 = polarToCartesian(startAngle, innerR);
+    const i2 = polarToCartesian(endAngle, innerR);
+    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+    return [
+      `M ${i1.x} ${i1.y}`,
+      `L ${o1.x} ${o1.y}`,
+      `A ${outerR} ${outerR} 0 ${largeArc} 1 ${o2.x} ${o2.y}`,
+      `L ${i2.x} ${i2.y}`,
+      `A ${innerR} ${innerR} 0 ${largeArc} 0 ${i1.x} ${i1.y}`,
+      "Z",
+    ].join(" ");
+  }
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full">
@@ -67,7 +89,7 @@ export default function ActivityRingChart() {
         <select
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus:outline-none focus:border-[var(--accent)]"
+          className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-1 text-sm text-[var(--card-foreground)] focus:outline-none focus:border-[var(--accent)]"
         >
           <option value={7}>Last 7d</option>
           <option value={30}>Last 30d</option>
@@ -76,54 +98,106 @@ export default function ActivityRingChart() {
       </div>
 
       <p className="text-sm text-[var(--muted-foreground)] mb-4 h-5">
-        {peakHour && `Most active during ${peakHour.toLowerCase()}`}
+        {peakHour.commits > 0 &&
+          `Most active at ${formatHour(peakHour.hour)} (${peakHour.commits} commits)`}
       </p>
 
-      <div className="flex-1 min-h-[250px]">
+      <div className="flex-1 flex items-center justify-center min-h-[300px]">
         {loading ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="h-48 w-48 animate-pulse rounded-full bg-[var(--card-muted)]" />
-          </div>
+          <div className="h-48 w-48 animate-pulse rounded-full bg-[var(--card-muted)]" />
         ) : error ? (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-red-400">{error}</p>
-          </div>
+          <p className="text-sm text-red-400">{error}</p>
         ) : data.every((d) => d.commits === 0) ? (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-[var(--muted-foreground)]">
-              No commits in the last {days} days.
-            </p>
-          </div>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            No commits in the last {days} days.
+          </p>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={data}>
-              <PolarGrid stroke="var(--border)" />
-              <PolarAngleAxis
-                dataKey="hour"
-                tick={{
-                  fill: "var(--muted-foreground)",
-                  fontSize: 11,
-                }}
-              />
-              <Radar
-                name="Commits"
-                dataKey="commits"
-                stroke="var(--accent)"
-                fill="var(--accent)"
-                fillOpacity={0.4}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--card)",
-                  borderColor: "var(--border)",
-                  color: "var(--card-foreground)",
-                  borderRadius: "0.5rem",
-                  fontSize: "0.875rem",
-                }}
-                itemStyle={{ color: "var(--accent)" }}
-              />
-            </RadarChart>
-          </ResponsiveContainer>
+          <div className="flex flex-col items-center gap-4">
+            <svg width="300" height="300" viewBox="0 0 300 300">
+              {/* Hour labels */}
+              {[0, 6, 12, 18].map((h) => {
+                const angle = h * anglePerSegment - Math.PI / 2;
+                const labelR = outerMaxR + 18;
+                const x = cx + labelR * Math.cos(angle);
+                const y = cy + labelR * Math.sin(angle);
+                return (
+                  <text
+                    key={h}
+                    x={x}
+                    y={y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="10"
+                    fill="var(--muted-foreground)"
+                  >
+                    {formatHour(h)}
+                  </text>
+                );
+              })}
+
+              {/* Segments */}
+              {data.map((d) => {
+                const isPeak = d.hour === peakHour.hour && d.commits > 0;
+                const isHovered = hoveredHour?.hour === d.hour;
+                const ratio = d.commits / maxCommits;
+                const targetR = d.commits === 0
+                  ? innerR + 4
+                  : innerR + (outerMaxR - innerR) * ratio;
+                const currentR =
+                  !prefersReduced.current && !animated ? innerR : targetR;
+
+                return (
+                  <path
+                    key={d.hour}
+                    d={segmentPath(d.hour, currentR)}
+                    fill={
+                      isPeak || isHovered
+                        ? "var(--accent)"
+                        : d.commits === 0
+                        ? "var(--card-muted, #2a2a2a)"
+                        : "var(--accent)"
+                    }
+                    opacity={
+                      d.commits === 0
+                        ? 0.15
+                        : isPeak || isHovered
+                        ? 1
+                        : 0.5 + 0.5 * ratio
+                    }
+                    style={{
+                      transition: prefersReduced.current
+                        ? "none"
+                        : "all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                      cursor: d.commits > 0 ? "pointer" : "default",
+                    }}
+                    onMouseEnter={() => setHoveredHour(d)}
+                    onMouseLeave={() => setHoveredHour(null)}
+                  />
+                );
+              })}
+
+              {/* Center label */}
+              <text
+                x={cx}
+                y={cy - 8}
+                textAnchor="middle"
+                fontSize="22"
+                fontWeight="bold"
+                fill="var(--card-foreground)"
+              >
+                {hoveredHour ? hoveredHour.commits : data.reduce((s, d) => s + d.commits, 0)}
+              </text>
+              <text
+                x={cx}
+                y={cy + 14}
+                textAnchor="middle"
+                fontSize="11"
+                fill="var(--muted-foreground)"
+              >
+                {hoveredHour ? formatHour(hoveredHour.hour) : "commits"}
+              </text>
+            </svg>
+          </div>
         )}
       </div>
     </div>
