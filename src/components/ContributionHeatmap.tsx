@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
+import DailyBreakdownSheet from "@/components/DailyBreakdownSheet";
 
 interface ContributionHeatmapProps {
   days?: number;
@@ -77,6 +78,8 @@ export default function ContributionHeatmap({
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const handleCloseSheet = useCallback(() => setSelectedDate(null), []);
 
   useEffect(() => {
     let active = true;
@@ -286,6 +289,7 @@ export default function ContributionHeatmap({
                       title={isFuture ? "" : tooltip}
                       aria-label={isFuture ? `${cell.dateKey}: future date` : tooltip}
                       disabled={isFuture}
+                      onClick={() => !isFuture && setSelectedDate(cell.dateKey)}
                       className={`group relative z-0 h-3 w-3 rounded-[3px] border transition-transform hover:z-20 hover:scale-110 focus:z-20 focus:outline-none focus:ring-2 focus:ring-[var(--heatmap-focus-ring)] disabled:cursor-default disabled:opacity-30 ${
                         cell.inRange ? "" : "opacity-35"
                       }`}
@@ -333,6 +337,11 @@ export default function ContributionHeatmap({
           </div>
         </>
       )}
+      <DailyBreakdownSheet
+        date={selectedDate}
+        onClose={handleCloseSheet}
+        heatmapData={data}
+      />
     </div>
   );
 }
