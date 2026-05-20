@@ -9,6 +9,7 @@ test.beforeEach(async ({ page }) => {
       name: "next-auth.session-token",
       value: await encode({
         secret: authSecret,
+        salt: "next-auth.session-token",
         token: {
           name: "Playwright User",
           email: "playwright@example.com",
@@ -178,6 +179,7 @@ function mockMetricResponse(url) {
     return {
       open: 2,
       merged: 8,
+      closed: 1,
       avgReviewHours: 6,
       avgFirstReviewHours: 3,
       mergeRate: "80%",
@@ -221,7 +223,7 @@ function mockMetricResponse(url) {
     return { repositories: [] };
   }
   if (url.includes("/api/metrics/ci")) {
-    return { success: 6, failed: 1, cancelled: 0, skipped: 0 };
+    return { successRate: 95, averageDurationMinutes: 3, flakiestWorkflow: null, totalRuns: 42, reposChecked: 5 };
   }
   if (url.includes("/api/streak/freeze")) {
     return { freezes: [] };
