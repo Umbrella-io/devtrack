@@ -65,6 +65,9 @@ async function fetchContributionsForAccount(
       let totalCount = 0;
       let page = 1;
 
+      // Note: this may issue up to 10 sequential GitHub Search API calls (max 1000 results).
+      // Authenticated GitHub Search rate limits are low (~30 req/min). We handle 429/403
+      // responses gracefully by returning partial results rather than failing the endpoint.
       while (page <= 10) {
         const searchRes = await fetch(
           `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
@@ -78,6 +81,17 @@ async function fetchContributionsForAccount(
         );
 
         if (!searchRes.ok) {
+          // If we're being rate limited or hit a secondary rate limit/permission error,
+          // return partial results collected so far instead of failing the whole request.
+          if (searchRes.status === 429 || searchRes.status === 403) {
+            if (allItems.length === 0) {
+              // If no items were retrieved at all, surface the error so callers know
+              // the request could not be fulfilled.
+              throw new Error(`GitHub API error: ${searchRes.status}`);
+            }
+            break;
+          }
+
           throw new Error("GitHub API error");
         }
 
