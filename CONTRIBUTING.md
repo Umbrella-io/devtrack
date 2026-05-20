@@ -2,6 +2,8 @@
 
 Thanks for your interest in contributing! This guide will get you from zero to a merged PR.
 
+> ⭐ If DevTrack has been useful to you, consider [starring the repo](https://github.com/Priyanshu-byte-coder/devtrack) — it helps the project grow and reach more developers.
+
 ---
 
 ## Table of Contents
