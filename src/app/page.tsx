@@ -40,14 +40,14 @@ export default async function HomePage() {
     <main className="min-h-screen flex flex-col items-center px-4 py-20">
       <div className="max-w-2xl text-center fade-up"
       >
-        <h1 className="text-5xl font-bold mb-4 text-[var(--foreground)] fade-up ">
+        <h1 className="text-5xl font-bold mb-4 text-[var(--foreground)]  ">
           DevTrack
         </h1>
-        <p className="text-xl text-[var(--muted-foreground)] mb-8 fade-up">
+        <p className="text-xl text-[var(--muted-foreground)] mb-8 ">
           Open-source developer productivity dashboard. Track coding habits,
           visualize GitHub contributions, and hit your goals.
         </p>
-        <div className="flex gap-4 justify-center fade-up">
+        <div className="flex gap-4 justify-center ">
           <Link
             href="/api/auth/signin/github?callbackUrl=/dashboard"
             className="bg-[var(--card)] text-[var(--card-foreground)] px-6 py-3 rounded-lg font-semibold hover:bg-[var(--control)] border border-[var(--border)] hover:border-[var(--foreground)] hover:scale-105 transition "
@@ -65,12 +65,12 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <section className="w-full max-w-6xl mt-24 ">
-        <h2 className="text-3xl font-bold text-center text-[var(--foreground)] mb-12 fade-up">
+      <section className="w-full max-w-6xl mt-24 fade-up">
+        <h2 className="text-3xl font-bold text-center text-[var(--foreground)] mb-12 ">
           Everything you need to track your coding growth
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 fade-up">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 ">
           {features.map((feature) => (
             <div
               key={feature.title}
