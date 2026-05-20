@@ -79,17 +79,25 @@ export async function GET(req: NextRequest) {
   const token = session.accessToken;
 
   const search = req.nextUrl.searchParams;
-  const perPage = Math.min(Number(search.get("perPage") ?? 24), 30);
+  
+  // FIX: Handle perPage NaN bug
+  const perPageParam = search.get("perPage");
+  let perPage = 24; // Default value
+  
+  if (perPageParam) {
+    const parsed = Number(perPageParam);
+    perPage = !isNaN(parsed) && parsed > 0 ? Math.min(parsed, 30) : 24;
+  }
 
   const repoRes = await fetch(
     `${GITHUB_API}/user/repos?sort=updated&direction=desc&per_page=${perPage}&type=all`,
     {
-    headers: {
-      Authorization: `Bearer ${session.accessToken}`,
-      Accept: "application/vnd.github+json",
-    },
-    cache: "no-store",
-  }
+      headers: {
+        Authorization: `Bearer ${session.accessToken}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
   );
 
   if (!repoRes.ok) {

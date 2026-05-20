@@ -17,19 +17,53 @@ export default function RepoTimelineChart({ timeline }: { timeline: TimelinePoin
             <YAxis width={28} stroke="var(--muted-foreground)" />
             <Tooltip
               contentStyle={{
-                background: "var(--card)",
+                backgroundColor: "var(--tooltip)",
                 border: "1px solid var(--border)",
-                borderRadius: 10,
-                color: "var(--card-foreground)",
+                borderRadius: "8px",
+                color: "var(--tooltip-foreground)",
+              }}
+              labelStyle={{
+                color: "var(--tooltip-foreground)",
+              }}
+              itemStyle={{
+                color: "var(--tooltip-foreground)",
               }}
             />
-            <Legend />
-            <Line type="monotone" dataKey="commits" stroke="var(--accent)" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="prs" stroke="#22d3ee" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="issues" stroke="#f97316" strokeWidth={2} dot={false} />
+            <Legend 
+              wrapperStyle={{ 
+                color: "var(--foreground)",
+                paddingTop: "10px"
+              }}
+              formatter={(value) => (
+                <span style={{ color: "var(--foreground)" }}>{value}</span>
+              )}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="commits" 
+              stroke="var(--accent)" 
+              strokeWidth={2} 
+              dot={false}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="prs" 
+              stroke="var(--success)" 
+              strokeWidth={2} 
+              dot={false}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="issues" 
+              stroke="var(--accent-soft)" 
+              strokeWidth={2} 
+              dot={false}
+              strokeOpacity={0.8}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
+      
       <div
         className="h-52 rounded-xl border border-[var(--border)] p-3"
         style={{ backgroundColor: "color-mix(in srgb, var(--card) 40%, transparent)" }}
@@ -41,13 +75,23 @@ export default function RepoTimelineChart({ timeline }: { timeline: TimelinePoin
             <YAxis width={28} stroke="var(--muted-foreground)" />
             <Tooltip
               contentStyle={{
-                background: "var(--card)",
+                backgroundColor: "var(--tooltip)",
                 border: "1px solid var(--border)",
-                borderRadius: 10,
-                color: "var(--card-foreground)",
+                borderRadius: "8px",
+                color: "var(--tooltip-foreground)",
+              }}
+              labelStyle={{
+                color: "var(--tooltip-foreground)",
+              }}
+              itemStyle={{
+                color: "var(--tooltip-foreground)",
               }}
             />
-            <Bar dataKey="commits" fill="var(--accent)" radius={[4, 4, 0, 0]} />
+            <Bar 
+              dataKey="commits" 
+              fill="var(--accent)" 
+              radius={[4, 4, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -52,44 +52,42 @@ export default async function DashboardPage() {
 
       <WeeklySummaryCard />
 
-    <div className="mb-6">
-      <PersonalRecords />
-    </div>
+      <div className="mb-6">
+        <PersonalRecords />
+      </div>
 
-    {/* Row 1: Contribution graph + Streak + Friend Comparison */}
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {/* Row 1: Contribution graph + Streak + Friend Comparison */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* LEFT SIDE */}
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          <ContributionGraph />
 
-      {/* LEFT SIDE */}
-      <div className="flex flex-col gap-6 lg:col-span-2">
-        <ContributionGraph />
+          <div className="mt-6">
+            <ContributionHeatmap />
+          </div>
 
-        <div className="mt-6">
-          <ContributionHeatmap />
+          {/* Repo Explorer BELOW commit activity */}
+          <RepoAnalyticsExplorer />
         </div>
 
-        {/* Repo Explorer BELOW commit activity */}
-        <RepoAnalyticsExplorer />
+        {/* RIGHT SIDE */}
+        <div className="flex flex-col gap-6">
+          <StreakTracker />
+          <FriendComparison />
+        </div>
       </div>
 
-      {/* RIGHT SIDE */}
-      <div className="flex flex-col gap-6">
-        <StreakTracker />
-        <FriendComparison />
+      {/* Row 2: PR Metrics & Charts */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <PRMetrics />
+        <PRBreakdownChart />
+        <CommitTimeChart />
       </div>
 
-<<<<<<< HEAD
-    </div>
-
-    <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <PRMetrics />
-      <PRBreakdownChart />
-      <CommitTimeChart />
-    </div>
-=======
+      {/* PR Review Trend Chart */}
       <div className="mt-6">
         <PRReviewTrendChart />
       </div>
->>>>>>> 371c5fe6e801f173110dd13f906d7fefc65ea584
 
       {/* Row 3: Issue metrics + CI analytics */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -99,16 +97,15 @@ export default async function DashboardPage() {
         <CIAnalytics />
       </div>
 
-    <div className="mt-6">
-      <PinnedRepos />
-    </div>
+      <div className="mt-6">
+        <PinnedRepos />
+      </div>
 
-    <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <TopRepos />
-      <LanguageBreakdown />
-      <GoalTracker />
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <TopRepos />
+        <LanguageBreakdown />
+        <GoalTracker />
+      </div>
     </div>
-
-  </div>
-  )
+  );
 }
