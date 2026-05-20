@@ -8,7 +8,6 @@ export default function PWARegister() {
       window.addEventListener("load", () => {
         navigator.serviceWorker
           .register("/sw.js")
-          
       });
     }
   }, []);
