@@ -49,12 +49,12 @@ export default function WeeklySummaryCard() {
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [colors, setColors] = useState({
-    lastWeek: "#6b7280",
-    thisWeek: "#06b6d4",
-    border: "#e5e7eb",
-    muted: "#9ca3af",
-    card: "#ffffff",
-    foreground: "#000000",
+    lastWeek: "",
+    thisWeek: "",
+    border: "",
+    muted: "",
+    card: "",
+    foreground: "",
   });
 
   useEffect(() => {
@@ -63,16 +63,16 @@ export default function WeeklySummaryCard() {
       const value = getComputedStyle(document.documentElement)
         .getPropertyValue(varName)
         .trim();
-      return value || "";
+      return value;
     };
 
     setColors({
-      lastWeek: getColor("--muted-foreground") || "#6b7280",
-      thisWeek: getColor("--accent") || "#06b6d4",
-      border: getColor("--border") || "#e5e7eb",
-      muted: getColor("--muted-foreground") || "#9ca3af",
-      card: getColor("--card") || "#ffffff",
-      foreground: getColor("--card-foreground") || "#000000",
+      lastWeek: getColor("--muted-foreground"),
+      thisWeek: getColor("--accent"),
+      border: getColor("--border"),
+      muted: getColor("--muted-foreground"),
+      card: getColor("--card"),
+      foreground: getColor("--card-foreground"),
     });
   }, []);
 
@@ -115,9 +115,9 @@ export default function WeeklySummaryCard() {
     : [];
 
   const getTrendColor = (trend: string): string => {
-    if (trend === "up") return "#10b981";
-    if (trend === "down") return "#ef4444";
-    return colors.muted;
+    if (trend === "up") return "var(--success)";
+    if (trend === "down") return "var(--destructive)";
+    return "var(--muted-foreground)";
   };
 
   return (
