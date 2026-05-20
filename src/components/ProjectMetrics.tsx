@@ -270,6 +270,7 @@ export default function ProjectMetrics() {
           <button
             type="button"
             onClick={fetchData}
+
             className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again
@@ -403,44 +404,5 @@ export default function ProjectMetrics() {
             <div className="mt-1 text-sm text-[var(--muted-foreground)]">
               {stat.label}
             </div>
-          </div>
-        ))}
-      </div>
-      {data?.recentIssues && data.recentIssues.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium mb-3 text-[var(--muted-foreground)]">
-            Recent Issues
-          </h3>
-          <div className="space-y-2">
-            {data.recentIssues.slice(0, 5).map((issue) => (
-              <div
-                key={issue.key}
-                className="flex items-center justify-between rounded-lg bg-[var(--control)] p-3"
-              >
-                <div className="min-w-0 flex-1">
-                  <span className="font-mono text-xs text-[var(--accent)]">
-                    {issue.key}
-                  </span>
-                  <p className="truncate text-sm text-[var(--foreground)]">
-                    {issue.summary}
-                  </p>
-                </div>
-                <span
-                  className={`ml-3 text-xs font-medium ${getStatusColor(
-                    issue.statusCategory === "done"
-                      ? "Done"
-                      : issue.statusCategory === "indeterminate"
-                        ? "In Progress"
-                        : "To Do"
-                  )}`}
-                >
-                  {issue.status}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
-      )}
-    </div>
-  );
-}
+      </div>

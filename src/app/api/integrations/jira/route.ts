@@ -7,12 +7,10 @@ import { decryptToken } from "@/lib/crypto";
 import { JiraIssue, calculateMetrics } from "@/lib/jira-utils";
 
 export const dynamic = "force-dynamic";
-
 interface JiraCredentials {
   id: string;
   jira_domain: string;
   email: string;
-  api_token: string;
   token_iv: string;
   project_key: string | null;
 }
@@ -37,7 +35,6 @@ function validateProjectKey(key: string): boolean {
   const projectKeyRegex = /^[A-Z][A-Z0-9]{0,9}$/;
   return projectKeyRegex.test(key);
 }
-
 async function fetchJiraIssues(
   domain: string,
   email: string,
@@ -124,7 +121,6 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
-
   try {
     const issues = await fetchJiraIssues(
       cred.jira_domain,
