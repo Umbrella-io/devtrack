@@ -40,7 +40,7 @@ export default async function DashboardPage() {
       <div className="mb-6 flex justify-end items-center gap-2">
         <Link
           href="/dashboard/settings"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity"
+          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
         >
           Settings
         </Link>
