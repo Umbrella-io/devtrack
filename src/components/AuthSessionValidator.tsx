@@ -14,13 +14,12 @@ export default function AuthSessionValidator() {
     const validateUser = async () => {
       try {
         const res = await fetch("/api/auth/me", { cache: "no-store" });
-        if (!res.ok && active) {
+        // Only sign out on authentication errors (401) or missing resource (404)
+        if ((res.status === 401 || res.status === 404) && active) {
           await signOut({ callbackUrl: "/" });
         }
       } catch {
-        if (active) {
-          await signOut({ callbackUrl: "/" });
-        }
+        // Transient network errors should not trigger sign out
       }
     };
 

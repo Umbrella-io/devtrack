@@ -15,6 +15,7 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { GitHubApiError, toGitHubErrorResponse } from "@/lib/github-error";
 
 export const dynamic = "force-dynamic";
 
@@ -22,34 +23,6 @@ interface ContributionResponse {
   days: number;
   total: number;
   data: Record<string, number>;
-}
-
-class GitHubApiError extends Error {
-  status: number;
-  endpoint: string;
-  details: string;
-
-  constructor(endpoint: string, status: number, details: string) {
-    super("GitHub API failed");
-    this.status = status;
-    this.endpoint = endpoint;
-    this.details = details;
-  }
-}
-
-function toGitHubErrorResponse(error: unknown) {
-  if (error instanceof GitHubApiError) {
-    return Response.json(
-      {
-        error: "GitHub API failed",
-        endpoint: error.endpoint,
-        status: error.status,
-        details: error.details,
-      },
-      { status: error.status }
-    );
-  }
-  return Response.json({ error: "GitHub API error" }, { status: 502 });
 }
 
 function toLocalDateStr(d: Date): string {
@@ -91,12 +64,12 @@ async function fetchContributionsForAccount(
 
       const endpoint = `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`;
       const searchRes = await fetch(endpoint, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/vnd.github+json",
-          },
-          cache: "no-store",
-        });
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+        cache: "no-store",
+      });
 
       if (!searchRes.ok) {
         const body = await searchRes.text();
@@ -165,7 +138,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (!session.githubId) {
-    return Response.json({ error: "User not found" }, { status: 404 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const userRow = await resolveAppUser(session.githubId, session.githubLogin);
@@ -175,35 +148,40 @@ export async function GET(req: NextRequest) {
   }
 
   if (accountId === "combined") {
-    const accounts = await getAllAccounts(
-      {
-        token: session.accessToken,
-        githubId: session.githubId,
-        githubLogin: session.githubLogin,
-      },
-      userRow.id
-    );
+    try {
+      const accounts = await getAllAccounts(
+        {
+          token: session.accessToken,
+          githubId: session.githubId,
+          githubLogin: session.githubLogin,
+        },
+        userRow.id
+      );
 
-    const results = await Promise.allSettled(
-      accounts.map((account) =>
-        fetchContributionsForAccount(account.token, account.githubLogin, days, {
-          bypass,
-          userId: account.githubId,
-        })
-      )
-    );
+      const results = await Promise.allSettled(
+        accounts.map((account) =>
+          fetchContributionsForAccount(account.token, account.githubLogin, days, {
+            bypass,
+            userId: account.githubId,
+          })
+        )
+      );
 
-    const merged = mergeMetrics(results, (a, b) => ({
-      days: a.days,
-      total: a.total + b.total,
-      data: mergeContributionDays(a.data, b.data),
-    }));
+      const merged = mergeMetrics(results, (a, b) => ({
+        days: a.days,
+        total: a.total + b.total,
+        data: mergeContributionDays(a.data, b.data),
+      }));
 
-    if (!merged) {
-      return Response.json({ error: "All accounts failed" }, { status: 502 });
+      if (!merged) {
+        return Response.json({ error: "All accounts failed" }, { status: 502 });
+      }
+
+      return Response.json(merged);
+    } catch (error) {
+      console.error("Failed to fetch combined contributions:", error);
+      return Response.json({ error: "Failed to fetch accounts" }, { status: 500 });
     }
-
-    return Response.json(merged);
   }
 
   if (accountId === session.githubId) {
@@ -215,8 +193,8 @@ export async function GET(req: NextRequest) {
         { bypass, userId: session.githubId }
       );
       return Response.json(result);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return toGitHubErrorResponse(error);
     }
   }
 
