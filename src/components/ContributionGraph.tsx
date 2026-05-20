@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import {
   BarChart,
@@ -92,6 +92,14 @@ export default function ContributionGraph() {
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareRequestId, setCompareRequestId] = useState(0);
 
+  // Custom range state
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [showPopover, setShowPopover] = useState(false);
+  const [customLabel, setCustomLabel] = useState<string | null>(null);
+  const [customError, setCustomError] = useState<string | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
   // Fetch my data
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -137,7 +145,12 @@ export default function ContributionGraph() {
       selectedAccount !== null
         ? `&accountId=${encodeURIComponent(selectedAccount)}`
         : "";
-    fetch(`/api/metrics/contributions?days=${days}${accountParam}`)
+    const url =
+      customLabel && customFrom && customTo
+        ? `/api/metrics/contributions?from=${customFrom}&to=${customTo}${accountParam}`
+        : `/api/metrics/contributions?days=${days}${accountParam}`;
+
+    fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error("API error");
         return r.json();
@@ -156,7 +169,7 @@ export default function ContributionGraph() {
         setLastUpdated(new Date());
         setMinutesAgo(0);
       });
-  }, [days, selectedAccount]);
+    }, [days, selectedAccount, customFrom, customTo, customLabel]);
 
   // Fetch friend data when compare mode is on and compareUser changes
   useEffect(() => {
@@ -233,12 +246,63 @@ export default function ContributionGraph() {
     return () => clearInterval(interval);
   }, [lastUpdated]);
 
+  useEffect(() => {
+    if (!showPopover) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowPopover(false);
+    };
+    const handleClick = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setShowPopover(false);
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    document.addEventListener("mousedown", handleClick);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, [showPopover]);
+
   const handleClearCompare = () => {
     window.dispatchEvent(new Event("devtrack:clear-compare-user"));
     setCompareMode(false);
     setCompareUser(null);
     setFriendData([]);
     setCompareError(null);
+  };
+
+  const handleCustomApply = () => {
+    setCustomError(null);
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (!customFrom || !customTo) {
+      setCustomError("Please select both dates.");
+      return;
+    }
+    if (customFrom > customTo) {
+      setCustomError("Start date must be before end date.");
+      return;
+    }
+    if (customTo > today) {
+      setCustomError("End date can't be in the future.");
+      return;
+    }
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const diff =
+      (new Date(customTo).getTime() - new Date(customFrom).getTime()) / msPerDay;
+    if (diff > 365 * 2) {
+      setCustomError("Max range is 2 years.");
+      return;
+    }
+
+    const fmt = (d: string) =>
+      new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    setCustomLabel(`${fmt(customFrom)} – ${fmt(customTo)}`);
+    setShowPopover(false);
   };
 
   const mergedData =
@@ -288,6 +352,59 @@ export default function ContributionGraph() {
             ))}
           </div>
 
+          {/* Custom date range */}
+          <div className="relative" ref={popoverRef}>
+            <button
+              onClick={() => setShowPopover((v) => !v)}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors border border-[var(--border)] ${
+                customLabel
+                  ? "bg-[var(--accent)] text-[var(--background)]"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              {customLabel ?? "Custom…"}
+            </button>
+
+            {showPopover && (
+              <div className="absolute right-0 top-10 z-50 w-72 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-lg">
+                <p className="text-sm font-medium text-[var(--foreground)] mb-3">
+                  Custom range
+                </p>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs text-[var(--muted-foreground)]">
+                    Start date
+                    <input
+                      type="date"
+                      value={customFrom}
+                      max={new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => setCustomFrom(e.target.value)}
+                      className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-sm text-[var(--foreground)]"
+                    />
+                  </label>
+                  <label className="text-xs text-[var(--muted-foreground)]">
+                    End date
+                    <input
+                      type="date"
+                      value={customTo}
+                      max={new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-sm text-[var(--foreground)]"
+                    />
+                  </label>
+                  {customError && (
+                    <p className="text-xs text-red-500">{customError}</p>
+                  )}
+                  <button
+                    onClick={handleCustomApply}
+                    className="mt-1 w-full rounded-md bg-[var(--accent)] py-1.5 text-sm font-medium text-[var(--background)] hover:opacity-90 transition-opacity"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
           {/* Chart Toggle Buttons */}
           {displayData.length > 0 && !error && (
             <div

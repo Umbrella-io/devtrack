@@ -43,7 +43,9 @@ async function fetchContributionsForAccount(
   token: string,
   githubLogin: string,
   days: number,
-  cacheContext: { bypass: boolean; userId: string }
+  cacheContext: { bypass: boolean; userId: string },
+  fromDate?: string
+
 ): Promise<ContributionResponse> {
   const key = metricsCacheKey(cacheContext.userId, "contributions", {
     days,
@@ -59,7 +61,7 @@ async function fetchContributionsForAccount(
     async () => {
       const since = new Date();
       since.setDate(since.getDate() - days);
-      const sinceStr = toLocalDateStr(since);
+      const sinceStr = fromDate ?? toLocalDateStr(since);
 
       const searchRes = await fetch(
         `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
@@ -98,7 +100,22 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const days = Number(req.nextUrl.searchParams.get("days")) || 30;
+  const fromParam = req.nextUrl.searchParams.get("from");
+  const toParam = req.nextUrl.searchParams.get("to");
+
+  let days: number;
+  let fromDate: string | undefined;
+
+  if (fromParam && toParam) {
+    fromDate = fromParam;
+    const msPerDay = 1000 * 60 * 60 * 24;
+    days = Math.ceil(
+      (new Date(toParam).getTime() - new Date(fromParam).getTime()) / msPerDay
+    ) + 1;
+  } else {
+    days = Number(req.nextUrl.searchParams.get("days")) || 30;
+  }
+
   const accountId = req.nextUrl.searchParams.get("accountId");
   const username = req.nextUrl.searchParams.get("username")?.trim();
   const bypass = isMetricsCacheBypassed(req);
@@ -110,7 +127,8 @@ export async function GET(req: NextRequest) {
         session.accessToken,
         username,
         days,
-        { bypass, userId: session.githubId ?? session.githubLogin }
+        { bypass, userId: session.githubId ?? session.githubLogin },
+        fromDate
       );
       return Response.json(result);
     } catch {
@@ -124,7 +142,8 @@ export async function GET(req: NextRequest) {
         session.accessToken,
         session.githubLogin,
         days,
-        { bypass, userId: session.githubId ?? session.githubLogin }
+        { bypass, userId: session.githubId ?? session.githubLogin },
+        fromDate
       );
       return Response.json(result);
     } catch {
@@ -157,7 +176,8 @@ export async function GET(req: NextRequest) {
         fetchContributionsForAccount(account.token, account.githubLogin, days, {
           bypass,
           userId: account.githubId,
-        })
+
+        }, fromDate)
       )
     );
 
@@ -180,7 +200,8 @@ export async function GET(req: NextRequest) {
         session.accessToken,
         session.githubLogin,
         days,
-        { bypass, userId: session.githubId }
+        { bypass, userId: session.githubId },
+        fromDate
       );
       return Response.json(result);
     } catch {
@@ -210,7 +231,8 @@ export async function GET(req: NextRequest) {
       accountToken,
       accountRow.github_login,
       days,
-      { bypass, userId: accountId }
+      { bypass, userId: accountId },
+      fromDate
     );
     return Response.json(result);
   } catch {
