@@ -48,6 +48,33 @@ export default function WeeklySummaryCard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [colors, setColors] = useState({
+    lastWeek: "#6b7280",
+    thisWeek: "#06b6d4",
+    border: "#e5e7eb",
+    muted: "#9ca3af",
+    card: "#ffffff",
+    foreground: "#000000",
+  });
+
+  useEffect(() => {
+    const getColor = (varName: string): string => {
+      if (typeof window === "undefined") return "";
+      const value = getComputedStyle(document.documentElement)
+        .getPropertyValue(varName)
+        .trim();
+      return value || "";
+    };
+
+    setColors({
+      lastWeek: getColor("--muted-foreground") || "#6b7280",
+      thisWeek: getColor("--accent") || "#06b6d4",
+      border: getColor("--border") || "#e5e7eb",
+      muted: getColor("--muted-foreground") || "#9ca3af",
+      card: getColor("--card") || "#ffffff",
+      foreground: getColor("--card-foreground") || "#000000",
+    });
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -66,14 +93,6 @@ export default function WeeklySummaryCard() {
       )
       .finally(() => setLoading(false));
   }, []);
-
-  const getChartColor = (varName: string): string => {
-    if (typeof window === "undefined") return "#000";
-    const color = getComputedStyle(document.documentElement)
-      .getPropertyValue(varName)
-      .trim();
-    return color || "#000";
-  };
 
   const chartData: ChartDataPoint[] = summary
     ? [
@@ -96,9 +115,9 @@ export default function WeeklySummaryCard() {
     : [];
 
   const getTrendColor = (trend: string): string => {
-    if (trend === "up") return "var(--success)";
-    if (trend === "down") return "var(--destructive)";
-    return "var(--muted-foreground)";
+    if (trend === "up") return "#10b981";
+    if (trend === "down") return "#ef4444";
+    return colors.muted;
   };
 
   return (
@@ -149,39 +168,39 @@ export default function WeeklySummaryCard() {
                 <BarChart data={chartData}>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="var(--border)"
+                    stroke={colors.border}
                     opacity={0.3}
                   />
                   <XAxis
                     dataKey="name"
-                    stroke="var(--muted-foreground)"
+                    stroke={colors.muted}
                     style={{ fontSize: "12px" }}
                   />
                   <YAxis
-                    stroke="var(--muted-foreground)"
+                    stroke={colors.muted}
                     style={{ fontSize: "12px" }}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "var(--card)",
-                      border: "1px solid var(--border)",
+                      backgroundColor: colors.card,
+                      border: `1px solid ${colors.border}`,
                       borderRadius: "6px",
-                      color: "var(--card-foreground)",
+                      color: colors.foreground,
                     }}
                     cursor={{ fill: "var(--control)" }}
                   />
                   <Legend
-                    wrapperStyle={{ color: "var(--card-foreground)" }}
+                    wrapperStyle={{ color: colors.foreground }}
                     iconType="square"
                   />
                   <Bar
                     dataKey="Last Week"
-                    fill="var(--muted-foreground)"
+                    fill={colors.lastWeek}
                     radius={[4, 4, 0, 0]}
                   />
                   <Bar
                     dataKey="This Week"
-                    fill="var(--accent)"
+                    fill={colors.thisWeek}
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
