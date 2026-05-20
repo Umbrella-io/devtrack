@@ -31,6 +31,7 @@ export default function GoalTracker() {
   const [recurrence, setRecurrence] = useState<Recurrence>("none");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [titleError, setTitleError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -56,8 +57,15 @@ export default function GoalTracker() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    setCreating(true);
     setCreateError(null);
+    setTitleError(null);
+
+    if (title.trim().length > 100) {
+      setTitleError("Goal title must be 100 characters or fewer");
+      return;
+    }
+
+    setCreating(true);
 
     try {
       const response = await fetch("/api/goals", {
@@ -279,14 +287,34 @@ export default function GoalTracker() {
             id="goal-title"
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setTitleError(
+                e.target.value.length > 100
+                  ? "Goal title must be 100 characters or fewer"
+                  : null
+              );
+            }}
             placeholder="Make 10 commits"
             required
+            maxLength={100}
             disabled={creating}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)]"
+            aria-describedby="goal-title-hint"
+            className={`w-full rounded-lg border bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)] ${
+              titleError ? "border-red-500" : "border-[var(--border)]"
+            }`}
           />
+          <div id="goal-title-hint" className="mt-1 flex justify-between text-xs">
+            {titleError ? (
+              <span className="text-red-500">{titleError}</span>
+            ) : (
+              <span />
+            )}
+            <span className={title.length > 90 ? "text-red-500" : "text-[var(--muted-foreground)]"}>
+              {title.length}/100
+            </span>
+          </div>
         </div>
-
         <div className="flex gap-3">
           <div className="flex-1">
             <label htmlFor="goal-target" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
@@ -349,7 +377,7 @@ export default function GoalTracker() {
 
         <button
           type="submit"
-          disabled={creating || !title.trim()}
+          disabled={creating || !title.trim() || !!titleError}
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {creating ? (
@@ -425,4 +453,4 @@ function ConfettiBurst() {
       ))}
     </div>
   );
-}
+}

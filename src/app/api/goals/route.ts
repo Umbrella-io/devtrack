@@ -113,10 +113,17 @@ export async function POST(req: Request) {
     recurrence?: Recurrence;
   };
 
-  if (!body.title || !body.target) {
+ if (!body.title || !body.target) {
     return Response.json({ error: "title and target required" }, { status: 400 });
   }
 
+  if (body.title.trim().length > 100) {
+    return Response.json(
+      { error: "Goal title must be 100 characters or fewer" },
+      { status: 400 }
+    );
+  }
+  
   const recurrence: Recurrence = body.recurrence ?? "none";
   if (!["none", "weekly", "monthly"].includes(recurrence)) {
     return Response.json({ error: "Invalid recurrence value" }, { status: 400 });
