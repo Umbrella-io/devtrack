@@ -15,6 +15,8 @@ interface Goal {
   unit: string;
   recurrence: string;
   period_start: string | null;
+  last_synced_at?: string | null;
+  updated_at?: string | null;
   created_at: string;
 }
 
@@ -131,7 +133,7 @@ export async function GET() {
         // silently zeroing out any progress written between the two reads.
         const { data: updated } = await supabaseAdmin
           .from("goals")
-          .update({ current: 0, period_start: periodStart.toISOString() })
+          .update({ current: 0, period_start: periodStart.toISOString(), last_synced_at: null })
           .eq("id", goal.id)
           .lt("period_start", periodStart.toISOString())
           .select()
@@ -175,31 +177,85 @@ export async function GET() {
     ];
   }
 
+  const COOLDOWN_MS = 5 * 60 * 1000; // 5-minute sync cooldown
+  const requestCache = new Map<string, Promise<number>>();
+
+  async function getDeduplicatedCount(
+    token: string,
+    githubLogin: string,
+    metric: "commits" | "prs" | "issues",
+    since: string
+  ): Promise<number> {
+    const cacheKey = `${githubLogin}:${metric}:${since}`;
+    if (requestCache.has(cacheKey)) {
+      return requestCache.get(cacheKey)!;
+    }
+    const promise = fetchCountFromGitHub(token, githubLogin, metric, since);
+    requestCache.set(cacheKey, promise);
+    return promise;
+  }
+
   // 2. Map goals and perform pull-based sync if automated
   const syncedGoals = await Promise.all(
-    processedGoals.map(async (goal) => {
+    processedGoals.map(async (goal: Goal) => {
       const metric = getMetricFromUnit(goal.unit);
       if (!metric) return goal;
+
+      // 5-Minute Sync Cooldown Check
+      if (goal.last_synced_at) {
+        const timeSinceSync = Date.now() - new Date(goal.last_synced_at).getTime();
+        if (timeSinceSync < COOLDOWN_MS) {
+          // Cooldown active, skip querying GitHub and return stored value
+          return goal;
+        }
+      }
 
       // Determine period start date
       const since = goal.period_start || new Date(0).toISOString();
 
-      // Fetch counts across all linked accounts in parallel
+      // Fetch counts across all linked accounts in parallel (deduplicated)
       const counts = await Promise.all(
         accounts.map((account) =>
-          fetchCountFromGitHub(account.token, account.githubLogin, metric, since)
+          getDeduplicatedCount(account.token, account.githubLogin, metric, since)
         )
       );
 
       const totalCount = counts.reduce((sum, count) => sum + count, 0);
+      let updatedCurrent = totalCount;
 
-      // Only write to Supabase if the value changed
-      if (goal.current !== totalCount) {
+      // Reconciliation Logic: avoid overwriting DB value if new fetched count is less than current DB count
+      // and last update was very recent (under 5 minutes, likely due to GitHub Search indexing delay).
+      if (totalCount < goal.current) {
+        const lastUpdated = goal.updated_at ? new Date(goal.updated_at).getTime() : 0;
+        const timeSinceUpdate = Date.now() - lastUpdated;
+        if (timeSinceUpdate < COOLDOWN_MS) {
+          updatedCurrent = goal.current;
+        }
+      }
+
+      const nowStr = new Date().toISOString();
+
+      // Update Supabase if values changed or to record that we performed a sync (refresh cooldown)
+      if (goal.current !== updatedCurrent || !goal.last_synced_at) {
         const { data: updatedGoal } = await supabaseAdmin
           .from("goals")
           .update({
-            current: totalCount,
-            updated_at: new Date().toISOString(),
+            current: updatedCurrent,
+            last_synced_at: nowStr,
+            updated_at: nowStr,
+          })
+          .eq("id", goal.id)
+          .select()
+          .single();
+
+        if (updatedGoal) return updatedGoal;
+      } else {
+        // If counts matched and we already have last_synced_at, we still update the last_synced_at
+        // timestamp to reset the cooldown so we don't fetch on subsequent reloads.
+        const { data: updatedGoal } = await supabaseAdmin
+          .from("goals")
+          .update({
+            last_synced_at: nowStr,
           })
           .eq("id", goal.id)
           .select()
@@ -210,7 +266,8 @@ export async function GET() {
 
       return {
         ...goal,
-        current: totalCount,
+        current: updatedCurrent,
+        last_synced_at: nowStr,
       };
     })
   );
@@ -263,4 +320,4 @@ export async function POST(req: Request) {
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   return Response.json({ goal }, { status: 201 });
-}
+}

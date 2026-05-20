@@ -179,11 +179,13 @@ async function autoProgressCommitGoals(userId: string, commitCount: number) {
 
     for (const goal of activeGoals) {
       const newCurrent = Math.min(goal.current + commitCount, goal.target);
+      const now = new Date().toISOString();
       await supabaseAdmin
         .from("goals")
         .update({
           current: newCurrent,
-          updated_at: new Date().toISOString(),
+          last_synced_at: now,
+          updated_at: now,
         })
         .eq("id", goal.id);
     }
@@ -191,3 +193,4 @@ async function autoProgressCommitGoals(userId: string, commitCount: number) {
     console.error("Failed to automatically progress commit goals:", err);
   }
 }
+

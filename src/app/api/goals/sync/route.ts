@@ -59,7 +59,7 @@ export async function POST() {
   // Use a range filter (.gte / .lte) instead of string equality.
   const { data: commitGoals, error: goalsError } = await supabaseAdmin
     .from("goals")
-    .select("id")
+    .select("id, current, updated_at")
     .eq("user_id", user.id)
     .eq("unit", "commits")
     .gte("period_start", weekStart)
@@ -92,18 +92,32 @@ export async function POST() {
   const ghData = (await ghRes.json()) as { total_count: number };
   const commitCount = ghData.total_count;
 
-  // ── 4. Update all commit-based goals with the real commit count ───────────
+  // ── 4. Update each commit-based goal with reconciliation protection ───────────
   const now = new Date().toISOString();
-  const ids = commitGoals.map((g) => g.id);
+  const COOLDOWN_MS = 5 * 60 * 1000;
 
-  const { error: updateError } = await supabaseAdmin
-    .from("goals")
-    .update({ current: commitCount, last_synced_at: now })
-    .in("id", ids);
+  for (const goal of commitGoals) {
+    let updatedCurrent = commitCount;
 
-  if (updateError) {
-    return Response.json({ error: "Failed to update goals" }, { status: 500 });
+    if (commitCount < goal.current) {
+      const lastUpdated = goal.updated_at ? new Date(goal.updated_at).getTime() : 0;
+      const timeSinceUpdate = Date.now() - lastUpdated;
+      if (timeSinceUpdate < COOLDOWN_MS) {
+        // Indexing delay assumed, preserve webhook-incremented DB value
+        updatedCurrent = goal.current;
+      }
+    }
+
+    await supabaseAdmin
+      .from("goals")
+      .update({
+        current: updatedCurrent,
+        last_synced_at: now,
+        updated_at: now,
+      })
+      .eq("id", goal.id);
   }
 
-  return Response.json({ updated: ids.length, commitCount });
+  return Response.json({ updated: commitGoals.length, commitCount });
 }
+
