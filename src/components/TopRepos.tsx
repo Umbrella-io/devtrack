@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
 
@@ -191,29 +192,41 @@ export default function TopRepos() {
                 : health?.grade === "yellow"
                   ? "bg-yellow-500/15 text-yellow-300 border border-yellow-500/25"
                   : "bg-red-500/15 text-red-300 border border-red-500/25";
-            return (
+             return (
               <li key={repo.name}>
                 <div className="flex items-center justify-between text-sm mb-1">
-                  <a
-                    href={repo.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="max-w-[60%] sm:max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
-                    title={repo.description || undefined}
-                  >
-                    <span className="mr-1 text-[var(--muted-foreground)]">#{idx + 1}</span>
-                    {shortName}
-                  </a>
+                  <div className="flex items-center gap-1.5 max-w-[60%] sm:max-w-[70%]">
+                    <span className="text-[var(--muted-foreground)] shrink-0">#{idx + 1}</span>
+                    <Link
+                      href={`/dashboard/repo-health/${repo.name}`}
+                      className="truncate font-medium text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
+                      title={`View ${repo.name} health explorer`}
+                    >
+                      {shortName}
+                    </Link>
+                    <a
+                      href={repo.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+                      title="View on GitHub"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                      </svg>
+                    </a>
+                  </div>
                   <span className="shrink-0 flex items-center gap-2">
                     {healthLoading ? (
                       <div className="h-5 w-9 rounded bg-[var(--card-muted)] animate-pulse" />
                     ) : health ? (
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${badgeClass}`}
-                        title={badgeTitle}
+                      <Link
+                        href={`/dashboard/repo-health/${repo.name}`}
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold hover:opacity-85 hover:scale-105 transition-all cursor-pointer ${badgeClass}`}
+                        title={`${badgeTitle} • Click to open health explorer`}
                       >
                         {health.score}
-                      </span>
+                      </Link>
                     ) : (
                       <span
                         className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-2 py-0.5 text-xs font-semibold text-[var(--muted-foreground)]"

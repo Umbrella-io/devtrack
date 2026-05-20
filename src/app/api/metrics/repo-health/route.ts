@@ -177,6 +177,18 @@ export async function GET(req: NextRequest) {
   const days = requestedDays === 7 || requestedDays === 30
     || requestedDays === 90 ? requestedDays : 30;
 
+  const specificRepo = req.nextUrl.searchParams.get("repo");
+  if (specificRepo) {
+    try {
+      const signals = await fetchSignalsForRepo(session.accessToken, specificRepo, days);
+      const score = computeHealthScore(specificRepo, signals);
+      return Response.json({ repo: score });
+    } catch (error) {
+      console.error(`Failed to fetch health signals for ${specificRepo}:`, error);
+      return Response.json({ error: "Failed to fetch repository health signals" }, { status: 502 });
+    }
+  }
+
   // 1) Determine top repos (top 6 by commit count).
   let topRepos: RepoSummary[] = [];
   try {
