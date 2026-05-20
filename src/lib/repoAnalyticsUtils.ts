@@ -83,3 +83,19 @@ export function calculateRepoHealth(metrics: {
     maintenanceScore,
   };
 }
+
+export const LANGUAGE_COLORS: Record<string, string> = {
+  TypeScript: "#3178c6",
+  JavaScript: "#f1e05a",
+  Python: "#3572A5",
+  CSS: "#563d7c",
+  HTML: "#e34c26",
+  Go: "#00ADD8",
+  Rust: "#dea584",
+};
+
+export const COLOR_MAP = LANGUAGE_COLORS;
+
+export function colorFor(name: string) {
+  return LANGUAGE_COLORS[name] ?? "#94a3b8";
+}

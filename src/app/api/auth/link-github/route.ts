@@ -3,6 +3,8 @@ import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const session = await getServerSession(authOptions);
 

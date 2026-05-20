@@ -1,21 +1,10 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { calculateRepoHealth, percentageFromMap } from "@/lib/repoAnalyticsUtils";
+import { calculateRepoHealth, percentageFromMap, colorFor } from "@/lib/repoAnalyticsUtils";
 import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
 
 const GITHUB_API = "https://api.github.com";
-const COLOR_MAP: Record<string, string> = {
-  TypeScript: "#3178c6",
-  JavaScript: "#f1e05a",
-  Python: "#3572A5",
-  CSS: "#563d7c",
-  HTML: "#e34c26",
-  Go: "#00ADD8",
-  Rust: "#dea584",
-};
-
-const colorFor = (name: string) => COLOR_MAP[name] ?? "#94a3b8";
 
 export const dynamic = "force-dynamic";
 

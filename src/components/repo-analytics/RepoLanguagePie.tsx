@@ -18,7 +18,15 @@ export default function RepoLanguagePie({ data }: { data: LanguageSlice[] }) {
             ))}
           </Pie>
           <Tooltip
-            contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 10, color: "#e2e8f0", fontSize: 12 }}
+            contentStyle={{
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              borderRadius: 10,
+              color: "var(--card-foreground)",
+              fontSize: 12,
+            }}
+            labelStyle={{ color: "var(--card-foreground)" }}
+            itemStyle={{ color: "var(--card-foreground)" }}
             formatter={(value: number, name: string) => [`${value}%`, name]}
           />
         </PieChart>

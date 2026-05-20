@@ -41,9 +41,9 @@ export default function RepoAnalyticsExplorer() {
           {[1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="h-64 animate-pulse rounded-2xl bg-[var(--card-muted)]" />)}
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-300">
+        <div className="rounded-xl border border-[var(--error-border)] bg-[var(--error-bg)] p-4 text-sm text-[var(--error)]">
           <p>{error}</p>
-          <button onClick={fetchRepos} className="mt-3 rounded-lg border border-rose-400/40 px-3 py-1.5 text-xs text-rose-200">Try again</button>
+          <button onClick={fetchRepos} className="mt-3 rounded-lg border border-[var(--error-border)] px-3 py-1.5 text-xs text-[var(--error)] transition-colors hover:bg-[var(--error-bg)]">Try again</button>
         </div>
       ) : (
         <RepoGrid repos={repos} />

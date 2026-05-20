@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import ContributorStats from "./ContributorStats";
 import RepoTimelineChart from "./RepoTimelineChart";
@@ -18,6 +17,16 @@ export default function RepoAnalyticsSheet({ repoFullName, open, onClose }: Repo
   const [data, setData] = useState<RepoAnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setShouldRender(true);
+    } else {
+      const timer = setTimeout(() => setShouldRender(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open || !repoFullName) return;
@@ -42,25 +51,23 @@ export default function RepoAnalyticsSheet({ repoFullName, open, onClose }: Repo
     };
   }, [open]);
 
+  if (!shouldRender && !open) return null;
+
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40"
-            style={{ backgroundColor: "color-mix(in srgb, var(--card) 60%, transparent)" }}
-            onClick={onClose}
-          />
-          <motion.aside
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 28, stiffness: 260 }}
-            className="fixed inset-y-0 right-0 z-50 w-full max-w-3xl overflow-y-auto border-l border-[var(--border)] bg-[var(--card)] p-5 shadow-2xl shadow-black/60 sm:p-6"
-          >
+    <>
+      <div
+        className={`fixed inset-0 z-40 transition-opacity duration-300 ease-out ${
+          open ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        style={{ backgroundColor: "color-mix(in srgb, var(--card) 60%, transparent)" }}
+        onClick={onClose}
+      />
+      <aside
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-3xl overflow-y-auto border-l border-[var(--border)] bg-[var(--card)] p-5 shadow-2xl shadow-black/60 sm:p-6 transition-transform duration-300 ease-out`}
+        style={{
+          transform: open ? "translateX(0)" : "translateX(100%)",
+        }}
+      >
             <div className="mb-4 flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h3 className="truncate text-lg font-semibold text-[var(--card-foreground)]">{repoFullName ?? "Repository Analytics"}</h3>
@@ -70,7 +77,7 @@ export default function RepoAnalyticsSheet({ repoFullName, open, onClose }: Repo
             </div>
 
             {loading ? <div className="space-y-3">{[1, 2, 3, 4].map((i) => <div key={i} className="h-20 animate-pulse rounded-xl bg-[var(--card)]" />)}</div> : null}
-            {error ? <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-300">{error}</div> : null}
+            {error ? <div className="rounded-xl border border-[var(--error-border)] bg-[var(--error-bg)] p-3 text-sm text-[var(--error)]">{error}</div> : null}
 
             {!loading && data && (
               <div className="space-y-5">
@@ -109,9 +116,7 @@ export default function RepoAnalyticsSheet({ repoFullName, open, onClose }: Repo
                 </section>
               </div>
             )}
-          </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
+      </aside>
+    </>
   );
 }

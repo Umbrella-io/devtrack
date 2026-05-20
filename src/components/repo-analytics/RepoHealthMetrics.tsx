@@ -2,7 +2,7 @@
 
 import { RepoHealth } from "@/lib/repoAnalytics";
 
-const meterColor = (value: number) => (value >= 75 ? "bg-emerald-400" : value >= 45 ? "bg-amber-400" : "bg-rose-400");
+const meterColor = (value: number) => (value >= 75 ? "bg-[var(--success)]" : value >= 45 ? "bg-[var(--warning)]" : "bg-[var(--error)]");
 
 export default function RepoHealthMetrics({ health }: { health: RepoHealth }) {
   const metrics = [

@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
   Area,
   AreaChart,
@@ -31,11 +30,8 @@ export default function RepoCard({
     : 0;
 
   return (
-    <motion.article
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm backdrop-blur-xl"
+    <article
+      className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm backdrop-blur-xl animate-slide-up"
     >
       {/* Border Glow */}
       <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-[var(--border)]" />
@@ -158,6 +154,6 @@ export default function RepoCard({
           </button>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }

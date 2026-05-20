@@ -17,16 +17,16 @@ export default function RepoTimelineChart({ timeline }: { timeline: TimelinePoin
             <YAxis width={28} stroke="var(--muted-foreground)" />
             <Tooltip
               contentStyle={{
-                backgroundColor: "var(--tooltip)",
+                backgroundColor: "var(--card)",
                 border: "1px solid var(--border)",
                 borderRadius: "8px",
-                color: "var(--tooltip-foreground)",
+                color: "var(--card-foreground)",
               }}
               labelStyle={{
-                color: "var(--tooltip-foreground)",
+                color: "var(--card-foreground)",
               }}
               itemStyle={{
-                color: "var(--tooltip-foreground)",
+                color: "var(--card-foreground)",
               }}
             />
             <Legend 
@@ -48,17 +48,16 @@ export default function RepoTimelineChart({ timeline }: { timeline: TimelinePoin
             <Line 
               type="monotone" 
               dataKey="prs" 
-              stroke="var(--success)" 
+              stroke="var(--chart-cyan)" 
               strokeWidth={2} 
               dot={false}
             />
             <Line 
               type="monotone" 
               dataKey="issues" 
-              stroke="var(--accent-soft)" 
+              stroke="var(--chart-orange)" 
               strokeWidth={2} 
               dot={false}
-              strokeOpacity={0.8}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -75,16 +74,16 @@ export default function RepoTimelineChart({ timeline }: { timeline: TimelinePoin
             <YAxis width={28} stroke="var(--muted-foreground)" />
             <Tooltip
               contentStyle={{
-                backgroundColor: "var(--tooltip)",
+                backgroundColor: "var(--card)",
                 border: "1px solid var(--border)",
                 borderRadius: "8px",
-                color: "var(--tooltip-foreground)",
+                color: "var(--card-foreground)",
               }}
               labelStyle={{
-                color: "var(--tooltip-foreground)",
+                color: "var(--card-foreground)",
               }}
               itemStyle={{
-                color: "var(--tooltip-foreground)",
+                color: "var(--card-foreground)",
               }}
             />
             <Bar 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import RepoCard from "./RepoCard";
 import RepoAnalyticsSheet from "./RepoAnalyticsSheet";
 import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
@@ -48,9 +47,9 @@ export default function RepoGrid({ repos }: { repos: ExplorerRepoCardData[] }) {
       {filteredRepos.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] p-6 text-center text-sm text-[var(--muted-foreground)]">No repositories found for this filter.</div>
       ) : (
-        <motion.div initial="hidden" animate="visible" variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }} className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {pageRepos.map((repo) => <RepoCard key={repo.id} repo={repo} onViewAnalytics={setSelectedRepo} />)}
-        </motion.div>
+        </div>
       )}
 
       {filteredRepos.length > PAGE_SIZE && (

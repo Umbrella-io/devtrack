@@ -2,20 +2,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
-import { percentageFromMap } from "@/lib/repoAnalyticsUtils";
+import { percentageFromMap, colorFor } from "@/lib/repoAnalyticsUtils";
 
 const GITHUB_API = "https://api.github.com";
-const LANGUAGE_COLORS: Record<string, string> = {
-  TypeScript: "#3178c6",
-  JavaScript: "#f1e05a",
-  Python: "#3572A5",
-  CSS: "#563d7c",
-  HTML: "#e34c26",
-  Go: "#00ADD8",
-  Rust: "#dea584",
-};
-
-const colorFor = (name: string) => LANGUAGE_COLORS[name] ?? "#94a3b8";
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 async function fetchRepoActivity7d(fullName: string, token: string) {
@@ -79,15 +68,7 @@ export async function GET(req: NextRequest) {
   const token = session.accessToken;
 
   const search = req.nextUrl.searchParams;
-  
-  // FIX: Handle perPage NaN bug
-  const perPageParam = search.get("perPage");
-  let perPage = 24; // Default value
-  
-  if (perPageParam) {
-    const parsed = Number(perPageParam);
-    perPage = !isNaN(parsed) && parsed > 0 ? Math.min(parsed, 30) : 24;
-  }
+  const perPage = Math.min(Number(search.get("perPage") ?? "24") || 24, 30);
 
   const repoRes = await fetch(
     `${GITHUB_API}/user/repos?sort=updated&direction=desc&per_page=${perPage}&type=all`,

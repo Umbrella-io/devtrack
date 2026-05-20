@@ -19,6 +19,16 @@
   --control-hover: #cbd5e1;
   --tooltip: #ffffff;
   --tooltip-foreground: #0f172a;
+  --error: #ef4444;
+  --error-bg: rgba(239, 68, 68, 0.05);
+  --error-border: rgba(239, 68, 68, 0.2);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.05);
+  --warning-border: rgba(245, 158, 11, 0.2);
+  --success-bg: rgba(16, 185, 129, 0.05);
+  --success-border: rgba(16, 185, 129, 0.2);
+  --chart-cyan: #0891b2;
+  --chart-orange: #ea580c;
 }
 
 .dark {
@@ -38,10 +48,35 @@
   --control-hover: #475569;
   --tooltip: #1e293b;
   --tooltip-foreground: #f8fafc;
+  --error: #f87171;
+  --error-bg: rgba(248, 113, 113, 0.1);
+  --error-border: rgba(248, 113, 113, 0.2);
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.1);
+  --warning-border: rgba(251, 191, 36, 0.2);
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --success-border: rgba(16, 185, 129, 0.2);
+  --chart-cyan: #22d3ee;
+  --chart-orange: #f97316;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   transition: background-color 200ms ease, color 200ms ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
