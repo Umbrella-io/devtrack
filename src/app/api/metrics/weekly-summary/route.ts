@@ -177,6 +177,7 @@ export async function GET() {
       items: Array<{
         created_at: string;
         state: string;
+        pull_request?: { merged_at: string | null };
       }>;
     };
 
@@ -187,7 +188,7 @@ export async function GET() {
       const createdAt = new Date(item.created_at);
       if (createdAt >= currentWeekStart) {
         prsOpenedThisWeek++;
-        if (item.state === "closed") {
+        if (item.pull_request?.merged_at != null) {
           prsMergedThisWeek++;
         }
       }
