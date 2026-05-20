@@ -42,7 +42,6 @@ create table if not exists chatbot_messages (
   message    text not null,
   created_at timestamptz default now()
 );
-
 create index if not exists chatbot_messages_user_time
   on chatbot_messages(user_id, created_at);
 
