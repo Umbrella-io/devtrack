@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import DailyBreakdownSheet from "@/components/DailyBreakdownSheet";
 
@@ -79,6 +79,7 @@ export default function ContributionHeatmap({
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const handleCloseSheet = useCallback(() => setSelectedDate(null), []);
 
   useEffect(() => {
     let active = true;
@@ -336,10 +337,11 @@ export default function ContributionHeatmap({
           </div>
         </>
       )}
-    <DailyBreakdownSheet
+      <DailyBreakdownSheet
         date={selectedDate}
-        onClose={() => setSelectedDate(null)}
-    />
+        onClose={handleCloseSheet}
+        heatmapData={data}
+      />
     </div>
   );
 }

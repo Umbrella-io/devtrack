@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface DailyBreakdownSheetProps {
   date: string | null;
   onClose: () => void;
+  heatmapData?: Record<string, number>;
 }
 
 interface RepoCommit {
@@ -16,6 +17,7 @@ interface RepoCommit {
 export default function DailyBreakdownSheet({
   date,
   onClose,
+  heatmapData,
 }: DailyBreakdownSheetProps) {
   const [commits, setCommits] = useState<RepoCommit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,24 +25,34 @@ export default function DailyBreakdownSheet({
 
   useEffect(() => {
     if (!date) return;
+    const totalForDay = heatmapData?.[date] ?? 0;
+    if (totalForDay === 0) {
+      setCommits([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    fetch(`/api/metrics/contributions?days=365`)
-      .then((res) => res.json())
-      .then((result) => {
-        const repoData = result.repos?.[date] ?? [];
-        setCommits(repoData);
-      })
+    fetch(`/api/metrics/contributions/daily?date=${date}`)
+    .then((res) => res.json())
+    .then((result) => {
+        setCommits(result.repos ?? []);
+    })
       .catch(() => setCommits([]))
       .finally(() => setLoading(false));
-  }, [date]);
+  }, [date, heatmapData]);
+
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, []);
 
   if (!isOpen) return null;
 
