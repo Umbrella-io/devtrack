@@ -8,12 +8,6 @@
 const fs = require("fs");
 const path = require("path");
 
-const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
-const allDeps = new Set([
-  ...Object.keys(pkg.dependencies || {}),
-  ...Object.keys(pkg.devDependencies || {}),
-]);
-
 // Node built-ins (not in package.json but valid to import)
 const BUILTINS = new Set([
   "assert", "buffer", "child_process", "cluster", "crypto", "dgram",
@@ -52,24 +46,34 @@ function extractPackageName(mod) {
   return mod.split("/")[0];
 }
 
-const IMPORT_RE = /^(?:import|export)\s[^'"]*from\s+['"]([^'"]+)['"]/gm;
+const IMPORT_RE = /^\s*(?:import|export)\s[^'"]*from\s+['"]([^'"]+)['"]/gm;
+const SIDE_EFFECT_IMPORT_RE = /^\s*import\s+['"]([^'"]+)['"]/gm;
 const DYNAMIC_RE = /(?:require|import)\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 
-const files = collectFiles("src");
-const missing = new Map(); // pkgName → Set of files
+function extractImports(src) {
+  const imports = [];
 
-for (const file of files) {
-  const src = fs.readFileSync(file, "utf8");
-  const rel = path.relative(process.cwd(), file).replace(/\\/g, "/");
-
-  for (const re of [IMPORT_RE, DYNAMIC_RE]) {
+  for (const re of [IMPORT_RE, SIDE_EFFECT_IMPORT_RE, DYNAMIC_RE]) {
     re.lastIndex = 0;
     let m;
     while ((m = re.exec(src)) !== null) {
-      const mod = m[1];
+      imports.push(m[1]);
+    }
+  }
+
+  return imports;
+}
+
+function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
+  const missing = new Map(); // pkgName → Set of files
+
+  for (const file of files) {
+    const src = fs.readFileSync(file, "utf8");
+    const rel = path.relative(cwd, file).replace(/\\/g, "/");
+
+    for (const mod of extractImports(src)) {
       // Skip relative imports, path aliases (@/ is the src alias — not a pkg)
       if (mod.startsWith(".") || mod.startsWith("/") || mod.startsWith("@/")) continue;
-
       const pkgName = extractPackageName(mod);
       if (BUILTINS.has(pkgName) || FRAMEWORK_ALIASES.has(pkgName)) continue;
       if (allDeps.has(pkgName)) continue;
@@ -78,16 +82,39 @@ for (const file of files) {
       missing.get(pkgName).add(rel);
     }
   }
+
+  return missing;
 }
 
-if (missing.size > 0) {
-  console.error("\n❌  Imports found with no matching entry in package.json:\n");
-  for (const [pkg, usedIn] of missing) {
-    console.error(`  ${pkg}`);
-    for (const f of usedIn) console.error(`    └─ ${f}`);
+function main() {
+  const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+  const allDeps = new Set([
+    ...Object.keys(pkg.dependencies || {}),
+    ...Object.keys(pkg.devDependencies || {}),
+  ]);
+
+  const files = collectFiles("src");
+  const missing = collectMissingDeps(files, allDeps);
+
+  if (missing.size > 0) {
+    console.error("\n❌  Imports found with no matching entry in package.json:\n");
+    for (const [pkg, usedIn] of missing) {
+      console.error(`  ${pkg}`);
+      for (const f of usedIn) console.error(`    └─ ${f}`);
+    }
+    console.error("\nFix: npm install <package-name>  then commit package.json + package-lock.json\n");
+    process.exit(1);
   }
-  console.error("\nFix: npm install <package-name>  then commit package.json + package-lock.json\n");
-  process.exit(1);
+
+  console.log(`✓  All imports accounted for (${files.length} files checked)`);
 }
 
-console.log(`✓  All imports accounted for (${files.length} files checked)`);
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  collectMissingDeps,
+  extractImports,
+  extractPackageName,
+};

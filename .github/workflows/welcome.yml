@@ -24,6 +24,8 @@ jobs:
             - Check the [Contributing guide](https://github.com/Priyanshu-byte-coder/devtrack/blob/main/CONTRIBUTING.md) if you are planning to work on this
             - Browse [Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions) for Q&A and ideas
             - Look for [`good first issue`](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) if you want somewhere to start
+
+            If you find DevTrack useful, a ⭐ [star on the repo](https://github.com/Priyanshu-byte-coder/devtrack) is always appreciated — it helps the project reach more developers!
           pr-message: |
             Thanks for your first PR on DevTrack! 🎉
 
@@ -31,3 +33,5 @@ jobs:
             - Make sure CI is passing (type-check + lint)
             - Double-check the PR description is filled out and the issue is linked
             - Feel free to ask questions in [Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions/categories/q-a) if you need help
+
+            If you find DevTrack useful, a ⭐ [star on the repo](https://github.com/Priyanshu-byte-coder/devtrack) is always appreciated — it helps the project grow and attract more contributors!
