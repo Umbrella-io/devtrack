@@ -3,9 +3,76 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+if (!supabaseUrl || !serviceRoleKey) {
+  throw new Error("Supabase server env vars are required");
+}
+
 // Server-side only — use in API routes, never import in client components.
-// Keep initialization safe for local/dev environments where Supabase may not be configured.
-export const supabaseAdmin =
-  supabaseUrl && serviceRoleKey
-    ? createClient(supabaseUrl, serviceRoleKey)
-    : null;
+// Service role bypasses RLS; auth is enforced by getServerSession checks.
+export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+interface User {
+  id: string;
+  github_id: string;
+  github_login: string;
+  is_public: boolean;
+  leaderboard_opt_in: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Look up a user by GitHub username only if their profile is public.
+ * Returns the user row if found and is_public is true, otherwise null.
+ */
+export async function getUserByUsername(
+  username: string
+): Promise<User | null> {
+  if (!supabaseAdmin) {
+    return null;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("users")
+    .select(
+      "id,github_id,github_login,is_public,leaderboard_opt_in,created_at,updated_at"
+    )
+    .eq("github_login", username)
+    .eq("is_public", true)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      return null;
+    }
+
+    console.error("Error fetching user:", error);
+    return null;
+  }
+
+  return data as User;
+}
+
+/**
+ * Update the is_public flag for a user.
+ */
+export async function updateUserPublicFlag(
+  userId: string,
+  isPublic: boolean
+): Promise<User | null> {
+  const { data, error } = await supabaseAdmin
+    .from("users")
+    .update({ is_public: isPublic })
+    .eq("id", userId)
+    .select(
+      "id,github_id,github_login,is_public,leaderboard_opt_in,created_at,updated_at"
+    )
+    .single();
+
+  if (error) {
+    console.error("Error updating user public flag:", error);
+    return null;
+  }
+
+  return data as User;
+}

@@ -50,13 +50,6 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!supabaseAdmin) {
-    return Response.json(
-      { error: "Goals unavailable: Supabase not configured on server" },
-      { status: 501 }
-    );
-  }
-
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
@@ -108,13 +101,6 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!supabaseAdmin) {
-    return Response.json(
-      { error: "Goals unavailable: Supabase not configured on server" },
-      { status: 501 }
-    );
   }
 
   let body: unknown;

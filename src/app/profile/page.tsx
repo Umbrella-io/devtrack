@@ -16,7 +16,7 @@ export default async function ProfilePage() {
             <div className="flex justify-center gap-3">
               <Link
                 href="/api/auth/signin/github?callbackUrl=/profile"
-                className="bg-white text-slate-900 px-6 py-3 rounded-lg font-semibold hover:bg-slate-100 transition"
+                className="bg-[var(--card)] text-[var(--card-foreground)] px-6 py-3 rounded-lg font-semibold hover:bg-[var(--control)] transition"
               >
                 Sign in with GitHub
               </Link>

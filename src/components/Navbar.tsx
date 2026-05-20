@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import AccountToggle from "@/components/AccountToggle";
+import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import SignOutButton from "@/components/SignOutButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
@@ -14,7 +16,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
         <div className="flex items-center justify-between">
           {/* Logo/Brand */}
-          <Link href="/dashboard" className="text-2xl font-bold text-[var(--foreground)] hover:text-blue-400 transition">
+          <Link href="/dashboard" className="text-2xl font-bold text-[var(--foreground)] hover:text-[var(--accent)] transition">
             DevTrack
           </Link>
 
@@ -24,7 +26,7 @@ export default function Navbar() {
               href="/dashboard"
               className={`rounded-lg px-4 py-2 font-semibold transition-colors ${
                 pathname === "/dashboard"
-                  ? "bg-blue-600 text-white"
+                  ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
                   : "text-[var(--foreground)] hover:bg-[var(--control)]"
               }`}
             >
@@ -34,7 +36,7 @@ export default function Navbar() {
               href="/profile"
               className={`rounded-lg px-4 py-2 font-semibold transition-colors ${
                 pathname === "/profile"
-                  ? "bg-blue-600 text-white"
+                  ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
                   : "text-[var(--foreground)] hover:bg-[var(--control)]"
               }`}
             >
@@ -43,6 +45,8 @@ export default function Navbar() {
 
             {/* Right side items */}
             <div className="flex items-center gap-2 md:gap-3 ml-2 md:ml-4 pl-2 md:pl-4 border-l border-[var(--border)]">
+              <AccountToggle />
+              <KeyboardShortcuts />
               <UserAvatar />
               <ThemeToggle />
               <SignOutButton />

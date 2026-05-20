@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export async function GET() {
     console.warn("Supabase env missing; returning session-based fallback profile");
     return Response.json({
       id: session.githubId,
-      username: session.githubLogin ?? session.user?.name ?? "",
+      username: session.githubLogin ?? "",
       github_id: session.githubId,
       email: session.user?.email ?? null,
       avatar: session.user?.image ?? null,
@@ -28,16 +29,8 @@ export async function GET() {
     });
   }
 
-  const supabase = supabaseAdmin;
-  if (!supabase) {
-    return Response.json(
-      { error: "Supabase not initialized on server" },
-      { status: 500 }
-    );
-  }
-
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabaseAdmin
       .from("users")
       .select("id, github_login, github_id, created_at, updated_at")
       .eq("github_id", session.githubId)
@@ -77,10 +70,7 @@ export async function GET() {
       }
 
       // Return some session identifiers to help debugging (no tokens)
-      return Response.json(
-        { error: "User not found", session: { githubId: session.githubId, githubLogin: session.githubLogin, email: session.user?.email ?? null } },
-        { status: 404 }
-      );
+      return Response.json({ error: "User not found" }, { status: 404 });
     }
 
     return Response.json({
@@ -105,24 +95,48 @@ export async function DELETE() {
     if (!session?.githubId) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const user = await resolveAppUser(session.githubId, session.githubLogin);
+    if (!user) {
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!supabaseUrl || !serviceRoleKey) {
       return Response.json({ error: "Account deletion unavailable: Supabase not configured on server" }, { status: 501 });
     }
 
-    const supabase = supabaseAdmin;
-    if (!supabase) {
-      return Response.json(
-        { error: "Supabase not initialized on server" },
-        { status: 500 }
-      );
+    const tablesToDelete = [
+      "streak_freezes",
+      "streak_milestones",
+      "local_coding_sessions",
+      "local_coding_api_keys",
+      "jira_credentials",
+      "webhook_configs",
+      "user_github_accounts",
+      "goals",
+      "metric_snapshots",
+      "ai_insights",
+    ] as const;
+
+    for (const table of tablesToDelete) {
+      const { error: tableError } = await supabaseAdmin
+        .from(table)
+        .delete()
+        .eq("user_id", user.id);
+
+      if (tableError) {
+        console.error(`supabase error deleting ${table}:`, tableError);
+        return Response.json(
+          { error: `Failed to delete account data from ${table}`, detail: tableError.message },
+          { status: 500 }
+        );
+      }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("users")
       .delete()
-      .eq("github_id", session.githubId)
+      .eq("id", user.id)
       .select("id");
 
     if (error) {

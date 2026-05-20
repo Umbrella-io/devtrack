@@ -11,7 +11,7 @@ type ProfileUser = {
   github_id: string;
   email: string | null;
   avatar: string | null;
-  created_at: string;
+  created_at: string | null;
   updated_at: string;
   connected_accounts: string[];
 };
@@ -47,7 +47,11 @@ function isProfileUser(obj: unknown): obj is ProfileUser {
   return typeof o.id === "string" && typeof o.username === "string" && typeof o.github_id === "string";
 }
 
-function formatDate(value: string): string {
+function formatDate(value: string | null): string {
+  if (!value) {
+    return "Unknown";
+  }
+
   return new Date(value).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
