@@ -131,6 +131,9 @@ export default function ContributionGraph() {
 
   const handleRangeChange = (newDays: number) => {
     setDays(newDays);
+    setCustomLabel(null);
+    setCustomFrom("");
+    setCustomTo("");
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem("devtrack:contribution-range", String(newDays));
@@ -296,11 +299,13 @@ export default function ContributionGraph() {
       return;
     }
 
-    const fmt = (d: string) =>
-      new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+    const fmt = (d: string) => {
+      const [year, month, day] = d.split("-").map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
       });
+      };
     setCustomLabel(`${fmt(customFrom)} – ${fmt(customTo)}`);
     setShowPopover(false);
   };
@@ -340,9 +345,9 @@ export default function ContributionGraph() {
                 key={r.days}
                 onClick={() => handleRangeChange(r.days)}
                 aria-label={`Show ${r.days}-day range`}
-                aria-pressed={days === r.days}
+                aria-pressed={days === r.days && !customLabel}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  days === r.days
+                  days === r.days && !customLabel
                     ? "bg-[var(--accent)] text-[var(--background)]"
                     : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                 }`}
@@ -377,7 +382,12 @@ export default function ContributionGraph() {
                       type="date"
                       value={customFrom}
                       max={new Date().toISOString().slice(0, 10)}
-                      onChange={(e) => setCustomFrom(e.target.value)}
+                      onChange={(e) => {
+                        setCustomFrom(e.target.value);
+                        if (!customTo) {
+                          setCustomTo(new Date().toISOString().slice(0, 10));
+                        }
+                      }}
                       className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-sm text-[var(--foreground)]"
                     />
                   </label>
@@ -392,7 +402,21 @@ export default function ContributionGraph() {
                     />
                   </label>
                   {customError && (
-                    <p className="text-xs text-red-500">{customError}</p>
+                    <p className="text-xs text-[var(--destructive)]">{customError}</p>
+                  )}
+                  {customLabel && (
+                    <button
+                      onClick={() => {
+                        setCustomLabel(null);
+                        setCustomFrom("");
+                        setCustomTo("");
+                        setCustomError(null);
+                        setShowPopover(false);
+                      }}
+                      className="w-full rounded-md border border-[var(--border)] py-1.5 text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      Clear
+                    </button>
                   )}
                   <button
                     onClick={handleCustomApply}
@@ -404,7 +428,7 @@ export default function ContributionGraph() {
               </div>
             )}
           </div>
-          
+
           {/* Chart Toggle Buttons */}
           {displayData.length > 0 && !error && (
             <div
