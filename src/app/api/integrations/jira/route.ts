@@ -2,7 +2,8 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { resolveAppUser } from "@/lib/resolve-user";
+import { resolveAppUser, AppUser } from "@/lib/resolve-user";
+import { decryptToken } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,29 @@ interface JiraCredentials {
   jira_domain: string;
   email: string;
   api_token: string;
+  token_iv: string;
   project_key: string | null;
+}
+
+async function requireUser(): Promise<{ user: AppUser } | { error: Response }> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.githubId || !session?.githubLogin) {
+    return { error: Response.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+
+  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
+
+  if (!userRow) {
+    return { error: Response.json({ error: "User not found" }, { status: 404 }) };
+  }
+
+  return { user: userRow };
+}
+
+function validateProjectKey(key: string): boolean {
+  const projectKeyRegex = /^[A-Z][A-Z0-9]{0,9}$/;
+  return projectKeyRegex.test(key);
 }
 
 async function fetchJiraIssues(
@@ -41,6 +64,9 @@ async function fetchJiraIssues(
 
   let jql = "project is not EMPTY ORDER BY updated DESC";
   if (projectKey) {
+    if (!validateProjectKey(projectKey)) {
+      throw new Error("Invalid project key format");
+    }
     jql = `project = ${projectKey} ORDER BY updated DESC`;
   }
 
@@ -72,7 +98,7 @@ async function fetchJiraIssues(
   }));
 }
 
-function categorizeStatus(issue: JiraIssue): string {
+export function categorizeStatus(issue: JiraIssue): string {
   if (issue.statusCategory === "done") {
     return "Done";
   }
@@ -82,7 +108,7 @@ function categorizeStatus(issue: JiraIssue): string {
   return "To Do";
 }
 
-function calculateMetrics(issues: JiraIssue[]) {
+export function calculateMetrics(issues: JiraIssue[]) {
   const toDo = issues.filter(
     (i) => categorizeStatus(i) === "To Do"
   ).length;
@@ -113,25 +139,13 @@ function calculateMetrics(issues: JiraIssue[]) {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.githubId || !session?.githubLogin) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const userRow = await resolveAppUser(
-    session.githubId,
-    session.githubLogin
-  );
-
-  if (!userRow) {
-    return Response.json({ error: "User not found" }, { status: 404 });
-  }
+  const result = await requireUser();
+  if ("error" in result) return result.error;
 
   const { data: credentials, error } = await supabaseAdmin
     .from("jira_credentials")
     .select("*")
-    .eq("user_id", userRow.id)
+    .eq("user_id", result.user.id)
     .eq("is_active", true)
     .limit(1)
     .single();
@@ -145,11 +159,21 @@ export async function GET(req: NextRequest) {
 
   const cred = credentials as unknown as JiraCredentials;
 
+  let decryptedToken: string;
+  try {
+    decryptedToken = decryptToken(cred.api_token, cred.token_iv);
+  } catch {
+    return Response.json(
+      { error: "Failed to decrypt credentials" },
+      { status: 500 }
+    );
+  }
+
   try {
     const issues = await fetchJiraIssues(
       cred.jira_domain,
       cred.email,
-      cred.api_token,
+      decryptedToken,
       cred.project_key || undefined
     );
 
