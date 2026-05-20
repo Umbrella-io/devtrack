@@ -1,35 +1,42 @@
+<div align="center">
+
 # DevTrack
 
-> Open-source developer productivity dashboard — track coding habits, visualize GitHub contribution patterns, and set personal development goals.
+**Open-source developer productivity dashboard**
 
-![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
-![GSSoC 2025](https://img.shields.io/badge/GSSoC-2025-orange.svg)
-![Tech Stack](https://img.shields.io/badge/stack-Next.js%20%7C%20Supabase%20%7C%20TypeScript-blue)
-![Good First Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)
+Track GitHub contributions, visualize PR metrics, and build consistent coding habits — all in one self-hostable interface.
 
-> **Live demo coming soon** — deploy your own in minutes with the guide below.
+[![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/Priyanshu-byte-coder/devtrack)](./LICENSE)
+[![Stars](https://img.shields.io/github/stars/Priyanshu-byte-coder/devtrack?style=flat)](https://github.com/Priyanshu-byte-coder/devtrack/stargazers)
+[![Forks](https://img.shields.io/github/forks/Priyanshu-byte-coder/devtrack?style=flat)](https://github.com/Priyanshu-byte-coder/devtrack/forks)
+[![Contributors](https://img.shields.io/github/contributors/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors)
+[![Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/commits/main)
+[![GSSoC](https://img.shields.io/badge/GSSoC-2026-orange.svg)](https://gssoc.girlscript.tech)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Priyanshu-byte-coder/devtrack)
+
+</div>
 
 ---
 
-## Problem It Solves
+## Why DevTrack?
 
-Developer metrics are scattered across GitHub, Jira, Notion, and half a dozen other tools. DevTrack consolidates GitHub activity, PR review times, and issue resolution rates into one clean, self-hostable interface — no enterprise pricing, no vendor lock-in.
+Developer metrics live in too many places — GitHub activity, PR turnaround, issue counts, personal goals. DevTrack consolidates everything into a single clean dashboard you can self-host for free. No enterprise pricing, no SaaS lock-in, no third-party data sharing.
 
 ---
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| **GitHub OAuth** | Sign in with GitHub — no extra account needed |
-| **Commit Activity Chart** | Visualize daily commit activity with 7d / 14d / 30d / 90d range selector |
-| **Commit Streak Tracker** | Current streak, longest streak, active days — stay consistent |
-| **PR Analytics** | Average review time, merge rate, open/closed PR count |
-| **Top Repositories** | Ranked list of your most active repos over any time range |
-| **Weekly Goal Tracker** | Set coding goals and track progress with a progress bar UI |
-| **No separate backend** | Next.js API routes + Supabase, deploy to Vercel for free |
+- **Contribution Graph** — daily commit activity across all linked accounts with customizable time ranges and chart types
+- **PR Analytics** — average review time, merge rate, open/closed counts, and review cycle trends
+- **Commit Streak Tracker** — current streak, longest streak, and active day heatmap
+- **Top Repositories** — ranked by commit activity with health scores and language breakdown
+- **Goal Tracker** — set weekly coding targets and track progress in real time
+- **Multi-account support** — connect multiple GitHub accounts and view unified or per-account metrics
+- **Public profiles** — shareable developer profile pages with badge embeds
+- **Self-hostable** — runs on Vercel + Supabase, both free tiers, no infrastructure to manage
 
 ---
 
@@ -37,57 +44,21 @@ Developer metrics are scattered across GitHub, Jira, Notion, and half a dozen ot
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
-| Auth | GitHub OAuth via NextAuth.js |
-| Database | Supabase (PostgreSQL) |
-| API | Next.js Route Handlers (`/app/api/`) |
-| Charts | Recharts |
-| Deployment | Vercel (free, auto-deploys from GitHub) |
+| Framework | [Next.js](https://nextjs.org) (App Router) + TypeScript |
+| Auth | [NextAuth.js](https://next-auth.js.org) — GitHub OAuth |
+| Database | [Supabase](https://supabase.com) (PostgreSQL + Row-Level Security) |
+| Charts | [Recharts](https://recharts.org) |
+| Styling | Tailwind CSS with CSS custom properties |
+| Cache | Upstash Redis |
+| Deployment | [Vercel](https://vercel.com) |
 
 ---
 
-## Project Structure
+## Quick Start
 
-```
-devtrack/
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── auth/[...nextauth]/   # GitHub OAuth
-│   │   │   ├── metrics/
-│   │   │   │   ├── contributions/    # GET commit activity
-│   │   │   │   ├── prs/              # GET PR analytics
-│   │   │   │   ├── streak/           # GET commit streak
-│   │   │   │   └── repos/            # GET top repositories
-│   │   │   └── goals/                # GET + POST weekly goals
-│   │   ├── dashboard/                # Main dashboard page
-│   │   └── page.tsx                  # Landing page
-│   ├── components/
-│   │   ├── ContributionGraph.tsx     # Bar chart with time range tabs
-│   │   ├── PRMetrics.tsx             # PR stats grid
-│   │   ├── GoalTracker.tsx           # Weekly goals progress bars
-│   │   ├── StreakTracker.tsx         # Streak stats widget
-│   │   ├── TopRepos.tsx              # Ranked repos list
-│   │   └── DashboardHeader.tsx       # User avatar + sign out
-│   └── lib/
-│       ├── auth.ts                   # NextAuth config + Supabase user upsert
-│       └── supabase.ts               # Supabase admin client (server-side)
-├── supabase/
-│   └── schema.sql                    # Run once in Supabase SQL editor
-└── .github/
-    ├── workflows/ci.yml              # Type-check + lint on every PR
-    └── ISSUE_TEMPLATE/               # Bug, feature, good-first-issue templates
-```
+Full setup guide with environment variable reference and troubleshooting: **[DEVELOPMENT.md](./DEVELOPMENT.md)**
 
----
-
-## Getting Started
-
-Full setup guide with troubleshooting: **[DEVELOPMENT.md](./DEVELOPMENT.md)**
-
-### Quick start
-
-### 1. Clone
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/Priyanshu-byte-coder/devtrack.git
@@ -95,105 +66,78 @@ cd devtrack
 npm install
 ```
 
-### 2. Supabase
+### 2. Set up Supabase
 
 1. Create a free project at [supabase.com](https://supabase.com)
 2. **SQL Editor → New Query** — paste and run `supabase/schema.sql`
-3. **Project Settings → API** — copy Project URL, anon key, service_role key
+3. **Project Settings → API** — copy your Project URL and keys
 
-### 3. GitHub OAuth App
+### 3. Create a GitHub OAuth App
 
-1. [Create an OAuth App](https://github.com/settings/applications/new)
-2. Callback URL: `http://localhost:3000/api/auth/callback/github`
-3. Copy Client ID and Client Secret
+1. Go to [GitHub → Settings → Developer Settings → OAuth Apps](https://github.com/settings/applications/new)
+2. Set the callback URL to `http://localhost:3000/api/auth/callback/github`
+3. Copy the Client ID and Client Secret
 
-### 4. Environment
+### 4. Configure environment
 
 ```bash
 cp .env.example .env.local
+# Fill in all values — see DEVELOPMENT.md for a full reference
 ```
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=run_openssl_rand_base64_32
-
-GITHUB_ID=your_client_id
-GITHUB_SECRET=your_client_secret
-GITHUB_WEBHOOK_SECRET=your_random_webhook_secret
-```
-
-### 5. Run
+### 5. Run locally
 
 ```bash
 npm run dev
+# Open http://localhost:3000
 ```
 
-Visit `http://localhost:3000`.
+---
 
-### GitHub Webhook Refresh
+## Deploying to Vercel
 
-DevTrack can accept GitHub push webhooks at `/api/webhooks/github` to mark a user's metrics for refresh as soon as new commits land.
+Click the button below — Vercel will clone the repo and walk you through environment setup:
 
-1. Generate `GITHUB_WEBHOOK_SECRET` and add it to your deployment environment.
-2. In the GitHub repository, open **Settings -> Webhooks -> Add webhook**.
-3. Set the payload URL to `{NEXTAUTH_URL}/api/webhooks/github`.
-4. Set content type to `application/json`, paste the same secret, and select the **Push** event.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Priyanshu-byte-coder/devtrack)
 
-Webhook requests are verified with GitHub's `X-Hub-Signature-256` HMAC header before DevTrack touches user metrics.
+Or follow the manual steps in [DEVELOPMENT.md → Deployment](./DEVELOPMENT.md).
 
 ---
 
 ## Contributing
 
-DevTrack actively welcomes contributors of all skill levels, including GSSoC 2025 participants.
+DevTrack actively welcomes contributors of all experience levels.
 
-**Setup takes under 10 minutes** — see [DEVELOPMENT.md](./DEVELOPMENT.md) for the full walkthrough including common errors.
+```
+Browse issues → Get assigned → Fork → PR
+```
 
-### Quick steps
+- Start with [`good first issue`](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) if you're new to the codebase
+- Comment on an issue before starting work — unassigned PRs may be closed
+- Run `npm run lint && npm run type-check` before opening a PR
+- Read **[CONTRIBUTING.md](./CONTRIBUTING.md)** for commit style, branch naming, and review expectations
 
-1. Browse [open issues](../../issues) — start with `good first issue` label
-2. Comment on the issue to get assigned before starting work
-3. Fork → branch (`feat/issue-42-description`) → PR against `main`
-4. Run `npm run lint && npm run type-check` before pushing
+All skill levels welcome. **Setup takes under 10 minutes.**
 
-See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for full guidelines, commit style, and review process.
+> ⭐ If DevTrack has been useful to you, consider [starring the repo](https://github.com/Priyanshu-byte-coder/devtrack) — it helps the project reach more developers.
 
 ---
 
-## Roadmap
+## Community
 
-### Done
-- [x] GitHub OAuth sign-in
-- [x] Contribution bar chart
-- [x] PR analytics widget
-- [x] Weekly goal tracker
-- [x] Dashboard auth guard
-- [x] User avatar in header
-- [x] Commit streak tracker
-- [x] Top repositories widget
-- [x] Time range selector on contribution chart
+| Channel | Purpose |
+|---------|---------|
+| [GitHub Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions) | Questions, ideas, general chat |
+| [Issues](https://github.com/Priyanshu-byte-coder/devtrack/issues) | Bug reports and feature requests |
+| [Pull Requests](https://github.com/Priyanshu-byte-coder/devtrack/pulls) | Contributions |
 
-### Open for contribution
-- [ ] Dark mode toggle ([#1](../../issues/1))
-- [ ] Responsive mobile layout ([#14](../../issues/14))
-- [ ] Create Goal form UI ([#13](../../issues/13))
-- [ ] Chart type toggle — bar/line ([#17](../../issues/17))
-- [ ] Streak milestone badges ([#31](../../issues/31))
-- [ ] Repo filter on contribution chart ([#35](../../issues/35))
-- [ ] Improve landing page — feature showcase ([#36](../../issues/36))
-- [ ] Language breakdown widget ([#32](../../issues/32))
-- [ ] Activity feed ([#33](../../issues/33))
-- [ ] Auto-progress goals from commits ([#34](../../issues/34))
-- [ ] Streak freeze feature ([#37](../../issues/37))
-- [ ] User profile/settings page ([#15](../../issues/15))
-- [ ] Export metrics to CSV/PDF ([#16](../../issues/16))
-- [ ] Contribution heatmap calendar ([#18](../../issues/18))
-- [ ] GitLab integration ([#6](../../issues/6))
-- [ ] Slack/Discord weekly digest ([#20](../../issues/20))
+---
+
+## Contributors
+
+<a href="https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Priyanshu-byte-coder/devtrack" alt="Contributors" />
+</a>
 
 ---
 
