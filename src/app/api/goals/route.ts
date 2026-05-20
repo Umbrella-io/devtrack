@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getAllAccounts } from "@/lib/github-accounts";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,61 @@ function getPeriodStart(recurrence: Recurrence): string {
     return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
   }
   return new Date(0).toISOString(); // 'none' never resets
+}
+
+function getMetricFromUnit(unit: string): "commits" | "prs" | "issues" | null {
+  const u = unit.toLowerCase().trim();
+  if (u === "commits" || u === "commit") {
+    return "commits";
+  }
+  if (u === "prs" || u === "pr" || u === "pull requests" || u === "pull request") {
+    return "prs";
+  }
+  if (u === "issues" || u === "issue") {
+    return "issues";
+  }
+  return null;
+}
+
+async function fetchCountFromGitHub(
+  token: string,
+  githubLogin: string,
+  metric: "commits" | "prs" | "issues",
+  since: string
+): Promise<number> {
+  const sinceStr = new Date(since).toISOString().slice(0, 19) + "Z";
+  let url = "";
+
+  if (metric === "commits") {
+    url = `https://api.github.com/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=1`;
+  } else if (metric === "prs") {
+    url = `https://api.github.com/search/issues?q=author:${githubLogin}+type:pr+created:>=${sinceStr}&per_page=1`;
+  } else if (metric === "issues") {
+    url = `https://api.github.com/search/issues?q=author:${githubLogin}+type:issue+created:>=${sinceStr}&per_page=1`;
+  } else {
+    return 0;
+  }
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      console.error(`GitHub API error: ${res.status} on URL ${url}`);
+      return 0;
+    }
+
+    const data = (await res.json()) as { total_count?: number };
+    return data.total_count ?? 0;
+  } catch (err) {
+    console.error(`Failed to fetch count from GitHub for ${githubLogin}:`, err);
+    return 0;
+  }
 }
 
 export async function GET() {
@@ -89,7 +145,69 @@ export async function GET() {
     })
   );
 
-  return Response.json({ goals: processedGoals });
+  // 1. Get all linked accounts
+  let accounts: Array<{ token: string; githubId: string; githubLogin: string }> = [];
+  try {
+    accounts = await getAllAccounts(
+      {
+        token: session.accessToken!,
+        githubId: session.githubId!,
+        githubLogin: session.githubLogin!,
+      },
+      user.id
+    );
+  } catch (err) {
+    console.error("Failed to load all accounts, falling back to primary:", err);
+    accounts = [
+      {
+        token: session.accessToken!,
+        githubId: session.githubId!,
+        githubLogin: session.githubLogin!,
+      },
+    ];
+  }
+
+  // 2. Map goals and perform pull-based sync if automated
+  const syncedGoals = await Promise.all(
+    processedGoals.map(async (goal) => {
+      const metric = getMetricFromUnit(goal.unit);
+      if (!metric) return goal;
+
+      // Determine period start date
+      const since = goal.period_start || new Date(0).toISOString();
+
+      // Fetch counts across all linked accounts in parallel
+      const counts = await Promise.all(
+        accounts.map((account) =>
+          fetchCountFromGitHub(account.token, account.githubLogin, metric, since)
+        )
+      );
+
+      const totalCount = counts.reduce((sum, count) => sum + count, 0);
+
+      // Only write to Supabase if the value changed
+      if (goal.current !== totalCount) {
+        const { data: updatedGoal } = await supabaseAdmin
+          .from("goals")
+          .update({
+            current: totalCount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", goal.id)
+          .select()
+          .single();
+
+        if (updatedGoal) return updatedGoal;
+      }
+
+      return {
+        ...goal,
+        current: totalCount,
+      };
+    })
+  );
+
+  return Response.json({ goals: syncedGoals });
 }
 
 export async function POST(req: Request) {

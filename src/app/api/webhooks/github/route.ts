@@ -146,6 +146,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (staleResult) {
+    const commitCount = payload.commits?.length ?? 0;
+    if (commitCount > 0) {
+      await autoProgressCommitGoals(staleResult.userId, commitCount);
+    }
     revalidatePath(`/u/${githubLogin}`);
     revalidatePath("/dashboard");
   }
@@ -159,4 +163,31 @@ export async function POST(req: NextRequest) {
     after: payload.after ?? null,
     commitCount: payload.commits?.length ?? 0,
   });
+}
+
+async function autoProgressCommitGoals(userId: string, commitCount: number) {
+  try {
+    const { data: activeGoals, error } = await supabaseAdmin
+      .from("goals")
+      .select("id, current, target")
+      .eq("user_id", userId)
+      .in("unit", ["commits", "commit", "Commits", "Commit"]);
+
+    if (error || !activeGoals || activeGoals.length === 0) {
+      return;
+    }
+
+    for (const goal of activeGoals) {
+      const newCurrent = Math.min(goal.current + commitCount, goal.target);
+      await supabaseAdmin
+        .from("goals")
+        .update({
+          current: newCurrent,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", goal.id);
+    }
+  } catch (err) {
+    console.error("Failed to automatically progress commit goals:", err);
+  }
 }
