@@ -4,6 +4,8 @@ import AccountToggle from "@/components/AccountToggle";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import AccountToggle from "@/components/AccountToggle";
+import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import SignOutButton from "@/components/SignOutButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
@@ -85,6 +87,7 @@ export default function DashboardHeader() {
         <p className="mt-1 text-[var(--muted-foreground)]">
           Your coding activity at a glance
         </p>
+        <AccountToggle />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -113,6 +116,7 @@ export default function DashboardHeader() {
             {totalCommits.toLocaleString()} commits
           </span>
         )}
+        <KeyboardShortcuts />
         <ThemeToggle />
         <SignOutButton />
       </div>

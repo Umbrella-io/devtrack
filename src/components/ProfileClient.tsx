@@ -12,7 +12,7 @@ type ProfileUser = {
   email: string | null;
   avatar: string | null;
   created_at: string | null;
-  updated_at: string;
+  updated_at: string | null;
   connected_accounts: string[];
 };
 
@@ -49,10 +49,12 @@ function isProfileUser(obj: unknown): obj is ProfileUser {
 
 function formatDate(value: string | null): string {
   if (!value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
     return "Unknown";
   }
 
-  return new Date(value).toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",

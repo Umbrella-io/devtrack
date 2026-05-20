@@ -26,6 +26,7 @@ import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
 import RecentActivity from "@/components/RecentActivity";
+import DashboardHeader from "@/components/DashboardHeader";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -41,6 +42,7 @@ export default async function DashboardPage() {
     <>
       <Navbar />
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
+        <DashboardHeader />
         <div className="mb-6 flex justify-end items-center gap-2">
           <Link
             href="/dashboard/settings"

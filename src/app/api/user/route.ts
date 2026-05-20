@@ -132,7 +132,6 @@ export async function DELETE() {
         );
       }
     }
-
     const { data, error } = await supabaseAdmin
       .from("users")
       .delete()
