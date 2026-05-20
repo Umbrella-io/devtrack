@@ -9,101 +9,100 @@ import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 
 export default function DashboardHeader() {
-    const { data: session } = useSession();
+  const { data: session } = useSession();
 
-    const [isPublic, setIsPublic] = useState<boolean | null>(null);
-    const [copied, setCopied] = useState(false);
-    const [copyError, setCopyError] = useState(false);
+  const [isPublic, setIsPublic] = useState<boolean | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
-    useEffect(() => {
-        if (!session) {
-            setIsPublic(null);
-            return;
+  useEffect(() => {
+    if (!session) {
+      setIsPublic(null);
+      return;
+    }
+
+    async function loadSettings() {
+      try {
+        const res = await fetch("/api/user/settings");
+
+        if (res.ok) {
+          const data = await res.json();
+          setIsPublic(data.is_public === true);
+        } else {
+          setIsPublic(false);
         }
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+        setIsPublic(false);
+      }
+    }
 
-        async function loadSettings() {
-            try {
-                const res = await fetch("/api/user/settings");
+    loadSettings();
+  }, [session]);
 
-                if (res.ok) {
-                    const data = await res.json();
-                    setIsPublic(data.is_public === true);
-                } else {
-                    setIsPublic(false);
-                }
-            } catch (error) {
-                console.error("Failed to load settings:", error);
-                setIsPublic(false);
-            }
-        }
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
 
-        loadSettings();
-    }, [session]);
+      setCopied(true);
 
-    const handleCopy = async () => {
-        try {
-            await navigator.clipboard.writeText(window.location.href);
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch {
+      setCopyError(true);
 
-            setCopied(true);
+      setTimeout(() => {
+        setCopyError(false);
+      }, 2000);
+    }
+  };
 
-            setTimeout(() => {
-                setCopied(false);
-            }, 2000);
+  return (
+    <header className="mb-8 border-b border-[var(--border)] p-4 pb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
+            Dashboard
+          </h1>
 
-        } catch {
-            setCopyError(true);
+          <p className="mt-1 text-[var(--muted-foreground)]">
+            Your coding activity at a glance
+          </p>
+        </div>
 
-            setTimeout(() => {
-                setCopyError(false);
-            }, 2000);
-        }
-    };
+        <div className="flex flex-wrap items-center gap-3">
+          {isPublic === true && session?.githubLogin && (
+            <a
+              href={`/u/${session.githubLogin}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors"
+              title="View your public profile"
+            >
+              Share Profile
+            </a>
+          )}
 
-    return (
-        <header className="mb-8 border-b border-[var(--border)] p-4 pb-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
-                        Dashboard
-                    </h1>
+          <KeyboardShortcuts />
 
-                    <p className="mt-1 text-[var(--muted-foreground)]">
-                        Your coding activity at a glance
-                    </p>
-                </div>
+          <UserAvatar />
 
-                <div className="flex flex-wrap items-center gap-3">
-                    {isPublic === true && session?.githubLogin && (
-                        <a
-                            href={`/u/${session.githubLogin}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors"
-                            title="View your public profile"
-                        >
-                            Share Profile
-                        </a>
-                    )}
+          <button
+            type="button"
+            onClick={handleCopy}
+            aria-label="Copy dashboard link"
+            className="px-3 py-2 rounded-md border border-[var(--border)]"
+          >
+            {copied ? "✓ Copied!" : copyError ? "Failed" : "📋"}
+          </button>
 
-                    <KeyboardShortcuts />
+          <ThemeToggle />
+          <SignOutButton />
+        </div>
+      </div>
 
-                    <UserAvatar />
-
-                    <button
-                        type="button"
-                        onClick={handleCopy}
-                        aria-label="Copy dashboard link"
-                        className="px-3 py-2 rounded-md border border-[var(--border)]"
-                    >
-                        {copied ? "✓ Copied!" : copyError ? "Failed" : "📋"}
-                    </button>
-
-                    <ThemeToggle />
-                    <SignOutButton />
-                </div>
-            </div>
-
-            <AccountToggle />
-        </header>
-    );
+      <AccountToggle />
+    </header>
+  );
 }
