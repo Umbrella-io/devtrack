@@ -114,11 +114,6 @@ export default function WeeklySummaryCard() {
       ]
     : [];
 
-  const getTrendColor = (trend: string): string => {
-    if (trend === "up") return "var(--success)";
-    if (trend === "down") return "var(--destructive)";
-    return "var(--muted-foreground)";
-  };
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -157,7 +152,7 @@ export default function WeeklySummaryCard() {
             ))}
           </div>
         ) : error ? (
-          <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-[var(--destructive)]">
             {error}
           </div>
         ) : summary ? (
@@ -220,24 +215,21 @@ export default function WeeklySummaryCard() {
                   </span>
                   {summary.commits.trend === "up" && (
                     <span
-                      className="text-sm font-medium"
-                      style={{ color: getTrendColor("up") }}
+                      className="text-sm font-medium text-[var(--success)]"
                     >
                       + {summary.commits.delta}
                     </span>
                   )}
                   {summary.commits.trend === "down" && (
                     <span
-                      className="text-sm font-medium"
-                      style={{ color: getTrendColor("down") }}
+                      className="text-sm font-medium text-[var(--destructive)]"
                     >
                       - {Math.abs(summary.commits.delta)}
                     </span>
                   )}
                   {summary.commits.trend === "same" && (
                     <span
-                      className="text-sm font-medium"
-                      style={{ color: getTrendColor("same") }}
+                      className="text-sm font-medium text-[var(--muted-foreground)]"
                     >
                       0
                     </span>
@@ -291,4 +283,3 @@ export default function WeeklySummaryCard() {
     </div>
   );
 }
-
