@@ -5,9 +5,13 @@ import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
 
 interface Repo {
-  name: string;
-  commits: number;
-  url: string;
+   name: string;
+   commits: number;
+   url: string;
+   languages?: {
+   name: string;
+   percentage: number;
+  }[];
 }
 
 export default function TopRepos() {
@@ -20,9 +24,6 @@ export default function TopRepos() {
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [healthScores, setHealthScores] = useState<Record<string, RepoHealthScore>>({});
   const [healthLoading, setHealthLoading] = useState(true);
-  const [repoLanguages, setRepoLanguages] = useState<
-  Record<string, { name: string; percentage: number }[]>
->({});
 
   const fetchRepos = useCallback(() => {
     setLoading(true);
@@ -39,54 +40,7 @@ export default function TopRepos() {
         setLastUpdated(new Date());
         setMinutesAgo(0);
       });
-  }, [days, selectedAccount]);
-  const fetchRepoLanguages = useCallback(async () => {
-  if (!selectedAccount || repos.length === 0) return;
-
-  try {
-    const languageResults = await Promise.all(
-      repos.map(async (repo) => {
-        try {
-          const response = await fetch(
-            `https://api.github.com/repos/${repo.name}/languages`
-          );
-
-          if (!response.ok) {
-            return [repo.name, []];
-          }
-
-          const data = await response.json();
-
-          const total = Object.values(data).reduce(
-            (sum: number, value: any) => sum + value,
-            0
-          );
-
-          if (total === 0) {
-            return [repo.name, []];
-          }
-
-          const topLanguages = Object.entries(data)
-            .map(([name, bytes]) => ({
-              name,
-              percentage: Math.round((Number(bytes) / total) * 100),
-            }))
-            .sort((a, b) => b.percentage - a.percentage)
-            .slice(0, 3);
-
-          return [repo.name, topLanguages];
-        } catch {
-          return [repo.name, []];
-        }
-      })
-    );
-
-    setRepoLanguages(Object.fromEntries(languageResults));
-  } catch (err) {
-    console.error("Failed to fetch repo languages", err);
-  }
-  }, [repos, selectedAccount]);
-
+  }, [days, selectedAccount]);  
   const fetchHealthScores = useCallback(() => {
     setHealthLoading(true);
     const accountParam = selectedAccount !== null
@@ -113,10 +67,6 @@ export default function TopRepos() {
     }, 60000);
     return () => clearInterval(interval);
   }, [lastUpdated]);
-
-  useEffect(() => {
-  fetchRepoLanguages();
-}, [fetchRepoLanguages]);
 
   useEffect(() => {
     fetchRepos();
@@ -225,9 +175,9 @@ export default function TopRepos() {
                     style={{ width: `${barWidth}%` }}
                   />
                 </div>
-                {repoLanguages[repo.name]?.length > 0 && (
+               {repo.languages && repo.languages.length > 0 && (
   <div className="mt-2 flex flex-wrap gap-2 text-xs text-[var(--muted-foreground)]">
-    {repoLanguages[repo.name].map((lang) => (
+    {repo.languages.map((lang) => ( 
       <span
         key={lang.name}
         className="inline-flex items-center gap-1"
