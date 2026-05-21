@@ -198,7 +198,36 @@ export default function StreakTracker() {
       </div>
     );
   }
+    if (
+    !contributionData ||
+    !contributionData.data ||
+    Object.keys(contributionData.data).length === 0
+  ) {
+    return (
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm min-h-[420px]">
+        <div className="flex h-full flex-col items-center justify-center text-center">
+          <div className="mb-4 text-4xl">📉</div>
 
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+            No contribution data found
+          </h2>
+
+          <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
+            Start committing to build your streak and track your coding activity.
+          </p>
+
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
+          >
+            Open GitHub
+          </a>
+        </div>
+      </div>
+    );
+  }
   const MILESTONES = [
     { days: 30, label: "30-day streak!", emoji: "🏅" },
     { days: 14, label: "2-week streak!", emoji: "⭐" },
