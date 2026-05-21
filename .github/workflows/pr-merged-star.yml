@@ -1,0 +1,23 @@
+name: Star ask on PR merge
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  star-ask:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `🎉 Merged! Thanks for contributing to DevTrack.\n\nIf the project has been useful to you, a ⭐ [star on the repo](https://github.com/${context.repo.owner}/${context.repo.repo}) is the easiest way to support it — it helps DevTrack get discovered by more developers.\n\nKeep an eye on [open issues](https://github.com/${context.repo.owner}/${context.repo.repo}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) for your next contribution!`
+            });

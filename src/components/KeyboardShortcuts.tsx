@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTheme } from "@/components/ThemeContext";
 import ShortcutsModal from "./ShortcutsModal";
 
 export default function KeyboardShortcuts() {
   const [isOpen, setIsOpen] = useState(false);
-  const { toggleTheme } = useTheme();
+  const [announcement, setAnnouncement] = useState("");
+  const { theme, toggleTheme } = useTheme();
+  const keyboardToggleRef = useRef(false);
+
+  useEffect(() => {
+    if (keyboardToggleRef.current && theme !== undefined) {
+      setAnnouncement(theme === "dark" ? "Dark mode enabled" : "Light mode enabled");
+    }
+    keyboardToggleRef.current = false;
+  }, [theme]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -23,7 +32,8 @@ export default function KeyboardShortcuts() {
         return;
       }
 
-      if (e.key.toLowerCase() === "d") {
+      if (e.key.toLowerCase() === "t") {
+        keyboardToggleRef.current = true;
         toggleTheme();
         e.preventDefault();
         return;
@@ -50,6 +60,10 @@ export default function KeyboardShortcuts() {
 
   return (
     <>
+      <div aria-live="polite" className="sr-only">
+        {announcement}
+      </div>
+
       <button
         type="button"
         onClick={() => setIsOpen(true)}
