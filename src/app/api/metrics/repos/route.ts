@@ -21,6 +21,7 @@ export const dynamic = "force-dynamic";
 interface RepoSummary {
   name: string;
   commits: number;
+  description: string | null;
 }
 
 interface RepoResponse {
@@ -29,15 +30,19 @@ interface RepoResponse {
 }
 
 function mergeRepoCommits(
-  a: Array<{ name: string; commits: number }>,
-  b: Array<{ name: string; commits: number }>
-): Array<{ name: string; commits: number }> {
-  const map = new Map<string, number>();
+  a: Array<{ name: string; commits: number; description: string | null }>,
+  b: Array<{ name: string; commits: number; description: string | null }>
+): Array<{ name: string; commits: number; description: string | null }> {
+  const map = new Map<string, { commits: number; description: string | null }>();
   for (const repo of [...a, ...b]) {
-    map.set(repo.name, (map.get(repo.name) ?? 0) + repo.commits);
+    const existing = map.get(repo.name);
+    map.set(repo.name, {
+      commits: (existing?.commits ?? 0) + repo.commits,
+      description: existing?.description ?? repo.description,
+    });
   }
   return Array.from(map.entries())
-    .map(([name, commits]) => ({ name, commits }))
+    .map(([name, { commits, description }]) => ({ name, commits, description }))
     .sort((x, y) => y.commits - x.commits);
 }
 
@@ -80,19 +85,22 @@ async function fetchReposForAccount(
 
       const data = (await searchRes.json()) as {
         items: Array<{
-          repository: { full_name: string; html_url: string };
+          repository: { full_name: string; html_url: string; description: string | null };
           commit: { author: { date: string } };
         }>;
       };
 
-      const repoMap: Record<string, number> = {};
+      const repoMap: Record<string, { commits: number; description: string | null }> = {};
       for (const item of data.items) {
         const name = item.repository.full_name;
-        repoMap[name] = (repoMap[name] ?? 0) + 1;
+        repoMap[name] = {
+          commits: (repoMap[name]?.commits ?? 0) + 1,
+          description: item.repository.description,
+        };
       }
 
       const repos = Object.entries(repoMap)
-        .map(([name, commits]) => ({ name, commits }))
+        .map(([name, { commits, description }]) => ({ name, commits, description }))
         .sort((a, b) => b.commits - a.commits)
         .slice(0, 6);
 
