@@ -120,8 +120,9 @@ test.beforeEach(async ({ page }) => {
 
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "networkidle" });
+  await page.getByRole("heading", { name: "Dashboard" }).waitFor({ state: "visible", timeout: 20000 });
 
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible();
@@ -137,7 +138,7 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
   });
 
   await page.goto("/dashboard", { waitUntil: "networkidle" });
-  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Show 90-day range" }).waitFor({ state: "visible", timeout: 20000 });
   await page.getByRole("button", { name: "Show 90-day range" }).click();
 
   await expect.poll(() => contributionRequests.some((url) => url.includes("days=90"))).toBe(true);
@@ -152,7 +153,7 @@ test("goal form posts a new goal", async ({ page }) => {
   });
 
   await page.goto("/dashboard", { waitUntil: "networkidle" });
-  await page.waitForLoadState("domcontentloaded");
+  await page.getByLabel("Goal title").waitFor({ state: "visible", timeout: 20000 });
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
   await page.getByLabel("Unit").fill("PR");
