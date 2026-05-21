@@ -19,6 +19,8 @@ export function generateBadgeSVG({
   color = "#6366f1", // DevTrack accent color (indigo)
   labelColor = "#333333",
 }: BadgeConfig): string {
+  const escapedLabel = escapeXml(label);
+  const escapedValue = escapeXml(value);
   // SVG dimensions
   const labelWidth = label.length * 7 + 10;
   const valueWidth = value.length * 8 + 10;
@@ -27,8 +29,8 @@ export function generateBadgeSVG({
 
   // SVG content
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${height}" role="img" aria-label="${label}: ${value}">
-  <title>${label}: ${value}</title>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="${height}" role="img" aria-label="${escapedLabel}: ${escapedValue}">
+  <title>${escapedLabel}: ${escapedValue}</title>
   <linearGradient id="s" x2="0" y2="100%">
     <stop offset="0" stop-color="#bbb"/>
     <stop offset="1" stop-color="#999"/>
@@ -42,10 +44,10 @@ export function generateBadgeSVG({
     <rect width="${totalWidth}" height="${height}" fill="url(#s)" opacity="0.1"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="11">
-    <text aria-hidden="true" x="${labelWidth / 2}" y="15" fill="#010101" fill-opacity="0.3">${escapeXml(label)}</text>
-    <text x="${labelWidth / 2}" y="14" fill="#fff">${escapeXml(label)}</text>
-    <text aria-hidden="true" x="${labelWidth + valueWidth / 2}" y="15" fill="#010101" fill-opacity="0.3">${escapeXml(value)}</text>
-    <text x="${labelWidth + valueWidth / 2}" y="14" fill="#fff">${escapeXml(value)}</text>
+    <text aria-hidden="true" x="${labelWidth / 2}" y="15" fill="#010101" fill-opacity="0.3">${escapedLabel}</text>
+    <text x="${labelWidth / 2}" y="14" fill="#fff">${escapedLabel}</text>
+    <text aria-hidden="true" x="${labelWidth + valueWidth / 2}" y="15" fill="#010101" fill-opacity="0.3">${escapedValue}</text>
+    <text x="${labelWidth + valueWidth / 2}" y="14" fill="#fff">${escapedValue}</text>
   </g>
 </svg>`;
 

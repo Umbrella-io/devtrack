@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import CommitSearchPanel from "@/components/CommitSearchPanel";
+import type { CommitItem } from "@/lib/github";
 import {
   BarChart,
   Bar,
@@ -26,6 +28,17 @@ interface GraphPoint {
   date: string;
   you: number;
   friend: number;
+}
+
+interface ContributionSources {
+  github?: Record<string, number>;
+  gitlab?: Record<string, number>;
+}
+
+interface ContributionResponse {
+  data: Record<string, number>;
+  commits?: CommitItem[];
+  sources?: ContributionSources;
 }
 
 type ViewMode = "bar" | "line" | "area";
@@ -73,6 +86,23 @@ function mergeContributionData(
   );
 }
 
+function mergeContributionSources(
+  sources: ContributionSources | undefined,
+  fallback: Record<string, number>
+): Record<string, number> {
+  if (!sources) return fallback;
+
+  const github = sources.github ?? fallback;
+  const gitlab = sources.gitlab ?? {};
+  const merged = { ...github };
+
+  for (const [day, commits] of Object.entries(gitlab)) {
+    merged[day] = (merged[day] ?? 0) + commits;
+  }
+
+  return merged;
+}
+
 export default function ContributionGraph() {
   const { selectedAccount } = useAccount();
   const [data, setData] = useState<DayData[]>([]);
@@ -82,6 +112,7 @@ export default function ContributionGraph() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [commits, setCommits] = useState<CommitItem[]>([]);
   const [usesTouchTooltip, setUsesTouchTooltip] = useState(false);
   
   // Compare mode state
@@ -133,6 +164,7 @@ export default function ContributionGraph() {
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setCommits([]);
     const accountParam =
       selectedAccount !== null
         ? `&accountId=${encodeURIComponent(selectedAccount)}`
@@ -142,11 +174,16 @@ export default function ContributionGraph() {
         if (!r.ok) throw new Error("API error");
         return r.json();
       })
-      .then((res: { data: Record<string, number> }) => {
-        const sorted = Object.entries(res.data ?? {})
+      .then((res: ContributionResponse) => {
+        const merged = mergeContributionSources(
+          res.sources,
+          res.data ?? {}
+        );
+        const sorted = Object.entries(merged)
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([day, commits]) => ({ day, commits }));
         setData(sorted);
+        setCommits(res.commits ?? []);
       })
       .catch(() => {
         setError("Failed to load contribution data.");
@@ -218,7 +255,11 @@ export default function ContributionGraph() {
 
   useEffect(() => {
     const handleToggleChart = () => {
-      setChartType((prev) => (prev === "bar" ? "line" : "bar"));
+      setChartType((prev) => {
+        if (prev === "bar") return "line";
+        if (prev === "line") return "area";
+        return "bar";
+      });
     };
     window.addEventListener("toggleChart", handleToggleChart);
     return () => window.removeEventListener("toggleChart", handleToggleChart);
@@ -523,6 +564,10 @@ export default function ContributionGraph() {
         <p className="mt-2 text-right text-xs text-[var(--muted-foreground)]">
           Comparing with {compareUser}
         </p>
+      )}
+
+      {!compareMode && (
+        <CommitSearchPanel commits={commits} loading={loading} />
       )}
     </div>
   );
