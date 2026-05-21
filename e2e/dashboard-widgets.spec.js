@@ -27,16 +27,6 @@ test.beforeEach(async ({ page }) => {
       secure: false,
       expires: Math.floor(Date.now() / 1000) + 60 * 60,
     },
-    {
-      name: "playwright-dashboard-auth",
-      value: "1",
-      domain: "127.0.0.1",
-      path: "/",
-      httpOnly: true,
-      sameSite: "Lax",
-      secure: false,
-      expires: Math.floor(Date.now() / 1000) + 60 * 60,
-    },
   ]);
 
   await page.route("**/api/auth/session", async (route) => {
