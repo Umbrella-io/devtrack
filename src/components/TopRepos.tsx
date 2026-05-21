@@ -255,7 +255,7 @@ export default function TopRepos() {
               <li key={repo.name}>
                 <div className="flex items-center justify-between text-sm mb-1">
                   <a
-                    href={repo.url}
+                    href={repo.url || `https://github.com/${repo.name}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="max-w-[60%] sm:max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
