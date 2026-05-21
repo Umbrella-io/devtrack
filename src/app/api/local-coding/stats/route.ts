@@ -6,6 +6,16 @@ import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
+const ALLOWED_DAYS = [7, 30, 90];
+const DEFAULT_DAYS = 30;
+
+function validateDays(days: number): number {
+  if (ALLOWED_DAYS.includes(days)) {
+    return days;
+  }
+  return DEFAULT_DAYS;
+}
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.githubId) {
@@ -16,7 +26,8 @@ export async function GET(req: NextRequest) {
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
   const { searchParams } = new URL(req.url);
-  const days = parseInt(searchParams.get("days") || "30", 10);
+  const rawDays = parseInt(searchParams.get("days") || "30", 10);
+  const days = validateDays(isNaN(rawDays) ? DEFAULT_DAYS : rawDays);
   const fromDate = new Date();
   fromDate.setDate(fromDate.getDate() - days);
   const fromDateStr = fromDate.toISOString().slice(0, 10);

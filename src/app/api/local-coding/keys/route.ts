@@ -3,9 +3,13 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 
 export const dynamic = "force-dynamic";
+
+function hashApiKey(key: string): string {
+  return createHash("sha256").update(key).digest("hex");
+}
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -47,15 +51,16 @@ export async function POST(req: NextRequest) {
   }
 
   const apiKey = randomBytes(24).toString("base64url");
+  const apiKeyHash = hashApiKey(apiKey);
 
   const { data: keyRecord, error } = await supabaseAdmin
     .from("local_coding_api_keys")
     .insert({
       user_id: user.id,
-      api_key: apiKey,
+      api_key: apiKeyHash,
       name,
     })
-    .select("id, name, api_key, last_used_at, created_at")
+    .select("id, name, last_used_at, created_at")
     .single();
 
   if (error) {
@@ -67,7 +72,7 @@ export async function POST(req: NextRequest) {
   }
 
   return Response.json({
-    key: keyRecord,
+    key: { ...keyRecord, api_key: apiKey },
     message: "Store this API key securely. It will not be shown again.",
   });
 }

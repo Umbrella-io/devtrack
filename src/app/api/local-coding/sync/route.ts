@@ -1,7 +1,45 @@
 import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { createHash } from "crypto";
 
 export const dynamic = "force-dynamic";
+
+const MAX_SESSIONS_PER_REQUEST = 100;
+const MAX_SESSIONS_PER_USER = 365;
+const ALLOWED_DAYS = [7, 30, 90];
+const DEFAULT_DAYS = 30;
+
+function hashApiKey(key: string): string {
+  return createHash("sha256").update(key).digest("hex");
+}
+
+async function authenticateApiKey(apiKey: string): Promise<string | null> {
+  const keyHash = hashApiKey(apiKey);
+
+  const { data: keyRecord } = await supabaseAdmin
+    .from("local_coding_api_keys")
+    .select("user_id")
+    .eq("api_key_hash", keyHash)
+    .single();
+
+  if (!keyRecord) {
+    return null;
+  }
+
+  await supabaseAdmin
+    .from("local_coding_api_keys")
+    .update({ last_used_at: new Date().toISOString() })
+    .eq("api_key_hash", keyHash);
+
+  return keyRecord.user_id;
+}
+
+function validateDays(days: number): number {
+  if (ALLOWED_DAYS.includes(days)) {
+    return days;
+  }
+  return DEFAULT_DAYS;
+}
 
 interface SessionData {
   date: string;
@@ -18,21 +56,11 @@ export async function POST(req: NextRequest) {
   }
 
   const apiKey = authHeader.slice(7);
+  const userId = await authenticateApiKey(apiKey);
 
-  const { data: keyRecord } = await supabaseAdmin
-    .from("local_coding_api_keys")
-    .select("user_id")
-    .eq("api_key", apiKey)
-    .single();
-
-  if (!keyRecord) {
+  if (!userId) {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
   }
-
-  await supabaseAdmin
-    .from("local_coding_api_keys")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("api_key", apiKey);
 
   let body: { sessions?: SessionData[] };
   try {
@@ -49,27 +77,45 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  for (const session of sessions) {
-    if (!dateRegex.test(session.date)) {
-      return Response.json(
-        { error: "Invalid date format. Use YYYY-MM-DD" },
-        { status: 400 }
-      );
-    }
-    if (
-      typeof session.totalSeconds !== "number" ||
-      session.totalSeconds < 0
-    ) {
-      return Response.json(
-        { error: "totalSeconds must be a non-negative number" },
-        { status: 400 }
-      );
-    }
+  if (sessions.length > MAX_SESSIONS_PER_REQUEST) {
+    return Response.json(
+      { error: `Too many sessions. Maximum ${MAX_SESSIONS_PER_REQUEST} per request.` },
+      { status: 400 }
+    );
   }
 
-  const records = sessions.map((session) => ({
-    user_id: keyRecord.user_id,
+  const { count: existingCount } = await supabaseAdmin
+    .from("local_coding_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  const newSessions = sessions.filter((s) => {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(s.date)) {
+      return false;
+    }
+    if (typeof s.totalSeconds !== "number" || s.totalSeconds < 0) {
+      return false;
+    }
+    return true;
+  });
+
+  if (newSessions.length !== sessions.length) {
+    return Response.json(
+      { error: "Invalid session data found in array" },
+      { status: 400 }
+    );
+  }
+
+  if ((existingCount || 0) + newSessions.length > MAX_SESSIONS_PER_USER) {
+    return Response.json(
+      { error: `Session limit reached. Maximum ${MAX_SESSIONS_PER_USER} sessions per user.` },
+      { status: 400 }
+    );
+  }
+
+  const records = newSessions.map((session) => ({
+    user_id: userId,
     date: session.date,
     total_seconds: session.totalSeconds,
     file_count: session.fileCount || 0,
@@ -97,19 +143,15 @@ export async function GET(req: NextRequest) {
   }
 
   const apiKey = authHeader.slice(7);
+  const userId = await authenticateApiKey(apiKey);
 
-  const { data: keyRecord } = await supabaseAdmin
-    .from("local_coding_api_keys")
-    .select("user_id")
-    .eq("api_key", apiKey)
-    .single();
-
-  if (!keyRecord) {
+  if (!userId) {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
   }
 
   const { searchParams } = new URL(req.url);
-  const days = parseInt(searchParams.get("days") || "30", 10);
+  const rawDays = parseInt(searchParams.get("days") || "30", 10);
+  const days = validateDays(isNaN(rawDays) ? DEFAULT_DAYS : rawDays);
   const fromDate = new Date();
   fromDate.setDate(fromDate.getDate() - days);
   const fromDateStr = fromDate.toISOString().slice(0, 10);
@@ -117,7 +159,7 @@ export async function GET(req: NextRequest) {
   const { data: sessions } = await supabaseAdmin
     .from("local_coding_sessions")
     .select("*")
-    .eq("user_id", keyRecord.user_id)
+    .eq("user_id", userId)
     .gte("date", fromDateStr)
     .order("date", { ascending: false });
 
