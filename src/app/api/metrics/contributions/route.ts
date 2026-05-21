@@ -319,29 +319,32 @@ export async function GET(req: NextRequest) {
         )
       );
 
-    const merged = mergeMetrics(results, (a, b) => ({
-      days: a.days,
-      total: a.total + b.total,
-      data: mergeContributionDays(a.data, b.data),
-      commits: [...a.commits, ...b.commits].sort(
-        (c, d) => d.date.localeCompare(c.date) || d.sha.localeCompare(c.sha)
-      ),
-    }));
+      const merged = mergeMetrics(results, (a, b) => ({
+        days: a.days,
+        total: a.total + b.total,
+        data: mergeContributionDays(a.data, b.data),
+        commits: [...a.commits, ...b.commits].sort(
+          (c, d) => d.date.localeCompare(c.date) || d.sha.localeCompare(c.sha)
+        ),
+      }));
 
       if (!merged) {
         return Response.json({ error: "All accounts failed" }, { status: 502 });
       }
 
-    if (!gitlabToken) {
-      return Response.json(merged);
+      if (!gitlabToken) {
+        return Response.json(merged);
+      }
+
+      const combined = await mergeGitLabContributions(merged, gitlabToken, days, {
+        bypass,
+        userId: session.githubId,
+      });
+
+      return Response.json(combined);
+    } catch {
+      return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
-
-    const combined = await mergeGitLabContributions(merged, gitlabToken, days, {
-      bypass,
-      userId: session.githubId,
-    });
-
-    return Response.json(combined);
   }
 
   if (accountId === session.githubId) {
