@@ -251,21 +251,27 @@ export default function PersonalRecords() {
         Personal Records
       </h2>
       {loading ? (
-        <div
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-stretch"
-        >
-          <span className="sr-only">Loading personal records</span>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              aria-hidden="true"
-              className="h-32 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse"
-            />
-          ))}
-        </div>
+      <div
+  role="status"
+  aria-live="polite"
+  aria-busy="true"
+  className="space-y-3"
+>
+  <span className="sr-only">Loading personal records</span>
+
+  {[1, 2, 3].map((i) => (
+  <div
+    key={i}
+    aria-hidden="true"
+    className="rounded bg-[var(--control)] p-3 animate-pulse"
+  >
+    <div className="flex items-center justify-between">
+      <div className="h-4 w-20 rounded bg-[var(--card-muted)]" />
+      <div className="h-4 w-12 rounded bg-[var(--card-muted)]" />
+    </div>
+  </div>
+))}
+</div>
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
           <p>{error}</p>
