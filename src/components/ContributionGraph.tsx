@@ -218,7 +218,11 @@ export default function ContributionGraph() {
 
   useEffect(() => {
     const handleToggleChart = () => {
-      setChartType((prev) => (prev === "bar" ? "line" : "bar"));
+      setChartType((prev) => {
+        if (prev === "bar") return "line";
+        if (prev === "line") return "area";
+        return "bar";
+      });
     };
     window.addEventListener("toggleChart", handleToggleChart);
     return () => window.removeEventListener("toggleChart", handleToggleChart);
