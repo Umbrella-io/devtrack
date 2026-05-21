@@ -41,6 +41,24 @@ export interface GitHubRepo {
   pushed_at: string;
 }
 
+export interface GitHubCommitSearchItem {
+  sha: string;
+  commit: {
+    author: { date: string };
+    message: string;
+  };
+  repository: { full_name: string };
+  html_url: string;
+}
+
+export interface CommitItem {
+  sha: string;
+  message: string;
+  date: string;
+  repo: string;
+  url: string;
+}
+
 export interface GitHubIssueItem {
   state: string;
   created_at: string;
