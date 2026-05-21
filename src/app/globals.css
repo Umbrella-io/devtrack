@@ -45,3 +45,14 @@ body {
   color: var(--foreground);
   transition: background-color 200ms ease, color 200ms ease;
 }
+/* Custom slim scrollbar for dashboard widgets */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 transparent;
+}
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 9999px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+.dark .scrollbar-thin::-webkit-scrollbar-thumb { background: #6b7280; }
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #9ca3af; }

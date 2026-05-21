@@ -224,7 +224,7 @@ export default function ContributionHeatmap({
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto pb-2">
+          <div className="overflow-x-auto pb-2  scrollbar-thin">
             <div className="mx-auto flex flex-col gap-1" style={{ width: `${totalGridWidth}px` }}>
               
               {/* MATHEMATICAL COORDINATE TIMELINE HEADER BANNER CONTAINER */}

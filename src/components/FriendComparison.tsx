@@ -124,7 +124,7 @@ export default function FriendComparison() {
 
       {friendData && myData && (
         <div className="space-y-4">
-          <div className="overflow-x-auto pb-2">
+          <div className="overflow-x-auto pb-2  scrollbar-thin">
             <div className="min-w-[400px]">
               <div className="flex justify-between items-center text-sm font-medium text-[var(--muted-foreground)] px-2 mb-4">
                 <div className="w-1/3 text-left">You ({myData.username})</div>
