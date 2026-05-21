@@ -53,10 +53,15 @@ const DYNAMIC_RE = /(?:require|import)\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 function extractImports(src) {
   const imports = [];
 
+  // Strip single-line and multi-line comments to prevent quotes inside comments from throwing off the regex
+  const cleanSrc = src
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/.*/g, "");
+
   for (const re of [IMPORT_RE, SIDE_EFFECT_IMPORT_RE, DYNAMIC_RE]) {
     re.lastIndex = 0;
     let m;
-    while ((m = re.exec(src)) !== null) {
+    while ((m = re.exec(cleanSrc)) !== null) {
       imports.push(m[1]);
     }
   }
@@ -87,14 +92,17 @@ function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
 }
 
 function main() {
-  const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+  const pkgPath = path.resolve(__dirname, "../package.json");
+  const srcDir = path.resolve(__dirname, "../src");
+
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
   const allDeps = new Set([
     ...Object.keys(pkg.dependencies || {}),
     ...Object.keys(pkg.devDependencies || {}),
   ]);
 
-  const files = collectFiles("src");
-  const missing = collectMissingDeps(files, allDeps);
+  const files = collectFiles(srcDir);
+  const missing = collectMissingDeps(files, allDeps, path.resolve(__dirname, ".."));
 
   if (missing.size > 0) {
     console.error("\n❌  Imports found with no matching entry in package.json:\n");
