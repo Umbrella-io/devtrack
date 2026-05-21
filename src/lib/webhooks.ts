@@ -1,5 +1,6 @@
-import { createHmac } from "crypto";
+import { createHmac, randomBytes } from "crypto";
 import { supabaseAdmin } from "./supabase";
+import { encryptToken, decryptToken } from "./crypto";
 
 export interface WebhookPayload {
   event: string;
@@ -33,8 +34,15 @@ export function getAvailableEvents(): readonly string[] {
 }
 
 export function generateSecretKey(): string {
-  const { randomBytes } = require("crypto");
   return randomBytes(32).toString("hex");
+}
+
+export function encryptSecretKey(secret: string): { encrypted: string; iv: string } {
+  return encryptToken(secret);
+}
+
+export function decryptSecretKey(encrypted: string, iv: string): string | null {
+  return decryptToken(encrypted, iv);
 }
 
 export function signPayload(payload: string, secret: string): string {
@@ -57,6 +65,11 @@ export async function dispatchWebhook(
     return { success: false, error: "Webhook not found or disabled" };
   }
 
+  const secret = decryptSecretKey(webhook.secret_key, webhook.secret_iv);
+  if (!secret) {
+    return { success: false, error: "Failed to decrypt webhook secret" };
+  }
+
   const payload: WebhookPayload = {
     event,
     timestamp: new Date().toISOString(),
@@ -64,7 +77,21 @@ export async function dispatchWebhook(
   };
 
   const payloadString = JSON.stringify(payload);
-  const signature = signPayload(payloadString, webhook.secret_key);
+  const signature = signPayload(payloadString, secret);
+
+  const { isSafeUrl } = await import("./ssrf-protection");
+  const safe = await isSafeUrl(webhook.url);
+  if (!safe) {
+    const errorMessage = "SSRF protection: blocked request to private/internal address";
+    await supabaseAdmin.from("webhook_deliveries").insert({
+      webhook_id: webhookId,
+      event,
+      payload,
+      success: false,
+      error_message: errorMessage,
+    });
+    return { success: false, error: errorMessage };
+  }
 
   let statusCode: number | undefined;
   let errorMessage: string | undefined;
@@ -115,12 +142,15 @@ export async function dispatchToAllWebhooks(
   event: string,
   data: Record<string, unknown>
 ): Promise<void> {
+  const MAX_WEBHOOKS_PER_USER = 5;
+
   const { data: webhooks } = await supabaseAdmin
     .from("webhook_configs")
     .select("id")
     .eq("user_id", userId)
     .eq("is_enabled", true)
-    .contains("events", [event]);
+    .contains("events", [event])
+    .limit(MAX_WEBHOOKS_PER_USER);
 
   if (!webhooks) return;
 

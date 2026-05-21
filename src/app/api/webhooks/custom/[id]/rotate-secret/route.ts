@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser, AppUser } from "@/lib/resolve-user";
-import { generateSecretKey } from "@/lib/webhooks";
+import { generateSecretKey, encryptSecretKey } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
 
@@ -44,11 +44,13 @@ export async function POST(
   }
 
   const newSecretKey = generateSecretKey();
+  const { encrypted, iv } = encryptSecretKey(newSecretKey);
 
   const { data: updated, error } = await supabaseAdmin
     .from("webhook_configs")
     .update({
-      secret_key: newSecretKey,
+      secret_key: encrypted,
+      secret_iv: iv,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

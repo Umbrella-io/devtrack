@@ -5,6 +5,7 @@ create table if not exists webhook_configs (
   url          text not null,
   events       text[] not null default '{}',
   secret_key   text not null,
+  secret_iv    text,
   is_enabled   boolean default true,
   created_at   timestamptz default now(),
   updated_at   timestamptz default now()

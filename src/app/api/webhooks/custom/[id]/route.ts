@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser, AppUser } from "@/lib/resolve-user";
+import { isSafeUrl } from "@/lib/ssrf-protection";
 
 export const dynamic = "force-dynamic";
 
@@ -106,6 +107,13 @@ export async function PATCH(
       if (!["http:", "https:"].includes(parsed.protocol)) {
         return Response.json(
           { error: "URL must use HTTP or HTTPS protocol" },
+          { status: 400 }
+        );
+      }
+      const safe = await isSafeUrl(body.url);
+      if (!safe) {
+        return Response.json(
+          { error: "Webhook URL is not allowed. Private, loopback, and internal addresses are blocked." },
           { status: 400 }
         );
       }

@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser, AppUser } from "@/lib/resolve-user";
+import { decryptSecretKey, signPayload } from "@/lib/webhooks";
+import { isSafeUrl } from "@/lib/ssrf-protection";
 
 export const dynamic = "force-dynamic";
 
@@ -33,13 +35,26 @@ export async function POST(
 
   const { data: webhook } = await supabaseAdmin
     .from("webhook_configs")
-    .select("id, url, secret_key")
+    .select("id, url, secret_key, secret_iv")
     .eq("id", id)
     .eq("user_id", result.user.id)
     .single();
 
   if (!webhook) {
     return Response.json({ error: "Webhook not found" }, { status: 404 });
+  }
+
+  const secret = decryptSecretKey(webhook.secret_key, webhook.secret_iv);
+  if (!secret) {
+    return Response.json({ error: "Failed to decrypt webhook secret" }, { status: 500 });
+  }
+
+  const safe = await isSafeUrl(webhook.url);
+  if (!safe) {
+    return Response.json(
+      { error: "Webhook URL is not allowed. Private, loopback, and internal addresses are blocked." },
+      { status: 400 }
+    );
   }
 
   const testPayload = {
@@ -54,10 +69,7 @@ export async function POST(
   };
 
   const payloadString = JSON.stringify(testPayload);
-  const { createHmac } = await import("crypto");
-  const signature = createHmac("sha256", webhook.secret_key)
-    .update(payloadString)
-    .digest("hex");
+  const signature = signPayload(payloadString, secret);
 
   let statusCode: number | undefined;
   let success: boolean;

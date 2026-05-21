@@ -3,23 +3,17 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser, AppUser } from "@/lib/resolve-user";
-import { generateSecretKey } from "@/lib/webhooks";
+import { generateSecretKey, encryptSecretKey } from "@/lib/webhooks";
+import { isSafeUrl } from "@/lib/ssrf-protection";
 
 export const dynamic = "force-dynamic";
+
+const MAX_WEBHOOKS_PER_USER = 5;
 
 interface WebhookInput {
   name: string;
   url: string;
   events: string[];
-}
-
-function validateUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
 }
 
 async function requireUser(): Promise<{ user: AppUser } | { error: Response }> {
@@ -68,9 +62,17 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Webhook name is required" }, { status: 400 });
   }
 
-  if (!url || !validateUrl(url)) {
+  if (!url) {
     return Response.json(
       { error: "Invalid webhook URL. Must be a valid HTTP/HTTPS URL." },
+      { status: 400 }
+    );
+  }
+
+  const safe = await isSafeUrl(url);
+  if (!safe) {
+    return Response.json(
+      { error: "Webhook URL is not allowed. Private, loopback, and internal addresses are blocked." },
       { status: 400 }
     );
   }
@@ -99,7 +101,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const { data: existingWebhooks } = await supabaseAdmin
+    .from("webhook_configs")
+    .select("id")
+    .eq("user_id", result.user.id);
+
+  if (existingWebhooks && existingWebhooks.length >= MAX_WEBHOOKS_PER_USER) {
+    return Response.json(
+      { error: `Webhook limit reached. Maximum ${MAX_WEBHOOKS_PER_USER} webhooks per user.` },
+      { status: 400 }
+    );
+  }
+
   const secretKey = generateSecretKey();
+  const { encrypted, iv } = encryptSecretKey(secretKey);
 
   const { data: webhook, error } = await supabaseAdmin
     .from("webhook_configs")
@@ -108,7 +123,8 @@ export async function POST(req: NextRequest) {
       name: name.trim(),
       url,
       events,
-      secret_key: secretKey,
+      secret_key: encrypted,
+      secret_iv: iv,
       is_enabled: true,
     })
     .select("id, name, url, events, is_enabled, created_at")
