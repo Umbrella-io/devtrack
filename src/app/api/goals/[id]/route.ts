@@ -96,6 +96,7 @@ export async function DELETE(
   return Response.json({ success: true }, { status: 200 });
 }
 
+
 // PATCH /api/goals/[id] — update an existing goal
 export async function PATCH(
   req: Request,
