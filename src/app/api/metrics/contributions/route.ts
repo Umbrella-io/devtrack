@@ -6,7 +6,7 @@ import {
   getAllAccounts,
   mergeMetrics,
 } from "@/lib/github-accounts";
-import { GITHUB_API } from "@/lib/github";
+import { GITHUB_API, GitHubCommitSearchItem, CommitItem } from "@/lib/github";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -22,6 +22,7 @@ interface ContributionResponse {
   days: number;
   total: number;
   data: Record<string, number>;
+  commits: CommitItem[];
 }
 
 function toLocalDateStr(d: Date): string {
@@ -76,18 +77,27 @@ async function fetchContributionsForAccount(
         throw new Error("GitHub API error");
       }
 
-      const data = (await searchRes.json()) as {
+      const searchData = (await searchRes.json()) as {
         total_count: number;
-        items: Array<{ commit: { author: { date: string } } }>;
+        items: GitHubCommitSearchItem[];
       };
 
       const commitsByDay: Record<string, number> = {};
-      for (const item of data.items) {
+      const commitItems: CommitItem[] = [];
+
+      for (const item of searchData.items) {
         const date = item.commit.author.date.slice(0, 10);
         commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
+        commitItems.push({
+          sha: item.sha,
+          message: item.commit.message.split("\n")[0],
+          date,
+          repo: item.repository?.full_name ?? "unknown",
+          url: item.html_url,
+        });
       }
 
-      return { days, total: data.total_count, data: commitsByDay };
+      return { days, total: searchData.total_count, data: commitsByDay, commits: commitItems };
     }
   );
 }
@@ -167,6 +177,9 @@ export async function GET(req: NextRequest) {
       days: a.days,
       total: a.total + b.total,
       data: mergeContributionDays(a.data, b.data),
+      commits: [...a.commits, ...b.commits].sort(
+        (c, d) => d.date.localeCompare(c.date) || d.sha.localeCompare(c.sha)
+      ),
     }));
 
     if (!merged) {
