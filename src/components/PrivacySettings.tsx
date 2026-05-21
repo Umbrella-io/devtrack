@@ -2,16 +2,6 @@
 
 import { useState } from "react";
 
-interface DataStats {
-  goals: number;
-  metricSnapshots: number;
-  webhooks: number;
-  linkedAccounts: number;
-  streakMilestones: number;
-  streakFreezes: number;
-  localCodingDays: number;
-}
-
 export default function PrivacySettings() {
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -95,7 +85,7 @@ export default function PrivacySettings() {
           className={`mb-4 rounded-lg border p-4 text-sm ${
             message.kind === "success"
               ? "border-[var(--success)]/30 bg-[var(--success)]/10 text-[var(--success)]"
-              : "border-red-500/30 bg-red-500/10 text-red-400"
+              : "border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)]"
           }`}
         >
           {message.text}
