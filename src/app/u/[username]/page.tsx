@@ -22,9 +22,12 @@ interface PublicProfileData {
 }
 
 async function fetchPublicProfile(
-  username: string
+  username: string,
 ): Promise<PublicProfileData | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
 
   try {
     const res = await fetch(`${baseUrl}/api/public/${username}`, {
@@ -50,7 +53,10 @@ export async function generateMetadata({
   const { username } = params;
   const profile = await fetchPublicProfile(username);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
   const profileUrl = `${baseUrl}/u/${username}`;
 
   if (!profile) {
@@ -303,7 +309,7 @@ function PublicTopRepos({
           {repos.map((repo, idx) => {
             const barWidth = Math.max(
               Math.round((repo.commits / maxCommits) * 100),
-              4
+              4,
             );
             const shortName = repo.name.split("/")[1] ?? repo.name;
             return (
