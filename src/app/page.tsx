@@ -55,7 +55,6 @@ async function fetchRepoStats(): Promise<RepoStats> {
         : [],
     };
   } catch {
-    // Graceful fallback — page still renders without live stats
     return {
       stars: 40,
       forks: 160,
