@@ -185,6 +185,7 @@ export async function GET() {
 
     for (const item of prsData.items) {
       const createdAt = new Date(item.created_at);
+      if (Number.isNaN(createdAt.getTime())) continue;
       if (createdAt >= currentWeekStart) {
         prsOpenedThisWeek++;
         if (item.state === "closed") {
