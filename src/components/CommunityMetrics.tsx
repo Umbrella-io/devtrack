@@ -59,20 +59,20 @@ export default function CommunityMetrics() {
     metrics.commentsPosted === 0;
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
+    <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
             Community Discussions
           </h2>
-          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+          <p className="mt-1 max-w-md text-sm text-[var(--muted-foreground)]">
             GitHub Discussions activity across the selected account
           </p>
         </div>
         <button
           type="button"
           onClick={fetchMetrics}
-          className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)]"
+          className="w-full rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] sm:w-auto"
         >
           Refresh
         </button>
@@ -86,12 +86,12 @@ export default function CommunityMetrics() {
           className="space-y-4"
         >
           <span className="sr-only">Loading discussion analytics</span>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))]">
             {[1, 2, 3].map((item) => (
               <div
                 key={item}
                 aria-hidden="true"
-                className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
+                className="min-h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
               />
             ))}
           </div>
@@ -109,16 +109,16 @@ export default function CommunityMetrics() {
         </div>
       ) : metrics ? (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))]">
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-lg bg-[var(--control)] p-4 text-center"
+                className="rounded-lg bg-[var(--control)] p-4 text-center min-w-0 sm:min-h-24"
               >
-                <div className="text-2xl font-bold text-[var(--accent)]">
+                <div className="text-[clamp(1.5rem,5vw,1.75rem)] font-bold leading-none text-[var(--accent)]">
                   {stat.value}
                 </div>
-                <div className="mt-1 text-sm text-[var(--muted-foreground)]">
+                <div className="mt-2 text-[clamp(0.75rem,2.4vw,0.875rem)] leading-snug text-[var(--muted-foreground)] break-words hyphens-auto">
                   {stat.label}
                 </div>
               </div>

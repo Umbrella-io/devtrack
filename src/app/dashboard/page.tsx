@@ -67,7 +67,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Row 2: PR metrics, community metrics, PR breakdown & Time Chart */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <PRMetrics />
         <CommunityMetrics />
         <PRBreakdownChart />
