@@ -339,20 +339,67 @@ const exportCSV = async () => {
   setIsExportingCSV(true);
 
   try {
-    const summary = await buildSummary();
+    const {
+      prData,
+      goalsData,
+      contribData,
+      streakData,
+    } = await fetchData();
+
+    const contributionEntries = Object.entries(
+      contribData?.data || {}
+    );
+
+    const totalCommits = contributionEntries.reduce(
+      (acc, [, value]) => acc + Number(value || 0),
+      0
+    );
+
+    const completedGoals = goalsData.filter(
+      (goal) =>
+        Number(goal.current) >= Number(goal.target)
+    ).length;
+
+    const csvRows = [
+      "PR Metrics",
+      "Open,Merged,Avg Review Hours,Merge Rate",
+      `${prData?.open || 0},${prData?.merged || 0},${prData?.avgReviewHours || 0},${prData?.mergeRate || "0%"}`,
+      "",
+
+      "Contribution Metrics",
+      "Total Contributions,Current Streak,Longest Streak",
+      `${totalCommits},${streakData?.current || 0},${streakData?.longest || 0}`,
+      "",
+
+     "Goals",
+"Goal,Current,Target,Completed",
+
+...(goalsData.length > 0
+  ? goalsData.map(
+      (goal) =>
+        `"${goal.label}",${goal.current},${goal.target},${
+          Number(goal.current) >=
+          Number(goal.target)
+            ? "Yes"
+            : "No"
+        }`
+    )
+  : ["NA,NA,NA,NA"]),
+    ];
+
+    const csvContent = csvRows.join("\n");
 
     downloadFile(
-      summary,
-      "devtrack-summary.csv",
-      "text/csv"
+      csvContent,
+      "devtrack-dashboard-metrics.csv",
+      "text/csv;charset=utf-8;"
     );
   } catch (error) {
-    console.error(error);
+    console.error("Failed to export CSV.", error);
   } finally {
     setIsExportingCSV(false);
   }
 };
-
  const copySummary = async () => {
   setIsCopying(true);
 
@@ -579,3 +626,5 @@ const exportCSV = async () => {
     </div>
   );
 }
+
+
