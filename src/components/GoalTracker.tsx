@@ -48,32 +48,6 @@ export default function GoalTracker() {
   const loadGoals = useCallback(async () => {
     const response = await fetch("/api/goals");
     const data: { goals: Goal[] } = await response.json();
-
-export default function GoalTracker() {
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [minutesAgo, setMinutesAgo] = useState(0);
-  const [title, setTitle] = useState("");
-  const [target, setTarget] = useState(7);
-  const [unit, setUnit] = useState("commits");
-  const [recurrence, setRecurrence] = useState<Recurrence>("none");
-  const [deadline, setDeadline] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  const [activeConfettiGoalId, setActiveConfettiGoalId] = useState<string | null>(null);
-  const prevGoalsRef = useRef<Map<string, boolean>>(new Map());
-  const initialLoadDoneRef = useRef<boolean>(false);
-
-  const loadGoals = useCallback(async () => {
-    const response = await fetch("/api/goals");
-    const data: { goals: Goal[] } = await response.json();
     const fetchedGoals = data.goals ?? [];
     setGoals(fetchedGoals);
     return fetchedGoals;
@@ -671,4 +645,3 @@ function ConfettiBurst() {
     </div>
   );
 }
-
