@@ -25,6 +25,15 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Username required" }, { status: 400 });
   }
 
+  username = username.trim();
+  if (username.length === 0) {
+    return Response.json({ error: "Username required" }, { status: 400 });
+  }
+
+  if (username.length > 39 || !/^[a-zA-Z0-9-_]+$/.test(username)) {
+    return Response.json({ error: "Invalid username format" }, { status: 400 });
+  }
+
   if (username === "me") {
     username = session.githubLogin as string;
   }
