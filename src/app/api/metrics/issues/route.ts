@@ -4,6 +4,7 @@ import { fetchIssuesMetrics } from "@/lib/github";
 
 export const dynamic = "force-dynamic";
 
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken) {

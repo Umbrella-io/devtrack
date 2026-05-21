@@ -22,6 +22,13 @@ export default function PRBreakdownChart() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const getCSSVariable = (varName: string): string => {
+    if (typeof window === "undefined") return "#000";
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue(varName)
+      .trim();
+  };
+
   const fetchBreakdown = () => {
     setLoading(true);
     setError(null);
@@ -42,8 +49,17 @@ export default function PRBreakdownChart() {
   if (loading) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <div className="mb-4 h-5 w-40 rounded bg-[var(--card-muted)] animate-pulse" />
-        <div className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse" />
+        <div role="status" aria-live="polite" aria-busy="true">
+          <span className="sr-only">Loading PR breakdown</span>
+          <div
+            aria-hidden="true"
+            className="mb-4 h-5 w-40 rounded bg-[var(--card-muted)] animate-pulse"
+          />
+          <div
+            aria-hidden="true"
+            className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse"
+          />
+        </div>
       </div>
     );
   }
@@ -99,9 +115,9 @@ export default function PRBreakdownChart() {
               </Pie>
               <Tooltip
                 contentStyle={{
-                  background: "var(--tooltip)",
-                  color: "var(--tooltip-foreground)",
-                  border: "1px solid var(--border)",
+                  background: getCSSVariable("--tooltip"),
+                  color: getCSSVariable("--tooltip-foreground"),
+                  border: `1px solid ${getCSSVariable("--border")}`,
                   borderRadius: "8px",
                   fontSize: "12px",
                 }}

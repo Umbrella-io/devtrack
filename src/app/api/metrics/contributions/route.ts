@@ -6,8 +6,15 @@ import {
   getAllAccounts,
   mergeMetrics,
 } from "@/lib/github-accounts";
-import { GITHUB_API } from "@/lib/github";
+import { GITHUB_API, GitHubCommitSearchItem, CommitItem } from "@/lib/github";
+import {
+  isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
+  metricsCacheKey,
+  withMetricsCache,
+} from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +22,7 @@ interface ContributionResponse {
   days: number;
   total: number;
   data: Record<string, number>;
+  commits: CommitItem[];
 }
 
 function toLocalDateStr(d: Date): string {
@@ -35,39 +43,63 @@ function mergeContributionDays(
 async function fetchContributionsForAccount(
   token: string,
   githubLogin: string,
-  days: number
+  days: number,
+  cacheContext: { bypass: boolean; userId: string }
 ): Promise<ContributionResponse> {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  const sinceStr = toLocalDateStr(since);
+  const key = metricsCacheKey(cacheContext.userId, "contributions", {
+    days,
+    githubLogin,
+  });
 
-  const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
+  return withMetricsCache(
     {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
+      bypass: cacheContext.bypass,
+      key,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.contributions,
+    },
+    async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      const sinceStr = toLocalDateStr(since);
+
+      const searchRes = await fetch(
+        `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (!searchRes.ok) {
+        throw new Error("GitHub API error");
+      }
+
+      const searchData = (await searchRes.json()) as {
+        total_count: number;
+        items: GitHubCommitSearchItem[];
+      };
+
+      const commitsByDay: Record<string, number> = {};
+      const commitItems: CommitItem[] = [];
+
+      for (const item of searchData.items) {
+        const date = item.commit.author.date.slice(0, 10);
+        commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
+        commitItems.push({
+          sha: item.sha,
+          message: item.commit.message.split("\n")[0],
+          date,
+          repo: item.repository?.full_name ?? "unknown",
+          url: item.html_url,
+        });
+      }
+
+      return { days, total: searchData.total_count, data: commitsByDay, commits: commitItems };
     }
   );
-
-  if (!searchRes.ok) {
-    throw new Error("GitHub API error");
-  }
-
-  const data = (await searchRes.json()) as {
-    total_count: number;
-    items: Array<{ commit: { author: { date: string } } }>;
-  };
-
-  const commitsByDay: Record<string, number> = {};
-  for (const item of data.items) {
-    const date = item.commit.author.date.slice(0, 10);
-    commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
-  }
-
-  return { days, total: data.total_count, data: commitsByDay };
 }
 
 export async function GET(req: NextRequest) {
@@ -76,15 +108,35 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const days = Number(req.nextUrl.searchParams.get("days")) || 30;
+  const daysParam = req.nextUrl.searchParams.get("days");
+  const parsedDays = daysParam ? parseInt(daysParam, 10) : NaN;
+  const days = isNaN(parsedDays) ? 30 : Math.max(1, Math.min(365, parsedDays));
   const accountId = req.nextUrl.searchParams.get("accountId");
+  const username = req.nextUrl.searchParams.get("username")?.trim();
+  const bypass = isMetricsCacheBypassed(req);
+
+  // Compare mode path: explicitly fetch contributions for a target username.
+  if (username) {
+    try {
+      const result = await fetchContributionsForAccount(
+        session.accessToken,
+        username,
+        days,
+        { bypass, userId: session.githubId ?? session.githubLogin }
+      );
+      return Response.json(result);
+    } catch {
+      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    }
+  }
 
   if (!accountId) {
     try {
       const result = await fetchContributionsForAccount(
         session.accessToken,
         session.githubLogin,
-        days
+        days,
+        { bypass, userId: session.githubId ?? session.githubLogin }
       );
       return Response.json(result);
     } catch {
@@ -96,11 +148,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: userRow } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
+  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
 
   if (!userRow) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -118,7 +166,10 @@ export async function GET(req: NextRequest) {
 
     const results = await Promise.allSettled(
       accounts.map((account) =>
-        fetchContributionsForAccount(account.token, account.githubLogin, days)
+        fetchContributionsForAccount(account.token, account.githubLogin, days, {
+          bypass,
+          userId: account.githubId,
+        })
       )
     );
 
@@ -126,6 +177,9 @@ export async function GET(req: NextRequest) {
       days: a.days,
       total: a.total + b.total,
       data: mergeContributionDays(a.data, b.data),
+      commits: [...a.commits, ...b.commits].sort(
+        (c, d) => d.date.localeCompare(c.date) || d.sha.localeCompare(c.sha)
+      ),
     }));
 
     if (!merged) {
@@ -140,7 +194,8 @@ export async function GET(req: NextRequest) {
       const result = await fetchContributionsForAccount(
         session.accessToken,
         session.githubLogin,
-        days
+        days,
+        { bypass, userId: session.githubId }
       );
       return Response.json(result);
     } catch {
@@ -169,7 +224,8 @@ export async function GET(req: NextRequest) {
     const result = await fetchContributionsForAccount(
       accountToken,
       accountRow.github_login,
-      days
+      days,
+      { bypass, userId: accountId }
     );
     return Response.json(result);
   } catch {

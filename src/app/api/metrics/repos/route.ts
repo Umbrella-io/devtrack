@@ -7,7 +7,14 @@ import {
   mergeMetrics,
 } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
+import {
+  isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
+  metricsCacheKey,
+  withMetricsCache,
+} from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +26,7 @@ interface RepoLanguage {
 interface RepoSummary {
   name: string;
   commits: number;
-  url: string;
+  description: string | null;
   languages?: RepoLanguage[];
 }
 
@@ -28,119 +35,166 @@ interface RepoResponse {
   days: number;
 }
 function mergeRepoCommits(
-  a: Array<{ name: string; commits: number }>,
-  b: Array<{ name: string; commits: number }>
-) {
-  const map = new Map<string, number>();
+  a: Array<{
+    name: string;
+    commits: number;
+    description: string | null;
+    languages?: RepoLanguage[];
+  }>,
+  b: Array<{
+    name: string;
+    commits: number;
+    description: string | null;
+    languages?: RepoLanguage[];
+  }>
+): Array<{
+  name: string;
+  commits: number;
+  description: string | null;
+  languages?: RepoLanguage[];
+}> {
+  const map = new Map<
+    string,
+    {
+      commits: number;
+      description: string | null;
+      languages?: RepoLanguage[];
+    }
+  >();
 
   for (const repo of [...a, ...b]) {
-    map.set(repo.name, (map.get(repo.name) ?? 0) + repo.commits);
+    const existing = map.get(repo.name);
+
+    map.set(repo.name, {
+      commits: (existing?.commits ?? 0) + repo.commits,
+      description: existing?.description ?? repo.description,
+      languages: existing?.languages ?? repo.languages,
+    });
   }
 
   return Array.from(map.entries())
-    .map(([name, commits]) => ({
+    .map(([name, { commits, description, languages }]) => ({
       name,
       commits,
-      url: "",
+      description,
+      languages,
     }))
-    .sort((a, b) => b.commits - a.commits);
+    .sort((x, y) => y.commits - x.commits);
+}
 
+async function fetchReposForAccount(
+  token: string,
+  githubLogin: string,
+  days: number,
+  cacheContext: { bypass: boolean; userId: string }
+): Promise<RepoResponse> {
+  const key = metricsCacheKey(cacheContext.userId, "repos", {
+    days,
+    githubLogin,
+  });
 
-  async function fetchReposForAccount(
-    token: string,
-    githubLogin: string,
-    days: number
-  ): Promise<RepoResponse> {
-    const since = new Date();
-    since.setDate(since.getDate() - days);
-    const sinceStr = since.toISOString().slice(0, 10);
+  return withMetricsCache(
+    {
+      bypass: cacheContext.bypass,
+      key,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.repos,
+    },
+    async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      const sinceStr = since.toISOString().slice(0, 10);
 
-    const searchRes = await fetch(
-      `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github+json",
-        },
-        cache: "no-store",
+      const searchRes = await fetch(
+        `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (!searchRes.ok) {
+        throw new Error("GitHub API error");
       }
-    );
 
-    if (!searchRes.ok) {
-      throw new Error("GitHub API error");
-    }
+      const data = (await searchRes.json()) as {
+        items: Array<{
+          repository: {
+            full_name: string;
+            html_url: string;
+            description: string | null;
+          };
+          commit: { author: { date: string } };
+        }>;
+      };
 
-    const data = (await searchRes.json()) as {
-      items: Array<{
-        repository: { full_name: string; html_url: string };
-        commit: { author: { date: string } };
-      }>;
-    };
+      const repoMap: Record<
+        string,
+        {
+          commits: number;
+          description: string | null;
+        }
+      > = {};
 
-    const repoMap: Record<string, number> = {};
-    for (const item of data.items) {
-      const name = item.repository.full_name;
-      repoMap[name] = (repoMap[name] ?? 0) + 1;
-    }
+      for (const item of data.items) {
+        const name = item.repository.full_name;
+
+        repoMap[name] = {
+          commits: (repoMap[name]?.commits ?? 0) + 1,
+          description: item.repository.description,
+        };
+      }
 
       const repos = await Promise.all(
-    Object.entries(repoMap).map(async ([name, commits]) => {
-      const repoRes = await fetch(
-        `https://api.github.com/repos/${name}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        Object.entries(repoMap).map(async ([name, { commits, description }]) => {
+          const languageRes = await fetch(
+            `https://api.github.com/repos/${name}/languages`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          let languages: RepoLanguage[] = [];
+
+          if (languageRes.ok) {
+            const languageData = await languageRes.json();
+
+            const totalBytes = Object.values(languageData).reduce(
+              (sum: number, bytes: any) => sum + Number(bytes),
+              0
+            );
+
+            languages = Object.entries(languageData)
+              .map(([lang, bytes]) => ({
+                name: lang,
+                percentage: Math.round((Number(bytes) / totalBytes) * 100),
+              }))
+              .sort((a, b) => b.percentage - a.percentage)
+              .slice(0, 3);
+          }
+
+          return {
+            name,
+            commits,
+            description,
+            languages,
+          };
+        })
       );
 
-      const repoData = await repoRes.json();
+      repos.sort((a, b) => b.commits - a.commits);
 
-      const languageRes = await fetch(
-        `https://api.github.com/repos/${name}/languages`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const topRepos = repos.slice(0, 6);
 
-      let languages: RepoLanguage[] = [];
-
-      if (languageRes.ok) {
-        const languageData = await languageRes.json();
-
-        const totalBytes = Object.values(languageData).reduce(
-          (sum: number, bytes: any) => sum + Number(bytes),
-          0
-        );
-
-        languages = Object.entries(languageData)
-          .map(([lang, bytes]) => ({
-            name: lang,
-            percentage: Math.round((Number(bytes) / totalBytes) * 100),
-          }))
-          .sort((a, b) => b.percentage - a.percentage)
-          .slice(0, 3);
-      }
-
-      return {
-        name,
-        commits,
-        url: repoData.html_url,
-        languages,
-      };
-    })
+      return { repos: topRepos, days };
+    }
   );
-
-  repos.sort((a, b) => b.commits - a.commits);
-
-  const topRepos = repos.slice(0, 6);
-
-  return { repos: topRepos, days };
 }
-}
-  export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.accessToken || !session.githubLogin) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -151,11 +205,15 @@ function mergeRepoCommits(
 
     if (!accountId) {
       try {
-        const result = await fetchReposForAccount(
-          session.accessToken,
-          session.githubLogin,
-          days
-        );
+const result = await fetchReposForAccount(
+  session.accessToken,
+  session.githubLogin,
+  days,
+  {
+    bypass: false,
+    userId: session.githubId ?? session.githubLogin,
+  }
+);
         return Response.json(result);
       } catch {
         return Response.json({ error: "GitHub API error" }, { status: 502 });
@@ -186,11 +244,19 @@ function mergeRepoCommits(
         userRow.id
       );
 
-      const results = await Promise.allSettled(
-        accounts.map((account) =>
-          fetchReposForAccount(account.token, account.githubLogin, days)
-        )
-      );
+     const results = await Promise.allSettled(
+  accounts.map((account) =>
+    fetchReposForAccount(
+      account.token,
+      account.githubLogin,
+      days,
+      {
+        bypass: false,
+        userId: account.githubId,
+      }
+    )
+  )
+);
 
       const merged = mergeMetrics(results, (a, b) => ({
         days: a.days,
@@ -206,11 +272,15 @@ function mergeRepoCommits(
 
     if (accountId === session.githubId) {
       try {
-        const result = await fetchReposForAccount(
-          session.accessToken,
-          session.githubLogin,
-          days
-        );
+ const result = await fetchReposForAccount(
+  session.accessToken,
+  session.githubLogin,
+  days,
+  {
+    bypass: false,
+    userId: session.githubId ?? session.githubLogin,
+  }
+);
         return Response.json(result);
       } catch {
         return Response.json({ error: "GitHub API error" }, { status: 502 });
@@ -236,10 +306,14 @@ function mergeRepoCommits(
 
     try {
       const result = await fetchReposForAccount(
-        accountToken,
-        accountRow.github_login,
-        days
-      );
+  accountToken,
+  accountRow.github_login,
+  days,
+  {
+    bypass: false,
+    userId: accountId,
+  }
+)
       return Response.json(result);
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
