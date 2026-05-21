@@ -133,8 +133,25 @@ export async function DELETE(req: NextRequest) {
 
   await supabaseAdmin.from("users").delete().eq("id", user.id);
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     success: true,
     message: "All user data has been deleted. You will be signed out.",
   });
+
+  const useSecureCookies = process.env.NODE_ENV === "production";
+  const sessionTokenCookieName = useSecureCookies
+    ? "__Secure-next-auth.session-token"
+    : "next-auth.session-token";
+
+  response.cookies.set({
+    name: sessionTokenCookieName,
+    value: "",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: useSecureCookies,
+    path: "/",
+    expires: new Date(0),
+  });
+
+  return response;
 }
