@@ -6,7 +6,7 @@ import {
   getAllAccounts,
   mergeMetrics,
 } from "@/lib/github-accounts";
-import { GITHUB_API } from "@/lib/github";
+import { GITHUB_API, GitHubCommitSearchItem, CommitItem } from "@/lib/github";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -23,6 +23,7 @@ interface ContributionResponse {
   days: number;
   total: number;
   data: Record<string, number>;
+  commits: CommitItem[];
 }
 
 function toLocalDateStr(d: Date): string {
@@ -81,18 +82,27 @@ async function fetchContributionsForAccount(
         throw new GitHubApiError(endpoint, searchRes.status, body);
       }
 
-      const data = (await searchRes.json()) as {
+      const searchData = (await searchRes.json()) as {
         total_count: number;
-        items: Array<{ commit: { author: { date: string } } }>;
+        items: GitHubCommitSearchItem[];
       };
 
       const commitsByDay: Record<string, number> = {};
-      for (const item of data.items) {
+      const commitItems: CommitItem[] = [];
+
+      for (const item of searchData.items) {
         const date = item.commit.author.date.slice(0, 10);
         commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
+        commitItems.push({
+          sha: item.sha,
+          message: item.commit.message.split("\n")[0],
+          date,
+          repo: item.repository?.full_name ?? "unknown",
+          url: item.html_url,
+        });
       }
 
-      return { days, total: data.total_count, data: commitsByDay };
+      return { days, total: searchData.total_count, data: commitsByDay, commits: commitItems };
     }
   );
 }
@@ -103,7 +113,9 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const days = Number(req.nextUrl.searchParams.get("days")) || 30;
+  const daysParam = req.nextUrl.searchParams.get("days");
+  const parsedDays = daysParam ? parseInt(daysParam, 10) : NaN;
+  const days = isNaN(parsedDays) ? 30 : Math.max(1, Math.min(365, parsedDays));
   const accountId = req.nextUrl.searchParams.get("accountId");
   const username = req.nextUrl.searchParams.get("username")?.trim();
   const bypass = isMetricsCacheBypassed(req);
@@ -167,11 +179,14 @@ export async function GET(req: NextRequest) {
         )
       );
 
-      const merged = mergeMetrics(results, (a, b) => ({
-        days: a.days,
-        total: a.total + b.total,
-        data: mergeContributionDays(a.data, b.data),
-      }));
+    const merged = mergeMetrics(results, (a, b) => ({
+      days: a.days,
+      total: a.total + b.total,
+      data: mergeContributionDays(a.data, b.data),
+      commits: [...a.commits, ...b.commits].sort(
+        (c, d) => d.date.localeCompare(c.date) || d.sha.localeCompare(c.sha)
+      ),
+    }));
 
       if (!merged) {
         return Response.json({ error: "All accounts failed" }, { status: 502 });
@@ -226,4 +241,4 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     return toGitHubErrorResponse(error);
   }
-}
+}
