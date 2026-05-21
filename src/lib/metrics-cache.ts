@@ -58,7 +58,7 @@ export function metricsCacheKey(
 
   Object.entries(params)
     .filter(([, value]) => value !== undefined && value !== null)
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
     .forEach(([key, value]) => cacheParams.set(key, String(value)));
 
   return `metrics:${userId}:${endpoint}:${cacheParams.toString() || "default"}`;
