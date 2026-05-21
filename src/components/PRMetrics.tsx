@@ -33,6 +33,8 @@ export default function PRMetrics() {
   const { selectedAccount } = useAccount();
   const [metrics, setMetrics] = useState<PRData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const fetchMetrics = useCallback(() => {
@@ -49,7 +51,11 @@ export default function PRMetrics() {
         if (!r.ok) throw new Error("API error");
         return r.json();
       })
-      .then((data: PRData) => setMetrics(data))
+      .then((data: PRData) => {
+        setMetrics(data);
+        setLastUpdated(new Date());
+        setMinutesAgo(0);
+      })
       .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
       .finally(() => setLoading(false));
   }, [selectedAccount]);
@@ -57,6 +63,19 @@ export default function PRMetrics() {
   useEffect(() => {
     fetchMetrics();
   }, [fetchMetrics]);
+
+  useEffect(() => {
+    if (!lastUpdated) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
+      setMinutesAgo(diff);
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
 
   const buildStats = (
     source: PRMetricsSummary,
@@ -197,6 +216,11 @@ export default function PRMetrics() {
             </div>
           )}
         </div>
+      )}
+      {lastUpdated && (
+        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
+          {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+        </p>
       )}
     </div>
   );
