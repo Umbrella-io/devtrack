@@ -220,13 +220,13 @@ export default function ContributionHeatmap({
       {loading ? (
         <div className="h-[180px] animate-pulse rounded-lg bg-[var(--card-muted)]" />
       ) : error ? (
-        <div className="flex h-[180px] items-center justify-between gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4">
-          <p className="text-sm text-red-400">{error} Please try again.</p>
+        <div className="flex h-[180px] items-center justify-between gap-3 rounded-lg border border-[rgba(var(--destructive-rgb),0.3)] bg-[rgba(var(--destructive-rgb),0.1)] px-4">
+          <p className="text-sm text-[var(--destructive)]">{error} Please try again.</p>
           <button
             type="button"
             onClick={() => setReloadKey((key) => key + 1)}
             disabled={loading}
-            className="rounded-md border border-red-400/40 bg-red-500/20 px-3 py-1 text-xs text-red-200 transition hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md border border-[rgba(var(--destructive-rgb),0.4)] bg-[rgba(var(--destructive-rgb),0.2)] px-3 py-1 text-xs text-[rgba(var(--destructive-rgb),0.9)] transition hover:bg-[rgba(var(--destructive-rgb),0.3)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Reloading..." : "Reload"}
           </button>

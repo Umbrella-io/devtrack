@@ -15,6 +15,16 @@ export default function Providers({ children }: { children: ReactNode }) {
         <ThemeProvider>
           {children}
           <BackToTopButton />
+          <style dangerouslySetInnerHTML={{ __html: `
+            :root {
+              --destructive: #ef4444;
+              --destructive-rgb: 239, 68, 68;
+            }
+            .dark {
+              --destructive: #f87171;
+              --destructive-rgb: 248, 113, 113;
+            }
+          `}} />
         </ThemeProvider>
       </AccountProvider>
     </SessionProvider>
