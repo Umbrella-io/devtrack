@@ -110,8 +110,7 @@ export async function fetchIssuesMetrics(
 
   const repoCounts: Record<string, number> = {};
   for (const item of items) {
-    const parts = item.repository_url.split("/");
-    const repo = parts.length >= 2 ? parts.pop()! : item.repository_url;
+    const repo = item.repository_url.split("/").at(-1) ?? "";
     if (repo) {
       repoCounts[repo] = (repoCounts[repo] ?? 0) + 1;
     }
