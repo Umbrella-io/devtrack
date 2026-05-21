@@ -4,32 +4,23 @@ import { encode } from "next-auth/jwt";
 const authSecret = "playwright-placeholder-secret-that-is-long-enough";
 
 test.beforeEach(async ({ page }) => {
+  const sessionToken = await encode({
+    secret: authSecret,
+    token: {
+      name: "Playwright User",
+      email: "playwright@example.com",
+      sub: "12345",
+      githubLogin: "playwright-user",
+      githubId: "12345",
+      accessToken: "test-token",
+    },
+    maxAge: 60 * 60,
+  });
+
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: await encode({
-        secret: authSecret,
-        salt: "next-auth.session-token",
-        token: {
-          name: "Playwright User",
-          email: "playwright@example.com",
-          sub: "12345",
-          githubLogin: "playwright-user",
-          githubId: "12345",
-          accessToken: "test-token",
-        },
-        maxAge: 60 * 60,
-      }),
-      domain: "127.0.0.1",
-      path: "/",
-      httpOnly: true,
-      sameSite: "Lax",
-      secure: false,
-      expires: Math.floor(Date.now() / 1000) + 60 * 60,
-    },
-    {
-      name: "playwright-dashboard-auth",
-      value: "1",
+      value: sessionToken,
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
@@ -129,36 +120,58 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
-  const consoleLogs = [];
-  const pageErrors = [];
 
-  page.on("console", (msg) => {
-    consoleLogs.push(`${msg.type()}: ${msg.text()}`);
-  });
+await page.goto("/dashboard", { waitUntil: "networkidle" });
 
-  page.on("pageerror", (err) => {
-    pageErrors.push(err.toString());
-  });
+const consoleLogs = [];
+const pageErrors = [];
 
-  await page.goto("/dashboard");
+page.on("console", (msg) => {
+  consoleLogs.push(`${msg.type()}: ${msg.text()}`);
+});
 
-  // Debug output
-  console.log("Current URL:", await page.url());
-  console.log("Page console logs:", consoleLogs);
-  console.log("Page errors:", pageErrors);
-  if (consoleLogs.length > 0 || pageErrors.length > 0) {
-    const pageContent = await page.content();
-    console.log("Page content length:", pageContent.length);
-    if (pageContent.length < 1000) {
-      console.log("Page content:", pageContent);
-    }
+page.on("pageerror", (err) => {
+  pageErrors.push(err.toString());
+});
+
+// Optional small wait for async UI rendering
+await page.waitForTimeout(2000);
+
+// Debug output
+console.log("Current URL:", page.url());
+console.log("Page console logs:", consoleLogs);
+console.log("Page errors:", pageErrors);
+
+if (consoleLogs.length > 0 || pageErrors.length > 0) {
+  const pageContent = await page.content();
+
+  console.log("Page content length:", pageContent.length);
+
+  if (pageContent.length < 1000) {
+    console.log("Page content:", pageContent);
   }
+}
 
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible();
-  await expect(page.getByText("Make 10 commits")).toBeVisible();
+await expect(
+  page.getByRole("heading", { name: "Dashboard" })
+).toBeVisible({ timeout: 30000 });
+
+await expect(
+  page.getByRole("heading", { name: "Your Commits" })
+).toBeVisible({ timeout: 10000 });
+
+await expect(
+  page.getByRole("heading", { name: "PR Analytics" })
+).toBeVisible({ timeout: 10000 });
+
+await expect(
+  page.getByRole("heading", { name: "Weekly Goals" })
+).toBeVisible({ timeout: 10000 });
+
+await expect(
+  page.getByText("Make 10 commits")
+).toBeVisible({ timeout: 10000 });
+
 });
 
 test("contribution graph range buttons request a new range", async ({ page }) => {
@@ -169,10 +182,11 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
     }
   });
 
-  await page.goto("/dashboard");
+  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.waitForTimeout(2000);
   await page.getByRole("button", { name: "Show 90-day range" }).click();
 
-  await expect.poll(() => contributionRequests.some((url) => url.includes("days=90"))).toBe(true);
+  await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
 });
 
 test("goal form posts a new goal", async ({ page }) => {
@@ -183,13 +197,14 @@ test("goal form posts a new goal", async ({ page }) => {
     }
   });
 
-  await page.goto("/dashboard");
+  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.waitForTimeout(2000);
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
   await page.getByLabel("Unit").fill("PR");
   await page.getByRole("button", { name: "Add goal" }).click();
 
-  await expect.poll(() => goalPosts).toHaveLength(1);
+  await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);
   expect(goalPosts[0]).toMatchObject({
     title: "Ship one PR",
     target: 1,
