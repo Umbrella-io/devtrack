@@ -92,6 +92,19 @@ jobs:
               console.log(`Added labels: ${newLabels.join(', ')}`);
             }
 
+            // Auto-assign PR author to PR
+            const creator = pr.user.login;
+            const currentAssignees = pr.assignees.map(a => a.login);
+            if (!currentAssignees.includes(creator)) {
+              await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: prNumber,
+                assignees: [creator]
+              });
+              console.log(`Assigned PR #${prNumber} to author @${creator}`);
+            }
+
       - name: Post admin checklist comment
         uses: actions/github-script@v7
         if: github.event.action == 'opened'

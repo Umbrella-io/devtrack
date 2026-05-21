@@ -30,7 +30,16 @@ jobs:
 
             for (const issue of issues) {
               if (issue.pull_request) continue; // skip PRs in results
-              if (!issue.assignees || issue.assignees.length === 0) continue;
+              if (!issue.assignees || issue.assignees.length === 0) {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner, repo, issue_number: issue.number, name: 'gssoc:assigned',
+                  });
+                } catch {
+                  // Label already removed — ignore
+                }
+                continue;
+              }
 
               // Find when this issue was last assigned via events
               const events = await github.paginate(
@@ -47,21 +56,30 @@ jobs:
               const assignedAt = new Date(assignedEvents[0].created_at).getTime();
               if (now - assignedAt < MS_LIMIT) continue; // still within deadline
 
+              const assignees = issue.assignees.map(a => a.login);
+
               // Check if any PR references this issue (via timeline cross-references)
               const timeline = await github.paginate(
                 "GET /repos/{owner}/{repo}/issues/{issue_number}/timeline",
                 { owner, repo, issue_number: issue.number, per_page: 100 },
               );
 
-              const hasLinkedPR = timeline.some(event =>
-                event.event === 'cross-referenced' &&
-                event.source?.issue?.pull_request != null
-              );
+              const hasLinkedPR = timeline.some(event => {
+                if (event.event !== 'cross-referenced') return false;
+                const pr = event.source?.issue;
+                if (!pr || !pr.pull_request) return false;
+
+                // Only count open or successfully merged PRs (closed without merging shouldn't block)
+                const isPRActive = pr.state === 'open' || pr.pull_request.merged_at != null;
+                if (!isPRActive) return false;
+
+                const prCreator = pr.user?.login;
+                return assignees.includes(prCreator);
+              });
 
               if (hasLinkedPR) continue; // contributor opened a PR — leave them alone
 
               // Unassign
-              const assignees = issue.assignees.map(a => a.login);
               await github.rest.issues.removeAssignees({
                 owner, repo, issue_number: issue.number, assignees,
               });
