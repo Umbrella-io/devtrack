@@ -22,6 +22,14 @@ interface RepoSummary {
   name: string;
   commits: number;
   description: string | null;
+  url: string;
+  languages?: RepoLanguage[];
+}
+
+interface RepoLanguage {
+  name: string;
+  bytes: number;
+  percentage: number;
 }
 
 interface RepoResponse {
@@ -30,20 +38,61 @@ interface RepoResponse {
 }
 
 function mergeRepoCommits(
-  a: Array<{ name: string; commits: number; description: string | null }>,
-  b: Array<{ name: string; commits: number; description: string | null }>
-): Array<{ name: string; commits: number; description: string | null }> {
-  const map = new Map<string, { commits: number; description: string | null }>();
+  a: Array<RepoSummary>,
+  b: Array<RepoSummary>
+): Array<RepoSummary> {
+  const map = new Map<string, { commits: number; description: string | null; url: string; languages?: RepoLanguage[] }>();
   for (const repo of [...a, ...b]) {
     const existing = map.get(repo.name);
     map.set(repo.name, {
       commits: (existing?.commits ?? 0) + repo.commits,
       description: existing?.description ?? repo.description,
+      url: existing?.url ?? repo.url,
+      languages: existing?.languages ?? repo.languages,
     });
   }
   return Array.from(map.entries())
-    .map(([name, { commits, description }]) => ({ name, commits, description }))
+    .map(([name, { commits, description, url, languages }]) => ({
+      name,
+      commits,
+      description,
+      url,
+      languages,
+    }))
     .sort((x, y) => y.commits - x.commits);
+}
+
+async function fetchRepoLanguages(
+  token: string,
+  repoName: string
+): Promise<RepoLanguage[]> {
+  const res = await fetch(`${GITHUB_API}/repos/${repoName}/languages`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    return [];
+  }
+
+  const langs = (await res.json()) as Record<string, number>;
+  const totalBytes = Object.values(langs).reduce((sum, bytes) => sum + bytes, 0);
+
+  if (totalBytes <= 0) {
+    return [];
+  }
+
+  return Object.entries(langs)
+    .map(([name, bytes]) => ({
+      name,
+      bytes,
+      percentage: Math.round((bytes / totalBytes) * 1000) / 10,
+    }))
+    .sort((a, b) => b.percentage - a.percentage)
+    .slice(0, 6);
 }
 
 async function fetchReposForAccount(
@@ -90,21 +139,29 @@ async function fetchReposForAccount(
         }>;
       };
 
-      const repoMap: Record<string, { commits: number; description: string | null }> = {};
+      const repoMap: Record<string, { commits: number; description: string | null; url: string }> = {};
       for (const item of data.items) {
         const name = item.repository.full_name;
         repoMap[name] = {
           commits: (repoMap[name]?.commits ?? 0) + 1,
           description: item.repository.description,
+          url: item.repository.html_url,
         };
       }
 
       const repos = Object.entries(repoMap)
-        .map(([name, { commits, description }]) => ({ name, commits, description }))
+        .map(([name, { commits, description, url }]) => ({ name, commits, description, url }))
         .sort((a, b) => b.commits - a.commits)
         .slice(0, 6);
 
-      return { repos, days };
+      const reposWithLanguages = await Promise.all(
+        repos.map(async (repo) => {
+          const languages = await fetchRepoLanguages(token, repo.name);
+          return languages.length > 0 ? { ...repo, languages } : repo;
+        })
+      );
+
+      return { repos: reposWithLanguages, days };
     }
   );
 }

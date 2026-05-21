@@ -4,11 +4,70 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
 
+interface RepoLanguage {
+  name: string;
+  bytes: number;
+  percentage: number;
+}
+
 interface Repo {
   name: string;
   commits: number;
   url: string;
   description: string | null;
+  languages?: RepoLanguage[];
+}
+
+const LANGUAGE_COLORS: Record<string, string> = {
+  TypeScript: "#3178c6",
+  JavaScript: "#f7df1e",
+  Python: "#3572A5",
+  Go: "#00ADD8",
+  Rust: "#dea584",
+  Java: "#b07219",
+  CSS: "#563d7c",
+  HTML: "#e34c26",
+  Ruby: "#701516",
+  Shell: "#89e051",
+};
+
+const FALLBACK_LANGUAGE_COLOR = "#6b7280";
+
+function getLanguageColor(name: string): string {
+  return LANGUAGE_COLORS[name] ?? FALLBACK_LANGUAGE_COLOR;
+}
+
+function getVisibleLanguages(languages: RepoLanguage[]): RepoLanguage[] {
+  const sorted = [...languages].sort((a, b) => b.percentage - a.percentage);
+
+  if (sorted.length <= 3) {
+    const total = sorted.reduce((sum, lang) => sum + lang.percentage, 0);
+    if (total < 100 && sorted.length > 0) {
+      return [
+        ...sorted,
+        {
+          name: "Other",
+          bytes: 0,
+          percentage: Math.round((100 - total) * 10) / 10,
+        },
+      ];
+    }
+    return sorted;
+  }
+
+  const topLanguages = sorted.slice(0, 2);
+  const otherPercentage = Math.round(
+    sorted.slice(2).reduce((sum, lang) => sum + lang.percentage, 0) * 10
+  ) / 10;
+
+  return [
+    ...topLanguages,
+    {
+      name: "Other",
+      bytes: 0,
+      percentage: otherPercentage,
+    },
+  ];
 }
 
 export default function TopRepos() {
@@ -191,6 +250,7 @@ export default function TopRepos() {
                 : health?.grade === "yellow"
                   ? "bg-yellow-500/15 text-yellow-300 border border-yellow-500/25"
                   : "bg-red-500/15 text-red-300 border border-red-500/25";
+            const visibleLanguages = repo.languages ? getVisibleLanguages(repo.languages) : [];
             return (
               <li key={repo.name}>
                 <div className="flex items-center justify-between text-sm mb-1">
@@ -232,6 +292,26 @@ export default function TopRepos() {
                     className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
                     style={{ width: `${barWidth}%` }}
                   />
+                </div>
+                <div className="mt-2 min-h-6">
+                  {visibleLanguages.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 text-[11px] text-[var(--muted-foreground)]">
+                      {visibleLanguages.map((language) => (
+                        <span
+                          key={language.name}
+                          className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--control)] px-2 py-0.5"
+                          title={`${language.name}: ${language.percentage}%`}
+                        >
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: getLanguageColor(language.name) }}
+                          />
+                          <span className="text-[var(--card-foreground)]">{language.name}</span>
+                          <span>{language.percentage}%</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </li>
             );
