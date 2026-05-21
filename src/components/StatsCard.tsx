@@ -300,7 +300,7 @@ function StatBox({
       }}
     >
       <div style={{ lineHeight: 1 }}>
-        <Icon size={28} strokeWidth={1.5} className={accent ? "text-blue-300" : "text-slate-100"} />
+        <Icon size={28} strokeWidth={1.5} className={accent ? "text-[var(--accent)]" : "text-[var(--muted-foreground)]"} />
       </div>
       <div>
         <div
