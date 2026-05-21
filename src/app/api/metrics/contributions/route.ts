@@ -156,7 +156,7 @@ async function fetchGitLabContributions(
           const eventDate = new Date(event.created_at);
           if (eventDate < since) {
             reachedCutoff = true;
-            continue;
+            break;
           }
 
           const count = event.push_data?.commit_count ?? 0;
@@ -181,6 +181,35 @@ async function fetchGitLabContributions(
       };
     }
   );
+}
+
+async function mergeGitLabContributions(
+  result: ContributionResponse,
+  token: string,
+  days: number,
+  cacheContext: { bypass: boolean; userId: string }
+): Promise<ContributionResponse> {
+  const gitlabResult = await fetchGitLabContributions(
+    token,
+    days,
+    cacheContext
+  ).catch(() => null);
+
+  if (!gitlabResult) {
+    return result;
+  }
+
+  const combinedData = mergeContributionDays(result.data, gitlabResult.data);
+
+  return {
+    days: result.days,
+    total: sumContributionDays(combinedData),
+    data: combinedData,
+    sources: {
+      github: result.data,
+      gitlab: gitlabResult.data,
+    },
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -224,30 +253,12 @@ export async function GET(req: NextRequest) {
         return Response.json(result);
       }
 
-      const gitlabResult = await fetchGitLabContributions(
-        gitlabToken,
-        days,
-        { bypass, userId: session.githubId ?? session.githubLogin }
-      ).catch(() => null);
-
-      if (!gitlabResult) {
-        return Response.json(result);
-      }
-
-      const combinedData = mergeContributionDays(
-        result.data,
-        gitlabResult.data
-      );
-
-      return Response.json({
-        days: result.days,
-        total: sumContributionDays(combinedData),
-        data: combinedData,
-        sources: {
-          github: result.data,
-          gitlab: gitlabResult.data,
-        },
+      const merged = await mergeGitLabContributions(result, gitlabToken, days, {
+        bypass,
+        userId: session.githubId ?? session.githubLogin,
       });
+
+      return Response.json(merged);
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
@@ -296,29 +307,12 @@ export async function GET(req: NextRequest) {
       return Response.json(merged);
     }
 
-    const gitlabResult = await fetchGitLabContributions(gitlabToken, days, {
+    const combined = await mergeGitLabContributions(merged, gitlabToken, days, {
       bypass,
       userId: session.githubId,
-    }).catch(() => null);
-
-    if (!gitlabResult) {
-      return Response.json(merged);
-    }
-
-    const combinedData = mergeContributionDays(
-      merged.data,
-      gitlabResult.data
-    );
-
-    return Response.json({
-      days: merged.days,
-      total: sumContributionDays(combinedData),
-      data: combinedData,
-      sources: {
-        github: merged.data,
-        gitlab: gitlabResult.data,
-      },
     });
+
+    return Response.json(combined);
   }
 
   if (accountId === session.githubId) {
@@ -334,30 +328,12 @@ export async function GET(req: NextRequest) {
         return Response.json(result);
       }
 
-      const gitlabResult = await fetchGitLabContributions(
-        gitlabToken,
-        days,
-        { bypass, userId: session.githubId }
-      ).catch(() => null);
-
-      if (!gitlabResult) {
-        return Response.json(result);
-      }
-
-      const combinedData = mergeContributionDays(
-        result.data,
-        gitlabResult.data
-      );
-
-      return Response.json({
-        days: result.days,
-        total: sumContributionDays(combinedData),
-        data: combinedData,
-        sources: {
-          github: result.data,
-          gitlab: gitlabResult.data,
-        },
+      const merged = await mergeGitLabContributions(result, gitlabToken, days, {
+        bypass,
+        userId: session.githubId,
       });
+
+      return Response.json(merged);
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
