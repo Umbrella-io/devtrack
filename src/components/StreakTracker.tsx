@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { useCountUp } from "@/hooks/useCountUp";
+import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
+
+const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
 interface StreakData {
   current: number;
@@ -27,6 +30,8 @@ export default function StreakTracker() {
   const [data, setData] = useState<StreakData | null>(null);
   const [contributionData, setContributionData] = useState<ContributionData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dismissedMilestones, setDismissedMilestones] = useState<number[]>([]);
+  const [lastCelebratedMilestone, setLastCelebratedMilestone] = useState<number>(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -92,6 +97,29 @@ export default function StreakTracker() {
   }, [fetchStreak]);
 
   useEffect(() => {
+    const stored = localStorage.getItem(
+      "devtrack:dismissed-milestones"
+    );
+
+    const storedLastCelebrated = localStorage.getItem(
+      "devtrack:last-celebrated-milestone"
+    );
+
+    if (stored) {
+      try {
+        setDismissedMilestones(JSON.parse(stored));
+      } catch {
+        // ignore invalid localStorage data
+      }
+    }
+
+    if (storedLastCelebrated) {
+      setLastCelebratedMilestone(
+        Number(storedLastCelebrated)
+      );
+    }
+  }, []);
+  useEffect(() => {
     if (!lastUpdated) return;
     const interval = setInterval(() => {
       const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
@@ -143,7 +171,7 @@ export default function StreakTracker() {
             aria-hidden="true"
             className="h-6 w-36 bg-[var(--card-muted)] rounded animate-pulse mb-4"
           />
-          <div aria-hidden="true" className="grid grid-cols-2 gap-4">
+          <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse" />
             ))}
@@ -170,7 +198,36 @@ export default function StreakTracker() {
       </div>
     );
   }
+    if (
+    !contributionData ||
+    !contributionData.data ||
+    Object.keys(contributionData.data).length === 0
+  ) {
+    return (
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm min-h-[420px]">
+        <div className="flex h-full flex-col items-center justify-center text-center">
+          <div className="mb-4 text-4xl">📉</div>
 
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+            No contribution data found
+          </h2>
+
+          <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
+            Start committing to build your streak and track your coding activity.
+          </p>
+
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
+          >
+            Open GitHub
+          </a>
+        </div>
+      </div>
+    );
+  }
   const MILESTONES = [
     { days: 30, label: "30-day streak!", emoji: "🏅" },
     { days: 14, label: "2-week streak!", emoji: "⭐" },
@@ -243,7 +300,49 @@ export default function StreakTracker() {
     }).catch(() => {});
   };
 
+  const currentMilestone = 
+    [...STREAK_MILESTONES]
+      .reverse()
+      .find(
+        (m) =>
+          data?.current &&
+          data.current >= m &&
+          m > lastCelebratedMilestone
+      );
+  const shouldShowBanner = 
+    currentMilestone &&
+    !dismissedMilestones.includes(currentMilestone);
+  const handleDismissBanner = () => {
+    if (!currentMilestone) return;
+
+    const updated = [
+      ...dismissedMilestones,
+      currentMilestone,
+    ];
+
+    setDismissedMilestones(updated);
+
+    setLastCelebratedMilestone(currentMilestone);
+
+    localStorage.setItem(
+      "devtrack:last-celebrated-milestone",
+      String(currentMilestone)
+    );
+
+    localStorage.setItem(
+      "devtrack:dismissed-milestones",
+      JSON.stringify(updated)
+    );
+  };
+
   return (
+    <>
+      {shouldShowBanner && currentMilestone && (
+        <StreakMilestoneBanner
+          streak={currentMilestone}
+          onDismiss={handleDismissBanner}
+        />
+      )}
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
@@ -264,7 +363,7 @@ export default function StreakTracker() {
           </button>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {stats.map((stat) => (
           <div
             key={stat.label}
@@ -403,6 +502,7 @@ export default function StreakTracker() {
         />
       ) : null}
     </div>
+    </>
   );
 }
 

@@ -18,6 +18,11 @@ export function useCountUp(target: number, duration?: number): number {
       return;
     }
 
+    if (target < 0) {
+      setCount(0);
+      return;
+    }
+
     if (hasAnimated.current) {
       setCount(target);
       return;
