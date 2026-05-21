@@ -30,6 +30,17 @@ interface GraphPoint {
   friend: number;
 }
 
+interface ContributionSources {
+  github?: Record<string, number>;
+  gitlab?: Record<string, number>;
+}
+
+interface ContributionResponse {
+  data: Record<string, number>;
+  commits?: CommitItem[];
+  sources?: ContributionSources;
+}
+
 type ViewMode = "bar" | "line" | "area";
 
 const RANGES = [
@@ -73,6 +84,23 @@ function mergeContributionData(
   return Array.from(map.values()).sort((a, b) =>
     a.date.localeCompare(b.date)
   );
+}
+
+function mergeContributionSources(
+  sources: ContributionSources | undefined,
+  fallback: Record<string, number>
+): Record<string, number> {
+  if (!sources) return fallback;
+
+  const github = sources.github ?? fallback;
+  const gitlab = sources.gitlab ?? {};
+  const merged = { ...github };
+
+  for (const [day, commits] of Object.entries(gitlab)) {
+    merged[day] = (merged[day] ?? 0) + commits;
+  }
+
+  return merged;
 }
 
 export default function ContributionGraph() {
@@ -146,8 +174,12 @@ export default function ContributionGraph() {
         if (!r.ok) throw new Error("API error");
         return r.json();
       })
-      .then((res: { data: Record<string, number>; commits: CommitItem[] }) => {
-        const sorted = Object.entries(res.data ?? {})
+      .then((res: ContributionResponse) => {
+        const merged = mergeContributionSources(
+          res.sources,
+          res.data ?? {}
+        );
+        const sorted = Object.entries(merged)
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([day, commits]) => ({ day, commits }));
         setData(sorted);

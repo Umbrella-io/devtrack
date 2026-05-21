@@ -31,6 +31,23 @@ test("extractImports includes side-effect imports", () => {
   ]);
 });
 
+test("extractImports handles comments with quotes inside multiline imports", () => {
+  const imports = extractImports(`
+    import {
+      // we'll use this
+      foo
+    } from "package-three";
+    
+    /* some other comment with "double" quotes */
+    import "package-four";
+  `);
+
+  assert.deepEqual(imports, [
+    "package-three",
+    "package-four",
+  ]);
+});
+
 test("collectMissingDeps reports undeclared side-effect imports", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "check-deps-"));
   const srcFile = path.join(dir, "src", "entry.ts");
