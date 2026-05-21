@@ -1,3 +1,4 @@
+import DiscussionsWidget from "@/components/DiscussionsWidget";
 import ContributionGraph from "@/components/ContributionGraph";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
@@ -82,6 +83,10 @@ export default async function DashboardPage() {
           <IssueMetrics />
         </div>
         <CIAnalytics />
+      </div>
+      {/* Row 3b: Discussion activity */}
+      <div className="mt-6">
+        <DiscussionsWidget />
       </div>
 
       {/* Row 4: Pinned repositories */}
