@@ -87,6 +87,11 @@ export async function cacheSet<T>(
     return;
   }
 
+  if (typeof ttlSeconds !== "number" || ttlSeconds <= 0 || !Number.isFinite(ttlSeconds)) {
+    console.warn("Invalid TTL value:", ttlSeconds);
+    return;
+  }
+
   try {
     await redis.set(key, value, { ex: ttlSeconds });
   } catch {
