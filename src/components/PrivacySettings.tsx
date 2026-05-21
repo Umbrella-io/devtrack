@@ -94,7 +94,7 @@ export default function PrivacySettings() {
         <div
           className={`mb-4 rounded-lg border p-4 text-sm ${
             message.kind === "success"
-              ? "border-green-500/30 bg-green-500/10 text-green-400"
+              ? "border-[var(--success)]/30 bg-[var(--success)]/10 text-[var(--success)]"
               : "border-red-500/30 bg-red-500/10 text-red-400"
           }`}
         >
@@ -132,14 +132,14 @@ export default function PrivacySettings() {
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
+              className="rounded-lg border border-[var(--destructive)]/30 px-4 py-2 text-sm font-medium text-[var(--destructive)] transition hover:bg-[var(--destructive)]/10"
             >
               Delete My Account
             </button>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
-                <p className="text-sm text-red-400 mb-3">
+              <div className="rounded-lg border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 p-4">
+                <p className="text-sm text-[var(--destructive)] mb-3">
                   This will permanently delete:
                 </p>
                 <ul className="text-xs text-[var(--muted-foreground)] space-y-1 mb-4">
@@ -150,7 +150,7 @@ export default function PrivacySettings() {
                   <li>• Linked accounts and integrations</li>
                   <li>• Local coding time data</li>
                 </ul>
-                <p className="text-sm text-red-400 mb-3">
+                <p className="text-sm text-[var(--destructive)] mb-3">
                   Type <strong>DELETE</strong> to confirm:
                 </p>
                 <input
@@ -158,13 +158,13 @@ export default function PrivacySettings() {
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   placeholder="Type DELETE to confirm"
-                  className="w-full rounded-lg border border-red-500/30 bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none mb-3"
+                  className="w-full rounded-lg border border-[var(--destructive)]/30 bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none mb-3"
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={handleDeleteAccount}
                     disabled={deleting || deleteConfirmText !== "DELETE"}
-                    className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600 disabled:opacity-60"
+                    className="rounded-lg bg-[var(--destructive)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--destructive)]/90 disabled:opacity-60"
                   >
                     {deleting ? "Deleting..." : "Confirm Delete"}
                   </button>

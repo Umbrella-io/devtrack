@@ -53,10 +53,11 @@ export async function GET() {
     .eq("user_id", user.id);
   sections.webhooks = webhooks || [];
 
+  const webhookIds = webhooks?.map((w) => w.id) || [];
   const { data: webhookDeliveries } = await supabaseAdmin
     .from("webhook_deliveries")
     .select("*")
-    .eq("webhook_id", webhooks?.map((w) => w.id) || []);
+    .in("webhook_id", webhookIds);
   sections.webhookDeliveries = webhookDeliveries || [];
 
   const { data: streakFreezes } = await supabaseAdmin
@@ -120,7 +121,6 @@ export async function DELETE(req: NextRequest) {
     "local_coding_sessions",
     "local_coding_api_keys",
     "jira_credentials",
-    "webhook_deliveries",
     "webhook_configs",
     "user_github_accounts",
     "goals",
