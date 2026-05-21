@@ -113,8 +113,8 @@ export async function POST(req: Request) {
     recurrence?: Recurrence;
   };
 
-  if (!body.title || !body.target) {
-    return Response.json({ error: "title and target required" }, { status: 400 });
+  if (!body.title || typeof body.target !== "number" || body.target <= 0) {
+    return Response.json({ error: "title and positive target required" }, { status: 400 });
   }
 
   const recurrence: Recurrence = body.recurrence ?? "none";
