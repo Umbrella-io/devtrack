@@ -332,6 +332,7 @@ export async function fetchIssuesForChatbot(token: string) {
 
 export async function fetchPRsForChatbot(
   token: string,
+  githubLogin: string,
   cacheContext: CacheContext
 ) {
   try {
@@ -345,7 +346,7 @@ export async function fetchPRsForChatbot(
       },
       async () => {
         const searchRes = await fetch(
-          `${GITHUB_API}/search/issues?q=type:pr+author:@me&sort=updated&order=desc&per_page=100`,
+          `${GITHUB_API}/search/issues?q=type:pr+author:${githubLogin}&sort=updated&order=desc&per_page=100`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

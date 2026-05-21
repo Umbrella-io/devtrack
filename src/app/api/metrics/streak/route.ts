@@ -24,7 +24,7 @@ function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function fetchActiveDates(
+async function fetchActiveDates(
   githubLogin: string,
   token: string,
   cacheContext: { bypass: boolean; userId: string }
@@ -78,7 +78,7 @@ export async function fetchActiveDates(
   return new Set(dates);
 }
 
-export function calculateStreakFromDates(
+function calculateStreakFromDates(
   activeDates: Set<string>,
   freezeDates: Set<string>
 ): {

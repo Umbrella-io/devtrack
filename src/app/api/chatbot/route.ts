@@ -103,6 +103,7 @@ export async function POST(req: Request) {
 
     const prs = await fetchPRsForChatbot(
       session.accessToken,
+      session.githubLogin,
       cacheContext
     );
 

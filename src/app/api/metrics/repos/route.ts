@@ -46,7 +46,7 @@ function mergeRepoCommits(
     .sort((x, y) => y.commits - x.commits);
 }
 
-export async function fetchReposForAccount(
+async function fetchReposForAccount(
   token: string,
   githubLogin: string,
   days: number,

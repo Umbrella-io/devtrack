@@ -64,7 +64,7 @@ function mergeContributionDays(
   return result;
 }
 
-export async function fetchContributionsForAccount(
+async function fetchContributionsForAccount(
   token: string,
   githubLogin: string,
   days: number,
