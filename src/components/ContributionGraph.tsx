@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import CommitSearchPanel from "@/components/CommitSearchPanel";
+import type { CommitItem } from "@/lib/github";
 import {
   BarChart,
   Bar,
@@ -82,6 +84,7 @@ export default function ContributionGraph() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [commits, setCommits] = useState<CommitItem[]>([]);
   const [usesTouchTooltip, setUsesTouchTooltip] = useState(false);
   
   // Compare mode state
@@ -133,6 +136,7 @@ export default function ContributionGraph() {
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setCommits([]);
     const accountParam =
       selectedAccount !== null
         ? `&accountId=${encodeURIComponent(selectedAccount)}`
@@ -142,11 +146,12 @@ export default function ContributionGraph() {
         if (!r.ok) throw new Error("API error");
         return r.json();
       })
-      .then((res: { data: Record<string, number> }) => {
+      .then((res: { data: Record<string, number>; commits: CommitItem[] }) => {
         const sorted = Object.entries(res.data ?? {})
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([day, commits]) => ({ day, commits }));
         setData(sorted);
+        setCommits(res.commits ?? []);
       })
       .catch(() => {
         setError("Failed to load contribution data.");
@@ -218,7 +223,11 @@ export default function ContributionGraph() {
 
   useEffect(() => {
     const handleToggleChart = () => {
-      setChartType((prev) => (prev === "bar" ? "line" : "bar"));
+      setChartType((prev) => {
+        if (prev === "bar") return "line";
+        if (prev === "line") return "area";
+        return "bar";
+      });
     };
     window.addEventListener("toggleChart", handleToggleChart);
     return () => window.removeEventListener("toggleChart", handleToggleChart);
@@ -326,7 +335,17 @@ export default function ContributionGraph() {
       </div>
 
       {loading ? (
-        <div className="h-[220px] rounded border border-[var(--border)] bg-[var(--background)] animate-pulse" />
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <span className="sr-only">Loading contribution graph</span>
+          <div
+            aria-hidden="true"
+            className="h-[220px] rounded border border-[var(--border)] bg-[var(--background)] animate-pulse"
+          />
+        </div>
       ) : error ? (
         <div className="flex h-[220px] items-center rounded-lg border border-[var(--border)] bg-[var(--background)] px-4">
           <p className="text-sm text-[var(--muted-foreground)]">
@@ -513,6 +532,10 @@ export default function ContributionGraph() {
         <p className="mt-2 text-right text-xs text-[var(--muted-foreground)]">
           Comparing with {compareUser}
         </p>
+      )}
+
+      {!compareMode && (
+        <CommitSearchPanel commits={commits} loading={loading} />
       )}
     </div>
   );

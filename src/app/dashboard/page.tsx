@@ -9,6 +9,7 @@ import TopRepos from "@/components/TopRepos";
 import PinnedRepos from "@/components/PinnedRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CommitTimeChart from "@/components/CommitTimeChart";
+import PRReviewTrendChart from "@/components/PRReviewTrendChart";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
@@ -18,21 +19,12 @@ import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import { authOptions } from "@/lib/auth";
-import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
-  const allowPlaywrightBypass =
-    process.env.PLAYWRIGHT_AUTH_BYPASS === "1" &&
-    cookies().get("playwright-dashboard-auth")?.value === "1";
-  const session = allowPlaywrightBypass
-    ? null
-    : await getServerSession(authOptions);
-
-  if (!session && !allowPlaywrightBypass) {
-    redirect("/");
-  }
+  const session = await getServerSession(authOptions);
+  if (!session) redirect("/");
 
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
@@ -40,7 +32,7 @@ export default async function DashboardPage() {
       <div className="mb-6 flex justify-end items-center gap-2">
         <Link
           href="/dashboard/settings"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity"
+          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
         >
           Settings
         </Link>
@@ -56,18 +48,20 @@ export default async function DashboardPage() {
         <PersonalRecords />
       </div>
 
-      {/* Row 1: Contribution graph + Streak + Friend Comparison */}
+      {/* Row 1: Contribution graph + heatmap + Friend Comparison on left, Streak on right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ContributionGraph />
           <div className="mt-6">
             <ContributionHeatmap />
           </div>
+          <div className="mt-6">
+            <FriendComparison />
+          </div>
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div>
           <StreakTracker />
-          <FriendComparison />
         </div>
       </div>
 
@@ -76,6 +70,10 @@ export default async function DashboardPage() {
         <PRMetrics />
         <PRBreakdownChart />
         <CommitTimeChart />
+      </div>
+
+      <div className="mt-6">
+        <PRReviewTrendChart />
       </div>
 
       {/* Row 3: Issue metrics + CI analytics */}

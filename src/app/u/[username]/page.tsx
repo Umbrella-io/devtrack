@@ -3,7 +3,6 @@ import BadgeSection from "@/components/BadgeSection";
 import ContributionGraph from "@/components/ContributionGraph";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
-import BackToDashboard from "@/components/BackToDashboard";
 
 interface PublicProfileData {
   username: string;
@@ -23,9 +22,12 @@ interface PublicProfileData {
 }
 
 async function fetchPublicProfile(
-  username: string
+  username: string,
 ): Promise<PublicProfileData | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
 
   try {
     const res = await fetch(`${baseUrl}/api/public/${username}`, {
@@ -50,7 +52,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { username } = params;
   const profile = await fetchPublicProfile(username);
- const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
   const profileUrl = `${baseUrl}/u/${username}`;
 
   if (!profile) {
@@ -86,43 +92,39 @@ export default async function PublicProfilePage({
   const { username } = params;
   const profile = await fetchPublicProfile(username);
 
- 
-if (!profile) {
-  return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">
-          Profile Not Found
-        </h1>
-        <p className="text-[var(--muted-foreground)] mb-6">
-          This profile is not available or is private.
-        </p>
-        <a
-          href="/"
-          className="inline-block px-6 py-2 bg-[var(--accent)] text-[var(--accent-foreground)] rounded-lg hover:opacity-90 transition-opacity"
-        >
-          Back to Home
-        </a>
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+            Profile Not Found
+          </h1>
+          <p className="text-[var(--muted-foreground)] mb-6">
+            This profile is not available or is private.
+          </p>
+          <a
+            href="/"
+            className="inline-block px-6 py-2 bg-[var(--accent)] text-[var(--accent-foreground)] rounded-lg hover:opacity-90 transition-opacity"
+          >
+            Back to Home
+          </a>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-  
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       {/* Header */}
-<div className="mb-8">
-  <BackToDashboard username={username} />
+      <div className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
+          @{profile.username}&apos;s Profile
+        </h1>
+        <p className="mt-2 text-[var(--muted-foreground)]">
+          GitHub activity and coding stats
+        </p>
+      </div>
 
-  <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
-    @{profile.username}&apos;s Profile
-  </h1>
-
-  <p className="mt-2 text-[var(--muted-foreground)]">
-    GitHub activity and coding stats
-  </p>
-</div>
       {/* Row 1: Contribution graph + Streak */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -307,7 +309,7 @@ function PublicTopRepos({
           {repos.map((repo, idx) => {
             const barWidth = Math.max(
               Math.round((repo.commits / maxCommits) * 100),
-              4
+              4,
             );
             const shortName = repo.name.split("/")[1] ?? repo.name;
             return (

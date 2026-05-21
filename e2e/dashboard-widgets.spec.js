@@ -9,6 +9,7 @@ test.beforeEach(async ({ page }) => {
       name: "next-auth.session-token",
       value: await encode({
         secret: authSecret,
+        salt: "next-auth.session-token",
         token: {
           name: "Playwright User",
           email: "playwright@example.com",
@@ -19,16 +20,6 @@ test.beforeEach(async ({ page }) => {
         },
         maxAge: 60 * 60,
       }),
-      domain: "127.0.0.1",
-      path: "/",
-      httpOnly: true,
-      sameSite: "Lax",
-      secure: false,
-      expires: Math.floor(Date.now() / 1000) + 60 * 60,
-    },
-    {
-      name: "playwright-dashboard-auth",
-      value: "1",
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
@@ -178,6 +169,7 @@ function mockMetricResponse(url) {
     return {
       open: 2,
       merged: 8,
+      closed: 1,
       avgReviewHours: 6,
       avgFirstReviewHours: 3,
       mergeRate: "80%",
@@ -221,7 +213,7 @@ function mockMetricResponse(url) {
     return { repositories: [] };
   }
   if (url.includes("/api/metrics/ci")) {
-    return { success: 6, failed: 1, cancelled: 0, skipped: 0 };
+    return { successRate: 95, averageDurationMinutes: 3, flakiestWorkflow: null, totalRuns: 42, reposChecked: 5 };
   }
   if (url.includes("/api/streak/freeze")) {
     return { freezes: [] };
