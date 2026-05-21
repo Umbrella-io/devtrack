@@ -30,6 +30,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <DashboardHeader />
+
       <div className="mb-6 flex justify-end items-center gap-2">
         <Link
           href="/dashboard/settings"
@@ -37,8 +38,10 @@ export default async function DashboardPage() {
         >
           Settings
         </Link>
+
         <ExportButton />
       </div>
+
       <StreakAtRiskBanner />
 
       <WeeklySummaryCard />
@@ -47,18 +50,24 @@ export default async function DashboardPage() {
         <PersonalRecords />
       </div>
 
-      {/* Row 1: Contribution graph + Streak + Friend Comparison */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {/* Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* LEFT SIDE */}
-        <div className="flex flex-col gap-6 lg:col-span-2">
+        <div className="lg:col-span-2">
           <ContributionGraph />
 
           <div className="mt-6">
             <ContributionHeatmap />
           </div>
 
-          {/* Repo Explorer BELOW commit activity */}
-          <RepoAnalyticsExplorer />
+          <div className="mt-6">
+            <FriendComparison />
+          </div>
+
+          {/* Repo Explorer */}
+          <div className="mt-6">
+            <RepoAnalyticsExplorer />
+          </div>
         </div>
 
         {/* RIGHT SIDE */}
@@ -84,6 +93,7 @@ export default async function DashboardPage() {
         <div className="lg:col-span-2">
           <IssueMetrics />
         </div>
+
         <CIAnalytics />
       </div>
 
