@@ -320,4 +320,4 @@ export async function POST(req: Request) {
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   return Response.json({ goal }, { status: 201 });
-}
+}
