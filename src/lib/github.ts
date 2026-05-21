@@ -41,10 +41,29 @@ export interface GitHubRepo {
   pushed_at: string;
 }
 
+export interface GitHubCommitSearchItem {
+  sha: string;
+  commit: {
+    author: { date: string };
+    message: string;
+  };
+  repository: { full_name: string };
+  html_url: string;
+}
+
+export interface CommitItem {
+  sha: string;
+  message: string;
+  date: string;
+  repo: string;
+  url: string;
+}
+
 export interface GitHubIssueItem {
   state: string;
   created_at: string;
   closed_at: string | null;
+  repository_url: string;
 }
 
 export interface IssuesMetrics {
@@ -53,6 +72,7 @@ export interface IssuesMetrics {
   currentlyOpen: number;
   avgCloseTimeDays: number;
   trend: number;
+  mostActiveRepo: string | null;
 }
 
 export async function fetchIssuesMetrics(
@@ -106,11 +126,22 @@ export async function fetchIssuesMetrics(
   const thisMonthCount = thisMonthRes.ok ? ((await thisMonthRes.json()) as { total_count: number }).total_count : 0;
   const lastMonthCount = lastMonthRes.ok ? ((await lastMonthRes.json()) as { total_count: number }).total_count : 0;
 
+  const repoCounts: Record<string, number> = {};
+  for (const item of items) {
+    const repo = item.repository_url.split("/").pop() ?? "";
+    repoCounts[repo] = (repoCounts[repo] ?? 0) + 1;
+  }
+  const mostActiveRepo =
+    Object.keys(repoCounts).length > 0
+      ? Object.entries(repoCounts).sort((a, b) => b[1] - a[1])[0][0]
+      : null;
+
   return {
     opened,
     closed,
     currentlyOpen,
     avgCloseTimeDays,
     trend: thisMonthCount - lastMonthCount,
+    mostActiveRepo,
   };
 }

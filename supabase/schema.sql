@@ -4,6 +4,7 @@ create table if not exists users (
   id           text primary key default gen_random_uuid()::text,
   github_id    text unique not null,
   github_login text not null,
+  is_public    boolean default false,
   created_at   timestamptz default now(),
   updated_at   timestamptz default now()
 );
