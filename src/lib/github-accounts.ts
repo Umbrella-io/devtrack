@@ -34,7 +34,7 @@ export async function getLinkedTokens(userId: string): Promise<string[]> {
 
   const rows = (data ?? []) as UserGitHubAccountRow[];
 
-  return rows
+return rows
     .map((row) =>
       decryptToken(row.access_token_encrypted, row.access_token_iv)
     )
@@ -113,24 +113,11 @@ export async function getLinkedAccounts(
 
   const rows = (data ?? []) as UserGitHubAccountRow[];
 
-  return rows
-    .map((row) => {
-      const token = decryptToken(
-        row.access_token_encrypted,
-        row.access_token_iv
-      );
-
-      if (!token) {
-        return null;
-      }
-
-      return {
-        githubId: row.github_id ?? "",
-        githubLogin: row.github_login ?? "",
-        token,
-      };
-    })
-    .filter((account): account is LinkedAccount => account !== null);
+return rows.map((row) => ({
+    githubId: row.github_id ?? "",
+    githubLogin: row.github_login ?? "",
+    token: decryptToken(row.access_token_encrypted, row.access_token_iv),
+  })).filter((account): account is LinkedAccount => account.token !== null);
 }
 
 export async function getAllAccounts(
