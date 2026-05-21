@@ -193,4 +193,4 @@ export function mergeMetrics<T>(
   return fulfilled
     .slice(1)
     .reduce((acc, result) => merge(acc, result.value), fulfilled[0].value);
-}
+}

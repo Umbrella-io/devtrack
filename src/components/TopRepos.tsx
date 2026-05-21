@@ -189,12 +189,12 @@ export default function TopRepos() {
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+        <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
             type="button"
             onClick={fetchRepos}
-            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+            className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again
           </button>
@@ -249,7 +249,7 @@ export default function TopRepos() {
                 ? "bg-green-500/15 text-green-300 border border-green-500/25"
                 : health?.grade === "yellow"
                   ? "bg-yellow-500/15 text-yellow-300 border border-yellow-500/25"
-                  : "bg-red-500/15 text-red-300 border border-red-500/25";
+                  : "bg-[var(--destructive)]/15 text-[var(--destructive)] border border-[var(--destructive)]/25";
             const visibleLanguages = repo.languages ? getVisibleLanguages(repo.languages) : [];
             return (
               <li key={repo.name}>

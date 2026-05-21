@@ -221,7 +221,7 @@ export default function GoalTracker() {
                         <button
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
-                          className="text-red-400 hover:text-red-300 font-semibold transition-colors disabled:opacity-50"
+                          className="text-[var(--destructive)] hover:text-[var(--destructive)] font-semibold transition-colors disabled:opacity-50"
                           aria-label={`Confirm delete goal: ${goal.title}`}
                         >
                           Yes
@@ -239,7 +239,7 @@ export default function GoalTracker() {
                       <button
                         onClick={() => setConfirmingId(goal.id)}
                         disabled={isDeleting}
-                        className="text-[var(--muted-foreground)] hover:text-red-400 transition-colors disabled:opacity-50"
+                        className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors disabled:opacity-50"
                         aria-label={`Delete goal: ${goal.title}`}
                         title="Delete goal"
                       >
@@ -363,7 +363,7 @@ export default function GoalTracker() {
         </button>
 
         {createError && (
-          <p className="text-sm text-red-500">{createError}</p>
+          <p className="text-sm text-[var(--destructive)]">{createError}</p>
         )}
       </form>
     </div>
@@ -425,4 +425,4 @@ function ConfettiBurst() {
       ))}
     </div>
   );
-}
+}
