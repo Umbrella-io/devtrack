@@ -240,7 +240,7 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
           Loading repository distribution...
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-[var(--destructive)]">
+        <div className="rounded-xl border border-[var(--destructive)] bg-[var(--card)] p-4 text-sm text-[var(--destructive)]">
           {error}
         </div>
       ) : data.length === 0 ? (
