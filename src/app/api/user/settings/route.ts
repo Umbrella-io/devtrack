@@ -112,4 +112,4 @@ export async function PATCH(req: NextRequest) {
     is_public: updated.is_public,
     leaderboard_opt_in: updated.leaderboard_opt_in ?? false,
   });
-}
+}
