@@ -9,7 +9,6 @@ test.beforeEach(async ({ page }) => {
       name: "next-auth.session-token",
       value: await encode({
         secret: authSecret,
-        salt: "next-auth.session-token",
         token: {
           name: "Playwright User",
           email: "playwright@example.com",
