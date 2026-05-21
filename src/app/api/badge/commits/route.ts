@@ -1,89 +1,85 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateBadgeSVG } from "../badge-utils";
+import { cacheGet, cacheSet } from "@/lib/metrics-cache";
 
 export const dynamic = "force-dynamic";
 
 const GITHUB_API = "https://api.github.com";
+const BADGE_CACHE_TTL = 3600;
 
-async function fetchGitHubWithToken(
-  url: string,
-  token?: string
-): Promise<Response> {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return fetch(url, { headers, cache: "no-store" });
-}
+// GitHub username: alphanumeric and hyphens, no leading/trailing hyphens,
+// no consecutive hyphens, 1–39 characters.
+const GITHUB_USERNAME_RE = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
 
 async function fetchCommitsThisMonth(
   username: string,
   token?: string
 ): Promise<number> {
   const since = new Date();
-  since.setDate(1); // First day of current month
+  since.setDate(1);
   const sinceStr = since.toISOString().slice(0, 10);
 
-  const url = `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=1`;
-  const searchRes = await fetchGitHubWithToken(url, token);
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
 
-  if (!searchRes.ok) {
-    const errorBody = await searchRes.text();
-    console.error(`GitHub API error fetching commits for ${username}:`, {
-      status: searchRes.status,
-      url,
-      body: errorBody,
+  const url = `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=1`;
+  const res = await fetch(url, { headers, cache: "no-store" });
+
+  if (!res.ok) {
+    console.error(`GitHub API error fetching commits for badge:`, {
+      status: res.status,
+      username,
     });
     return 0;
   }
 
-  const data = (await searchRes.json()) as {
-    total_count: number;
-  };
-
+  const data = (await res.json()) as { total_count: number };
   return data.total_count || 0;
+}
+
+function errorBadge(): NextResponse {
+  const svg = generateBadgeSVG({
+    label: "Commits",
+    value: "Error",
+    color: "#ef4444",
+    labelColor: "#333333",
+  });
+  return new NextResponse(svg, {
+    status: 500,
+    headers: {
+      "Content-Type": "image/svg+xml;charset=utf-8",
+      "Cache-Control": "max-age=60, public",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
 }
 
 export async function GET(req: NextRequest) {
   try {
     const username = req.nextUrl.searchParams.get("user");
 
-    if (!username) {
-      return NextResponse.json(
-        { error: "Missing 'user' query parameter" },
-        { status: 400 }
-      );
+    if (!username || !GITHUB_USERNAME_RE.test(username)) {
+      return NextResponse.json({ error: "Invalid username" }, { status: 400 });
     }
 
-    // Validate username is a string and not too long
-    if (typeof username !== "string" || username.length > 50) {
-      return NextResponse.json(
-        { error: "Invalid username" },
-        { status: 400 }
-      );
+    const cacheKey = `badge:commits:${username}`;
+    const cached = await cacheGet<number>(cacheKey);
+
+    let commits: number;
+    if (cached !== null) {
+      commits = cached;
+    } else {
+      const githubToken = process.env.GITHUB_TOKEN;
+      commits = await fetchCommitsThisMonth(username, githubToken);
+      await cacheSet(cacheKey, commits, BADGE_CACHE_TTL);
     }
 
-    console.log(`Fetching commits badge for user: ${username}`);
-
-    // Use GITHUB_TOKEN env var if available for higher rate limits
-    const githubToken = process.env.GITHUB_TOKEN;
-    if (!githubToken) {
-      console.warn("⚠️ GITHUB_TOKEN not set - using unauthenticated API (60 req/hour limit)");
-    }
-
-    // Fetch commits data
-    const commits = await fetchCommitsThisMonth(username, githubToken);
-    console.log(`Commits for ${username}: ${commits}`);
-
-    // Generate SVG badge
     const svg = generateBadgeSVG({
       label: "📦 Commits",
       value: `${commits} this month`,
-      color: "#6366f1", // DevTrack indigo
+      color: "#6366f1",
       labelColor: "#333333",
     });
 
@@ -97,21 +93,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error generating commits badge:", error);
-
-    // Return error badge
-    const svg = generateBadgeSVG({
-      label: "Commits",
-      value: "Error",
-      color: "#ef4444",
-      labelColor: "#333333",
-    });
-
-    return new NextResponse(svg, {
-      status: 500,
-      headers: {
-        "Content-Type": "image/svg+xml;charset=utf-8",
-        "Cache-Control": "max-age=60, public",
-      },
-    });
+    return errorBadge();
   }
 }

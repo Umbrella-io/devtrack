@@ -195,5 +195,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: "/api/metrics/:path*",
+  matcher: ["/api/metrics/:path*", "/api/badge/:path*"],
 };
