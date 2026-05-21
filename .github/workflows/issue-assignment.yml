@@ -39,6 +39,9 @@ jobs:
             // Skip bots
             if (context.payload.comment.user.type === 'Bot') return;
 
+            // Skip if the issue is closed
+            if (context.payload.issue.state !== 'open') return;
+
             const { owner, repo } = context.repo;
             const issueNumber = context.payload.issue.number;
             const commenter = context.payload.comment.user.login;
