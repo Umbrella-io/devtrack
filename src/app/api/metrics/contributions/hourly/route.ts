@@ -2,6 +2,12 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { GITHUB_API } from "@/lib/github";
+import {
+  isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
+  metricsCacheKey,
+  withMetricsCache,
+} from "@/lib/metrics-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -12,48 +18,64 @@ export async function GET(req: NextRequest) {
   }
 
   const days = Number(req.nextUrl.searchParams.get("days")) || 30;
-
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  const sinceStr = since.toISOString().slice(0, 10);
+  const bypass = isMetricsCacheBypassed(req);
+  const key = metricsCacheKey(
+    session.githubId ?? session.githubLogin,
+    "contributions",
+    { days }
+  );
 
   try {
-    const searchRes = await fetch(
-      `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
+    const result = await withMetricsCache(
       {
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-          Accept: "application/vnd.github+json",
-        },
-        cache: "no-store",
+        bypass,
+        key,
+        ttlSeconds: METRICS_CACHE_TTL_SECONDS.contributions,
+      },
+      async () => {
+        const since = new Date();
+        since.setDate(since.getDate() - days);
+        const sinceStr = since.toISOString().slice(0, 10);
+
+        const searchRes = await fetch(
+          `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.accessToken}`,
+              Accept: "application/vnd.github+json",
+            },
+            cache: "no-store",
+          }
+        );
+
+        if (!searchRes.ok) throw new Error("GitHub API error");
+
+        const data = (await searchRes.json()) as {
+          items: Array<{ commit: { author: { date: string } } }>;
+        };
+
+        // Initialize all 24 hours to 0
+        const hourMap: Record<number, number> = {};
+        for (let i = 0; i < 24; i++) hourMap[i] = 0;
+
+        // NOTE: date.getHours() returns UTC hours from the server,
+        // not the user's local timezone. The client displays these as-is.
+        for (const item of data.items) {
+          const date = new Date(item.commit.author.date);
+          const hour = date.getHours();
+          hourMap[hour]++;
+        }
+
+        const hours = Array.from({ length: 24 }, (_, i) => ({
+          hour: i,
+          commits: hourMap[i],
+        }));
+
+        return { days, hours };
       }
     );
 
-    if (!searchRes.ok) {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
-    }
-
-    const data = (await searchRes.json()) as {
-      items: Array<{ commit: { author: { date: string } } }>;
-    };
-
-    // Initialize all 24 hours to 0
-    const hourMap: Record<number, number> = {};
-    for (let i = 0; i < 24; i++) hourMap[i] = 0;
-
-    // Group commits by local hour
-    for (const item of data.items) {
-      const date = new Date(item.commit.author.date);
-      const hour = date.getHours(); // converts to local timezone
-      hourMap[hour]++;
-    }
-
-    const hours = Array.from({ length: 24 }, (_, i) => ({
-      hour: i,
-      commits: hourMap[i],
-    }));
-
-    return Response.json({ days, hours });
+    return Response.json(result);
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }

@@ -106,7 +106,7 @@ export default function ActivityRingChart() {
         {loading ? (
           <div className="h-48 w-48 animate-pulse rounded-full bg-[var(--card-muted)]" />
         ) : error ? (
-          <p className="text-sm text-red-400">{error}</p>
+          <p className="text-sm text-[var(--destructive)]">{error}</p>
         ) : data.every((d) => d.commits === 0) ? (
           <p className="text-sm text-[var(--muted-foreground)]">
             No commits in the last {days} days.
