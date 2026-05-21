@@ -53,8 +53,25 @@ export function decryptToken(
 ): string | null {
   try {
     const key = getEncryptionKey();
+
+    if (!/^[0-9a-fA-F]*$/.test(encrypted) || encrypted.length % 2 !== 0) {
+      throw new Error("Invalid encrypted token format");
+    }
+
+    if (!/^[0-9a-fA-F]*$/.test(iv) || iv.length % 2 !== 0) {
+      throw new Error("Invalid IV format");
+    }
+
     const encryptedBuffer = Buffer.from(encrypted, "hex");
     const ivBuffer = Buffer.from(iv, "hex");
+
+    if (ivBuffer.length !== IV_LENGTH) {
+      throw new Error("Invalid IV length");
+    }
+
+    if (encryptedBuffer.length < AUTH_TAG_LENGTH + 1) {
+      throw new Error("Encrypted token too short");
+    }
 
     const ciphertext = encryptedBuffer.subarray(
       0,
