@@ -143,7 +143,7 @@ export default function StreakTracker() {
             aria-hidden="true"
             className="h-6 w-36 bg-[var(--card-muted)] rounded animate-pulse mb-4"
           />
-          <div aria-hidden="true" className="grid grid-cols-2 gap-4">
+          <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse" />
             ))}
@@ -264,7 +264,7 @@ export default function StreakTracker() {
           </button>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {stats.map((stat) => (
           <div
             key={stat.label}
