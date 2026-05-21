@@ -9,6 +9,9 @@ const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const KEY_ERROR_MESSAGE =
   "ENCRYPTION_KEY env var must be a 32-byte hex string";
+const ENCRYPTED_TOKEN_ERROR_MESSAGE =
+  "Encrypted token must be a hex string containing ciphertext and auth tag";
+const IV_ERROR_MESSAGE = "Token IV must be a 12-byte hex string";
 
 function getEncryptionKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY;
@@ -46,52 +49,33 @@ export function encryptToken(plaintext: string): {
   };
 }
 
+export function decryptToken(encrypted: string, iv: string): string | null {
+  const key = getEncryptionKey();
 
-export function decryptToken(
-  encrypted: string,
-  iv: string
-): string | null {
-  try {
-    const key = getEncryptionKey();
-
-    if (!/^[0-9a-fA-F]*$/.test(encrypted) || encrypted.length % 2 !== 0) {
-      throw new Error("Invalid encrypted token format");
-    }
-
-    if (!/^[0-9a-fA-F]*$/.test(iv) || iv.length % 2 !== 0) {
-      throw new Error("Invalid IV format");
-    }
-
-    const encryptedBuffer = Buffer.from(encrypted, "hex");
-    const ivBuffer = Buffer.from(iv, "hex");
-
-    if (ivBuffer.length !== IV_LENGTH) {
-      throw new Error("Invalid IV length");
-    }
-
-    if (encryptedBuffer.length < AUTH_TAG_LENGTH + 1) {
-      throw new Error("Encrypted token too short");
-    }
-
-    const ciphertext = encryptedBuffer.subarray(
-      0,
-      encryptedBuffer.length - AUTH_TAG_LENGTH
-    );
-
-    const authTag = encryptedBuffer.subarray(
-      encryptedBuffer.length - AUTH_TAG_LENGTH
-    );
-
-    const decipher = createDecipheriv(ALGORITHM, key, ivBuffer);
-
-    decipher.setAuthTag(authTag);
-
-    return Buffer.concat([
-      decipher.update(ciphertext),
-      decipher.final(),
-    ]).toString("utf8");
-  } catch (error) {
-    console.error("Token decryption failed:", error);
+  if (!/^[0-9a-fA-F]+$/.test(encrypted) || encrypted.length <= AUTH_TAG_LENGTH * 2) {
     return null;
   }
+
+  if (!/^[0-9a-fA-F]{24}$/.test(iv)) {
+    return null;
+  }
+
+  const encryptedBuffer = Buffer.from(encrypted, "hex");
+  const ivBuffer = Buffer.from(iv, "hex");
+
+  const ciphertext = encryptedBuffer.subarray(
+    0,
+    encryptedBuffer.length - AUTH_TAG_LENGTH
+  );
+  const authTag = encryptedBuffer.subarray(
+    encryptedBuffer.length - AUTH_TAG_LENGTH
+  );
+
+  const decipher = createDecipheriv(ALGORITHM, key, ivBuffer);
+  decipher.setAuthTag(authTag);
+
+  return Buffer.concat([
+    decipher.update(ciphertext),
+    decipher.final(),
+  ]).toString("utf8");
 }
