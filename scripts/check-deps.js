@@ -10,10 +10,10 @@ const path = require("path");
 
 // Node built-ins (not in package.json but valid to import)
 const BUILTINS = new Set([
-  "assert", "buffer", "child_process", "cluster", "crypto", "dgram",
+  "assert", "assert/strict", "buffer", "child_process", "cluster", "crypto", "dgram",
   "dns", "domain", "events", "fs", "http", "http2", "https", "module",
   "net", "os", "path", "perf_hooks", "process", "punycode", "querystring",
-  "readline", "repl", "stream", "string_decoder", "timers", "tls", "tty",
+  "readline", "repl", "stream", "string_decoder", "test", "timers", "tls", "tty",
   "url", "util", "v8", "vm", "wasi", "worker_threads", "zlib",
 ]);
 
