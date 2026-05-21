@@ -30,7 +30,7 @@ export default function CopyLinkButton() {
     >
       {copied ? (
         <>
-          <CheckCircle size={16} className="text-green-500" aria-hidden="true" />
+          <CheckCircle size={16} className="text-[var(--success)]" aria-hidden="true" />
           <span>Copied!</span>
         </>
       ) : (
