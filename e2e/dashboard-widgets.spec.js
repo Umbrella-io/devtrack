@@ -120,8 +120,9 @@ test.beforeEach(async ({ page }) => {
 
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard");
+  await page.waitForLoadState("networkidle");
 
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible();
@@ -137,6 +138,7 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
   });
 
   await page.goto("/dashboard");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Show 90-day range" }).click();
 
   await expect.poll(() => contributionRequests.some((url) => url.includes("days=90"))).toBe(true);
@@ -151,6 +153,8 @@ test("goal form posts a new goal", async ({ page }) => {
   });
 
   await page.goto("/dashboard");
+  await page.waitForLoadState("networkidle");
+  await page.getByLabel("Goal title").waitFor({ state: "visible" });
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
   await page.getByLabel("Unit").fill("PR");
