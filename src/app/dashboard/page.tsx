@@ -18,6 +18,8 @@ import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
+import LocalCodingTime from "@/components/LocalCodingTime";
+import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -48,7 +50,7 @@ export default async function DashboardPage() {
         <PersonalRecords />
       </div>
 
-      {/* Row 1: Contribution graph + heatmap + Friend Comparison on left, Streak on right */}
+      {/* Row 1: Contribution graph + Streak + Local Coding Time */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ContributionGraph />
@@ -62,6 +64,7 @@ export default async function DashboardPage() {
 
         <div>
           <StreakTracker />
+          <LocalCodingTime />
         </div>
       </div>
 
@@ -94,6 +97,11 @@ export default async function DashboardPage() {
         <TopRepos />
         <LanguageBreakdown />
         <GoalTracker />
+      </div>
+
+      {/* Row 6: Recent GitHub activity */}
+      <div className="mt-6">
+        <RecentActivity />
       </div>
     </div>
   );
