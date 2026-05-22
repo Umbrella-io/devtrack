@@ -148,9 +148,6 @@ export async function POST(req: Request) {
     ? (recurrence as Recurrence)
     : "none";
 
-  // Only 'commits' triggers auto-progress; everything else is manual
-  const unit = body.unit ?? "commits";
-
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
