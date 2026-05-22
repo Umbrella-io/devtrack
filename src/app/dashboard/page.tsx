@@ -32,6 +32,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <DashboardHeader />
+
       <div className="mb-6 flex justify-end items-center gap-2">
         <Link
           href="/dashboard/settings"
@@ -39,8 +40,10 @@ export default async function DashboardPage() {
         >
           Settings
         </Link>
+
         <ExportButton />
       </div>
+
       <StreakAtRiskBanner />
 
       <WeeklySummaryCard />
@@ -49,8 +52,9 @@ export default async function DashboardPage() {
         <PersonalRecords />
       </div>
 
-      {/* Row 1: Contribution graph + Streak + Friend Comparison + Local Coding Time */}
+      {/* Row 1: Contribution graph + Streak + Local Coding Time */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* LEFT SIDE */}
         <div className="lg:col-span-2">
           <ContributionGraph />
 
@@ -59,13 +63,17 @@ export default async function DashboardPage() {
           </div>
 
           <div className="mt-6">
+            <FriendComparison />
+          </div>
+
+          {/* Repo Explorer */}
+          <div className="mt-6">
             <RepoAnalyticsExplorer />
           </div>
         </div>
 
         <div className="flex flex-col gap-6">
           <StreakTracker />
-          <FriendComparison />
           <LocalCodingTime />
         </div>
       </div>
@@ -87,6 +95,7 @@ export default async function DashboardPage() {
         <div className="lg:col-span-2">
           <IssueMetrics />
         </div>
+
         <CIAnalytics />
       </div>
 
