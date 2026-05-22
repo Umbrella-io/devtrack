@@ -79,7 +79,7 @@ export default function WeeklySummaryCard() {
             ))}
           </div>
         ) : error ? (
-          <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          <div className="mt-4 rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-4 text-sm text-[var(--destructive)]">
             {error}
           </div>
         ) : summary ? (
@@ -98,7 +98,7 @@ export default function WeeklySummaryCard() {
                   </span>
                 )}
                 {summary.commits.trend === "down" && (
-                  <span className="text-sm font-medium text-red-400">
+                  <span className="text-sm font-medium text-[var(--destructive)]">
                     - {Math.abs(summary.commits.delta)}
                   </span>
                 )}

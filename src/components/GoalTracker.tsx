@@ -254,12 +254,12 @@ export default function GoalTracker() {
 
       {/* Sync Error Display */}
       {syncError && (
-        <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+        <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] px-3 py-2 text-xs text-[var(--destructive)]">
           <span>⚠️ {syncError}</span>
           <button
             type="button"
             onClick={() => setSyncError(null)}
-            className="text-red-400 hover:text-red-300 font-semibold"
+            className="text-[var(--destructive)] hover:opacity-70 font-semibold"
             aria-label="Dismiss error"
           >
             ✕
@@ -338,7 +338,7 @@ export default function GoalTracker() {
                         <button
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
-                          className="text-red-400 hover:text-red-300 font-semibold transition-colors disabled:opacity-50"
+                          className="text-[var(--destructive)] hover:opacity-70 font-semibold transition-colors disabled:opacity-50"
                           aria-label={`Confirm delete goal: ${goal.title}`}
                         >
                           Yes
@@ -356,7 +356,7 @@ export default function GoalTracker() {
                       <button
                         onClick={() => setConfirmingId(goal.id)}
                         disabled={isDeleting}
-                        className="text-[var(--muted-foreground)] hover:text-red-400 transition-colors disabled:opacity-50"
+                        className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors disabled:opacity-50"
                         aria-label={`Delete goal: ${goal.title}`}
                         title="Delete goal"
                       >
@@ -488,7 +488,7 @@ export default function GoalTracker() {
           )}
         </button>
         {createError && (
-          <p className="text-sm text-red-500">{createError}</p>
+          <p className="text-sm text-[var(--destructive)]">{createError}</p>
         )}
       </form>
     </div>
