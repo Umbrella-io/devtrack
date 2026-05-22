@@ -30,7 +30,7 @@ function collectFiles(dir) {
     if (entry.isDirectory()) {
       if (["node_modules", ".next", "dist", ".git"].includes(entry.name)) continue;
       out.push(...collectFiles(full));
-    } else if (/\.(ts|tsx)$/.test(entry.name)) {
+    } else if (/\.(js|jsx|ts|tsx)$/.test(entry.name)) {
       out.push(full);
     }
   }
