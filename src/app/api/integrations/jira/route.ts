@@ -110,7 +110,14 @@ export async function GET(req: NextRequest) {
 
   let decryptedToken: string;
   try {
-    decryptedToken = decryptToken(cred.api_token, cred.token_iv);
+    const decrypted = decryptToken(cred.api_token, cred.token_iv);
+    if (!decrypted) {
+      return Response.json(
+        { error: "Failed to decrypt credentials" },
+        { status: 500 }
+      );
+    }
+    decryptedToken = decrypted;
   } catch {
     return Response.json(
       { error: "Failed to decrypt credentials" },

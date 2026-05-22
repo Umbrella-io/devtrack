@@ -19,6 +19,8 @@ import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import ProjectMetrics from "@/components/ProjectMetrics";
+import LocalCodingTime from "@/components/LocalCodingTime";
+import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";

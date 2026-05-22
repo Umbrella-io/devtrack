@@ -79,7 +79,7 @@ async function fetchContributionsForAccount(
       since.setDate(since.getDate() - days);
       const sinceStr = fromDate ?? toLocalDateStr(since);
 
-      let allItems: Array<{ commit: { author: { date: string } } }> = [];
+      let allItems: GitHubCommitSearchItem[] = [];
       let totalCount = 0;
       let page = 1;
 
@@ -115,7 +115,7 @@ async function fetchContributionsForAccount(
 
         const data = (await searchRes.json()) as {
           total_count: number;
-          items: Array<{ commit: { author: { date: string } } }>;
+          items: GitHubCommitSearchItem[];
         };
 
         if (page === 1) {
@@ -136,6 +136,7 @@ async function fetchContributionsForAccount(
       }
 
       const commitsByDay: Record<string, number> = {};
+      const commitItems: CommitItem[] = [];
       for (const item of allItems) {
         const date = item.commit.author.date.slice(0, 10);
         commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
@@ -148,7 +149,7 @@ async function fetchContributionsForAccount(
         });
       }
 
-      return { days, total: totalCount, data: commitsByDay };
+      return { days, total: totalCount, data: commitsByDay, commits: commitItems };
     }
   );
 }
@@ -282,7 +283,7 @@ export async function GET(req: NextRequest) {
   } else {
     const daysParam = req.nextUrl.searchParams.get("days");
     const parsedDays = daysParam ? parseInt(daysParam, 10) : NaN;
-    const days = isNaN(parsedDays) ? 30 : Math.max(1, Math.min(365, parsedDays));
+    days = isNaN(parsedDays) ? 30 : Math.max(1, Math.min(365, parsedDays));
   }
   
   const accountId = req.nextUrl.searchParams.get("accountId");
