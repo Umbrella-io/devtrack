@@ -296,6 +296,7 @@ export default function GoalTracker() {
               id="goal-target"
               type="number"
               min={1}
+              max={10000}
               value={target}
               onChange={(e) => setTarget(Number(e.target.value))}
               disabled={creating}
@@ -425,4 +426,4 @@ function ConfettiBurst() {
       ))}
     </div>
   );
-}
+}
