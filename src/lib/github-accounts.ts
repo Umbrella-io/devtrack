@@ -33,12 +33,20 @@ export async function getLinkedTokens(userId: string): Promise<string[]> {
   }
 
   const rows = (data ?? []) as UserGitHubAccountRow[];
+  const tokens: string[] = [];
 
-  return rows
-    .map((row) =>
-      decryptToken(row.access_token_encrypted, row.access_token_iv)
-    )
-    .filter((token): token is string => token !== null);
+for (const row of rows) {
+    try {
+      const decrypted = decryptToken(row.access_token_encrypted, row.access_token_iv);
+      if (decrypted) {
+        tokens.push(decrypted);
+      }
+    } catch (err) {
+      console.error(`Skipping un-decryptable token row for user ${userId}:`, err);
+    }
+  }
+
+  return tokens;
 }
 
 export async function getRateLimitRemaining(token: string): Promise<number> {
@@ -170,7 +178,12 @@ export async function getAccountToken(
 
   const row = data as UserGitHubAccountRow;
 
-  return decryptToken(row.access_token_encrypted, row.access_token_iv);
+  try {
+    return decryptToken(row.access_token_encrypted, row.access_token_iv);
+  } catch (err) {
+    console.error(`Failed to decrypt target token for account ${accountGithubId}:`, err);
+    return null;
+  }
 }
 
 export function mergeMetrics<T>(
