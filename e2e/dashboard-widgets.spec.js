@@ -30,6 +30,13 @@ test.beforeEach(async ({ page }) => {
     },
   ]);
 
+  await page.route("**/api/auth/csrf", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ csrfToken: "test-csrf-token" }),
+    });
+  });
+
   await page.route("**/api/auth/session", async (route) => {
     await route.fulfill({
       contentType: "application/json",
@@ -117,11 +124,35 @@ test.beforeEach(async ({ page }) => {
       });
     });
   }
+
+  // Add a catch-all for any unmocked API requests
+  await page.route("**/api/**", async (route) => {
+    // Only log if not already handled by specific routes above
+    if (
+      !route.request().url().includes("/api/auth") &&
+      !route.request().url().includes("/api/user") &&
+      !route.request().url().includes("/api/metrics") &&
+      !route.request().url().includes("/api/goals") &&
+      !route.request().url().includes("/api/streak")
+    ) {
+      console.log("Unmocked API request:", route.request().url());
+    }
+    // Continue with default behavior for unmocked requests
+    await route.continue();
+  });
 });
 
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
-  await page.goto("/dashboard", { waitUntil: "load" });
-  await page.waitForTimeout(2000);
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+  
+  // Wait for the page to navigate and settle
+  await page.waitForTimeout(1000);
+  
+  // Check current URL to debug any unexpected redirects
+  const currentUrl = page.url();
+  if (!currentUrl.includes("/dashboard")) {
+    throw new Error(`Page redirected from /dashboard to ${currentUrl}. Session might not be recognized.`);
+  }
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
@@ -138,8 +169,11 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
     }
   });
 
-  await page.goto("/dashboard", { waitUntil: "load" });
-  await page.waitForTimeout(2000);
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(1000);
+  
+  // Wait for button to be visible before clicking
+  await expect(page.getByRole("button", { name: "Show 90-day range" })).toBeVisible({ timeout: 10000 });
   await page.getByRole("button", { name: "Show 90-day range" }).click();
 
   await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
@@ -153,8 +187,11 @@ test("goal form posts a new goal", async ({ page }) => {
     }
   });
 
-  await page.goto("/dashboard", { waitUntil: "load" });
-  await page.waitForTimeout(2000);
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(1000);
+  
+  // Wait for form elements to be visible before interacting
+  await expect(page.getByLabel("Goal title")).toBeVisible({ timeout: 10000 });
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
   await page.getByLabel("Unit").fill("PR");
