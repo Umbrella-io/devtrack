@@ -1,6 +1,6 @@
 const STATIC_CACHE = "devtrack-static-v1";
 const API_CACHE = "devtrack-api-v1";
-const SKIP_CACHE_PATHS = ["/api/auth"];
+const SKIP_CACHE_PATHS = ["/api/auth", "/_next/"];
 
 const STATIC_ASSETS = [
   "/",
