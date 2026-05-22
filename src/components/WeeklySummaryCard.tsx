@@ -63,10 +63,17 @@ export default function WeeklySummaryCard() {
 
       {!isCollapsed &&
         (loading ? (
-          <div className="mt-4 space-y-3">
+          <div
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            className="mt-4 space-y-3"
+          >
+            <span className="sr-only">Loading weekly summary</span>
             {[1, 2, 3, 4, 5].map((i) => (
               <div
                 key={i}
+                aria-hidden="true"
                 className="h-14 rounded-lg bg-[var(--card-muted)] animate-pulse"
               />
             ))}

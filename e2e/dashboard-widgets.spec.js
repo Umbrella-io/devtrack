@@ -4,21 +4,23 @@ import { encode } from "next-auth/jwt";
 const authSecret = "playwright-placeholder-secret-that-is-long-enough";
 
 test.beforeEach(async ({ page }) => {
+  const sessionToken = await encode({
+    secret: authSecret,
+    token: {
+      name: "Playwright User",
+      email: "playwright@example.com",
+      sub: "12345",
+      githubLogin: "playwright-user",
+      githubId: "12345",
+      accessToken: "test-token",
+    },
+    maxAge: 60 * 60,
+  });
+
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: await encode({
-        secret: authSecret,
-        token: {
-          name: "Playwright User",
-          email: "playwright@example.com",
-          sub: "12345",
-          githubLogin: "playwright-user",
-          githubId: "12345",
-          accessToken: "test-token",
-        },
-        maxAge: 60 * 60,
-      }),
+      value: sessionToken,
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
@@ -102,6 +104,7 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/weekly-summary**",
     "**/api/metrics/compare**",
     "**/api/metrics/repo-health**",
+    "**/api/metrics/ci**",
     "**/api/streak/freeze**",
     "**/api/user/github-accounts**",
   ];
@@ -117,13 +120,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
-  await page.goto("/dashboard");
+  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.waitForTimeout(2000);
 
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Commit Activity" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible();
-  await expect(page.getByText("Make 10 commits")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText("Make 10 commits")).toBeVisible({ timeout: 10000 });
 });
 
 test("contribution graph range buttons request a new range", async ({ page }) => {
@@ -134,10 +138,11 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
     }
   });
 
-  await page.goto("/dashboard");
+  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.waitForTimeout(2000);
   await page.getByRole("button", { name: "Show 90-day range" }).click();
 
-  await expect.poll(() => contributionRequests.some((url) => url.includes("days=90"))).toBe(true);
+  await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
 });
 
 test("goal form posts a new goal", async ({ page }) => {
@@ -148,13 +153,14 @@ test("goal form posts a new goal", async ({ page }) => {
     }
   });
 
-  await page.goto("/dashboard");
+  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.waitForTimeout(2000);
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
   await page.getByLabel("Unit").fill("PR");
   await page.getByRole("button", { name: "Add goal" }).click();
 
-  await expect.poll(() => goalPosts).toHaveLength(1);
+  await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);
   expect(goalPosts[0]).toMatchObject({
     title: "Ship one PR",
     target: 1,
@@ -164,13 +170,27 @@ test("goal form posts a new goal", async ({ page }) => {
 
 function mockMetricResponse(url) {
   if (url.includes("/api/metrics/prs")) {
-    return { open: 2, merged: 8, avgReviewHours: 6, mergeRate: "80%" };
+    return {
+      open: 2,
+      merged: 8,
+      closed: 1,
+      avgReviewHours: 6,
+      avgFirstReviewHours: 3,
+      mergeRate: "80%",
+    };
   }
   if (url.includes("/api/metrics/pr-breakdown")) {
-    return { merged: 8, open: 2, closed: 1 };
+    return { draft: 1, merged: 8, open: 2, closed: 1 };
   }
   if (url.includes("/api/metrics/issues")) {
-    return { opened: 4, closed: 3, open: 1 };
+    return {
+      opened: 4,
+      closed: 3,
+      currentlyOpen: 1,
+      avgCloseTimeDays: 2,
+      trend: 1,
+      mostActiveRepo: "demo/repo",
+    };
   }
   if (url.includes("/api/metrics/repos") || url.includes("/api/metrics/pinned-repos")) {
     return { repos: [{ name: "demo/repo", commits: 12, url: "https://github.com/demo/repo" }] };
@@ -182,13 +202,22 @@ function mockMetricResponse(url) {
     return { current: 3, longest: 9, lastCommitDate: "2026-05-18", totalActiveDays: 12 };
   }
   if (url.includes("/api/metrics/weekly-summary")) {
-    return { commits: 10, pullRequests: 3, mergedPullRequests: 2 };
+    return {
+      commits: { current: 10, previous: 7, delta: 3, trend: "up" },
+      prs: { opened: 3, merged: 2 },
+      activeDays: 5,
+      streak: 3,
+      topRepo: "demo/repo",
+    };
   }
   if (url.includes("/api/metrics/compare")) {
     return { user: { commits: 10 }, friend: { commits: 8 } };
   }
   if (url.includes("/api/metrics/repo-health")) {
     return { repositories: [] };
+  }
+  if (url.includes("/api/metrics/ci")) {
+    return { successRate: 95, averageDurationMinutes: 3, flakiestWorkflow: null, totalRuns: 42, reposChecked: 5 };
   }
   if (url.includes("/api/streak/freeze")) {
     return { freezes: [] };

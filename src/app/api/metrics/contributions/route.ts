@@ -6,8 +6,15 @@ import {
   getAllAccounts,
   mergeMetrics,
 } from "@/lib/github-accounts";
-import { GITHUB_API } from "@/lib/github";
+import { GITHUB_API, GitHubCommitSearchItem, CommitItem } from "@/lib/github";
+import {
+  isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
+  metricsCacheKey,
+  withMetricsCache,
+} from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +22,18 @@ interface ContributionResponse {
   days: number;
   total: number;
   data: Record<string, number>;
+  commits: CommitItem[];
+  sources?: {
+    github: Record<string, number>;
+    gitlab?: Record<string, number>;
+  };
+}
+
+interface GitLabEvent {
+  created_at: string;
+  push_data?: {
+    commit_count?: number;
+  };
 }
 
 function toLocalDateStr(d: Date): string {
@@ -32,42 +51,183 @@ function mergeContributionDays(
   return result;
 }
 
+function sumContributionDays(data: Record<string, number>): number {
+  return Object.values(data).reduce((total, count) => total + count, 0);
+}
+
 async function fetchContributionsForAccount(
   token: string,
   githubLogin: string,
-  days: number
+  days: number,
+  cacheContext: { bypass: boolean; userId: string }
 ): Promise<ContributionResponse> {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  const sinceStr = toLocalDateStr(since);
+  const key = metricsCacheKey(cacheContext.userId, "contributions", {
+    days,
+    githubLogin,
+  });
 
-  const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
+  return withMetricsCache(
     {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
+      bypass: cacheContext.bypass,
+      key,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.contributions,
+    },
+    async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      const sinceStr = toLocalDateStr(since);
+
+      const searchRes = await fetch(
+        `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (!searchRes.ok) {
+        throw new Error("GitHub API error");
+      }
+
+      const searchData = (await searchRes.json()) as {
+        total_count: number;
+        items: GitHubCommitSearchItem[];
+      };
+
+      const commitsByDay: Record<string, number> = {};
+      const commitItems: CommitItem[] = [];
+
+      for (const item of searchData.items) {
+        const date = item.commit.author.date.slice(0, 10);
+        commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
+        commitItems.push({
+          sha: item.sha,
+          message: item.commit.message.split("\n")[0],
+          date,
+          repo: item.repository?.full_name ?? "unknown",
+          url: item.html_url,
+        });
+      }
+
+  return {
+    days,
+    total: searchData.total_count,
+    data: commitsByDay,
+    commits: commitItems,
+  };
     }
   );
+}
 
-  if (!searchRes.ok) {
-    throw new Error("GitHub API error");
+async function fetchGitLabContributions(
+  token: string,
+  days: number,
+  cacheContext: { bypass: boolean; userId: string }
+): Promise<ContributionResponse> {
+  const key = metricsCacheKey(cacheContext.userId, "contributions", {
+    days,
+    source: "gitlab",
+  });
+
+  return withMetricsCache(
+    {
+      bypass: cacheContext.bypass,
+      key,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.contributions,
+    },
+    async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      since.setHours(0, 0, 0, 0);
+
+      let page = 1;
+      const commitsByDay: Record<string, number> = {};
+
+      while (page > 0) {
+        const url = new URL("https://gitlab.com/api/v4/events");
+        url.searchParams.set("action", "pushed");
+        url.searchParams.set("per_page", "100");
+        url.searchParams.set("page", String(page));
+
+        const response = await fetch(url.toString(), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("GitLab API error");
+        }
+
+        const events = (await response.json()) as GitLabEvent[];
+        if (events.length === 0) break;
+
+        let reachedCutoff = false;
+        for (const event of events) {
+          const eventDate = new Date(event.created_at);
+          if (eventDate < since) {
+            reachedCutoff = true;
+            break;
+          }
+
+          const count = event.push_data?.commit_count ?? 0;
+          if (!count) continue;
+
+          const dateKey = event.created_at.slice(0, 10);
+          commitsByDay[dateKey] = (commitsByDay[dateKey] ?? 0) + count;
+        }
+
+        if (reachedCutoff) break;
+
+        const nextPage = response.headers.get("x-next-page");
+        if (!nextPage || nextPage === "0") break;
+        const parsedNext = Number(nextPage);
+        page = Number.isFinite(parsedNext) ? parsedNext : 0;
+      }
+
+      return {
+        days,
+        total: sumContributionDays(commitsByDay),
+        data: commitsByDay,
+        commits: [],
+      };
+    }
+  );
+}
+
+async function mergeGitLabContributions(
+  result: ContributionResponse,
+  token: string,
+  days: number,
+  cacheContext: { bypass: boolean; userId: string }
+): Promise<ContributionResponse> {
+  const gitlabResult = await fetchGitLabContributions(
+    token,
+    days,
+    cacheContext
+  ).catch(() => null);
+
+  if (!gitlabResult) {
+    return result;
   }
 
-  const data = (await searchRes.json()) as {
-    total_count: number;
-    items: Array<{ commit: { author: { date: string } } }>;
+  const combinedData = mergeContributionDays(result.data, gitlabResult.data);
+  const combinedTotal = result.total + sumContributionDays(gitlabResult.data);
+
+  return {
+    days: result.days,
+    total: combinedTotal,
+    data: combinedData,
+    commits: result.commits,
+    sources: {
+      github: result.data,
+      gitlab: gitlabResult.data,
+    },
   };
-
-  const commitsByDay: Record<string, number> = {};
-  for (const item of data.items) {
-    const date = item.commit.author.date.slice(0, 10);
-    commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
-  }
-
-  return { days, total: data.total_count, data: commitsByDay };
 }
 
 export async function GET(req: NextRequest) {
@@ -76,9 +236,14 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const days = Number(req.nextUrl.searchParams.get("days")) || 30;
+  const daysParam = req.nextUrl.searchParams.get("days");
+  const parsedDays = daysParam ? parseInt(daysParam, 10) : NaN;
+  const days = isNaN(parsedDays) ? 30 : Math.max(1, Math.min(365, parsedDays));
   const accountId = req.nextUrl.searchParams.get("accountId");
   const username = req.nextUrl.searchParams.get("username")?.trim();
+  const bypass = isMetricsCacheBypassed(req);
+  const gitlabToken =
+    typeof session.gitlabToken === "string" ? session.gitlabToken : undefined;
 
   // Compare mode path: explicitly fetch contributions for a target username.
   if (username) {
@@ -86,7 +251,8 @@ export async function GET(req: NextRequest) {
       const result = await fetchContributionsForAccount(
         session.accessToken,
         username,
-        days
+        days,
+        { bypass, userId: session.githubId ?? session.githubLogin }
       );
       return Response.json(result);
     } catch {
@@ -99,9 +265,20 @@ export async function GET(req: NextRequest) {
       const result = await fetchContributionsForAccount(
         session.accessToken,
         session.githubLogin,
-        days
+        days,
+        { bypass, userId: session.githubId ?? session.githubLogin }
       );
-      return Response.json(result);
+
+      if (!gitlabToken) {
+        return Response.json(result);
+      }
+
+      const merged = await mergeGitLabContributions(result, gitlabToken, days, {
+        bypass,
+        userId: session.githubId ?? session.githubLogin,
+      });
+
+      return Response.json(merged);
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
@@ -111,11 +288,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: userRow } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
+  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
 
   if (!userRow) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -133,7 +306,10 @@ export async function GET(req: NextRequest) {
 
     const results = await Promise.allSettled(
       accounts.map((account) =>
-        fetchContributionsForAccount(account.token, account.githubLogin, days)
+        fetchContributionsForAccount(account.token, account.githubLogin, days, {
+          bypass,
+          userId: account.githubId,
+        })
       )
     );
 
@@ -141,13 +317,25 @@ export async function GET(req: NextRequest) {
       days: a.days,
       total: a.total + b.total,
       data: mergeContributionDays(a.data, b.data),
+      commits: [...a.commits, ...b.commits].sort(
+        (c, d) => d.date.localeCompare(c.date) || d.sha.localeCompare(c.sha)
+      ),
     }));
 
     if (!merged) {
       return Response.json({ error: "All accounts failed" }, { status: 502 });
     }
 
-    return Response.json(merged);
+    if (!gitlabToken) {
+      return Response.json(merged);
+    }
+
+    const combined = await mergeGitLabContributions(merged, gitlabToken, days, {
+      bypass,
+      userId: session.githubId,
+    });
+
+    return Response.json(combined);
   }
 
   if (accountId === session.githubId) {
@@ -155,9 +343,20 @@ export async function GET(req: NextRequest) {
       const result = await fetchContributionsForAccount(
         session.accessToken,
         session.githubLogin,
-        days
+        days,
+        { bypass, userId: session.githubId }
       );
-      return Response.json(result);
+
+      if (!gitlabToken) {
+        return Response.json(result);
+      }
+
+      const merged = await mergeGitLabContributions(result, gitlabToken, days, {
+        bypass,
+        userId: session.githubId,
+      });
+
+      return Response.json(merged);
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
@@ -184,7 +383,8 @@ export async function GET(req: NextRequest) {
     const result = await fetchContributionsForAccount(
       accountToken,
       accountRow.github_login,
-      days
+      days,
+      { bypass, userId: accountId }
     );
     return Response.json(result);
   } catch {
