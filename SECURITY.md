@@ -10,61 +10,63 @@
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Email: **doshipriyanshu3@gmail.com** *(or open a [private security advisory](https://github.com/Priyanshu-byte-coder/devtrack/security/advisories/new))*
+Use GitHub's private disclosure system:
+👉 **[Report a vulnerability](https://github.com/Priyanshu-byte-coder/devtrack/security/advisories/new)**
 
-Include:
+This creates an encrypted private thread between you and the maintainer. Your report is never visible to the public until a fix is released.
+
+If the advisory page is unavailable, email **doshipriyanshu3@gmail.com** as a fallback.
+
+Include in your report:
 - Description of the vulnerability
 - Steps to reproduce
 - Potential impact
-- Any suggested fix (optional)
+- Suggested fix (optional but appreciated)
 
-**Response time:** Acknowledgement within 48 hours. Fix timeline communicated within 5 business days.
+**Response:** Acknowledgement within 48 hours. Fix timeline communicated within 5 business days.
+
+---
 
 ## Scope
 
-In scope:
+**In scope:**
 - Authentication bypass or session vulnerabilities
-- SQL injection or data exposure via Supabase queries
-- GitHub OAuth token leakage
+- GitHub OAuth token leakage or revocation gaps
+- Cross-user data exposure via caching or shared tokens
+- SQL injection or Supabase data exposure
 - Server-side request forgery (SSRF) via GitHub API proxy
+- Missing security headers enabling clickjacking or content injection
+- Rate limit exhaustion on shared server tokens
 
-Out of scope:
-- Issues requiring physical access to a device
-- Social engineering attacks
-- Rate limiting / denial of service on free-tier Vercel/Supabase
+**Out of scope:**
+- Issues requiring physical device access
+- Social engineering
+- Volumetric DoS on free-tier Vercel/Supabase infrastructure
+
+---
+
+## Points & Recognition (GSSoC)
+
+Security fixes are treated as **`level:critical`** — highest point tier in the GSSoC scoring system. A private advisory serves as the issue record; no public issue is required. Points are awarded on merge based on impact and fix quality.
+
+---
+
+## Coordinated Disclosure
+
+Once a fix ships, a summary is published in [GitHub Security Advisories](https://github.com/Priyanshu-byte-coder/devtrack/security/advisories). Reporters are credited by name unless they request anonymity.
+
+---
 
 ## Row Level Security (RLS)
 
-DevTrack uses Supabase with Row Level Security enabled on all tables to ensure users can only access their own data.
+DevTrack uses Supabase with Row Level Security on all user-data tables.
 
-### Protected Tables
-
-| Table | RLS Enabled | Policies |
-|-------|-------------|----------|
+| Table | RLS | Policies |
+|-------|-----|---------|
 | `users` | ✅ | SELECT, UPDATE own row only |
 | `goals` | ✅ | SELECT, INSERT, UPDATE, DELETE own rows only |
 | `metric_snapshots` | ✅ | SELECT, INSERT, DELETE own rows only |
 
-### How It Works
-
-- All RLS policies use `auth.uid()` to match against the `id` or `user_id` column
-- Users can only read, write, or delete their **own** rows
-- `supabaseAdmin` (service role key) bypasses RLS automatically for trusted server-side operations — it is **never** exposed to the client
-- The anon key has no access to any table by default
-
-### Migration
-
-RLS policies are defined in:
-
-## Disclosure Policy
-
-Once a fix is released, we will publish a summary in the [GitHub Security Advisories](https://github.com/Priyanshu-byte-coder/devtrack/security/advisories) page. Credit will be given to the reporter unless they prefer to remain anonymous.
-
-To apply locally:
-```bash
-supabase db push
-```
-
-### Security Principle
-
-All client-facing queries use the anon key with RLS enforcement. Server-side API routes use `supabaseAdmin` only when elevated privileges are required (e.g. creating a user on first login).
+- All RLS policies match against `auth.uid()`
+- `supabaseAdmin` (service role key) is server-side only, never exposed to clients
+- The anon key has no direct table access by default
