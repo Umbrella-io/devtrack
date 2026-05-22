@@ -50,7 +50,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -9,4 +9,3 @@
 create policy if not exists "users_insert_own"
   on users for insert
   with check (id = auth.uid()::text);
-
