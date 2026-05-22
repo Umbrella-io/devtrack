@@ -113,18 +113,20 @@ export default function PRBreakdownChart() {
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip
-                contentStyle={{
-                  background: getCSSVariable("--tooltip"),
-                  color: getCSSVariable("--tooltip-foreground"),
-                  border: `1px solid ${getCSSVariable("--border")}`,
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                }}
-                formatter={(value: number) => [
-                  `${value} (${Math.round((value / total) * 100)}%)`,
-                ]}
-              />
+             <Tooltip
+  contentStyle={{
+    backgroundColor: "#111827",
+    border: "1px solid #374151",
+    borderRadius: "10px",
+    color: "#ffffff",
+  }}
+  itemStyle={{
+    color: "#ffffff",
+  }}
+  labelStyle={{
+    color: "#ffffff",
+  }}
+/>
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-3 flex flex-wrap justify-center gap-4">
