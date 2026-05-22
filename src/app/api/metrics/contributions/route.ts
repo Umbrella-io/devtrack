@@ -79,30 +79,64 @@ async function fetchContributionsForAccount(
       since.setDate(since.getDate() - days);
       const sinceStr = fromDate ?? toLocalDateStr(since);
 
-      const searchRes = await fetch(
-        `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/vnd.github+json",
-          },
-          cache: "no-store",
-        }
-      );
+      let allItems: Array<{ commit: { author: { date: string } } }> = [];
+      let totalCount = 0;
+      let page = 1;
 
-      if (!searchRes.ok) {
-        throw new Error("GitHub API error");
+      // Note: this may issue up to 10 sequential GitHub Search API calls (max 1000 results).
+      // Authenticated GitHub Search rate limits are low (~30 req/min). We handle 429/403
+      // responses gracefully by returning partial results rather than failing the endpoint.
+      while (page <= 10) {
+        const searchRes = await fetch(
+          `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/vnd.github+json",
+            },
+            cache: "no-store",
+          }
+        );
+
+        if (!searchRes.ok) {
+          // If we're being rate limited or hit a secondary rate limit/permission error,
+          // return partial results collected so far instead of failing the whole request.
+          if (searchRes.status === 429 || searchRes.status === 403) {
+            if (allItems.length === 0) {
+              // If no items were retrieved at all, surface the error so callers know
+              // the request could not be fulfilled.
+              throw new Error(`GitHub API error: ${searchRes.status}`);
+            }
+            break;
+          }
+
+          throw new Error("GitHub API error");
+        }
+
+        const data = (await searchRes.json()) as {
+          total_count: number;
+          items: Array<{ commit: { author: { date: string } } }>;
+        };
+
+        if (page === 1) {
+          totalCount = data.total_count;
+        }
+
+        allItems = allItems.concat(data.items);
+
+        if (data.items.length < 100) {
+          break;
+        }
+
+        if (allItems.length >= 1000 || allItems.length >= totalCount) {
+          break;
+        }
+
+        page += 1;
       }
 
-      const searchData = (await searchRes.json()) as {
-        total_count: number;
-        items: GitHubCommitSearchItem[];
-      };
-
       const commitsByDay: Record<string, number> = {};
-      const commitItems: CommitItem[] = [];
-
-      for (const item of searchData.items) {
+      for (const item of allItems) {
         const date = item.commit.author.date.slice(0, 10);
         commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
         commitItems.push({
@@ -114,12 +148,7 @@ async function fetchContributionsForAccount(
         });
       }
 
-  return {
-    days,
-    total: searchData.total_count,
-    data: commitsByDay,
-    commits: commitItems,
-  };
+      return { days, total: totalCount, data: commitsByDay };
     }
   );
 }
