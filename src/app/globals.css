@@ -45,3 +45,14 @@ body {
   color: var(--foreground);
   transition: background-color 200ms ease, color 200ms ease;
 }
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
