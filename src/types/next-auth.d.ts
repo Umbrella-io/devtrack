@@ -5,6 +5,7 @@ declare module "next-auth" {
     accessToken?: string;
     githubId?: string;
     githubLogin?: string;
+    gitlabToken?: string;
     user?: DefaultSession["user"];
   }
 }
@@ -14,5 +15,6 @@ declare module "next-auth/jwt" {
     accessToken?: string;
     githubId?: string;
     githubLogin?: string;
+    gitlabToken?: string;
   }
 }

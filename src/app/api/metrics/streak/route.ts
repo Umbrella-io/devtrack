@@ -86,6 +86,7 @@ function calculateStreakFromDates(
   longest: number;
   lastCommitDate: string | null;
   totalActiveDays: number;
+  freezeDates: string[];
 } {
   const combinedDates = new Set<string>([
     ...Array.from(activeDates),
@@ -99,6 +100,7 @@ function calculateStreakFromDates(
       longest: 0,
       lastCommitDate: null,
       totalActiveDays: 0,
+      freezeDates: Array.from(freezeDates),
     };
   }
 
@@ -139,6 +141,7 @@ function calculateStreakFromDates(
     longest: longestStreak,
     lastCommitDate: lastDay,
     totalActiveDays: commitDays.length,
+    freezeDates: Array.from(freezeDates),
   };
 }
 

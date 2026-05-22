@@ -47,7 +47,7 @@ export default async function HomePage() {
         <div className="flex gap-4 justify-center">
           <Link
             href="/api/auth/signin/github?callbackUrl=/dashboard"
-            className="bg-white text-slate-900 px-6 py-3 rounded-lg font-semibold hover:bg-slate-100 transition"
+            className="bg-[var(--foreground)] text-[var(--background)] px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition"
           >
             Sign in with GitHub
           </Link>
