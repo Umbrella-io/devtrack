@@ -212,7 +212,7 @@ export default function GoalTracker() {
                       )}
                     </div>
                     {completed && (
-                      <span className="text-xs font-medium text-emerald-500">
+                      <span className="text-xs font-medium text-[var(--success)]">
                         {completionLabel}
                       </span>
                     )}
@@ -229,7 +229,7 @@ export default function GoalTracker() {
                         <button
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
-                          className="text-red-400 hover:text-red-300 font-semibold transition-colors disabled:opacity-50"
+                          className="text-[var(--destructive)] hover:opacity-80 font-semibold transition-colors disabled:opacity-50"
                           aria-label={`Confirm delete goal: ${goal.title}`}
                         >
                           Yes
@@ -247,7 +247,7 @@ export default function GoalTracker() {
                       <button
                         onClick={() => setConfirmingId(goal.id)}
                         disabled={isDeleting}
-                        className="text-[var(--muted-foreground)] hover:text-red-400 transition-colors disabled:opacity-50"
+                        className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors disabled:opacity-50"
                         aria-label={`Delete goal: ${goal.title}`}
                         title="Delete goal"
                       >
@@ -261,7 +261,7 @@ export default function GoalTracker() {
 
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
-                    className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
+                    className={`h-full rounded-full transition-all ${completed ? "bg-[var(--success)]" : "bg-[var(--accent)]"}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -287,9 +287,9 @@ export default function GoalTracker() {
             <span
               className={`text-xs tabular-nums ${
                 title.length >= 100
-                  ? "text-red-500 font-semibold"
+                  ? "text-[var(--destructive)] font-semibold"
                   : title.length >= 80
-                  ? "text-amber-500"
+                  ? "text-[var(--warning)]"
                   : "text-[var(--muted-foreground)]"
               }`}
               aria-live="polite"
@@ -308,7 +308,7 @@ export default function GoalTracker() {
             disabled={creating}
             className={`w-full rounded-lg border bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)] ${
               title.length >= 100
-                ? "border-red-500"
+                ? "border-[var(--destructive)]"
                 : "border-[var(--border)]"
             }`}
           />
@@ -390,7 +390,7 @@ export default function GoalTracker() {
         </button>
 
         {createError && (
-          <p className="text-sm text-red-500">{createError}</p>
+          <p className="text-sm text-[var(--destructive)]">{createError}</p>
         )}
       </form>
     </div>
@@ -401,7 +401,16 @@ function ConfettiBurst() {
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; color: string; rot: number; scale: number; speed: number }>>([]);
 
   useEffect(() => {
-    const colors = ["var(--accent)", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
+    const root = document.documentElement;
+    const cssVar = (v: string) => getComputedStyle(root).getPropertyValue(v).trim();
+    const colors = [
+      `var(--accent)`,
+      cssVar("--success"),
+      cssVar("--warning"),
+      cssVar("--destructive"),
+      "#8B5CF6",
+      "#EC4899",
+    ];
     const newParticles = [];
     for (let i = 0; i < 35; i++) {
       const angle = Math.random() * Math.PI * 2;
