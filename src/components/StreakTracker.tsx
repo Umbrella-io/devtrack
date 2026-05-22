@@ -188,12 +188,12 @@ export default function StreakTracker() {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+        <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
             type="button"
             onClick={fetchStreak}
-            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+            className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again
           </button>
@@ -359,7 +359,7 @@ export default function StreakTracker() {
             aria-label="Copy streak stats to clipboard"
           >
             {copied ? (
-              <span className="text-xs font-medium text-green-500">Copied!</span>
+              <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
             ) : (
               <span className="text-base opacity-80 hover:opacity-100">📋</span>
             )}
@@ -497,7 +497,7 @@ export default function StreakTracker() {
                 type="button"
                 onClick={handleCancelFreeze}
                 disabled={cancelling}
-                className="rounded-md bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400 transition hover:bg-red-500/20 disabled:opacity-60"
+                className="rounded-md bg-[var(--destructive)]/10 px-2.5 py-1 text-xs font-medium text-[var(--destructive)] transition hover:bg-[var(--destructive)]/20 disabled:opacity-60"
               >
                 {cancelling ? "Removing..." : "Yes, remove"}
               </button>
@@ -689,7 +689,7 @@ function StreakCalendar({
               title={tooltipText}
             >
               {!isFuture && (
-                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-[var(--accent-foreground)] opacity-0 group-hover:opacity-100 transition-opacity">
                   {dayData.dayOfMonth}
                 </span>
               )}
@@ -851,10 +851,10 @@ function calculateMonthlyTrend(contrib: ContributionData | undefined | null): Mo
 
     if (deltaCalc > 0) {
       text = `↑${formatted}% vs last month`;
-      colorClass = "text-green-500 font-medium";
+      colorClass = "text-[var(--success)] font-medium";
     } else if (deltaCalc < 0) {
       text = `↓${Math.abs(deltaCalc).toFixed(0)}% vs last month`;
-      colorClass = "text-red-500 font-medium";
+      colorClass = "text-[var(--destructive)] font-medium";
     } else {
       text = `=0% vs last month`;
       colorClass = "text-[var(--muted-foreground)] font-medium";
