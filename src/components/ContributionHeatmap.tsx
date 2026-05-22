@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
@@ -345,5 +345,3 @@ export default function ContributionHeatmap({
     </div>
   );
 }
- 
- 
