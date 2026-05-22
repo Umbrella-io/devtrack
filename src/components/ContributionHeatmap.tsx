@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { CSSProperties } from "react";
-import { useHeatmapTheme, getHeatmapCellStyle } from "@/hooks/useHeatmapTheme";
+import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 
 interface ContributionHeatmapProps {
   days?: number;
@@ -24,16 +23,18 @@ const CELL_SIZE = 12;
 const CELL_GAP = 2;
 const LABEL_WIDTH = 42;
 const HEADER_HEIGHT = 18;
+
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// Memoized formatting engine to avoid recreation garbage collection cycles inside render loops
+const monthFormatter = new Intl.DateTimeFormat("en-US", { month: "short" });
 
 function formatDateKey(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-
   return `${year}-${month}-${day}`;
 }
-
 
 function buildHeatmap(days: number, contributions: Record<string, number>) {
   const endDate = new Date();
@@ -56,21 +57,21 @@ function buildHeatmap(days: number, contributions: Record<string, number>) {
 
   while (cursor <= lastWeekEnd) {
     const dateKey = formatDateKey(cursor);
-
     cells.push({
       date: new Date(cursor),
       dateKey,
       count: contributions[dateKey] ?? 0,
       inRange: cursor >= startDate && cursor <= endDate,
     });
-
     cursor.setDate(cursor.getDate() + 1);
   }
 
   return cells;
 }
 
-export default function ContributionHeatmap({ days = DEFAULT_DAYS }: ContributionHeatmapProps) {
+export default function ContributionHeatmap({
+  days = DEFAULT_DAYS,
+}: ContributionHeatmapProps) {
   const [data, setData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,15 +85,14 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
 
     fetch(`/api/metrics/contributions?days=${days}`)
       .then((response) => {
-        if (!response.ok) {
-          throw new Error("API error");
-        }
-
+        if (!response.ok) throw new Error("API error");
         return response.json();
       })
       .then((result: ContributionResponse) => {
         if (!active) return;
         setData(result.data ?? {});
+        setLastUpdated(new Date());
+        setMinutesAgo(0);
       })
       .catch(() => {
         if (!active) return;
@@ -101,8 +101,6 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
       .finally(() => {
         if (!active) return;
         setLoading(false);
-        setLastUpdated(new Date());
-        setMinutesAgo(0);
       });
 
     return () => {
@@ -112,39 +110,51 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
 
   useEffect(() => {
     if (!lastUpdated) return;
-
     const interval = setInterval(() => {
       setMinutesAgo(Math.floor((Date.now() - lastUpdated.getTime()) / 60000));
     }, 60000);
-
     return () => clearInterval(interval);
   }, [lastUpdated]);
 
   const { themeConfig, theme, setTheme } = useHeatmapTheme();
   const cells = useMemo(() => buildHeatmap(days, data), [days, data]);
   const weekCount = Math.ceil(cells.length / 7);
+
+  // 100% MATHEMATICALLY PRECISE MONTH TRACKING SYSTEM
   const monthMarkers = useMemo(() => {
-    const seen = new Set<string>();
+    const markers: Array<{ label: string; weekIndex: number }> = [];
+    const seenMonths = new Set<string>();
 
-    return cells.reduce<Array<{ label: string; weekIndex: number }>>((markers, cell, index) => {
-      if (!cell.inRange) return markers;
+    for (let w = 0; w < weekCount; w++) {
+      const weekCells = cells.slice(w * 7, (w + 1) * 7);
 
-      const monthKey = `${cell.date.getFullYear()}-${cell.date.getMonth()}`;
-      if (seen.has(monthKey)) return markers;
+      for (const cell of weekCells) {
+        if (!cell.inRange) continue;
 
-      seen.add(monthKey);
-      markers.push({
-        label: cell.date.toLocaleDateString("en-US", { month: "short" }),
-        weekIndex: Math.floor(index / 7),
-      });
+        const currentMonth = cell.date.getMonth();
+        const currentYear = cell.date.getFullYear();
+        const monthKey = `${currentYear}-${currentMonth}`;
 
-      return markers;
-    }, []);
-  }, [cells]);
+        if (!seenMonths.has(monthKey)) {
+          seenMonths.add(monthKey);
+
+          markers.push({
+            label: monthFormatter.format(cell.date),
+            weekIndex: w,
+          });
+          break; // Move immediately to scanning the next column track block
+        }
+      }
+    }
+    return markers;
+  }, [cells, weekCount]);
+
+  // Shared matrix geometries matching baseline canvas dimensions
+  const totalGridWidth = LABEL_WIDTH + (weekCount * CELL_SIZE) + ((weekCount - 1) * CELL_GAP);
 
   const gridStyle = {
     gridTemplateColumns: `${LABEL_WIDTH}px repeat(${weekCount}, ${CELL_SIZE}px)`,
-    gridTemplateRows: `${HEADER_HEIGHT}px repeat(7, ${CELL_SIZE}px)`,
+    gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
     columnGap: `${CELL_GAP}px`,
     rowGap: `${CELL_GAP}px`,
   } as const;
@@ -153,34 +163,34 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Contribution Heatmap</h2>
           <p className="text-sm text-[var(--muted-foreground)]">Last {days} days of commit activity.</p>
         </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setTheme("default")}
-              style={theme === "default" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}
-              className="px-2 py-1 text-xs rounded"
-            >
-              Default
-            </button>
-            <button
-              type="button"
-              onClick={() => setTheme("colour-blind-friendly")}
-              style={theme === "colour-blind-friendly" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}
-              className="px-2 py-1 text-xs rounded"
-            >
-              Colour-blind
-            </button>
-          </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setTheme("default")}
+            style={theme === "default" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}
+            className="rounded px-2 py-1 text-xs"
+          >
+            Default
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme("colour-blind-friendly")}
+            style={theme === "colour-blind-friendly" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}
+            className="rounded px-2 py-1 text-xs"
+          >
+            Colour-blind
+          </button>
+        </div>
 
         <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
           <span>Less</span>
-                <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1">
             {[0, 1, 3, 6, 10].map((count) => {
               const swatch =
                 count === 0
@@ -207,7 +217,7 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
       </div>
 
       {loading ? (
-        <div className="h-[180px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
+        <div className="h-[180px] animate-pulse rounded-lg bg-[var(--card-muted)]" />
       ) : error ? (
         <div className="flex h-[180px] items-center rounded-lg border border-red-500/30 bg-red-500/10 px-4">
           <p className="text-sm text-red-400">{error} Please try refreshing.</p>
@@ -215,24 +225,44 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
       ) : (
         <>
           <div className="overflow-x-auto pb-2">
-            <div className="w-max mx-auto">
-              <div className="grid items-end" style={gridStyle}>
-                <div />
-                {monthMarkers.map((marker) => (
-                  <div
-                    key={`${marker.label}-${marker.weekIndex}`}
-                    className="text-left text-[10px] font-medium text-[var(--muted-foreground)]"
-                    style={{ gridRow: 1, gridColumn: marker.weekIndex + 2 }}
-                  >
-                    {marker.label}
-                  </div>
-                ))}
+            <div className="mx-auto flex flex-col gap-1" style={{ width: `${totalGridWidth}px` }}>
+              
+              {/* MATHEMATICAL COORDINATE TIMELINE HEADER BANNER CONTAINER */}
+              <div 
+                className="relative w-full text-[10px] font-medium text-[var(--muted-foreground)]" 
+                style={{ height: `${HEADER_HEIGHT}px` }}
+              >
+                {monthMarkers.map((marker) => {
+                  const absoluteLeftOffset = LABEL_WIDTH + (marker.weekIndex * (CELL_SIZE + CELL_GAP));
 
+                  return (
+                    <div
+                      key={`${marker.label}-${marker.weekIndex}`}
+                      className="absolute top-0 text-left overflow-hidden text-ellipsis whitespace-nowrap"
+                      style={{
+                        left: `${absoluteLeftOffset}px`,
+                        width: "auto",
+                        minWidth: "max-content",
+                        paddingRight: "4px",
+                      }}
+                    >
+                      {marker.label}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Grid System Area mapping identical columns */}
+              <div className="grid items-center" style={gridStyle}>
                 {DAY_LABELS.map((label, rowIndex) => (
                   <div
                     key={label}
-                    className="flex items-center justify-end pr-1 text-[10px] text-[var(--muted-foreground)]"
-                    style={{ gridRow: rowIndex + 2, gridColumn: 1, opacity: rowIndex % 2 === 0 ? 1 : 0 }}
+                    className="flex items-center justify-end pr-2 text-[10px] text-[var(--muted-foreground)]"
+                    style={{
+                      gridRow: rowIndex + 1,
+                      gridColumn: 1,
+                      opacity: rowIndex % 2 === 0 ? 1 : 0,
+                    }}
                   >
                     {rowIndex % 2 === 0 ? label : ""}
                   </div>
@@ -256,14 +286,26 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
                       title={isFuture ? "" : tooltip}
                       aria-label={isFuture ? `${cell.dateKey}: future date` : tooltip}
                       disabled={isFuture}
-                      className={`group relative z-0 h-3 w-3 rounded-[3px] border transition-transform hover:z-20 hover:scale-110 focus:z-20 focus:outline-none focus:ring-2 focus:ring-[var(--heatmap-focus-ring)] disabled:cursor-default disabled:opacity-30 ${cell.inRange ? "" : "opacity-35"}`}
-                        style={{
-                          gridRow: dayIndex + 2,
-                          gridColumn: weekIndex + 2,
-                          backgroundColor: isFuture ? "transparent" : (cell.count === 0 ? themeConfig.missed : cell.count < 3 ? themeConfig.levelOne : cell.count < 6 ? themeConfig.levelTwo : cell.count < 10 ? themeConfig.levelThree : themeConfig.levelFour),
-                          borderColor: themeConfig.border,
-                          ["--heatmap-focus-ring" as any]: themeConfig.accent,
-                        }}
+                      className={`group relative z-0 h-3 w-3 rounded-[3px] border transition-transform hover:z-20 hover:scale-110 focus:z-20 focus:outline-none focus:ring-2 focus:ring-[var(--heatmap-focus-ring)] disabled:cursor-default disabled:opacity-30 ${
+                        cell.inRange ? "" : "opacity-35"
+                      }`}
+                      style={{
+                        gridRow: dayIndex + 1,
+                        gridColumn: weekIndex + 2,
+                        backgroundColor: isFuture
+                          ? "transparent"
+                          : cell.count === 0
+                          ? themeConfig.missed
+                          : cell.count < 3
+                          ? themeConfig.levelOne
+                          : cell.count < 6
+                          ? themeConfig.levelTwo
+                          : cell.count < 10
+                          ? themeConfig.levelThree
+                          : themeConfig.levelFour,
+                        borderColor: themeConfig.border,
+                        ["--heatmap-focus-ring" as any]: themeConfig.accent,
+                      }}
                     >
                       {!isFuture && (
                         <span
@@ -285,7 +327,9 @@ export default function ContributionHeatmap({ days = DEFAULT_DAYS }: Contributio
             <p>
               {cells.filter((cell) => cell.inRange).reduce((total, cell) => total + cell.count, 0)} commits shown across {days} days.
             </p>
-            {lastUpdated && <p>{minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}</p>}
+            {lastUpdated && (
+              <p>{minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}</p>
+            )}
           </div>
         </>
       )}

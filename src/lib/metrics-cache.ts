@@ -3,9 +3,15 @@ import type { NextRequest } from "next/server";
 
 export const METRICS_CACHE_TTL_SECONDS = {
   contributions: 5 * 60,
+
   diffTrend: 10 * 60,
   repos: 10 * 60,
   prs: 10 * 60,
+
+  repos: 10 * 60,
+  prs: 10 * 60,
+  "pr-review-time": 10 * 60,
+
   streak: 2 * 60,
 } as const;
 
@@ -13,6 +19,16 @@ type MetricsCacheEndpoint = keyof typeof METRICS_CACHE_TTL_SECONDS;
 type CacheParamValue = boolean | number | string | null | undefined;
 
 let redisClient: Redis | null | undefined;
+
+
+function isTruthyCacheBypass(value: string | null): boolean {
+  if (!value) {
+    return false;
+  }
+
+  return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
+}
+
 
 function getRedisClient(): Redis | null {
   if (redisClient !== undefined) {
@@ -38,19 +54,31 @@ export function isMetricsCacheBypassed(req: NextRequest): boolean {
     req.nextUrl.searchParams.get("sync");
   const bypassHeader = req.headers.get("x-devtrack-cache-bypass");
 
+
   return bypassParam === "1" || bypassParam === "true" || bypassHeader === "1";
+
+  return isTruthyCacheBypass(bypassParam) || isTruthyCacheBypass(bypassHeader);
+
 }
 
 export function metricsCacheKey(
   userId: string,
   endpoint: MetricsCacheEndpoint,
+
   params: Record<string, CacheParamValue> = {},
+
+  params: Record<string, CacheParamValue> = {}
+
 ): string {
   const cacheParams = new URLSearchParams();
 
   Object.entries(params)
     .filter(([, value]) => value !== undefined && value !== null)
+
     .sort(([a], [b]) => a.localeCompare(b))
+
+    .sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+
     .forEach(([key, value]) => cacheParams.set(key, String(value)));
 
   return `metrics:${userId}:${endpoint}:${cacheParams.toString() || "default"}`;
@@ -72,12 +100,23 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
 export async function cacheSet<T>(
   key: string,
   value: T,
+
   ttlSeconds: number,
+
+  ttlSeconds: number
+
 ): Promise<void> {
   const redis = getRedisClient();
   if (!redis) {
     return;
   }
+
+
+  if (typeof ttlSeconds !== "number" || ttlSeconds <= 0 || !Number.isFinite(ttlSeconds)) {
+    console.warn("Invalid TTL value:", ttlSeconds);
+    return;
+  }
+
 
   try {
     await redis.set(key, value, { ex: ttlSeconds });
@@ -92,7 +131,11 @@ export async function withMetricsCache<T>(
     key: string;
     ttlSeconds: number;
   },
+
   loadFresh: () => Promise<T>,
+
+  loadFresh: () => Promise<T>
+
 ): Promise<T> {
   if (!options.bypass) {
     const cached = await cacheGet<T>(options.key);

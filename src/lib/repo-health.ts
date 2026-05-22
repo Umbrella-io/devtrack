@@ -1,6 +1,10 @@
 import type { RepoHealthScore, RepoHealthSignals } from "@/types/repo-health";
 
 function clamp(n: number, min: number, max: number): number {
+  if (!Number.isFinite(n)) {
+    return min;
+  }
+
   return Math.min(max, Math.max(min, n));
 }
 
@@ -57,12 +61,12 @@ export function computeHealthScore(
     scoreDaysSinceLastCommit(signals.daysSinceLastCommit);
 
   const rounded = Math.round(score);
+  const clampedScore = clamp(rounded, 0, 100);
 
   return {
     repo,
-    score: clamp(rounded, 0, 100),
+    score: clampedScore,
     signals,
-    grade: gradeForScore(rounded),
+    grade: gradeForScore(clampedScore),
   };
 }
-
