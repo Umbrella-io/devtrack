@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateBadgeSVG } from "../badge-utils";
+import {
+  checkBadgeRateLimit,
+  getBadgeClientIp,
+} from "@/lib/badge-rate-limit";
 
 export const dynamic = "force-dynamic";
 
 const GITHUB_API = "https://api.github.com";
+const GITHUB_USERNAME_RE = /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i;
 
 interface StreakData {
   current: number;
@@ -46,7 +51,7 @@ async function fetchStreak(
   const sinceStr = since.toISOString().slice(0, 10);
 
   const url = `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`;
-  
+
   const searchRes = await fetchGitHubWithToken(url, token);
 
   if (!searchRes.ok) {
@@ -63,7 +68,6 @@ async function fetchStreak(
     items: Array<{ commit: { author: { date: string } } }>;
   };
 
-  // Unique commit days
   const daySet: Record<string, true> = {};
   for (const item of data.items) {
     daySet[item.commit.author.date.slice(0, 10)] = true;
@@ -74,7 +78,6 @@ async function fetchStreak(
     return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
   }
 
-  // Build streaks
   let longestStreak = 1;
   let currentRun = 1;
   const runs: { start: string; end: string; length: number }[] = [];
@@ -101,7 +104,6 @@ async function fetchStreak(
     length: currentRun,
   });
 
-  // Current streak: check if last commit day is today or yesterday
   const lastDay = commitDays[commitDays.length - 1];
   const today = toDateStr(new Date());
   const yesterday = toDateStr(new Date(Date.now() - 86400000));
@@ -119,63 +121,63 @@ async function fetchStreak(
 }
 
 export async function GET(req: NextRequest) {
+  const ip = getBadgeClientIp(req);
+  const rateLimit = checkBadgeRateLimit(ip);
+
+  if (!rateLimit.allowed) {
+    return new NextResponse("Rate limit exceeded", {
+      status: 429,
+      headers: {
+        "Retry-After": String(
+          Math.max(rateLimit.reset - Math.floor(Date.now() / 1000), 1)
+        ),
+        "X-RateLimit-Limit": "20",
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": String(rateLimit.reset),
+      },
+    });
+  }
+
   try {
     const username = req.nextUrl.searchParams.get("user");
 
-    if (!username) {
-      return NextResponse.json(
-        { error: "Missing 'user' query parameter" },
-        { status: 400 }
-      );
-    }
-
-    // Validate username is a string and not too long
-    if (typeof username !== "string" || username.length > 50) {
+    if (!username || !GITHUB_USERNAME_RE.test(username)) {
       return NextResponse.json(
         { error: "Invalid username" },
         { status: 400 }
       );
     }
 
-    console.log(`Fetching streak badge for user: ${username}`);
-
-    // Use GITHUB_TOKEN env var if available for higher rate limits
     const githubToken = process.env.GITHUB_TOKEN;
-    if (!githubToken) {
-      console.warn("⚠️ GITHUB_TOKEN not set - using unauthenticated API (60 req/hour limit)");
-    }
-
-    // Fetch streak data
     const streak = await fetchStreak(username, githubToken);
-    console.log(`Streak data for ${username}:`, streak);
 
-    // Generate SVG badge
     const svg = generateBadgeSVG({
-  label: "DevTrack",
-  value: `🔥 ${streak.current} day streak`,
-  color: streak.current > 0 ? "#4c1" : "#e05d44",
-  labelColor: "#555",
-});
+      label: "DevTrack",
+      value: `🔥 ${streak.current} day streak`,
+      color: streak.current > 0 ? "#4c1" : "#e05d44",
+      labelColor: "#555",
+    });
 
     return new NextResponse(svg, {
       status: 200,
       headers: {
         "Content-Type": "image/svg+xml;charset=utf-8",
-        "Cache-Control":
-  "s-maxage=3600, stale-while-revalidate",
+        "Cache-Control": "s-maxage=3600, stale-while-revalidate=86400",
         "X-Content-Type-Options": "nosniff",
+        "X-RateLimit-Remaining": String(rateLimit.remaining),
+        "X-RateLimit-Reset": String(rateLimit.reset),
       },
     });
   } catch (error) {
     console.error("Error generating streak badge:", error);
 
-    // Return error badge
     const svg = generateBadgeSVG({
-  label: "DevTrack",
-  value: "Error",
-  color: "#ef4444",
-  labelColor: "#555",
-});
+      label: "DevTrack",
+      value: "Error",
+      color: "#ef4444",
+      labelColor: "#555",
+    });
+
     return new NextResponse(svg, {
       status: 500,
       headers: {

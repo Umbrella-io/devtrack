@@ -19,6 +19,8 @@ import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
 import PersonalRecords from "@/components/PersonalRecords";
+import LocalCodingTime from "@/components/LocalCodingTime";
+import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -50,7 +52,7 @@ export default async function DashboardPage() {
         <PersonalRecords />
       </div>
 
-      {/* Row 1 */}
+      {/* Row 1: Contribution graph + Streak + Local Coding Time */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* LEFT SIDE */}
         <div className="lg:col-span-2">
@@ -73,6 +75,7 @@ export default async function DashboardPage() {
         {/* RIGHT SIDE */}
         <div className="flex flex-col gap-6">
           <StreakTracker />
+          <LocalCodingTime />
         </div>
       </div>
 
@@ -105,6 +108,11 @@ export default async function DashboardPage() {
         <TopRepos />
         <LanguageBreakdown />
         <GoalTracker />
+      </div>
+
+      {/* Row 6: Recent GitHub activity */}
+      <div className="mt-6">
+        <RecentActivity />
       </div>
     </div>
   );
