@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
+import PrivacySettings from "@/components/PrivacySettings";
 
 interface UserSettings {
   id: string;
@@ -543,6 +544,8 @@ function SettingsPageContent() {
             )}
           </div>
         </div>
+
+        <PrivacySettings />
       </div>
     </div>
   );
