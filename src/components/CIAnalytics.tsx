@@ -19,29 +19,24 @@ export default function CIAnalytics() {
   const [rateLimitResetTime, setRateLimitResetTime] = useState<Date | null>(null);
   const [isRateLimited, setIsRateLimited] = useState(false);
 
-  // Clear rate limit state once reset time passes
   useEffect(() => {
     if (!rateLimitResetTime) return;
-
     const msUntilReset = rateLimitResetTime.getTime() - Date.now();
     if (msUntilReset <= 0) {
       setIsRateLimited(false);
       setRateLimitResetTime(null);
       return;
     }
-
     const timer = setTimeout(() => {
       setIsRateLimited(false);
       setRateLimitResetTime(null);
       setError(null);
     }, msUntilReset);
-
     return () => clearTimeout(timer);
   }, [rateLimitResetTime]);
 
   const fetchCIAnalytics = useCallback(() => {
     if (isRateLimited) return;
-
     setLoading(true);
     setError(null);
 
@@ -53,7 +48,6 @@ export default function CIAnalytics() {
     fetch(`/api/metrics/ci${accountParam}`)
       .then((res) => {
         if (res.status === 403) {
-          // Read reset time from header
           const resetHeader = res.headers.get("X-RateLimit-Reset");
           if (resetHeader) {
             const resetDate = new Date(parseInt(resetHeader, 10) * 1000);
@@ -67,15 +61,9 @@ export default function CIAnalytics() {
               `GitHub API rate limit reached. Resets at ${resetTimeStr}. Try again later.`
             );
           }
-          throw new Error(
-            "GitHub API rate limit reached. Please try again later."
-          );
+          throw new Error("GitHub API rate limit reached. Please try again later.");
         }
-
-        if (!res.ok) {
-          throw new Error("API error");
-        }
-
+        if (!res.ok) throw new Error("API error");
         return res.json();
       })
       .then((payload: CIAnalyticsData) => {
@@ -157,8 +145,8 @@ export default function CIAnalytics() {
         <div
           className={`rounded-lg border p-4 text-sm ${
             isRateLimited
-              ? "border-yellow-500/20 bg-yellow-500/10 text-yellow-400"
-              : "border-red-500/20 bg-red-500/10 text-red-400"
+              ? "border-[var(--border)] bg-[var(--control)] text-[var(--warning)]"
+              : "border-[var(--destructive)]/20 bg-[var(--destructive)]/10 text-[var(--destructive)]"
           }`}
         >
           <p>{error}</p>
@@ -166,7 +154,7 @@ export default function CIAnalytics() {
             <button
               type="button"
               onClick={fetchCIAnalytics}
-              className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+              className="mt-3 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
             >
               Try again
             </button>
