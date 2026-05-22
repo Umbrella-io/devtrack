@@ -1,3 +1,4 @@
+﻿import SSEListener from "@/components/SSEListener";
 import ContributionGraph from "@/components/ContributionGraph";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
@@ -31,6 +32,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <DashboardHeader />
+      <SSEListener userId={session?.githubId ?? ""} />
       <div className="mb-6 flex justify-end items-center gap-2">
         <Link
           href="/dashboard/settings"
