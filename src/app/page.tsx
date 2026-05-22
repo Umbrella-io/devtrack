@@ -35,14 +35,14 @@ export default async function HomePage() {
   ];
 
   return (
-    <main className="min-h-screen flex flex-col items-center px-4 py-24 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-black">
+    <main className="min-h-screen flex flex-col items-center px-4 py-24 bg-[var(--background)]">
       {/* Hero Section */}
       <div className="max-w-3xl text-center">
-        <h1 className="text-6xl font-extrabold mb-6 text-slate-950 dark:text-white tracking-tight drop-shadow-sm">
+        <h1 className="text-6xl font-extrabold mb-6 text-[var(--foreground)] tracking-tight drop-shadow-sm">
           DevTrack
         </h1>
 
-        <p className="text-xl text-slate-700 dark:text-slate-300 leading-relaxed mb-10">
+        <p className="text-xl text-[var(--muted-foreground)] leading-relaxed mb-10">
           Open-source developer productivity dashboard. Track coding habits,
           visualize GitHub contributions, and hit your goals.
         </p>
@@ -50,7 +50,7 @@ export default async function HomePage() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="/api/auth/signin/github?callbackUrl=/dashboard"
-            className="bg-slate-950 text-white px-7 py-3 rounded-xl font-semibold hover:bg-slate-800 transition-all shadow-sm"
+            className="bg-[var(--foreground)] text-[var(--background)] px-7 py-3 rounded-xl font-semibold hover:opacity-90 transition-all shadow-sm"
           >
             Sign in with GitHub
           </Link>
@@ -59,7 +59,7 @@ export default async function HomePage() {
             href="https://github.com/Priyanshu-byte-coder/devtrack"
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-slate-400 text-slate-900 dark:text-white px-7 py-3 rounded-xl font-semibold hover:border-slate-950 dark:hover:border-white hover:bg-slate-100 dark:hover:bg-slate-900 transition-all"
+            className="border border-[var(--border)] text-[var(--foreground)] px-7 py-3 rounded-xl font-semibold hover:border-[var(--foreground)] hover:bg-[var(--card-muted)] transition-all"
           >
             View on GitHub
           </a>
@@ -68,7 +68,7 @@ export default async function HomePage() {
 
       {/* Features Section */}
       <section className="w-full max-w-6xl mt-32">
-        <h2 className="text-4xl font-bold text-center text-slate-950 dark:text-white mb-14">
+        <h2 className="text-4xl font-bold text-center text-[var(--foreground)] mb-14">
           Everything you need to track your coding growth
         </h2>
 
@@ -76,15 +76,17 @@ export default async function HomePage() {
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="border border-slate-200 dark:border-slate-800 rounded-2xl p-7 bg-white dark:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-600 hover:shadow-lg hover:-translate-y-1 transition-all"
+              className="border border-[var(--border)] rounded-2xl p-7 bg-[var(--card-muted)] hover:border-[var(--muted-foreground)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
             >
-              <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-3xl mb-5">{feature.icon}</div>
+              <div className="w-14 h-14 rounded-2xl bg-[var(--card)] flex items-center justify-center text-3xl mb-5">
+                {feature.icon}
+              </div>
 
-              <h3 className="text-xl font-semibold text-slate-950 dark:text-white mb-3">
+              <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
                 {feature.title}
               </h3>
 
-              <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
+              <p className="text-[var(--muted-foreground)] text-sm leading-relaxed">
                 {feature.description}
               </p>
             </div>
