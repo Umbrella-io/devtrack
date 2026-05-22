@@ -12,6 +12,9 @@
 [![GSSoC 2026](https://img.shields.io/badge/GSSoC-2026-orange.svg)](https://gssoc.girlscript.tech/)
 [![Stack](https://img.shields.io/badge/stack-Next.js%20%7C%20Supabase%20%7C%20TypeScript-blue)](./DEVELOPMENT.md)
 [![Good First Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22)
+[![Contributors](https://img.shields.io/github/contributors/Priyanshu-byte-coder/devtrack?color=brightgreen)](https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors)
+[![Last Commit](https://img.shields.io/github/last-commit/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/commits/main)
+[![Open Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/issues)
 
 **[🌐 Live Demo](https://devtrack-delta.vercel.app)** · **[📖 Dev Guide](./DEVELOPMENT.md)** · **[🐛 Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[✨ Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)**
 
