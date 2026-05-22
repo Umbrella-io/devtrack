@@ -276,8 +276,8 @@ export default function WebhookManager() {
       </div>
 
       {newSecret && (
-        <div className="mb-6 rounded-lg border border-green-500/30 bg-green-500/10 p-4">
-          <p className="text-sm font-semibold text-green-400">Webhook Created!</p>
+        <div className="mb-6 rounded-lg border border-[var(--success)]/30 bg-[var(--success)]/10 p-4">
+          <p className="text-sm font-semibold text-[var(--success)]">Webhook Created!</p>
           <p className="mt-2 text-sm text-[var(--muted-foreground)]">
             Save this secret key - it will not be shown again:
           </p>
@@ -363,7 +363,7 @@ export default function WebhookManager() {
           </div>
 
           {creatingError && (
-            <p className="text-sm text-red-500">{creatingError}</p>
+            <p className="text-sm text-[var(--destructive)]">{creatingError}</p>
           )}
 
           <button
@@ -452,7 +452,7 @@ export default function WebhookManager() {
                   </button>
                   <button
                     onClick={() => handleDelete(webhook.id)}
-                    className="p-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="p-2 rounded-lg border border-[var(--destructive)]/30 text-[var(--destructive)] hover:bg-[var(--destructive)]/10 transition-colors"
                     title="Delete webhook"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -470,8 +470,8 @@ export default function WebhookManager() {
         <div
           className={`mt-4 rounded-lg border p-4 ${
             testResult.success
-              ? "border-green-500/30 bg-green-500/10 text-green-400"
-              : "border-red-500/30 bg-red-500/10 text-red-400"
+              ? "border-[var(--success)]/30 bg-[var(--success)]/10 text-[var(--success)]"
+              : "border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)]"
           }`}
         >
           {testResult.message}
@@ -519,7 +519,7 @@ export default function WebhookManager() {
                   >
                     <span
                       className={`h-2 w-2 rounded-full ${
-                        delivery.success ? "bg-green-500" : "bg-red-500"
+                        delivery.success ? "bg-[var(--success)]" : "bg-[var(--destructive)]"
                       }`}
                     />
                     <span className="flex-1 text-[var(--foreground)]">
