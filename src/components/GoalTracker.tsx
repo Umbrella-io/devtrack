@@ -481,6 +481,7 @@ export default function GoalTracker() {
               id="goal-target"
               type="number"
               min={1}
+              max={10000}
               value={target}
               onChange={(e) => setTarget(Number(e.target.value))}
               disabled={creating}
@@ -559,5 +560,58 @@ export default function GoalTracker() {
 }
 
 function ConfettiBurst() {
-  return null;
+  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; color: string; rot: number; scale: number; speed: number }>>([]);
+
+  useEffect(() => {
+    const colors = ["var(--accent)", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
+    const newParticles = [];
+    for (let i = 0; i < 35; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 30 + Math.random() * 140;
+      newParticles.push({
+        id: i,
+        x: Math.cos(angle) * distance,
+        y: Math.sin(angle) * distance - 20,
+        color: colors[Math.random() * colors.length | 0],
+        rot: Math.random() * 360 + 180,
+        scale: 0.5 + Math.random() * 0.7,
+        speed: 0.8 + Math.random() * 0.6,
+      });
+    }
+    setParticles(newParticles);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-50 flex items-center justify-center overflow-visible">
+      <style>{`
+        @keyframes confettiBurstAnim {
+          0% {
+            transform: translate(0, 0) rotate(0deg) scale(0);
+            opacity: 1;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(var(--scale));
+            opacity: 0;
+          }
+        }
+      `}</style>
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute w-2.5 h-2.5 rounded-sm"
+          style={{
+            backgroundColor: p.color,
+            ["--tx" as string]: `${p.x}px`,
+            ["--ty" as string]: `${p.y}px`,
+            ["--rot" as string]: `${p.rot}deg`,
+            ["--scale" as string]: p.scale,
+            animation: `confettiBurstAnim ${p.speed}s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
+          }}
+        />
+      ))}
+    </div>
+  );
 }
