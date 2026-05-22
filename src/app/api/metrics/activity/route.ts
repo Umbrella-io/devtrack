@@ -6,7 +6,14 @@ import {
   getAllAccounts,
 } from "@/lib/github-accounts";
 import { GITHUB_API, fetchUserEvents } from "@/lib/github";
+import {
+  isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
+  metricsCacheKey,
+  withMetricsCache,
+} from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
@@ -211,20 +218,43 @@ async function fetchFormattedActivityWithFallback(
   }
 }
 
+async function fetchActivityForAccount(
+  token: string,
+  githubLogin: string,
+  cacheContext: { bypass: boolean; userId: string }
+): Promise<ActivityItem[]> {
+  const key = metricsCacheKey(cacheContext.userId, "activity", {
+    githubLogin,
+  });
+
+  return withMetricsCache(
+    {
+      bypass: cacheContext.bypass,
+      key,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.activity,
+    },
+    async () => {
+      return fetchFormattedActivityWithFallback(token, githubLogin);
+    }
+  );
+}
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
-  if (!session?.accessToken) {
+  if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const accountId = req.nextUrl.searchParams.get("accountId");
+  const bypass = isMetricsCacheBypassed(req);
 
   if (!accountId) {
     try {
-      const items = await fetchFormattedActivityWithFallback(
+      const items = await fetchActivityForAccount(
         session.accessToken,
-        session.githubLogin
+        session.githubLogin,
+        { bypass, userId: session.githubId ?? session.githubLogin }
       );
       return Response.json({ items: items.slice(0, 15) });
     } catch {
@@ -232,15 +262,11 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  if (!session.githubId || !session.githubLogin) {
+  if (!session.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: userRow } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
+  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
 
   if (!userRow) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -258,7 +284,10 @@ export async function GET(req: NextRequest) {
 
     const results = await Promise.allSettled(
       accounts.map((account) =>
-        fetchFormattedActivityWithFallback(account.token, account.githubLogin)
+        fetchActivityForAccount(account.token, account.githubLogin, {
+          bypass,
+          userId: account.githubId,
+        })
       )
     );
 
@@ -286,9 +315,10 @@ export async function GET(req: NextRequest) {
 
   if (accountId === session.githubId) {
     try {
-      const items = await fetchFormattedActivityWithFallback(
+      const items = await fetchActivityForAccount(
         session.accessToken,
-        session.githubLogin
+        session.githubLogin,
+        { bypass, userId: session.githubId }
       );
       return Response.json({ items: items.slice(0, 15) });
     } catch {
@@ -314,13 +344,13 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const items = await fetchFormattedActivityWithFallback(
+    const items = await fetchActivityForAccount(
       token,
-      accountRow.github_login
+      accountRow.github_login,
+      { bypass, userId: accountId }
     );
     return Response.json({ items: items.slice(0, 15) });
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }
-
