@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Recurrence = "none" | "weekly" | "monthly";
 
@@ -24,54 +24,71 @@ const RECURRENCE_LABELS: Record<Recurrence, string> = {
 export default function GoalTracker() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
+
   const [title, setTitle] = useState("");
   const [target, setTarget] = useState(7);
   const [unit, setUnit] = useState("commits");
   const [recurrence, setRecurrence] = useState<Recurrence>("none");
+
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [activeConfettiGoalId, setActiveConfettiGoalId] = useState<string | null>(null);
+
   const prevGoalsRef = useRef<Map<string, boolean>>(new Map());
   const initialLoadDoneRef = useRef<boolean>(false);
 
   const loadGoals = useCallback(async () => {
     const response = await fetch("/api/goals");
     const data: { goals: Goal[] } = await response.json();
+
     const fetchedGoals = data.goals ?? [];
     setGoals(fetchedGoals);
+
     return fetchedGoals;
   }, []);
 
-  /** Sync commit-based goals from GitHub, then reload */
   const handleSync = useCallback(async () => {
     setSyncing(true);
     setSyncError(null);
+
     try {
-      const res = await fetch("/api/goals/sync", { method: "POST" });
+      const res = await fetch("/api/goals/sync", {
+        method: "POST",
+      });
+
       if (!res.ok) {
         let msg = "Sync failed. Please try again.";
+
         try {
           const errData = await res.json();
-          if (errData && errData.error) {
+
+          if (errData?.error) {
             msg = errData.error;
           }
         } catch {}
+
         if (res.status === 401) {
           msg = "Unauthorized. Please log in again.";
         } else if (res.status === 502) {
           msg = "GitHub sync failed: Expired token or missing repo scope.";
         }
+
         setSyncError(msg);
         return;
       }
+
       await loadGoals();
+
       setLastUpdated(new Date());
       setMinutesAgo(0);
     } catch {
@@ -81,16 +98,19 @@ export default function GoalTracker() {
     }
   }, [loadGoals]);
 
-  // On mount: load goals then auto-sync if stale
   useEffect(() => {
     loadGoals()
       .then(async (fetchedGoals) => {
         const needsSync = fetchedGoals.some((g: Goal) => {
           if (g.unit !== "commits") return false;
+
           if (!g.last_synced_at) return true;
+
           const syncedAt = new Date(g.last_synced_at).getTime();
-          return Date.now() - syncedAt > 15 * 60 * 1000; // > 15 mins
+
+          return Date.now() - syncedAt > 15 * 60 * 1000;
         });
+
         if (needsSync) {
           await handleSync();
         }
@@ -105,14 +125,22 @@ export default function GoalTracker() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+
     setCreating(true);
     setCreateError(null);
 
     try {
       const response = await fetch("/api/goals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, target, unit, recurrence }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          target,
+          unit,
+          recurrence,
+        }),
       });
 
       if (!response.ok) {
@@ -128,23 +156,29 @@ export default function GoalTracker() {
     setTarget(7);
     setUnit("commits");
     setRecurrence("none");
-    // Immediately sync if it was a commit-based goal
+
     if (unit === "commits") {
       await handleSync();
     } else {
       await loadGoals().catch(() => {});
     }
+
     setCreating(false);
   }
 
   async function handleDelete(id: string) {
     const previousGoals = goals;
+
     setGoals((prev) => prev.filter((g) => g.id !== id));
+
     setConfirmingId(null);
     setDeletingId(id);
 
     try {
-      const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/goals/${id}`, {
+        method: "DELETE",
+      });
+
       if (!res.ok) {
         setGoals(previousGoals);
       }
@@ -157,10 +191,17 @@ export default function GoalTracker() {
 
   function getCompletionLabel(goal: Goal): string {
     if (goal.current >= goal.target) {
-      if (goal.recurrence === "weekly") return "Completed this week ✓";
-      if (goal.recurrence === "monthly") return "Completed this month ✓";
+      if (goal.recurrence === "weekly") {
+        return "Completed this week ✓";
+      }
+
+      if (goal.recurrence === "monthly") {
+        return "Completed this month ✓";
+      }
+
       return "Completed ✓";
     }
+
     return "";
   }
 
@@ -169,11 +210,14 @@ export default function GoalTracker() {
 
     if (!initialLoadDoneRef.current) {
       const map = new Map<string, boolean>();
+
       for (const g of goals) {
         map.set(g.id, g.current >= g.target);
       }
+
       prevGoalsRef.current = map;
       initialLoadDoneRef.current = true;
+
       return;
     }
 
@@ -184,8 +228,11 @@ export default function GoalTracker() {
       if (wasCompleted === false && isCompleted) {
         if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
           setActiveConfettiGoalId(g.id);
+
           setTimeout(() => {
-            setActiveConfettiGoalId((curr) => (curr === g.id ? null : curr));
+            setActiveConfettiGoalId((curr) =>
+              curr === g.id ? null : curr
+            );
           }, 2500);
         }
       }
@@ -196,10 +243,15 @@ export default function GoalTracker() {
 
   useEffect(() => {
     if (!lastUpdated) return;
+
     const interval = setInterval(() => {
-      const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
+      const diff = Math.floor(
+        (Date.now() - lastUpdated.getTime()) / 60000
+      );
+
       setMinutesAgo(diff);
     }, 60000);
+
     return () => clearInterval(interval);
   }, [lastUpdated]);
 
@@ -208,10 +260,12 @@ export default function GoalTracker() {
       <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading weekly goals</span>
+
           <div
             aria-hidden="true"
             className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse"
           />
+
           {[1, 2, 3].map((i) => (
             <div key={i} aria-hidden="true" className="mb-4">
               <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
@@ -225,9 +279,12 @@ export default function GoalTracker() {
 
   return (
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      {/* ── Header ──────────────────────────────────────────────────── */}
+
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Goals</h2>
+        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+          Goals
+        </h2>
+
         <button
           onClick={handleSync}
           disabled={syncing}
@@ -235,39 +292,24 @@ export default function GoalTracker() {
           aria-label="Refresh commit goals"
           className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-1 text-xs text-[var(--muted-foreground)] transition hover:text-[var(--card-foreground)] hover:border-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`}
-            aria-hidden="true"
-          >
-            <path
-              fillRule="evenodd"
-              d="M15.312 3.312a.75.75 0 011.06 1.06l-1.43 1.43A8 8 0 1118 10a.75.75 0 01-1.5 0 6.5 6.5 0 10-1.923 4.596l-1.43-1.43a.75.75 0 011.06-1.06l2.75 2.75a.75.75 0 010 1.06l-2.75 2.75a.75.75 0 01-1.06-1.06l1.43-1.43A8 8 0 012 10 8 8 0 0115.312 3.312z"
-              clipRule="evenodd"
-            />
-          </svg>
           {syncing ? "Syncing…" : "Refresh"}
         </button>
       </div>
 
-      {/* Sync Error Display */}
       {syncError && (
-        <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+        <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 px-3 py-2 text-xs text-[var(--destructive)]">
           <span>⚠️ {syncError}</span>
+
           <button
             type="button"
             onClick={() => setSyncError(null)}
-            className="text-red-400 hover:text-red-300 font-semibold"
-            aria-label="Dismiss error"
+            className="font-semibold"
           >
             ✕
           </button>
         </div>
       )}
 
-      {/* ── Goal list ───────────────────────────────────────────────── */}
       {goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No goals yet. Create one below.
@@ -275,79 +317,90 @@ export default function GoalTracker() {
       ) : (
         <ul className="space-y-4">
           {goals.map((goal) => {
-            const pct = Math.min((goal.current / goal.target) * 100, 100);
+            const pct = Math.min(
+              (goal.current / goal.target) * 100,
+              100
+            );
+
             const isConfirming = confirmingId === goal.id;
             const isDeleting = deletingId === goal.id;
+
             const completed = goal.current >= goal.target;
+
             const completionLabel = getCompletionLabel(goal);
+
             const isAutoSynced = goal.unit === "commits";
 
             return (
               <li key={goal.id} className="relative">
-                {activeConfettiGoalId === goal.id && <ConfettiBurst />}
+
+                {activeConfettiGoalId === goal.id && (
+                  <ConfettiBurst />
+                )}
+
                 <div className="flex justify-between items-center text-sm mb-1">
+
                   <div className="flex flex-col gap-0.5">
+
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[var(--card-foreground)]">{goal.title}</span>
+
+                      <span className="text-[var(--card-foreground)]">
+                        {goal.title}
+                      </span>
+
                       {goal.recurrence !== "none" && (
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
-                          goal.recurrence === "weekly"
-                            ? "bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/30"
-                            : "bg-[var(--card-muted)] text-[var(--muted-foreground)] border-[var(--border)]"
-                        }`}>
+                        <span
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
+                            goal.recurrence === "weekly"
+                              ? "bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/30"
+                              : "bg-[var(--card-muted)] text-[var(--muted-foreground)] border-[var(--border)]"
+                          }`}
+                        >
                           {RECURRENCE_LABELS[goal.recurrence]}
                         </span>
                       )}
+
                       {isAutoSynced && (
-                        <span
-                          title={
-                            goal.last_synced_at
-                              ? `Last synced: ${new Date(goal.last_synced_at).toLocaleTimeString()}`
-                              : "Auto-synced from GitHub commits"
-                          }
-                          className="inline-flex items-center gap-0.5 rounded-full bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)]"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="w-2.5 h-2.5"
-                            aria-hidden="true"
-                          >
-                            <path d="M11.983 1.907a.75.75 0 00-1.292-.657l-8.5 9.5A.75.75 0 002.75 12h6.572l-1.305 6.093a.75.75 0 001.292.657l8.5-9.5A.75.75 0 0017.25 8h-6.572l1.305-6.093z" />
-                          </svg>
-                          Auto-synced
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)]">
+                          ⚡ Auto-synced
                         </span>
                       )}
                     </div>
+
                     {completed && (
-                      <span className="text-xs font-medium text-emerald-500">
+                      <span className="text-xs font-medium text-[var(--success)]">
                         {completionLabel}
                       </span>
                     )}
                   </div>
 
                   <div className="flex items-center gap-2">
+
                     <span className="text-[var(--muted-foreground)]">
                       {goal.current}/{goal.target} {goal.unit}
                     </span>
 
                     {isConfirming ? (
                       <span className="flex items-center gap-1 text-xs">
-                        <span className="text-[var(--muted-foreground)]">Delete?</span>
+                        <span className="text-[var(--muted-foreground)]">
+                          Delete?
+                        </span>
+
                         <button
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
-                          className="text-red-400 hover:text-red-300 font-semibold transition-colors disabled:opacity-50"
-                          aria-label={`Confirm delete goal: ${goal.title}`}
+                          className="text-[var(--destructive)] font-semibold transition-colors disabled:opacity-50"
                         >
                           Yes
                         </button>
-                        <span className="text-[var(--muted-foreground)]">/</span>
+
+                        <span className="text-[var(--muted-foreground)]">
+                          /
+                        </span>
+
                         <button
                           onClick={() => setConfirmingId(null)}
                           className="text-[var(--muted-foreground)] hover:text-[var(--card-foreground)] transition-colors"
-                          aria-label="Cancel delete"
                         >
                           No
                         </button>
@@ -356,13 +409,10 @@ export default function GoalTracker() {
                       <button
                         onClick={() => setConfirmingId(goal.id)}
                         disabled={isDeleting}
-                        className="text-[var(--muted-foreground)] hover:text-red-400 transition-colors disabled:opacity-50"
-                        aria-label={`Delete goal: ${goal.title}`}
+                        className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors disabled:opacity-50"
                         title="Delete goal"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
-                          <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
-                        </svg>
+                        🗑
                       </button>
                     )}
                   </div>
@@ -370,7 +420,11 @@ export default function GoalTracker() {
 
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
-                    className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
+                    className={`h-full rounded-full transition-all ${
+                      completed
+                        ? "bg-[var(--success)]"
+                        : "bg-[var(--accent)]"
+                    }`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -382,16 +436,25 @@ export default function GoalTracker() {
 
       {lastUpdated && (
         <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
-          {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
+          {minutesAgo === 0
+            ? "Updated just now"
+            : `Updated ${minutesAgo} min ago`}
         </p>
       )}
 
-      {/* ── Create form ─────────────────────────────────────────────── */}
-      <form onSubmit={handleCreate} className="mt-6 space-y-3 border-t border-[var(--border)] pt-4">
+      <form
+        onSubmit={handleCreate}
+        className="mt-6 space-y-3 border-t border-[var(--border)] pt-4"
+      >
+
         <div>
-          <label htmlFor="goal-title" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+          <label
+            htmlFor="goal-title"
+            className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
+          >
             Goal title
           </label>
+
           <input
             id="goal-title"
             type="text"
@@ -405,10 +468,15 @@ export default function GoalTracker() {
         </div>
 
         <div className="flex gap-3">
+
           <div className="flex-1">
-            <label htmlFor="goal-target" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+            <label
+              htmlFor="goal-target"
+              className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
+            >
               Target
             </label>
+
             <input
               id="goal-target"
               type="number"
@@ -421,9 +489,13 @@ export default function GoalTracker() {
           </div>
 
           <div className="flex-1">
-            <label htmlFor="goal-unit" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+            <label
+              htmlFor="goal-unit"
+              className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
+            >
               Unit
             </label>
+
             <select
               id="goal-unit"
               value={unit}
@@ -438,11 +510,11 @@ export default function GoalTracker() {
           </div>
         </div>
 
-        {/* Recurrence Picker */}
         <div>
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
             Recurrence
           </label>
+
           <div className="flex gap-2">
             {(["none", "weekly", "monthly"] as Recurrence[]).map((r) => (
               <button
@@ -452,7 +524,7 @@ export default function GoalTracker() {
                 disabled={creating}
                 className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium border transition-all ${
                   recurrence === r
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
                     : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
                 }`}
               >
@@ -460,35 +532,26 @@ export default function GoalTracker() {
               </button>
             ))}
           </div>
-          {recurrence !== "none" && (
-            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-              {recurrence === "weekly" ? "Resets every Monday." : "Resets on the 1st of each month."}
-            </p>
-          )}
         </div>
 
         {unit === "commits" && (
           <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--accent)]/10 px-3 py-2">
-            ⚡ This goal will auto-update from your GitHub commit count each period.
+            ⚡ This goal will auto-update from your GitHub commit count.
           </p>
         )}
 
         <button
           type="submit"
           disabled={creating || !title.trim()}
-          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {creating ? (
-            <>
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              Creating...
-            </>
-          ) : (
-            "Add goal"
-          )}
+          {creating ? "Creating..." : "Add goal"}
         </button>
+
         {createError && (
-          <p className="text-sm text-red-500">{createError}</p>
+          <p className="text-sm text-[var(--destructive)]">
+            {createError}
+          </p>
         )}
       </form>
     </div>
@@ -496,58 +559,5 @@ export default function GoalTracker() {
 }
 
 function ConfettiBurst() {
-  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; color: string; rot: number; scale: number; speed: number }>>([]);
-
-  useEffect(() => {
-    const colors = ["var(--accent)", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
-    const newParticles = [];
-    for (let i = 0; i < 35; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 30 + Math.random() * 140;
-      newParticles.push({
-        id: i,
-        x: Math.cos(angle) * distance,
-        y: Math.sin(angle) * distance - 20,
-        color: colors[Math.random() * colors.length | 0],
-        rot: Math.random() * 360 + 180,
-        scale: 0.5 + Math.random() * 0.7,
-        speed: 0.8 + Math.random() * 0.6,
-      });
-    }
-    setParticles(newParticles);
-  }, []);
-
-  return (
-    <div className="absolute inset-0 pointer-events-none z-50 flex items-center justify-center overflow-visible">
-      <style>{`
-        @keyframes confettiBurstAnim {
-          0% {
-            transform: translate(0, 0) rotate(0deg) scale(0);
-            opacity: 1;
-          }
-          50% {
-            opacity: 1;
-          }
-          100% {
-            transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(var(--scale));
-            opacity: 0;
-          }
-        }
-      `}</style>
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          className="absolute w-2.5 h-2.5 rounded-sm"
-          style={{
-            backgroundColor: p.color,
-            ["--tx" as string]: `${p.x}px`,
-            ["--ty" as string]: `${p.y}px`,
-            ["--rot" as string]: `${p.rot}deg`,
-            ["--scale" as string]: p.scale,
-            animation: `confettiBurstAnim ${p.speed}s cubic-bezier(0.25, 1, 0.5, 1) forwards`,
-          }}
-        />
-      ))}
-    </div>
-  );
+  return null;
 }
