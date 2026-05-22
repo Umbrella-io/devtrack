@@ -67,14 +67,22 @@ export default function GoalTracker() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create goal");
+        let message = "Failed to create goal. Please try again.";
+        try {
+          const err = await response.json() as { error?: string };
+          if (typeof err.error === "string" && err.error.length > 0) {
+            message = err.error;
+          }
+        } catch {
+          // JSON parse failed, keep the default message
+        }
+        throw new Error(message);
       }
-    } catch {
-      setCreateError("Failed to create goal. Please try again.");
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "Failed to create goal. Please try again.");
       setCreating(false);
       return;
     }
-
     setTitle("");
     setTarget(7);
     setUnit("commits");
@@ -272,9 +280,23 @@ export default function GoalTracker() {
       {/* Goal Creation Form */}
       <form onSubmit={handleCreate} className="mt-6 space-y-3 border-t border-[var(--border)] pt-4">
         <div>
-          <label htmlFor="goal-title" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
-            Goal title
-          </label>
+          <div className="mb-1 flex items-center justify-between">
+            <label htmlFor="goal-title" className="block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+              Goal title
+            </label>
+            <span
+              className={`text-xs tabular-nums ${
+                title.length >= 100
+                  ? "text-red-500 font-semibold"
+                  : title.length >= 80
+                  ? "text-amber-500"
+                  : "text-[var(--muted-foreground)]"
+              }`}
+              aria-live="polite"
+            >
+              {title.length}/100
+            </span>
+          </div>
           <input
             id="goal-title"
             type="text"
@@ -282,8 +304,13 @@ export default function GoalTracker() {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Make 10 commits"
             required
+            maxLength={100}
             disabled={creating}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)]"
+            className={`w-full rounded-lg border bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)] ${
+              title.length >= 100
+                ? "border-red-500"
+                : "border-[var(--border)]"
+            }`}
           />
         </div>
 
@@ -425,4 +452,4 @@ function ConfettiBurst() {
       ))}
     </div>
   );
-}
+}
