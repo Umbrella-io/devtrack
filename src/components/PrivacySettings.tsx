@@ -104,7 +104,7 @@ export default function PrivacySettings() {
           <button
             onClick={handleExport}
             disabled={downloading}
-            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:opacity-60"
           >
             {downloading ? "Exporting..." : "Export My Data"}
           </button>
@@ -154,7 +154,7 @@ export default function PrivacySettings() {
                   <button
                     onClick={handleDeleteAccount}
                     disabled={deleting || deleteConfirmText !== "DELETE"}
-                    className="rounded-lg bg-[var(--destructive)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--destructive)]/90 disabled:opacity-60"
+                    className="rounded-lg bg-[var(--destructive)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:bg-[var(--destructive)]/90 disabled:opacity-60"
                   >
                     {deleting ? "Deleting..." : "Confirm Delete"}
                   </button>

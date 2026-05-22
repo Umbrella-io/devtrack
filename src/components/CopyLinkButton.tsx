@@ -26,7 +26,7 @@ export default function CopyLinkButton() {
     >
       {copied ? (
         <>
-          <span className="text-green-500 font-semibold">✓</span>
+          <span className="text-[var(--success)] font-semibold">✓</span>
           <span>Copied!</span>
         </>
       ) : (
