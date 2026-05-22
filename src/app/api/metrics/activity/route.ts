@@ -256,7 +256,7 @@ export async function GET(req: NextRequest) {
         session.githubLogin,
         { bypass, userId: session.githubId ?? session.githubLogin }
       );
-      return Response.json({ items: items.slice(0, 15) });
+      return Response.json({ items: items.slice(0, 20) });
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
