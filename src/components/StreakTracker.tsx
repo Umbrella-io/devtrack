@@ -4,6 +4,7 @@ import { useAccount } from "@/components/AccountContext";
 import { useCountUp } from "@/hooks/useCountUp";
 import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
+import { toast } from "sonner";
 
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
@@ -280,24 +281,33 @@ export default function StreakTracker() {
       ]
     : [];
 
-  const handleCopy = () => {
-    if (!data) return;
-    const textToCopy = [
-      "🔥 DevTrack Stats",
-      `Current streak: ${data.current} days`,
-      `Longest streak: ${data.longest} days`,
-      `Active days: ${data.totalActiveDays}`
-    ].join('\n');
+const handleCopy = async () => {
+  if (!data) return;
 
-    if (!navigator.clipboard) {
-      return;
-    }
+  const textToCopy = [
+    "🔥 DevTrack Stats",
+    `Current streak: ${data.current} days`,
+    `Longest streak: ${data.longest} days`,
+    `Active days: ${data.totalActiveDays}`,
+  ].join("\n");
 
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {});
-  };
+  if (!navigator.clipboard) {
+    toast.error("Clipboard is not supported in this browser.");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(textToCopy);
+
+    setCopied(true);
+
+    toast.success("Streak stats copied to clipboard!");
+
+    setTimeout(() => setCopied(false), 2000);
+  } catch {
+    toast.error("Failed to copy streak stats.");
+  }
+};
 
   const currentMilestone = 
     [...STREAK_MILESTONES]
