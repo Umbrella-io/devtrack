@@ -30,15 +30,26 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {
-        const p = profile as { id: number; login: string };
-        await supabaseAdmin.from("users").upsert(
-          {
-            github_id: String(p.id),
-            github_login: p.login,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "github_id" }
-        );
+        try {
+          const p = profile as { id: number; login: string };
+          const { error } = await supabaseAdmin.from("users").upsert(
+            {
+              github_id: String(p.id),
+              github_login: p.login,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "github_id" }
+          );
+          if (error) {
+            console.error("Error upserting user in signIn callback:", {
+              githubId: String(p.id),
+              githubLogin: p.login,
+              error: error.message,
+            });
+          }
+        } catch (error) {
+          console.error("Unexpected error in signIn callback:", error);
+        }
       }
       return true;
     },

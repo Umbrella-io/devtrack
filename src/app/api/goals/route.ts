@@ -48,124 +48,163 @@ function getPeriodStart(recurrence: Recurrence): string {
 }
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.githubId) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.githubId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await resolveAppUser(session.githubId, session.githubLogin);
+    if (!user) {
+      console.error("Failed to resolve user for goals GET:", { githubId: session.githubId });
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const { data: goals, error: fetchError } = await supabaseAdmin
+      .from("goals")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (fetchError) {
+      console.error("Error fetching goals:", fetchError);
+      return Response.json(
+        { error: "Failed to fetch goals" },
+        { status: 500 }
+      );
+    }
+
+    // Reset progress if we're in a new period
+    const processedGoals = await Promise.all(
+      (goals ?? []).map(async (goal: Goal) => {
+        if (goal.recurrence === "none") return goal;
+
+        const periodStart = new Date(getPeriodStart(goal.recurrence as Recurrence));
+        const storedPeriodStart = goal.period_start
+          ? new Date(goal.period_start)
+          : new Date(0);
+
+        if (storedPeriodStart < periodStart) {
+          // Use a conditional update that only succeeds when the DB row still
+          // has the old period_start. If two concurrent GET requests both see
+          // a stale period_start and race to reset the goal, only one update
+          // will match the lt() filter — the second finds no row and returns
+          // null, after which we re-fetch the already-reset row to avoid
+          // silently zeroing out any progress written between the two reads.
+          const { data: updated } = await supabaseAdmin
+            .from("goals")
+            .update({ current: 0, period_start: periodStart.toISOString() })
+            .eq("id", goal.id)
+            .lt("period_start", periodStart.toISOString())
+            .select()
+            .single();
+
+          if (updated) return updated;
+
+          // Another concurrent request already reset this goal — re-fetch
+          // the current state so we return accurate data without clobbering it.
+          const { data: current } = await supabaseAdmin
+            .from("goals")
+            .select("*")
+            .eq("id", goal.id)
+            .single();
+          return current ?? goal;
+        }
+
+        return goal;
+      })
+    );
+
+    return Response.json({ goals: processedGoals });
+  } catch (error) {
+    console.error("Unexpected error in goals GET:", error);
+    return Response.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
-
-  const user = await resolveAppUser(session.githubId, session.githubLogin);
-  if (!user) return Response.json({ error: "User not found" }, { status: 404 });
-
-  const { data: goals } = await supabaseAdmin
-    .from("goals")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  // Reset progress if we're in a new period
-  const processedGoals = await Promise.all(
-    (goals ?? []).map(async (goal: Goal) => {
-      if (goal.recurrence === "none") return goal;
-
-      const periodStart = new Date(getPeriodStart(goal.recurrence as Recurrence));
-      const storedPeriodStart = goal.period_start
-        ? new Date(goal.period_start)
-        : new Date(0);
-
-      if (storedPeriodStart < periodStart) {
-        // Use a conditional update that only succeeds when the DB row still
-        // has the old period_start. If two concurrent GET requests both see
-        // a stale period_start and race to reset the goal, only one update
-        // will match the lt() filter — the second finds no row and returns
-        // null, after which we re-fetch the already-reset row to avoid
-        // silently zeroing out any progress written between the two reads.
-        const { data: updated } = await supabaseAdmin
-          .from("goals")
-          .update({ current: 0, period_start: periodStart.toISOString() })
-          .eq("id", goal.id)
-          .lt("period_start", periodStart.toISOString())
-          .select()
-          .single();
-
-        if (updated) return updated;
-
-        // Another concurrent request already reset this goal — re-fetch
-        // the current state so we return accurate data without clobbering it.
-        const { data: current } = await supabaseAdmin
-          .from("goals")
-          .select("*")
-          .eq("id", goal.id)
-          .single();
-        return current ?? goal;
-      }
-
-      return goal;
-    })
-  );
-
-  return Response.json({ goals: processedGoals });
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.githubId) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  let body: unknown;
   try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+    const session = await getServerSession(authOptions);
+    if (!session?.githubId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  if (typeof body !== "object" || body === null) {
-    return Response.json({ error: "Invalid request body" }, { status: 400 });
-  }
+    let body: {
+      title?: string;
+      target?: number;
+      unit?: string;
+      recurrence?: Recurrence;
+    };
 
-  const { title, target, unit, recurrence } = body as Record<string, unknown>;
+    try {
+      body = (await req.json()) as {
+        title?: string;
+        target?: number;
+        unit?: string;
+        recurrence?: Recurrence;
+      };
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
+      return Response.json({ error: "Invalid request body" }, { status: 400 });
+    }
 
-  if (typeof title !== "string" || title.trim().length === 0) {
-    return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
-  }
-  if (title.length > MAX_TITLE_LEN) {
-    return Response.json({ error: `title must be ${MAX_TITLE_LEN} characters or fewer` }, { status: 400 });
-  }
-  if (
-    typeof target !== "number" ||
-    !Number.isInteger(target) ||
-    target < MIN_TARGET ||
-    target > MAX_TARGET
-  ) {
+    if (!body.title || typeof body.target !== "number" || body.target <= 0) {
+      return Response.json(
+        { error: "title and positive target required" },
+        { status: 400 }
+      );
+    }
+
+    const recurrence: Recurrence = body.recurrence ?? "none";
+    if (!["none", "weekly", "monthly"].includes(recurrence)) {
+      return Response.json({ error: "Invalid recurrence value" }, { status: 400 });
+    }
+
+    const user = await resolveAppUser(session.githubId, session.githubLogin);
+    if (!user) {
+      console.error("Failed to resolve user for goals POST:", { githubId: session.githubId });
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const { data: goal, error } = await supabaseAdmin
+      .from("goals")
+      .insert({
+        user_id: user.id,
+        title: body.title,
+        target: body.target,
+        unit: body.unit ?? "commits",
+        recurrence,
+        period_start: getPeriodStart(recurrence),
+        current: 0,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating goal:", error);
+      return Response.json(
+        { error: error.message || "Failed to create goal" },
+        { status: 500 }
+      );
+    }
+
+    if (!goal) {
+      console.error("Goal creation returned no data");
+      return Response.json(
+        { error: "Failed to create goal" },
+        { status: 500 }
+      );
+    }
+
+    return Response.json({ goal }, { status: 201 });
+  } catch (error) {
+    console.error("Unexpected error in goals POST:", error);
     return Response.json(
-      { error: `target must be an integer between ${MIN_TARGET} and ${MAX_TARGET}` },
-      { status: 400 }
+      { error: "Internal server error" },
+      { status: 500 }
     );
   }
-
-  const safeUnit = typeof unit === "string" ? unit.slice(0, MAX_UNIT_LEN) : "commits";
-  const safeRecurrence: Recurrence = VALID_RECURRENCES.includes(recurrence as Recurrence)
-    ? (recurrence as Recurrence)
-    : "none";
-
-  const user = await resolveAppUser(session.githubId, session.githubLogin);
-  if (!user) return Response.json({ error: "User not found" }, { status: 404 });
-
-  const { data: goal, error } = await supabaseAdmin
-    .from("goals")
-    .insert({
-      user_id: user.id,
-      title: title.trim(),
-      target,
-      unit: safeUnit,
-      recurrence: safeRecurrence,
-      period_start: getPeriodStart(safeRecurrence),
-      current: 0,
-    })
-    .select()
-    .single();
-
-  if (error) return Response.json({ error: error.message }, { status: 500 });
-
-  return Response.json({ goal }, { status: 201 });
 }

@@ -1,7 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Validate required environment variables
+if (!supabaseUrl || !serviceRoleKey) {
+  throw new Error(
+    `Missing Supabase environment variables. ` +
+    `NEXT_PUBLIC_SUPABASE_URL: ${supabaseUrl ? "set" : "MISSING"}, ` +
+    `SUPABASE_SERVICE_ROLE_KEY: ${serviceRoleKey ? "set" : "MISSING"}`
+  );
+}
 
 // Server-side only — use in API routes, never import in client components.
 // Service role bypasses RLS; auth is enforced by getServerSession checks.
