@@ -19,6 +19,12 @@ interface Goal {
 
 type Recurrence = "none" | "weekly" | "monthly";
 
+const VALID_RECURRENCES = ["none", "weekly", "monthly"] as const;
+const MAX_TITLE_LEN = 100;
+const MAX_UNIT_LEN = 30;
+const MIN_TARGET = 1;
+const MAX_TARGET = 10_000;
+
 function getPeriodStart(recurrence: Recurrence): string {
   const now = new Date();
   if (recurrence === "weekly") {
@@ -106,21 +112,41 @@ export async function POST(req: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await req.json()) as {
-    title?: string;
-    target?: number;
-    unit?: string;
-    recurrence?: Recurrence;
-  };
-
-  if (!body.title || !body.target) {
-    return Response.json({ error: "title and target required" }, { status: 400 });
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const recurrence: Recurrence = body.recurrence ?? "none";
-  if (!["none", "weekly", "monthly"].includes(recurrence)) {
-    return Response.json({ error: "Invalid recurrence value" }, { status: 400 });
+  if (typeof body !== "object" || body === null) {
+    return Response.json({ error: "Invalid request body" }, { status: 400 });
   }
+
+  const { title, target, unit, recurrence } = body as Record<string, unknown>;
+
+  if (typeof title !== "string" || title.trim().length === 0) {
+    return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
+  }
+  if (title.length > MAX_TITLE_LEN) {
+    return Response.json({ error: `title must be ${MAX_TITLE_LEN} characters or fewer` }, { status: 400 });
+  }
+  if (
+    typeof target !== "number" ||
+    !Number.isInteger(target) ||
+    target < MIN_TARGET ||
+    target > MAX_TARGET
+  ) {
+    return Response.json(
+      { error: `target must be an integer between ${MIN_TARGET} and ${MAX_TARGET}` },
+      { status: 400 }
+    );
+  }
+
+  const safeUnit = typeof unit === "string" ? unit.slice(0, MAX_UNIT_LEN) : "commits";
+  const safeRecurrence: Recurrence = VALID_RECURRENCES.includes(recurrence as Recurrence)
+    ? (recurrence as Recurrence)
+    : "none";
 
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
@@ -129,11 +155,11 @@ export async function POST(req: Request) {
     .from("goals")
     .insert({
       user_id: user.id,
-      title: body.title,
-      target: body.target,
-      unit: body.unit ?? "commits",
-      recurrence,
-      period_start: getPeriodStart(recurrence),
+      title: title.trim(),
+      target,
+      unit: safeUnit,
+      recurrence: safeRecurrence,
+      period_start: getPeriodStart(safeRecurrence),
       current: 0,
     })
     .select()

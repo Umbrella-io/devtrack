@@ -19,6 +19,8 @@ import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
 import PersonalRecords from "@/components/PersonalRecords";
+import LocalCodingTime from "@/components/LocalCodingTime";
+import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -47,23 +49,24 @@ export default async function DashboardPage() {
         <PersonalRecords />
       </div>
 
-      {/* Row 1: Contribution graph + Streak + Friend Comparison */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* LEFT SIDE */}
-        <div className="flex flex-col gap-6 lg:col-span-2">
+      {/* Row 1: Contribution graph + Streak + Friend Comparison + Local Coding Time */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
           <ContributionGraph />
 
           <div className="mt-6">
             <ContributionHeatmap />
           </div>
 
-          {/* Repo Explorer BELOW commit activity */}
-          <RepoAnalyticsExplorer />
+          <div className="mt-6">
+            <RepoAnalyticsExplorer />
+          </div>
         </div>
 
-        {/* RIGHT SIDE */}
         <div className="flex flex-col gap-6">
           <StreakTracker />
+          <FriendComparison />
+          <LocalCodingTime />
         </div>
       </div>
 
@@ -95,6 +98,11 @@ export default async function DashboardPage() {
         <TopRepos />
         <LanguageBreakdown />
         <GoalTracker />
+      </div>
+
+      {/* Row 6: Recent GitHub activity */}
+      <div className="mt-6">
+        <RecentActivity />
       </div>
     </div>
   );

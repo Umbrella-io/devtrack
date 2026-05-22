@@ -20,7 +20,9 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   webServer: {
-    command: `node node_modules/next/dist/bin/next dev -H 127.0.0.1 -p ${PORT}`,
+    command: process.env.CI
+      ? `node node_modules/next/dist/bin/next start -H 127.0.0.1 -p ${PORT}`
+      : `node node_modules/next/dist/bin/next dev -H 127.0.0.1 -p ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
@@ -33,7 +35,6 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-anon-key",
       SUPABASE_SERVICE_ROLE_KEY: "placeholder-service-role-key",
-      PLAYWRIGHT_AUTH_BYPASS: "1",
     },
   },
   projects: [
