@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTheme } from "./ThemeContext";
 import {
   Bar,
   BarChart,
@@ -27,19 +28,7 @@ type ChartTooltipPayload = {
   value?: number;
 };
 
-// First color follows the active theme accent.
-// Remaining colors are chart-specific categorical hues used to distinguish repositories;
-// there are no matching project semantic tokens for every chart slice/bar.
-const COLORS = [
-  "var(--accent)",
-  "#22c55e",
-  "#f97316",
-  "#06b6d4",
-  "#ec4899",
-  "#eab308",
-  "#8b5cf6",
-  "#14b8a6",
-];
+
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
@@ -151,6 +140,35 @@ function ChartTooltip({
 }
 
 export default function RepoContributionDistribution({ days = 365 }: { days?: number }) {
+  const { theme } = useTheme();
+  const [colors, setColors] = useState<string[]>([]);
+
+  useEffect(() => {
+    const style = getComputedStyle(document.documentElement);
+    const resolvedColors = [
+      style.getPropertyValue("--accent").trim() || "var(--accent)",
+      style.getPropertyValue("--chart-2").trim() || "var(--chart-2)",
+      style.getPropertyValue("--chart-3").trim() || "var(--chart-3)",
+      style.getPropertyValue("--chart-4").trim() || "var(--chart-4)",
+      style.getPropertyValue("--chart-5").trim() || "var(--chart-5)",
+      style.getPropertyValue("--chart-6").trim() || "var(--chart-6)",
+      style.getPropertyValue("--chart-7").trim() || "var(--chart-7)",
+      style.getPropertyValue("--chart-8").trim() || "var(--chart-8)",
+    ];
+    setColors(resolvedColors);
+  }, [theme]);
+
+  const activeColors = colors.length > 0 ? colors : [
+    "var(--accent)",
+    "var(--chart-2)",
+    "var(--chart-3)",
+    "var(--chart-4)",
+    "var(--chart-5)",
+    "var(--chart-6)",
+    "var(--chart-7)",
+    "var(--chart-8)",
+  ];
+
   const [data, setData] = useState<RepoChartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -282,7 +300,7 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
                     label={renderPieLabel}
                   >
                     {data.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={activeColors[index % activeColors.length]} />
                     ))}
                   </Pie>
                   <Tooltip content={<ChartTooltip />} />
@@ -302,7 +320,7 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
                   <Tooltip content={<ChartTooltip />} />
                   <Bar dataKey="commits" radius={[6, 6, 0, 0]}>
                     {data.map((_, index) => (
-                      <Cell key={`bar-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`bar-${index}`} fill={activeColors[index % activeColors.length]} />
                     ))}
                   </Bar>
                 </BarChart>
