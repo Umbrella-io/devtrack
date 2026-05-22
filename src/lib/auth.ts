@@ -24,20 +24,6 @@ export const authOptions: NextAuthOptions = {
   jwt: {
     maxAge: SESSION_MAX_AGE,
   },
-  cookies: {
-    sessionToken: {
-      name: useSecureCookies
-        ? "__Secure-next-auth.session-token"
-        : "next-auth.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: useSecureCookies,
-        maxAge: SESSION_MAX_AGE,
-      },
-    },
-  },
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {

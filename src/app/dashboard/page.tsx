@@ -49,7 +49,7 @@ export default async function DashboardPage() {
         <PersonalRecords />
       </div>
 
-      {/* Row 1: Contribution graph + heatmap + Friend Comparison on left, Streak on right */}
+      {/* Row 1: Contribution graph + Streak + Local Coding Time */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ContributionGraph />
@@ -63,6 +63,7 @@ export default async function DashboardPage() {
 
         <div>
           <StreakTracker />
+          <LocalCodingTime />
         </div>
       </div>
 

@@ -229,6 +229,7 @@ export default function PersonalRecords() {
           className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-stretch"
         >
           <span className="sr-only">Loading personal records</span>
+
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
@@ -270,11 +271,10 @@ export default function PersonalRecords() {
                 </div>
               </div>
               <div
-                className={`mt-3 pt-2.5 border-t border-[var(--border)] text-xs truncate w-full block ${
-                  rec.isRepo
+                className={`mt-3 pt-2.5 border-t border-[var(--border)] text-xs truncate w-full block ${rec.isRepo
                     ? "font-medium text-[var(--card-foreground)]"
                     : "text-[var(--muted-foreground)]"
-                }`}
+                  }`}
                 title={rec.subtext}
               >
                 {rec.isRepo && rec.repoUrl ? (
