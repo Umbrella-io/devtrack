@@ -1,5 +1,5 @@
 "use client"
-
+import NotificationBell from "@/components/NotificationBell";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import AccountToggle from "@/components/AccountToggle";
@@ -61,6 +61,7 @@ export default function DashboardHeader() {
             </a>
           )}
           <KeyboardShortcuts />
+          <NotificationBell />
           <UserAvatar />
           <ThemeToggle />
           <SignOutButton />
