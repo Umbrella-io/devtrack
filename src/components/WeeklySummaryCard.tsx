@@ -152,7 +152,7 @@ export default function WeeklySummaryCard() {
             ))}
           </div>
         ) : error ? (
-          <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-[var(--destructive)]">
+          <div className="mt-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
             {error}
           </div>
         ) : summary ? (
