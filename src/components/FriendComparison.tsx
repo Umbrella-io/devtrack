@@ -124,35 +124,39 @@ export default function FriendComparison() {
 
       {friendData && myData && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center text-sm font-medium text-[var(--muted-foreground)] px-2">
-            <div className="w-1/3 text-left">You ({myData.username})</div>
-            <div className="w-1/3 text-center uppercase tracking-wider text-xs">Metric</div>
-            <div className="w-1/3 text-right">Them ({friendData.username})</div>
-          </div>
+          <div className="overflow-x-auto pb-2">
+            <div className="min-w-[400px]">
+              <div className="flex justify-between items-center text-sm font-medium text-[var(--muted-foreground)] px-2 mb-4">
+                <div className="w-1/3 text-left">You ({myData.username})</div>
+                <div className="w-1/3 text-center uppercase tracking-wider text-xs">Metric</div>
+                <div className="w-1/3 text-right">Them ({friendData.username})</div>
+              </div>
 
-          <div className="space-y-2">
-            <ComparisonRow 
-              label="Current Streak" 
-              myValue={myData.streak} 
-              theirValue={friendData.streak} 
-              suffix=" days" 
-            />
-            <ComparisonRow 
-              label="Commits (30d)" 
-              myValue={myData.commits30d} 
-              theirValue={friendData.commits30d} 
-            />
-            <ComparisonRow 
-              label="Pull Requests" 
-              myValue={myData.prs} 
-              theirValue={friendData.prs} 
-            />
-            <ComparisonRow 
-              label="Top Language" 
-              myValue={myData.topLanguage} 
-              theirValue={friendData.topLanguage} 
-              isString 
-            />
+              <div className="space-y-2">
+                <ComparisonRow 
+                  label="Current Streak" 
+                  myValue={myData.streak} 
+                  theirValue={friendData.streak} 
+                  suffix=" days" 
+                />
+                <ComparisonRow 
+                  label="Commits (30d)" 
+                  myValue={myData.commits30d} 
+                  theirValue={friendData.commits30d} 
+                />
+                <ComparisonRow 
+                  label="Pull Requests" 
+                  myValue={myData.prs} 
+                  theirValue={friendData.prs} 
+                />
+                <ComparisonRow 
+                  label="Top Language" 
+                  myValue={myData.topLanguage} 
+                  theirValue={friendData.topLanguage} 
+                  isString 
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-center items-center gap-3 pt-4">

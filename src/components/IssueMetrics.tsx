@@ -65,7 +65,7 @@ export default function IssueMetrics() {
           role="status"
           aria-live="polite"
           aria-busy="true"
-          className="grid grid-cols-2 md:grid-cols-5 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
         >
           <span className="sr-only">Loading issue analytics</span>
           {[1, 2, 3, 4, 5].map((i) => (
@@ -88,7 +88,7 @@ export default function IssueMetrics() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {stats.map((stat, idx) => (
             <div
               key={stat.label}

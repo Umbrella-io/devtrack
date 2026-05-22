@@ -4,22 +4,23 @@ import { encode } from "next-auth/jwt";
 const authSecret = "playwright-placeholder-secret-that-is-long-enough";
 
 test.beforeEach(async ({ page }) => {
+  const sessionToken = await encode({
+    secret: authSecret,
+    token: {
+      name: "Playwright User",
+      email: "playwright@example.com",
+      sub: "12345",
+      githubLogin: "playwright-user",
+      githubId: "12345",
+      accessToken: "test-token",
+    },
+    maxAge: 60 * 60,
+  });
+
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: await encode({
-        secret: authSecret,
-        salt: "next-auth.session-token",
-        token: {
-          name: "Playwright User",
-          email: "playwright@example.com",
-          sub: "12345",
-          githubLogin: "playwright-user",
-          githubId: "12345",
-          accessToken: "test-token",
-        },
-        maxAge: 60 * 60,
-      }),
+      value: sessionToken,
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
