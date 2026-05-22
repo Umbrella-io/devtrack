@@ -1,557 +1,266 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import NotificationBell from "@/components/NotificationBell";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { redirect, useSearchParams } from "next/navigation";
-import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
+import { motion } from "framer-motion";
 
-interface UserSettings {
-  id: string;
-  github_login: string;
-  is_public: boolean;
-  leaderboard_opt_in: boolean;
-}
+import AccountToggle from "@/components/AccountToggle";
+import SignOutButton from "@/components/SignOutButton";
+import ThemeToggle from "@/components/ThemeToggle";
+import UserAvatar from "@/components/UserAvatar";
+import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 
-interface LinkedAccount {
-  id: string;
-  githubId: string;
-  githubLogin: string;
-  addedAt: string;
-}
+import {
+  LayoutDashboard,
+  Sparkles,
+  Activity,
+} from "lucide-react";
 
-interface AccountsResponse {
-  accounts: LinkedAccount[];
-}
+export default function DashboardHeader() {
+  const { data: session } = useSession();
+  const [isPublic, setIsPublic] = useState<boolean | null>(null);
 
-function formatAddedDate(addedAt: string): string {
-  return `Added ${new Date(addedAt).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })}`;
-}
-
-function getStatusMessage(
-  success: string | null,
-  error: string | null
-): { kind: "success" | "error"; message: string } | null {
-  if (success === "account_linked") {
-    return {
-      kind: "success",
-      message: "Account linked successfully",
-    };
-  }
-
-  if (!error) {
-    return null;
-  }
-
-  if (error === "already_linked") {
-    return {
-      kind: "error",
-      message: "This account is already linked",
-    };
-  }
-
-  if (error === "cannot_link_primary_account") {
-    return {
-      kind: "error",
-      message: "You cannot link your primary account",
-    };
-  }
-
-  if (error === "invalid_state") {
-    return {
-      kind: "error",
-      message: "Link failed: invalid state. Please try again.",
-    };
-  }
-
-  if (error === "oauth_cancelled") {
-    return {
-      kind: "error",
-      message: "Account linking was cancelled",
-    };
-  }
-
-  return {
-    kind: "error",
-    message: "Account linking failed. Please try again.",
-  };
-}
-
-function SettingsPageFallback() {
-  return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-      <div className="max-w-2xl mx-auto">
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
-          <div className="h-8 w-48 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-20 bg-[var(--card-muted)] rounded animate-pulse"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SettingsPageContent() {
-  const { data: session, status } = useSession();
-  const searchParams = useSearchParams();
-  const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [accountsLoading, setAccountsLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [removeError, setRemoveError] = useState<string | null>(null);
-  const [removingAccountId, setRemovingAccountId] = useState<string | null>(
-    null
-  );
-
-  const statusMessage = useMemo(
-    () =>
-      getStatusMessage(
-        searchParams.get("success"),
-        searchParams.get("error")
-      ),
-    [searchParams]
-  );
-
-  const { theme, setTheme } = useHeatmapTheme();
-
-  // Redirect to signin if not authenticated
   useEffect(() => {
-    if (status === "unauthenticated") {
-      redirect("/");
-    }
-  }, [status]);
-
-  // Load settings on mount
-  useEffect(() => {
-    if (status !== "authenticated" || !session?.githubLogin) {
+    if (!session) {
+      setIsPublic(null);
       return;
     }
 
     async function loadSettings() {
       try {
         const res = await fetch("/api/user/settings");
+
         if (res.ok) {
           const data = await res.json();
-          setSettings(data);
+          setIsPublic(data.is_public === true);
+        } else {
+          setIsPublic(false);
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
-      } finally {
-        setLoading(false);
+        setIsPublic(false);
       }
     }
 
     loadSettings();
-  }, [session, status]);
-
-  useEffect(() => {
-    if (status !== "authenticated" || !session?.githubLogin) {
-      return;
-    }
-
-    async function loadLinkedAccounts() {
-      try {
-        const res = await fetch("/api/user/github-accounts");
-        if (!res.ok) {
-          setLinkedAccounts([]);
-          return;
-        }
-
-        const data = (await res.json()) as AccountsResponse;
-        setLinkedAccounts(data.accounts ?? []);
-      } catch (error) {
-        console.error("Failed to load linked accounts:", error);
-        setLinkedAccounts([]);
-      } finally {
-        setAccountsLoading(false);
-      }
-    }
-
-    loadLinkedAccounts();
-  }, [session, status]);
-
-  const handleTogglePublic = async (value: boolean) => {
-    if (!settings) return;
-
-    setSaving(true);
-    try {
-      const res = await fetch("/api/user/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_public: value }),
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setSettings(updated);
-      } else {
-        console.error("Failed to update settings");
-      }
-    } catch (error) {
-      console.error("Error updating settings:", error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleToggleLeaderboard = async (value: boolean) => {
-    if (!settings) return;
-
-    setSaving(true);
-    try {
-      const res = await fetch("/api/user/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leaderboard_opt_in: value }),
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setSettings(updated);
-      } else {
-        console.error("Failed to update leaderboard setting");
-      }
-    } catch (error) {
-      console.error("Error updating leaderboard setting:", error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const copyShareLink = () => {
-    if (!settings) return;
-    const link = `${window.location.origin}/u/${settings.github_login}`;
-    navigator.clipboard.writeText(link).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => { });
-  };
-
-  const handleRemoveAccount = async (githubId: string) => {
-    setRemoveError(null);
-    setRemovingAccountId(githubId);
-
-    try {
-      const res = await fetch(`/api/user/github-accounts/${githubId}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        setRemoveError(data.error ?? "Failed to remove account");
-        return;
-      }
-
-      setLinkedAccounts((current) =>
-        current.filter((account) => account.githubId !== githubId)
-      );
-    } catch {
-      setRemoveError("Failed to remove account");
-    } finally {
-      setRemovingAccountId(null);
-    }
-  };
-
-  if (status === "loading" || loading) {
-    return (
-      <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-        <div className="max-w-2xl mx-auto">
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
-            <div className="h-8 w-48 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-20 bg-[var(--card-muted)] rounded animate-pulse"
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!settings) {
-    return (
-      <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-        <div className="max-w-2xl mx-auto">
-          <p className="text-[var(--muted-foreground)]">
-            Failed to load settings.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  }, [session]);
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">
-            Settings
-          </h1>
-          <p className="mt-2 text-[var(--muted-foreground)]">
-            Manage your profile and preferences
-          </p>
-        </div>
+    <motion.header
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      className="relative overflow-hidden mb-8 rounded-3xl border border-[var(--border)] hover:border-[var(--accent)] bg-gradient-to-br from-[var(--background)] via-[var(--card)] to-[var(--card-muted)] p-6 md:p-8 shadow-2xl backdrop-blur-xl transition-all duration-500"
+    >
 
-        {statusMessage && (
-          <div
-            className={`mb-6 rounded-xl border p-4 text-sm ${
-              statusMessage.kind === "success"
-                ? "border-green-500/30 bg-green-500/10 text-green-400"
-                : "border-red-500/30 bg-red-500/10 text-red-400"
-            }`}
-          >
-            {statusMessage.message}
-          </div>
-        )}
+      {/* Animated Background Blobs */}
+      <div className="absolute -top-20 -left-20 w-72 h-72 bg-[var(--accent)] opacity-20 rounded-full blur-3xl animate-pulse"></div>
 
-        {/* Public Profile Section */}
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <div className="flex items-start justify-between mb-6 gap-4">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Public Profile
-              </h2>
-              <p className="text-sm text-[var(--muted-foreground)] mt-1">
-                Share your GitHub stats with a public profile link
-              </p>
-            </div>
+      <div className="absolute bottom-0 right-0 w-72 h-72 bg-[var(--accent)] opacity-20 rounded-full blur-3xl animate-pulse"></div>
 
-            {/* Toggle Switch */}
-            <label className="flex items-center cursor-pointer select-none">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={settings.is_public}
-                  onChange={(e) => handleTogglePublic(e.target.checked)}
-                  disabled={saving}
-                  className="sr-only"
-                />
-                <div
-                  className={`block w-10 h-6 rounded-full transition-colors ${
-                    settings.is_public
-                      ? "bg-[var(--accent)]"
-                      : "bg-[var(--control)]"
-                  }`}
-                />
-                <div
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
-                    settings.is_public ? "translate-x-4" : ""
-                  }`}
-                />
-              </div>
-            </label>
-          </div>
+      {/* Grid Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
-          {/* Share Link Section */}
-          {settings.is_public && (
-            <div className="mt-6 pt-6 border-t border-[var(--border)]">
-              <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
-                Share Your Profile
-              </h3>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={`${window.location.origin}/u/${settings.github_login}`}
-                  readOnly
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={copyShareLink}
-                  aria-label="Copy profile URL"
-                  className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                  {copied ? "Copied!" : "Copy"}
-                </button>
-              </div>
-            </div>
-          )}
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
 
-          <div className="mt-6 pt-6 border-t border-[var(--border)]">
-            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
-              Heatmap colour scheme
-            </h3>
-            <p className="text-sm text-[var(--muted-foreground)] mb-4">
-              Choose a colour scheme for the contribution and streak heatmaps.
-            </p>
-            <div className="space-y-3">
-              <label className="flex cursor-pointer items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-[var(--foreground)]">
-                <span>Default</span>
-                <input
-                  type="radio"
-                  name="heatmap-theme"
-                  value="default"
-                  checked={theme === "default"}
-                  onChange={() => setTheme("default")}
-                  className="accent-[var(--accent)] focus:ring-[var(--accent)]"
-                />
-              </label>
-              <label className="flex cursor-pointer items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-[var(--foreground)]">
-                <span>Colour-blind friendly</span>
-                <input
-                  type="radio"
-                  name="heatmap-theme"
-                  value="colour-blind-friendly"
-                  checked={theme === "colour-blind-friendly"}
-                  onChange={() => setTheme("colour-blind-friendly")}
-                  className="accent-[var(--accent)] focus:ring-[var(--accent)]"
-                />
-              </label>
-            </div>
-          </div>
+        {/* LEFT SECTION */}
+        <div>
 
-          {!settings.is_public && (
-            <div className="mt-4 p-3 rounded-lg bg-[var(--control)] border border-[var(--border)]">
-              <p className="text-sm text-[var(--muted-foreground)]">
-                Turn on public profile to generate a shareable link to your
-                GitHub stats.
-              </p>
-            </div>
-          )}
-        </div>
+          {/* Heading */}
+          <div className="flex items-center gap-4">
 
-        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Public Leaderboard
-              </h2>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Appear on the public leaderboard for streaks, commits, and pull
-                requests.
-              </p>
-            </div>
-
-            <label className="flex items-center cursor-pointer select-none">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={settings.leaderboard_opt_in}
-                  onChange={(e) => handleToggleLeaderboard(e.target.checked)}
-                  disabled={saving}
-                  className="sr-only"
-                />
-                <div
-                  className={`block h-6 w-10 rounded-full transition-colors ${
-                    settings.leaderboard_opt_in
-                      ? "bg-[var(--accent)]"
-                      : "bg-[var(--control)]"
-                  }`}
-                />
-                <div
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
-                    settings.leaderboard_opt_in ? "translate-x-4" : ""
-                  }`}
-                />
-              </div>
-            </label>
-          </div>
-
-          <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--control)] p-3">
-            <p className="text-sm text-[var(--muted-foreground)]">
-              Turning this on also enables your public profile so leaderboard
-              rows can link to your DevTrack stats.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Connected Accounts
-              </h2>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Link additional GitHub accounts and switch between them on the
-                dashboard.
-              </p>
-            </div>
-
-            <a
-              href="/api/auth/link-github"
-              className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+            {/* Floating Dashboard Logo */}
+            <motion.div
+              animate={{
+                y: [0, -6, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+              }}
+              className="p-3 rounded-2xl bg-[var(--accent)] shadow-lg"
             >
-              Add GitHub Account
-            </a>
+              <LayoutDashboard className="text-[var(--foreground)] w-7 h-7" />
+            </motion.div>
+
+            <div>
+              <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-[var(--foreground)] via-[var(--accent)] to-[var(--foreground)] bg-clip-text text-transparent">
+                Dashboard
+              </h1>
+
+              <div className="flex items-center gap-2 mt-2 text-[var(--accent)]">
+                <Sparkles className="w-4 h-4" />
+
+                <span className="text-sm font-medium">
+                  Developer Productivity Hub
+                </span>
+              </div>
+            </div>
           </div>
 
-          {removeError && (
-            <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
-              {removeError}
-            </div>
-          )}
+          {/* Description */}
+          <p className="mt-5 max-w-2xl text-sm md:text-lg text-[var(--muted-foreground)] leading-relaxed">
+            Track coding habits, analyze GitHub contributions,
+            and monitor your open-source journey with powerful insights 🚀
+          </p>
 
-          <div className="mt-6">
-            {accountsLoading ? (
-              <div className="space-y-3">
-                {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
-                  />
-                ))}
-              </div>
-            ) : linkedAccounts.length === 0 ? (
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)]">
-                No linked GitHub accounts yet.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {linkedAccounts.map((account) => (
-                  <div
-                    key={account.id}
-                    className="flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 md:flex-row md:items-center md:justify-between"
-                  >
-                    <div>
-                      <div className="text-sm font-semibold text-[var(--card-foreground)]">
-                        {account.githubLogin}
-                      </div>
-                      <div className="mt-1 text-sm text-[var(--muted-foreground)]">
-                        {formatAddedDate(account.addedAt)}
-                      </div>
-                    </div>
+          {/* Welcome */}
+          <p className="mt-3 text-sm text-[var(--muted-foreground)]">
+            Welcome back,{" "}
+            <span className="text-[var(--accent)] font-semibold">
+              {session?.user?.name || "Developer"}
+            </span>
+          </p>
 
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveAccount(account.githubId)}
-                      aria-label={`Remove ${account.githubLogin}`}
-                      disabled={removingAccountId === account.githubId}
-                      className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-60"
-                    >
-                      {removingAccountId === account.githubId
-                        ? "Removing..."
-                        : "Remove"}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Status Badge */}
+          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--card-muted)] border border-[var(--border)] text-[var(--accent)] text-xs font-medium">
+            <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse"></span>
+            System Active
+          </div>
+
+          {/* Feature Chips */}
+          <div className="mt-5 flex flex-wrap gap-3">
+
+            <motion.div
+              whileHover={{ scale: 1.05, y: -4 }}
+              className="px-4 py-2 rounded-xl bg-[var(--card-muted)] border border-[var(--border)] text-sm text-[var(--muted-foreground)] cursor-pointer"
+            >
+              🚀 Productivity Insights
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.05, y: -4 }}
+              className="px-4 py-2 rounded-xl bg-[var(--card-muted)] border border-[var(--border)] text-sm text-[var(--muted-foreground)] cursor-pointer"
+            >
+              📈 GitHub Analytics
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.05, y: -4 }}
+              className="px-4 py-2 rounded-xl bg-[var(--card-muted)] border border-[var(--border)] text-sm text-[var(--muted-foreground)] cursor-pointer"
+            >
+              🔥 Contribution Tracking
+            </motion.div>
+
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-export default function SettingsPage() {
-  return (
-    <Suspense fallback={<SettingsPageFallback />}>
-      <SettingsPageContent />
-    </Suspense>
+        {/* RIGHT SECTION */}
+        <motion.div
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7 }}
+          className="flex flex-wrap items-center gap-4"
+        >
+
+          {/* Share Profile */}
+          {isPublic === true && session?.githubLogin && (
+            <motion.a
+              whileHover={{
+                scale: 1.06,
+                y: -3,
+              }}
+              whileTap={{
+                scale: 0.95,
+              }}
+              href={`/u/${session.githubLogin}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative overflow-hidden px-5 py-3 rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-semibold shadow-lg transition-all duration-300"
+            >
+              Share Profile
+            </motion.a>
+          )}
+
+          {/* Controls */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] backdrop-blur-lg px-4 py-3 shadow-md"
+          >
+
+            <motion.div
+              whileHover={{ scale: 1.15, rotate: 5 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <KeyboardShortcuts />
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.15, rotate: 5 }}
+              whileTap={{ scale: 0.9 }}
+              className="relative"
+            >
+              <NotificationBell />
+
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-[var(--destructive)] rounded-full animate-ping"></span>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <UserAvatar />
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.15, rotate: 20 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <ThemeToggle />
+            </motion.div>
+
+            <motion.div
+              animate={{
+                y: [0, -10, 0],
+                rotate: [0, 5, -5, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+              }}
+              whileHover={{
+                scale: 1.2,
+                backgroundColor: "var(--accent)",
+              }}
+              whileTap={{
+                scale: 0.8,
+              }}
+              className="p-2 rounded-xl"
+            >
+              <SignOutButton />
+            </motion.div>
+
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* Bottom Toggle */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="relative z-10 mt-7"
+      >
+        <AccountToggle />
+      </motion.div>
+
+      {/* Floating Activity Badge */}
+      <motion.div
+        animate={{
+          y: [0, -4, 0],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+        }}
+        className="absolute top-6 right-6 hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--card-muted)] border border-[var(--border)] text-[var(--accent-foreground)] text-xs backdrop-blur-lg"
+      >
+        <Activity className="w-4 h-4 animate-pulse" />
+        Live Analytics
+      </motion.div>
+    </motion.header>
   );
 }

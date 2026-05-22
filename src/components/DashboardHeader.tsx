@@ -81,7 +81,7 @@ export default function DashboardHeader() {
               }}
               className="p-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-purple-600 shadow-lg shadow-cyan-500/20"
             >
-              <LayoutDashboard className="text-white w-7 h-7" />
+              <LayoutDashboard className="text-[var(--foreground)] w-7 h-7" />
             </motion.div>
 
             <div>
@@ -100,13 +100,13 @@ export default function DashboardHeader() {
           </div>
 
           {/* Description */}
-          <p className="mt-5 max-w-2xl text-sm md:text-lg text-slate-300 leading-relaxed">
+          <p className="mt-5 max-w-2xl text-sm md:text-lg text-[var(--muted-foreground)] leading-relaxed">
             Track coding habits, analyze GitHub contributions,
             and monitor your open-source journey with powerful insights 🚀
           </p>
 
           {/* Welcome */}
-          <p className="mt-3 text-sm text-slate-400">
+          <p className="mt-3 text-sm text-[var(--muted-foreground)]">
             Welcome back,{" "}
             <span className="text-cyan-400 font-semibold">
               {session?.user?.name || "Developer"}
@@ -124,21 +124,21 @@ export default function DashboardHeader() {
 
             <motion.div
               whileHover={{ scale: 1.05, y: -4 }}
-              className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-slate-300 cursor-pointer"
+              className="px-4 py-2 rounded-xlbg-[var(--card-muted)] border border-white/10 text-sm text-slate-300 cursor-pointer"
             >
               🚀 Productivity Insights
             </motion.div>
 
             <motion.div
               whileHover={{ scale: 1.05, y: -4 }}
-              className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-slate-300 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[var(--card-muted)] border border-white/10 text-sm text-slate-300 cursor-pointer"
             >
               📈 GitHub Analytics
             </motion.div>
 
             <motion.div
               whileHover={{ scale: 1.05, y: -4 }}
-              className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-slate-300 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[var(--card-muted)] border border-white/10 text-sm text-slate-300 cursor-pointer"
             >
               🔥 Contribution Tracking
             </motion.div>
