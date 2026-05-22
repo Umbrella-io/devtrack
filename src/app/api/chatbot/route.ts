@@ -174,9 +174,9 @@ Repository ranking responses MUST follow this format exactly:
 
 ## Top Repositories
 
-1. **Repository Name** → X commits
-2. **Repository Name** → X commits
-3. **Repository Name** → X commits
+1. **Repository Name** Ã¢â€ â€™ X commits
+2. **Repository Name** Ã¢â€ â€™ X commits
+3. **Repository Name** Ã¢â€ â€™ X commits
 
 Insight responses MUST follow this format:
 
