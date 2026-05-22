@@ -154,7 +154,7 @@ export default function ActivityRingChart() {
                       isPeak || isHovered
                         ? "var(--accent)"
                         : d.commits === 0
-                        ? "var(--card-muted, #2a2a2a)"
+                        ? "var(--card-muted)"
                         : "var(--accent)"
                     }
                     opacity={
