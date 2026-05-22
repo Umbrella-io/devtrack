@@ -78,7 +78,14 @@ function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
 
     for (const mod of extractImports(src)) {
       // Skip relative imports, path aliases (@/ is the src alias — not a pkg)
-      if (mod.startsWith(".") || mod.startsWith("/") || mod.startsWith("@/")) continue;
+      const INTERNAL_ALIASES = ["@/", "~/", "src/"];
+      if (
+        mod.startsWith(".") || 
+        mod.startsWith("/") || 
+        INTERNAL_ALIASES.some(alias => mod.startsWith(alias))
+      ) {
+        continue;
+      }
       const pkgName = extractPackageName(mod);
       if (BUILTINS.has(pkgName) || FRAMEWORK_ALIASES.has(pkgName)) continue;
       if (allDeps.has(pkgName)) continue;
