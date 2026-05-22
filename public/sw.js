@@ -6,8 +6,8 @@ const STATIC_ASSETS = [
   "/",
   "/offline.html",
   "/manifest.json",
-  "/android-chrome-192x192.png",
-  "/android-chrome-512x512.png",
+  "/pwa-192x192.png",
+  "/pwa-512x512.png",
 ];
 
 self.addEventListener("install", (event) => {
