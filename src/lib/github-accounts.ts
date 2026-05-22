@@ -33,10 +33,20 @@ export async function getLinkedTokens(userId: string): Promise<string[]> {
   }
 
   const rows = (data ?? []) as UserGitHubAccountRow[];
+  const tokens: string[] = [];
 
-  return rows.map((row) =>
-    decryptToken(row.access_token_encrypted, row.access_token_iv)
-  );
+for (const row of rows) {
+    try {
+      const decrypted = decryptToken(row.access_token_encrypted, row.access_token_iv);
+      if (decrypted) {
+        tokens.push(decrypted);
+      }
+    } catch (err) {
+      console.error(`Skipping un-decryptable token row for user ${userId}:`, err);
+    }
+  }
+
+  return tokens;
 }
 
 export async function getRateLimitRemaining(token: string): Promise<number> {
@@ -87,6 +97,7 @@ export async function getAllTokens(
   userId: string
 ): Promise<string[]> {
   const linkedTokens = await getLinkedTokens(userId);
+
   const dedupedLinkedTokens = linkedTokens.filter(
     (token) => token !== primaryToken
   );
@@ -110,11 +121,24 @@ export async function getLinkedAccounts(
 
   const rows = (data ?? []) as UserGitHubAccountRow[];
 
-  return rows.map((row) => ({
-    githubId: row.github_id ?? "",
-    githubLogin: row.github_login ?? "",
-    token: decryptToken(row.access_token_encrypted, row.access_token_iv),
-  }));
+  return rows
+    .map((row) => {
+      const token = decryptToken(
+        row.access_token_encrypted,
+        row.access_token_iv
+      );
+
+      if (!token) {
+        return null;
+      }
+
+      return {
+        githubId: row.github_id ?? "",
+        githubLogin: row.github_login ?? "",
+        token,
+      };
+    })
+    .filter((account): account is LinkedAccount => account !== null);
 }
 
 export async function getAllAccounts(
@@ -122,6 +146,7 @@ export async function getAllAccounts(
   userId: string
 ): Promise<LinkedAccount[]> {
   const linkedAccounts = await getLinkedAccounts(userId);
+
   const filteredLinkedAccounts = linkedAccounts.filter(
     (account) => account.githubId !== primary.githubId
   );
@@ -153,7 +178,12 @@ export async function getAccountToken(
 
   const row = data as UserGitHubAccountRow;
 
-  return decryptToken(row.access_token_encrypted, row.access_token_iv);
+  try {
+    return decryptToken(row.access_token_encrypted, row.access_token_iv);
+  } catch (err) {
+    console.error(`Failed to decrypt target token for account ${accountGithubId}:`, err);
+    return null;
+  }
 }
 
 export function mergeMetrics<T>(

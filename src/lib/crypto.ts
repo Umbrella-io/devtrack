@@ -46,24 +46,52 @@ export function encryptToken(plaintext: string): {
   };
 }
 
-export function decryptToken(encrypted: string, iv: string): string {
-  const key = getEncryptionKey();
-  const encryptedBuffer = Buffer.from(encrypted, "hex");
-  const ivBuffer = Buffer.from(iv, "hex");
 
-  const ciphertext = encryptedBuffer.subarray(
-    0,
-    encryptedBuffer.length - AUTH_TAG_LENGTH
-  );
-  const authTag = encryptedBuffer.subarray(
-    encryptedBuffer.length - AUTH_TAG_LENGTH
-  );
+export function decryptToken(
+  encrypted: string,
+  iv: string
+): string | null {
+  try {
+    const key = getEncryptionKey();
 
-  const decipher = createDecipheriv(ALGORITHM, key, ivBuffer);
-  decipher.setAuthTag(authTag);
+    if (!/^[0-9a-fA-F]*$/.test(encrypted) || encrypted.length % 2 !== 0) {
+      throw new Error("Invalid encrypted token format");
+    }
 
-  return Buffer.concat([
-    decipher.update(ciphertext),
-    decipher.final(),
-  ]).toString("utf8");
+    if (!/^[0-9a-fA-F]*$/.test(iv) || iv.length % 2 !== 0) {
+      throw new Error("Invalid IV format");
+    }
+
+    const encryptedBuffer = Buffer.from(encrypted, "hex");
+    const ivBuffer = Buffer.from(iv, "hex");
+
+    if (ivBuffer.length !== IV_LENGTH) {
+      throw new Error("Invalid IV length");
+    }
+
+    if (encryptedBuffer.length < AUTH_TAG_LENGTH + 1) {
+      throw new Error("Encrypted token too short");
+    }
+
+    const ciphertext = encryptedBuffer.subarray(
+      0,
+      encryptedBuffer.length - AUTH_TAG_LENGTH
+    );
+
+    const authTag = encryptedBuffer.subarray(
+      encryptedBuffer.length - AUTH_TAG_LENGTH
+    );
+
+    const decipher = createDecipheriv(ALGORITHM, key, ivBuffer);
+
+    decipher.setAuthTag(authTag);
+
+    return Buffer.concat([
+      decipher.update(ciphertext),
+      decipher.final(),
+    ]).toString("utf8");
+  } catch (error) {
+    console.error("Token decryption failed:", error);
+    return null;
+  }
 }

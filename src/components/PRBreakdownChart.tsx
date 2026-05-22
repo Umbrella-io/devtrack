@@ -49,8 +49,17 @@ export default function PRBreakdownChart() {
   if (loading) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <div className="mb-4 h-5 w-40 rounded bg-[var(--card-muted)] animate-pulse" />
-        <div className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse" />
+        <div role="status" aria-live="polite" aria-busy="true">
+          <span className="sr-only">Loading PR breakdown</span>
+          <div
+            aria-hidden="true"
+            className="mb-4 h-5 w-40 rounded bg-[var(--card-muted)] animate-pulse"
+          />
+          <div
+            aria-hidden="true"
+            className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse"
+          />
+        </div>
       </div>
     );
   }
@@ -59,12 +68,12 @@ export default function PRBreakdownChart() {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Breakdown</h2>
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+        <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
             type="button"
             onClick={fetchBreakdown}
-            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+            className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again
           </button>
