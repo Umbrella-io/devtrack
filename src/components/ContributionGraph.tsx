@@ -411,7 +411,7 @@ export default function ContributionGraph() {
                   color: "var(--foreground)",
                   fontSize: "12px",
                 }}
-                cursor={{ fill: "var(--background)" }}
+                cursor={false}
               />
               {hasFriendData && (
                 <Legend wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }} />
@@ -459,7 +459,7 @@ export default function ContributionGraph() {
                   color: "var(--foreground)",
                   fontSize: "12px",
                 }}
-                cursor={{ fill: "var(--background)" }}
+                cursor={false}
               />
               {hasFriendData && (
                 <Legend wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }} />
@@ -513,7 +513,7 @@ export default function ContributionGraph() {
                   color: "var(--foreground)",
                   fontSize: "12px",
                 }}
-                cursor={{ fill: "var(--background)" }}
+                cursor={false}
               />
               {hasFriendData && (
                 <Legend wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }} />
