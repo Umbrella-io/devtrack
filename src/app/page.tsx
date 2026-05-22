@@ -54,9 +54,9 @@ export default async function HomePage() {
           {/* Background Elements */}
           <div className="absolute inset-0 -z-10 overflow-hidden">
             {/* Gradient orbs */}
-            <div className="absolute top-20 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-float" />
-            <div className="absolute bottom-0 right-10 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
-            <div className="absolute top-1/2 left-0 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl" />
+            <div className="absolute top-20 left-1/2 -translate-x-1/2 w-96 h-96 bg-[var(--accent)]/20 rounded-full blur-3xl animate-float" />
+            <div className="absolute bottom-0 right-10 w-80 h-80 bg-[var(--accent)]/10 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-0 w-72 h-72 bg-[var(--accent)]/10 rounded-full blur-3xl" />
           </div>
 
           <div className="w-full max-w-4xl mx-auto relative z-10">
@@ -77,8 +77,8 @@ export default async function HomePage() {
                   </span>
                   <span className="block">
                     <span className="relative inline-block">
-                      <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-indigo-600 to-blue-600 blur-xl opacity-30 animate-pulse" />
-                      <span className="relative bg-gradient-to-r from-indigo-500 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                      <span className="absolute inset-0 bg-gradient-to-r from-[var(--accent)] via-indigo-600 to-blue-600 blur-xl opacity-30 animate-pulse" />
+                      <span className="relative bg-gradient-to-r from-[var(--accent)] via-indigo-600 to-blue-600 bg-clip-text text-transparent">
                         performance
                       </span>
                     </span>
@@ -136,19 +136,19 @@ export default async function HomePage() {
                 style={{ animationDelay: "0.4s" }}
               >
                 <div>
-                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-500 to-blue-600 bg-clip-text text-transparent">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[var(--accent)] to-blue-600 bg-clip-text text-transparent">
                     10K+
                   </div>
                   <p className="text-xs sm:text-sm text-[var(--muted-foreground)] mt-1">Active Developers</p>
                 </div>
                 <div>
-                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-500 to-blue-600 bg-clip-text text-transparent">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[var(--accent)] to-blue-600 bg-clip-text text-transparent">
                     100%
                   </div>
                   <p className="text-xs sm:text-sm text-[var(--muted-foreground)] mt-1">Open Source</p>
                 </div>
                 <div>
-                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-500 to-blue-600 bg-clip-text text-transparent">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[var(--accent)] to-blue-600 bg-clip-text text-transparent">
                     Self-Host
                   </div>
                   <p className="text-xs sm:text-sm text-[var(--muted-foreground)] mt-1">Available</p>
@@ -159,7 +159,7 @@ export default async function HomePage() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="section-container bg-gradient-to-b from-slate-50/50 to-transparent dark:from-slate-900/30 dark:to-transparent">
+        <section id="features" className="section-container bg-gradient-to-b from-[var(--card-muted)]/30 to-transparent">
           <div className="section-inner">
             <div className="text-center mb-16">
               <h2 className="text-4xl sm:text-5xl font-bold text-[var(--foreground)] mb-4">
@@ -178,7 +178,7 @@ export default async function HomePage() {
                   style={{ animationDelay: `${idx * 50}ms` }}
                 >
                   {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-indigo-600/0 group-hover:from-indigo-500/5 group-hover:to-indigo-600/5 transition-smooth pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/0 to-[var(--accent)]/0 group-hover:from-[var(--accent)]/5 group-hover:to-[var(--accent)]/5 transition-smooth pointer-events-none" />
 
                   <div className="relative space-y-4">
                     {/* Icon */}
@@ -211,7 +211,7 @@ export default async function HomePage() {
         </section>
 
         {/* Dashboard Preview Section */}
-        <section id="showcase" className="section-container bg-gradient-to-b from-transparent via-indigo-50/30 to-transparent dark:via-indigo-950/20">
+        <section id="showcase" className="section-container bg-gradient-to-b from-transparent via-[var(--accent-soft)] to-transparent">
           <div className="section-inner">
             <div className="text-center mb-16">
               <h2 className="text-4xl sm:text-5xl font-bold text-[var(--foreground)] mb-4">
@@ -225,15 +225,15 @@ export default async function HomePage() {
             {/* Mock Dashboard */}
             <div className="relative mx-auto max-w-5xl">
               {/* Blurred background cards */}
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-blue-500/10 rounded-2xl blur-2xl" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent)]/10 to-[var(--accent)]/5 rounded-2xl blur-2xl" />
 
               {/* Main dashboard mockup */}
               <div className="relative rounded-2xl border border-[var(--border)]/30 bg-[var(--card)]/80 backdrop-blur-sm overflow-hidden shadow-2xl">
                 {/* Header bar */}
-                <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 px-6 py-4 border-b border-[var(--border)]/20 flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                <div className="bg-[var(--card-muted)] px-6 py-4 border-b border-[var(--border)]/20 flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-[var(--destructive)]/80" />
+                  <div className="w-3 h-3 rounded-full bg-[var(--warning)]/80" />
+                  <div className="w-3 h-3 rounded-full bg-[var(--success)]/80" />
                   <span className="ml-auto text-xs text-[var(--muted-foreground)]">devtrack.example</span>
                 </div>
 
@@ -241,21 +241,25 @@ export default async function HomePage() {
                 <div className="p-6 sm:p-8">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                     {/* Stat cards */}
-                    {[
-                      { label: "Current Streak", value: "47 days", icon: "🔥" },
-                      { label: "This Month", value: "142 commits", icon: "📊" },
-                      { label: "PR Reviews", value: "28 completed", icon: "✅" },
-                    ].map((stat) => (
-                      <div key={stat.label} className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-4 border border-[var(--border)]/20">
-                        <div className="text-2xl mb-2">{stat.icon}</div>
-                        <p className="text-xs text-[var(--muted-foreground)] mb-1">{stat.label}</p>
-                        <p className="text-lg font-semibold text-[var(--foreground)]">{stat.value}</p>
-                      </div>
-                    ))}
+                    {["Current Streak", "This Month", "PR Reviews"].map((label, i) => {
+                      const stats = [
+                        { label: "Current Streak", value: "47 days", icon: "🔥" },
+                        { label: "This Month", value: "142 commits", icon: "📊" },
+                        { label: "PR Reviews", value: "28 completed", icon: "✅" },
+                      ];
+                      const stat = stats[i];
+                      return (
+                        <div key={stat.label} className="rounded-lg bg-[var(--card-muted)]/30 p-4 border border-[var(--border)]/20">
+                          <div className="text-2xl mb-2">{stat.icon}</div>
+                          <p className="text-xs text-[var(--muted-foreground)] mb-1">{stat.label}</p>
+                          <p className="text-lg font-semibold text-[var(--foreground)]">{stat.value}</p>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Graph placeholder */}
-                  <div className="rounded-lg bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 p-6 border border-[var(--border)]/20 h-48 flex items-center justify-center">
+                  <div className="rounded-lg bg-[var(--accent-soft)]/50 p-6 border border-[var(--border)]/20 h-48 flex items-center justify-center">
                     <div className="text-center">
                       <div className="text-4xl mb-2">📈</div>
                       <p className="text-sm text-[var(--muted-foreground)]">Interactive charts and analytics</p>
@@ -272,10 +276,10 @@ export default async function HomePage() {
           <div className="section-inner">
             <div className="relative rounded-2xl overflow-hidden">
               {/* Background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-indigo-500 to-blue-600 opacity-90" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)] via-indigo-500 to-blue-600 opacity-90" />
               <div className="absolute inset-0 opacity-20">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                <div className="absolute bottom-0 left-0 w-72 h-72 bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--accent-foreground)] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-0 w-72 h-72 bg-[var(--accent-foreground)] rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
               </div>
 
               {/* Content */}
@@ -292,7 +296,7 @@ export default async function HomePage() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                   <Link
                     href="/api/auth/signin/github?callbackUrl=/dashboard"
-                    className="inline-flex items-center justify-center px-8 py-3.5 rounded-lg font-semibold bg-white text-indigo-600 hover:bg-slate-100 transition-smooth active:scale-95 shadow-lg"
+                    className="inline-flex items-center justify-center px-8 py-3.5 rounded-lg font-semibold bg-[var(--accent-foreground)] text-[var(--accent)] hover:opacity-90 transition-smooth active:scale-95 shadow-lg"
                   >
                     Get Started Free
                   </Link>
@@ -300,7 +304,7 @@ export default async function HomePage() {
                     href="https://github.com/Priyanshu-byte-coder/devtrack"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center px-8 py-3.5 rounded-lg font-semibold border-2 border-white text-white hover:bg-white/10 transition-smooth active:scale-95"
+                    className="inline-flex items-center justify-center px-8 py-3.5 rounded-lg font-semibold border-2 border-[var(--accent-foreground)] text-[var(--accent-foreground)] hover:bg-[var(--accent-foreground)]/10 transition-smooth active:scale-95"
                   >
                     Star on GitHub
                   </a>
@@ -311,14 +315,14 @@ export default async function HomePage() {
         </section>
 
         {/* Footer */}
-        <footer className="w-full border-t border-[var(--border)]/20 bg-slate-50/50 dark:bg-slate-900/30">
+        <footer className="w-full border-t border-[var(--border)]/20 bg-[var(--card-muted)]/30">
           <div className="section-container">
             <div className="section-inner">
               <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-8 mb-12">
                 {/* Brand */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-blue-600 flex items-center justify-center text-white font-bold text-sm">
                       D
                     </div>
                     <span className="font-bold">DevTrack</span>

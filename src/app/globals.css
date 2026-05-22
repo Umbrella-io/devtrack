@@ -13,6 +13,8 @@
   --border: #cbd5e1;
   --accent: #6366f1;
   --success: #10b981;
+  --warning: #f59e0b;
+
   --destructive: #ef4444;
   --accent-soft: rgba(99, 102, 241, 0.15);
   --accent-foreground: #ffffff;
@@ -35,6 +37,8 @@
   --border: #334155;
   --accent: #818cf8;
   --success: #10b981;
+
+  --warning: #f59e0b;
   --destructive: #ef4444;
   --accent-soft: rgba(99, 102, 241, 0.2);
   --accent-foreground: #ffffff;
@@ -86,7 +90,7 @@ body {
   }
 
   .focus-ring-dark {
-    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent)] dark:focus:ring-offset-slate-950;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent)] focus:ring-offset-[var(--background)];
   }
 
   .gradient-accent {
@@ -115,11 +119,11 @@ body {
 
   /* Glass effect */
   .glass {
-    @apply bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/20 dark:border-slate-700/20;
+    @apply bg-[var(--card)]/50 backdrop-blur-xl border border-[var(--border)]/20;
   }
 
   .glass-dark {
-    @apply bg-slate-900/80 dark:bg-slate-950/80 backdrop-blur-lg border border-slate-700/50 dark:border-slate-600/30;
+    @apply bg-[var(--card)]/80 backdrop-blur-lg border border-[var(--border)]/50;
   }
 
   /* Section styling */

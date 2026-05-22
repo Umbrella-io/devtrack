@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export default function LandingNav() {
@@ -19,7 +20,7 @@ export default function LandingNav() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-smooth ${
         isScrolled
-          ? "bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200/20 dark:border-slate-700/20 shadow-sm"
+          ? "bg-[var(--card)]/80 backdrop-blur-md border-b border-[var(--border)]/20 shadow-sm"
           : "bg-transparent"
       }`}
     >
@@ -29,9 +30,13 @@ export default function LandingNav() {
           href="/"
           className="flex items-center gap-2 font-bold text-lg text-[var(--foreground)] hover:opacity-80 transition-opacity"
         >
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold">
-            D
-          </div>
+          <Image
+            src="/favicon-32x32.png"
+            alt="DevTrack Logo"
+            width={32}
+            height={32}
+            className="rounded-lg"
+          />
           <span className="hidden sm:inline">DevTrack</span>
         </Link>
 
