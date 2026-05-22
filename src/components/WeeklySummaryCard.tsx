@@ -209,9 +209,14 @@ export default function WeeklySummaryCard() {
                 <span className="text-sm text-[var(--muted-foreground)]">
                   Commits
                 </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-semibold text-[var(--card-foreground)]">
-                    {summary.commits.current}
+                {summary.commits.trend === "up" && (
+                  <span className="text-sm font-medium text-[var(--success)]">
+                    + {summary.commits.delta}
+                  </span>
+                )}
+                {summary.commits.trend === "down" && (
+                  <span className="text-sm font-medium text-[var(--destructive)]">
+                    - {Math.abs(summary.commits.delta)}
                   </span>
                   {summary.commits.trend === "up" && (
                     <span

@@ -9,6 +9,7 @@ export const METRICS_CACHE_TTL_SECONDS = {
   streak: 2 * 60,
   issues: 10 * 60,
   activity: 5 * 60,
+  issues: 10 * 60,
 } as const;
 
 type MetricsCacheEndpoint = keyof typeof METRICS_CACHE_TTL_SECONDS;
