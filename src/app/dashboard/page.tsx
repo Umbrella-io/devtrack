@@ -102,6 +102,11 @@ export default async function DashboardPage() {
         <LanguageBreakdown />
         <GoalTracker />
       </div>
+
+      {/* Row 6: Recent GitHub activity */}
+      <div className="mt-6">
+        <RecentActivity />
+      </div>
     </div>
   );
 }
