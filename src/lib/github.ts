@@ -1,5 +1,10 @@
 export const GITHUB_API = "https://api.github.com";
 
+/**
+ * Fetches the recent GitHub events for the authenticated user.
+ * @param token - GitHub personal access token
+ * @returns Promise resolving to array of GitHubEvent objects
+ */
 export async function fetchUserEvents(token: string): Promise<GitHubEvent[]> {
   const res = await fetch(`${GITHUB_API}/user/events?per_page=100`, {
     headers: {
@@ -11,6 +16,11 @@ export async function fetchUserEvents(token: string): Promise<GitHubEvent[]> {
   return res.json();
 }
 
+/**
+ * Fetches the user's most recently pushed GitHub repositories.
+ * @param token - GitHub personal access token
+ * @returns Promise resolving to array of GitHubRepo objects
+ */
 export async function fetchUserRepos(token: string): Promise<GitHubRepo[]> {
   const res = await fetch(
     `${GITHUB_API}/user/repos?sort=pushed&per_page=10`,
@@ -75,6 +85,11 @@ export interface IssuesMetrics {
   mostActiveRepo: string | null;
 }
 
+/**
+ * Fetches issue metrics for the authenticated user over the last 30 days.
+ * @param token - GitHub personal access token
+ * @returns Promise resolving to IssuesMetrics object
+ */
 export async function fetchIssuesMetrics(
   token: string
 ): Promise<IssuesMetrics> {
