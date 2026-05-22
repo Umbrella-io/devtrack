@@ -29,6 +29,7 @@ async function getUserId(githubId: string): Promise<string | null> {
   }
 }
 
+
 // GET — fetch 10 most recent notifications
 export async function GET() {
   try {

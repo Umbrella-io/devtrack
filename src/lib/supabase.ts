@@ -16,6 +16,7 @@ if (!supabaseUrl || !serviceRoleKey) {
 // Service role bypasses RLS; auth is enforced by getServerSession checks.
 export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
+
 interface User {
   id: string;
   github_id: string;

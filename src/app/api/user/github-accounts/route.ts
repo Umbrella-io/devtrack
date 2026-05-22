@@ -13,6 +13,7 @@ interface LinkedAccount {
   added_at: string;
 }
 
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
