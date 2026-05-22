@@ -20,6 +20,8 @@ interface User {
 /**
  * Look up a user by GitHub username only if their profile is public.
  * Returns the user row if found and is_public is true, otherwise null.
+ * @param username - The GitHub username to search for
+ * @returns Promise resolving to User object or null if not found
  */
 export async function getUserByUsername(username: string): Promise<User | null> {
   const { data, error } = await supabaseAdmin
@@ -43,6 +45,9 @@ export async function getUserByUsername(username: string): Promise<User | null> 
 
 /**
  * Update the is_public flag for a user.
+ * @param userId - The user's ID
+ * @param isPublic - The new public visibility flag
+ * @returns Promise resolving to updated User object or null on failure
  */
 export async function updateUserPublicFlag(
   userId: string,
