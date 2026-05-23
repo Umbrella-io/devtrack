@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
 
       const commitsRes = await fetch(
         `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${fourteenDaysAgoStr}&per_page=100`,
-        { headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github.cloak-preview+json" }, cache: "no-store" }
+        { headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" }, cache: "no-store" }
       );
 const commitsData = (await commitsRes.json()) as {
         items: Array<{
