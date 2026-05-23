@@ -17,7 +17,12 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
-
+interface ReviewMetrics {
+  totalReviews: number;
+  approvalRate: string;
+  avgFirstReviewHours: number | null;
+  topRepos: { repo: string; count: number }[];
+}
 interface PRMetricsBase {
   open: number;
   merged: number;
@@ -388,7 +393,75 @@ async function getGitLabMetrics(
     return null;
   }
 }
+async function fetchReviewMetrics(token: string): Promise<ReviewMetrics> {
+  const query = `
+    query {
+      viewer {
+        contributionsCollection {
+          pullRequestReviewContributions(first: 100) {
+            nodes {
+              occurredAt
+              pullRequestReview {
+                state
+                pullRequest {
+                  repository {
+                    nameWithOwner
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
 
+  const res = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query }),
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("GitHub GraphQL error");
+
+  const json = await res.json();
+  const nodes =
+    json?.data?.viewer?.contributionsCollection
+      ?.pullRequestReviewContributions?.nodes ?? [];
+
+  const totalReviews = nodes.length;
+  const approvals = nodes.filter(
+    (n: { pullRequestReview: { state: string } }) =>
+      n.pullRequestReview?.state === "APPROVED"
+  ).length;
+
+  const approvalRate =
+    totalReviews > 0
+      ? `${Math.round((approvals / totalReviews) * 100)}%`
+      : "0%";
+
+  const repoCounts: Record<string, number> = {};
+  for (const node of nodes) {
+    const repo = node.pullRequestReview?.pullRequest?.repository?.nameWithOwner;
+    if (repo) repoCounts[repo] = (repoCounts[repo] ?? 0) + 1;
+  }
+
+  const topRepos = Object.entries(repoCounts)
+    .map(([repo, count]) => ({ repo, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  return {
+    totalReviews,
+    approvalRate,
+    avgFirstReviewHours: null,
+    topRepos,
+  };
+}
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken) {
@@ -411,8 +484,11 @@ export async function GET(req: NextRequest) {
         bypass,
         userId: session.githubId ?? session.githubLogin ?? "primary",
       });
-      const gitlab = await getGitLabMetrics(gitlabToken, gitlabCacheContext);
-      return Response.json(formatPRMetricsResponse(result, gitlab));
+      const [gitlab, reviews] = await Promise.all([
+        getGitLabMetrics(gitlabToken, gitlabCacheContext),
+        fetchReviewMetrics(session.accessToken).catch(() => null),
+      ]);
+      return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
@@ -480,8 +556,11 @@ export async function GET(req: NextRequest) {
     if (!merged) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
-    const gitlab = await getGitLabMetrics(gitlabToken, gitlabCacheContext);
-    return Response.json(formatPRMetricsResponse(merged, gitlab));
+    const [gitlab, reviews] = await Promise.all([
+      getGitLabMetrics(gitlabToken, gitlabCacheContext),
+      fetchReviewMetrics(session.accessToken).catch(() => null),
+    ]);
+    return Response.json({ ...formatPRMetricsResponse(merged, gitlab), reviews });
   }
 
   const token =
@@ -498,8 +577,11 @@ export async function GET(req: NextRequest) {
       bypass,
       userId: accountId === session.githubId ? session.githubId : accountId,
     });
-    const gitlab = await getGitLabMetrics(gitlabToken, gitlabCacheContext);
-    return Response.json(formatPRMetricsResponse(result, gitlab));
+    const [gitlab, reviews] = await Promise.all([
+      getGitLabMetrics(gitlabToken, gitlabCacheContext),
+      fetchReviewMetrics(token).catch(() => null),
+    ]);
+    return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
