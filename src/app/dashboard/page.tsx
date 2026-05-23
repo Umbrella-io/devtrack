@@ -9,6 +9,7 @@ import TopRepos from "@/components/TopRepos";
 import PinnedRepos from "@/components/PinnedRepos";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CommitTimeChart from "@/components/CommitTimeChart";
+import CodingActivityInsightsCard from "@/components/CodingActivityInsightsCard";
 import PRReviewTrendChart from "@/components/PRReviewTrendChart";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
@@ -73,6 +74,10 @@ export default async function DashboardPage() {
         <PRMetrics />
         <PRBreakdownChart />
         <CommitTimeChart />
+      </div>
+
+      <div className="mt-6">
+        <CodingActivityInsightsCard />
       </div>
 
       <div className="mt-6">
