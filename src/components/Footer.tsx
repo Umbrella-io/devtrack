@@ -6,7 +6,7 @@ export default function Footer() {
   return (
     <footer className="mt-auto border-t border-[var(--border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
       <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr]">
           <div>
             <div className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
               Open source developer dashboard
@@ -66,6 +66,45 @@ export default function Footer() {
                 rel="noreferrer"
               >
                 GitHub Repository
+              </a>
+            </div>
+          </div>
+   
+            <div>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)]">
+              Contact
+            </h3>
+            <div className="mt-4 flex flex-col gap-3 text-sm text-[var(--muted-foreground)]">
+              <a
+                className="transition-colors hover:text-[var(--card-foreground)]"
+                href="https://www.linkedin.com/in/priyanshu-doshi-21a54230a/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                LinkedIn
+              </a>
+              <a
+                className="transition-colors hover:text-[var(--card-foreground)]"
+                href="https://github.com/Priyanshu-byte-coder"
+                target="_blank"
+                rel="noreferrer"
+              >
+                GitHub
+              </a>
+              <a
+                className="transition-colors hover:text-[var(--card-foreground)]"
+                href="https://portfolio-eta-gilt-84.vercel.app/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Portfolio
+              </a>
+              <a
+                className="transition-colors hover:text-[var(--card-foreground)]"
+                href="mailto:doshipriyanshu3@gmail.com"
+                target="_blank"
+              >
+                  Email
               </a>
             </div>
           </div>

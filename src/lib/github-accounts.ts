@@ -35,14 +35,20 @@ export async function getLinkedTokens(userId: string): Promise<string[]> {
   const rows = (data ?? []) as UserGitHubAccountRow[];
   const tokens: string[] = [];
 
-for (const row of rows) {
+  for (const row of rows) {
     try {
       const decrypted = decryptToken(row.access_token_encrypted, row.access_token_iv);
       if (decrypted) {
         tokens.push(decrypted);
       }
     } catch (err) {
-      console.error(`Skipping un-decryptable token row for user ${userId}:`, err);
+      console.error(JSON.stringify({
+        event: "token_decryption_failure",
+        userId,
+        githubId: row.github_id,
+        error: err instanceof Error ? err.message : String(err),
+        timestamp: new Date().toISOString()
+      }));
     }
   }
 
@@ -181,7 +187,13 @@ export async function getAccountToken(
   try {
     return decryptToken(row.access_token_encrypted, row.access_token_iv);
   } catch (err) {
-    console.error(`Failed to decrypt target token for account ${accountGithubId}:`, err);
+    console.error(JSON.stringify({
+      event: "account_token_decryption_failure",
+      userId,
+      accountGithubId,
+      error: err instanceof Error ? err.message : String(err),
+      timestamp: new Date().toISOString()
+    }));
     return null;
   }
 }
