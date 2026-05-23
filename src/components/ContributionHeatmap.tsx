@@ -219,8 +219,8 @@ export default function ContributionHeatmap({
       {loading ? (
         <div className="h-[180px] animate-pulse rounded-lg bg-[var(--card-muted)]" />
       ) : error ? (
-        <div className="flex h-[180px] items-center rounded-lg border border-red-500/30 bg-red-500/10 px-4">
-          <p className="text-sm text-red-400">{error} Please try refreshing.</p>
+        <div className="flex h-[180px] items-center rounded-lg border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-4">
+          <p className="text-sm text-[var(--destructive)]">{error} Please try refreshing.</p>
         </div>
       ) : (
         <>

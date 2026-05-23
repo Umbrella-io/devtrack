@@ -13,6 +13,8 @@
   --border: #cbd5e1;
   --accent: #6366f1;
   --success: #10b981;
+  --warning: #f59e0b;
+  --destructive: #ef4444;
   --accent-soft: rgba(99, 102, 241, 0.15);
   --accent-foreground: #ffffff;
   --control: #e2e8f0;
@@ -32,6 +34,8 @@
   --border: #334155;
   --accent: #818cf8;
   --success: #10b981;
+  --warning: #fbbf24;
+  --destructive: #f87171;
   --accent-soft: rgba(99, 102, 241, 0.2);
   --accent-foreground: #ffffff;
   --control: #334155;
