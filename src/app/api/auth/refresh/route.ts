@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import {
   ACCESS_TOKEN_MAX_AGE,
   REFRESH_TOKEN_MAX_AGE,
@@ -6,55 +8,35 @@ import {
   createAccessToken,
   createRefreshToken,
   getTokenCookieName,
-  verifyRefreshToken,
 } from "@/lib/auth-tokens";
 
-function unauthorizedResponse() {
-  const response = NextResponse.json(
-    { error: "Invalid refresh token" }, 
-    { status: 401 }
-  );
-
-  response.cookies.set({
-    name: getTokenCookieName("access"),
-    value: "",
-    maxAge: 0,
-    path: "/",
-  });
-  response.cookies.set({
-    name: getTokenCookieName("refresh"),
-    value: "",
-    maxAge: 0,
-    path: "/",
-  });
-
-  return response;
-}
-
+/**
+ * POST /api/auth/token
+ * 
+ * This endpoint allows users to exchange their existing NextAuth session 
+ * for the parallel JWT authentication tokens. This is intended for 
+ * setting up access for third-party tools, CLI, or mobile applications.
+ */
 export async function POST(req: NextRequest) {
-  const refreshToken = req.cookies.get(getTokenCookieName("refresh"))?.value;
-  if (!refreshToken) {
-    return unauthorizedResponse();
-  }
+  const session = await getServerSession(authOptions);
 
-  let payload;
-  try {
-    payload = verifyRefreshToken(refreshToken);
-  } catch {
-    return unauthorizedResponse();
+  if (!session || !session.githubId || !session.githubLogin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const accessToken = createAccessToken({
-    githubId: payload.githubId,
-    githubLogin: payload.githubLogin,
+    githubId: session.githubId,
+    githubLogin: session.githubLogin,
   });
-  const newRefreshToken = createRefreshToken({
-    githubId: payload.githubId,
-    githubLogin: payload.githubLogin,
+
+  const refreshToken = createRefreshToken({
+    githubId: session.githubId,
+    githubLogin: session.githubLogin,
   });
 
   const response = NextResponse.json({
     ok: true,
+    message: "Tokens generated successfully",
     accessTokenExpiresIn: ACCESS_TOKEN_MAX_AGE,
   });
 
@@ -67,9 +49,10 @@ export async function POST(req: NextRequest) {
     path: "/",
     maxAge: ACCESS_TOKEN_MAX_AGE,
   });
+
   response.cookies.set({
     name: getTokenCookieName("refresh"),
-    value: newRefreshToken,
+    value: refreshToken,
     httpOnly: true,
     sameSite: "lax",
     secure: USE_SECURE_COOKIES,
@@ -79,6 +62,3 @@ export async function POST(req: NextRequest) {
 
   return response;
 }
-
-
-
