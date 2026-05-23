@@ -175,14 +175,8 @@ export default function TopRepos() {
   }, [lastUpdated]);
 
   useEffect(() => {
-<<<<<<< HEAD
-    fetchRepos();
-    fetchHealthScores();
-  }, [fetchRepos, fetchHealthScores, selectedAccount]);
-=======
     void refreshWidget();
   }, [refreshWidget]);
->>>>>>> 6f2cb69 (feat: add refresh button to each dashboard widget)
 
   // toggle sort: same column flips direction, new column resets to desc
   const handleSort = (column: "commits" | "name") => {
@@ -208,47 +202,14 @@ export default function TopRepos() {
       : b.commits - a.commits;
   });
 
-<<<<<<< HEAD
   const sortedRepos = [
-    ...pinnedRepos.map(pin => repos.find(r => r.name === pin)).filter(Boolean) as Repo[],
-    ...baseSortedRepos.filter(r => !pinnedRepos.includes(r.name))
+    ...pinnedRepos.map((pin) => baseSortedRepos.find((repo) => repo.name === pin)).filter(Boolean) as Repo[],
+    ...baseSortedRepos.filter((repo) => !pinnedRepos.includes(repo.name)),
   ];
 
-  const maxCommits = repos.reduce((max, r) => Math.max(max, r.commits), 1);
-
-  return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Top Repositories</h2>
-          {pinError && (
-            <p className="text-xs text-[var(--destructive)]">{pinError}</p>
-          )}
-        </div>
-        <select
-          value={days}
-          onChange={(e) => setDays(Number(e.target.value))}
-          aria-label="Select time range for top repositories"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus:outline-none focus:border-[var(--accent)]"
-        >
-          <option value={7}>Last 7d</option>
-          <option value={30}>Last 30d</option>
-          <option value={90}>Last 90d</option>
-        </select>
-      </div>
-      {loading ? (
-        <div
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-          className="space-y-3"
-        >
-          <span className="sr-only">Loading top repositories</span>
-=======
   const maxCommits = sortedRepos[0]?.commits ?? 1;
   const isRefreshing = loading || healthLoading;
   const showSkeleton = loading && repos.length === 0;
- 
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm" aria-busy={isRefreshing}>
@@ -263,7 +224,7 @@ export default function TopRepos() {
             className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] hover:text-[var(--card-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className={isRefreshing ? "inline-block animate-spin" : "inline-block"} aria-hidden="true">
-              ↺
+              ?
             </span>
           </button>
           <select
@@ -280,7 +241,6 @@ export default function TopRepos() {
       </div>
       {showSkeleton ? (
         <div className="space-y-3">
->>>>>>> 6f2cb69 (feat: add refresh button to each dashboard widget)
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
@@ -455,3 +415,5 @@ export default function TopRepos() {
     </div>
   );
 }
+
+
