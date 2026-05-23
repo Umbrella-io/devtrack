@@ -15,6 +15,7 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
 export const dynamic = "force-dynamic";
 
@@ -94,8 +95,18 @@ async function fetchContributionsForAccount(
       // Authenticated GitHub Search rate limits are low (~30 req/min). We handle 429/403
       // responses gracefully by returning partial results rather than failing the endpoint.
       while (page <= 10) {
+        const searchUrl = new URL(`${GITHUB_API}/search/commits`);
+        searchUrl.searchParams.set(
+          "q",
+          `author:${githubLogin} author-date:>=${sinceStr}`
+        );
+        searchUrl.searchParams.set("per_page", "100");
+        searchUrl.searchParams.set("page", String(page));
+        searchUrl.searchParams.set("sort", "author-date");
+        searchUrl.searchParams.set("order", "desc");
+
         const searchRes = await fetch(
-          `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
+          searchUrl.toString(),
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -298,10 +309,15 @@ export async function GET(req: NextRequest) {
   }
   
   const accountId = req.nextUrl.searchParams.get("accountId");
-  const username = req.nextUrl.searchParams.get("username")?.trim();
+  const usernameParam = req.nextUrl.searchParams.get("username");
+  const username = usernameParam ? normalizeGitHubUsername(usernameParam) : null;
   const bypass = isMetricsCacheBypassed(req);
   const gitlabToken =
     typeof session.gitlabToken === "string" ? session.gitlabToken : undefined;
+
+  if (usernameParam && !username) {
+    return Response.json({ error: "Invalid GitHub username" }, { status: 400 });
+  }
 
   // Compare mode path: explicitly fetch contributions for a target username.
   if (username) {
