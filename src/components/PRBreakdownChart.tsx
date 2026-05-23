@@ -68,12 +68,12 @@ export default function PRBreakdownChart() {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Breakdown</h2>
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+        <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
             type="button"
             onClick={fetchBreakdown}
-            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+            className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again
           </button>
@@ -114,17 +114,19 @@ export default function PRBreakdownChart() {
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{
-                  background: getCSSVariable("--tooltip"),
-                  color: getCSSVariable("--tooltip-foreground"),
-                  border: `1px solid ${getCSSVariable("--border")}`,
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                }}
-                formatter={(value: number) => [
-                  `${value} (${Math.round((value / total) * 100)}%)`,
-                ]}
-              />
+  contentStyle={{
+    backgroundColor: getCSSVariable('--card'),
+    border: `1px solid ${getCSSVariable('--border')}`,
+    borderRadius: "10px",
+    color: getCSSVariable('--foreground'),
+  }}
+  itemStyle={{
+    color: getCSSVariable('--foreground'),
+  }}
+  labelStyle={{
+    color: getCSSVariable('--foreground'),
+  }}
+/>
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-3 flex flex-wrap justify-center gap-4">

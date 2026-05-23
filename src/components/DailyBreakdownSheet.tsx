@@ -93,7 +93,7 @@ export default function DailyBreakdownSheet({
             aria-label="Close panel"
             className="rounded p-1 text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
           >
-            ?
+            ✕
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4">

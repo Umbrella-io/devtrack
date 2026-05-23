@@ -2,6 +2,12 @@
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { GITHUB_API } from "@/lib/github";
+import {
+  isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
+  metricsCacheKey,
+  withMetricsCache,
+} from "@/lib/metrics-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -22,43 +28,58 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Missing or invalid date" }, { status: 400 });
   }
 
+  const bypass = isMetricsCacheBypassed(req);
+  const key = metricsCacheKey(
+    session.githubId ?? session.githubLogin,
+    "contributions",
+    { date }
+  );
+
   try {
-    const searchRes = await fetch(
-      `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:${date}&per_page=100`,
+    const result = await withMetricsCache(
       {
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-          Accept: "application/vnd.github+json",
-        },
-        cache: "no-store",
+        bypass,
+        key,
+        ttlSeconds: METRICS_CACHE_TTL_SECONDS.contributions,
+      },
+      async () => {
+        const searchRes = await fetch(
+          `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:${date}&per_page=100`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.accessToken}`,
+              Accept: "application/vnd.github+json",
+            },
+            cache: "no-store",
+          }
+        );
+
+        if (!searchRes.ok) throw new Error("GitHub API error");
+
+        const data = (await searchRes.json()) as {
+          items: Array<{
+            repository: { full_name: string; html_url: string };
+          }>;
+        };
+
+        const repoMap: Record<string, { count: number; url: string }> = {};
+        for (const item of data.items) {
+          const { full_name, html_url } = item.repository;
+          if (!repoMap[full_name]) {
+            repoMap[full_name] = { count: 0, url: html_url };
+          }
+          repoMap[full_name].count++;
+        }
+
+        const repos: RepoCommit[] = Object.entries(repoMap).map(
+          ([repo, { count, url }]) => ({ repo, count, url })
+        );
+
+        return { date, repos };
       }
     );
 
-    if (!searchRes.ok) {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
-    }
-
-    const data = (await searchRes.json()) as {
-      items: Array<{
-        repository: { full_name: string; html_url: string };
-      }>;
-    };
-
-    // Group commits by repo
-    const repoMap: Record<string, { count: number; url: string }> = {};
-    for (const item of data.items) {
-      const { full_name, html_url } = item.repository;
-      if (!repoMap[full_name]) {
-        repoMap[full_name] = { count: 0, url: html_url };
-      }
-      repoMap[full_name].count++;
-    }
-
-    const repos: RepoCommit[] = Object.entries(repoMap).map(
-      ([repo, { count, url }]) => ({ repo, count, url })
-    );
-
-    return Response.json({ date, repos });
+    return Response.json(result);
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }

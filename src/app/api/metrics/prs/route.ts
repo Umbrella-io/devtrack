@@ -17,7 +17,12 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
-
+interface ReviewMetrics {
+  totalReviews: number;
+  approvalRate: string;
+  avgFirstReviewHours: number | null;
+  topRepos: { repo: string; count: number }[];
+}
 interface PRMetricsBase {
   open: number;
   merged: number;
@@ -43,6 +48,13 @@ interface ReviewEvent {
 
 interface ReviewCommentEvent {
   created_at?: string | null;
+}
+
+interface GitLabMergeRequestItem {
+  state: string;
+  created_at: string;
+  merged_at?: string | null;
+  closed_at?: string | null;
 }
 
 function getRepoFullName(repositoryUrl: string): string | null {
@@ -203,6 +215,111 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
   };
 }
 
+async function fetchGitLabMRMetrics(token: string): Promise<PRMetricsBase> {
+  const perPage = 100;
+  let page = 1;
+  let totalPages: number | null = null;
+  let totalCount: number | null = null;
+  const items: GitLabMergeRequestItem[] = [];
+
+  while (page > 0) {
+    const url = new URL("https://gitlab.com/api/v4/merge_requests");
+    url.searchParams.set("scope", "created_by_me");
+    url.searchParams.set("state", "all");
+    url.searchParams.set("per_page", String(perPage));
+    url.searchParams.set("page", String(page));
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error("GitLab API error");
+    }
+
+    if (totalCount === null) {
+      const totalHeader = response.headers.get("x-total");
+      const parsedTotal = totalHeader ? Number(totalHeader) : NaN;
+      if (Number.isFinite(parsedTotal)) {
+        totalCount = parsedTotal;
+      }
+    }
+
+    if (totalPages === null) {
+      const totalPagesHeader = response.headers.get("x-total-pages");
+      const parsedPages = totalPagesHeader ? Number(totalPagesHeader) : NaN;
+      if (Number.isFinite(parsedPages) && parsedPages > 0) {
+        totalPages = parsedPages;
+      }
+    }
+
+    const pageItems = (await response.json()) as GitLabMergeRequestItem[];
+    if (!Array.isArray(pageItems) || pageItems.length === 0) {
+      break;
+    }
+
+    items.push(...pageItems);
+
+    const nextPage = response.headers.get("x-next-page");
+    const parsedNext = nextPage && nextPage !== "0" ? Number(nextPage) : NaN;
+    if (Number.isFinite(parsedNext)) {
+      page = parsedNext;
+      continue;
+    }
+
+    if (totalPages !== null && page < totalPages) {
+      page += 1;
+      continue;
+    }
+
+    if (pageItems.length === perPage) {
+      page += 1;
+      continue;
+    }
+
+    break;
+  }
+
+  const open = items.filter((mr) => mr.state === "opened").length;
+  const mergedItems = items.filter(
+    (mr) => mr.state === "merged" && mr.merged_at
+  );
+  const merged = mergedItems.length;
+  const closed = items.filter((mr) => mr.state === "closed").length;
+
+  const reviewDurations = mergedItems
+    .map((mr) => {
+      const created = new Date(mr.created_at).getTime();
+      const mergedAt = new Date(mr.merged_at!).getTime();
+      if (Number.isNaN(created) || Number.isNaN(mergedAt)) {
+        return null;
+      }
+      return mergedAt - created;
+    })
+    .filter((value): value is number => typeof value === "number");
+
+  const avgReviewMs =
+    reviewDurations.length > 0
+      ? reviewDurations.reduce((sum, value) => sum + value, 0) /
+        reviewDurations.length
+      : 0;
+
+  const sampleTotal = items.length;
+
+  return {
+    open,
+    merged,
+    closed,
+    total: totalCount ?? sampleTotal,
+    avgReviewHours: Math.round(avgReviewMs / 3600000),
+    avgFirstReviewHours: null,
+    mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
+  };
+}
+
 async function fetchCachedPRMetrics(
   token: string,
   cacheContext: { bypass: boolean; userId: string }
@@ -216,6 +333,24 @@ async function fetchCachedPRMetrics(
       ttlSeconds: METRICS_CACHE_TTL_SECONDS.prs,
     },
     () => fetchPRMetrics(token)
+  );
+}
+
+async function fetchCachedGitLabMRMetrics(
+  token: string,
+  cacheContext: { bypass: boolean; userId: string }
+): Promise<PRMetricsBase> {
+  const key = metricsCacheKey(cacheContext.userId, "prs", {
+    source: "gitlab",
+  });
+
+  return withMetricsCache(
+    {
+      bypass: cacheContext.bypass,
+      key,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.prs,
+    },
+    () => fetchGitLabMRMetrics(token)
   );
 }
 
@@ -234,14 +369,114 @@ function formatPRMetrics(metrics: PRMetricsBase) {
   };
 }
 
+function formatPRMetricsResponse(
+  metrics: PRMetricsBase,
+  gitlab: PRMetricsBase | null
+) {
+  return {
+    ...formatPRMetrics(metrics),
+    ...(gitlab ? { gitlab: formatPRMetrics(gitlab) } : {}),
+  };
+}
+
+async function getGitLabMetrics(
+  token: string | undefined,
+  cacheContext: { bypass: boolean; userId: string }
+) {
+  if (!token) {
+    return null;
+  }
+
+  try {
+    return await fetchCachedGitLabMRMetrics(token, cacheContext);
+  } catch {
+    return null;
+  }
+}
+async function fetchReviewMetrics(token: string): Promise<ReviewMetrics> {
+  const query = `
+    query {
+      viewer {
+        contributionsCollection {
+          pullRequestReviewContributions(first: 100) {
+            nodes {
+              occurredAt
+              pullRequestReview {
+                state
+                pullRequest {
+                  repository {
+                    nameWithOwner
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const res = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query }),
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("GitHub GraphQL error");
+
+  const json = await res.json();
+  const nodes =
+    json?.data?.viewer?.contributionsCollection
+      ?.pullRequestReviewContributions?.nodes ?? [];
+
+  const totalReviews = nodes.length;
+  const approvals = nodes.filter(
+    (n: { pullRequestReview: { state: string } }) =>
+      n.pullRequestReview?.state === "APPROVED"
+  ).length;
+
+  const approvalRate =
+    totalReviews > 0
+      ? `${Math.round((approvals / totalReviews) * 100)}%`
+      : "0%";
+
+  const repoCounts: Record<string, number> = {};
+  for (const node of nodes) {
+    const repo = node.pullRequestReview?.pullRequest?.repository?.nameWithOwner;
+    if (repo) repoCounts[repo] = (repoCounts[repo] ?? 0) + 1;
+  }
+
+  const topRepos = Object.entries(repoCounts)
+    .map(([repo, count]) => ({ repo, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  return {
+    totalReviews,
+    approvalRate,
+    avgFirstReviewHours: null,
+    topRepos,
+  };
+}
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const gitlabToken =
+    typeof session.gitlabToken === "string" ? session.gitlabToken : undefined;
+
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
+  const gitlabCacheContext = {
+    bypass,
+    userId: session.githubId ?? session.githubLogin ?? "primary",
+  };
 
   if (!accountId) {
     try {
@@ -249,7 +484,11 @@ export async function GET(req: NextRequest) {
         bypass,
         userId: session.githubId ?? session.githubLogin ?? "primary",
       });
-      return Response.json(formatPRMetrics(result));
+      const [gitlab, reviews] = await Promise.all([
+        getGitLabMetrics(gitlabToken, gitlabCacheContext),
+        fetchReviewMetrics(session.accessToken).catch(() => null),
+      ]);
+      return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
@@ -317,8 +556,11 @@ export async function GET(req: NextRequest) {
     if (!merged) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
-
-    return Response.json(formatPRMetrics(merged));
+    const [gitlab, reviews] = await Promise.all([
+      getGitLabMetrics(gitlabToken, gitlabCacheContext),
+      fetchReviewMetrics(session.accessToken).catch(() => null),
+    ]);
+    return Response.json({ ...formatPRMetricsResponse(merged, gitlab), reviews });
   }
 
   const token =
@@ -335,7 +577,11 @@ export async function GET(req: NextRequest) {
       bypass,
       userId: accountId === session.githubId ? session.githubId : accountId,
     });
-    return Response.json(formatPRMetrics(result));
+    const [gitlab, reviews] = await Promise.all([
+      getGitLabMetrics(gitlabToken, gitlabCacheContext),
+      fetchReviewMetrics(token).catch(() => null),
+    ]);
+    return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
