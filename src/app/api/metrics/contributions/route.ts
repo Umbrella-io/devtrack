@@ -66,6 +66,7 @@ async function fetchContributionsForAccount(
   const key = metricsCacheKey(cacheContext.userId, "contributions", {
     days,
     githubLogin,
+    from: fromDate ?? undefined,
   });
 
   return withMetricsCache(
@@ -79,7 +80,13 @@ async function fetchContributionsForAccount(
       since.setDate(since.getDate() - days);
       const sinceStr = fromDate ?? toLocalDateStr(since);
 
-      let allItems: GitHubCommitSearchItem[] = [];
+      let allItems: Array<{
+        sha: string;
+        html_url: string;
+        repository?: { full_name: string };
+        commit: { author: { date: string }; message: string };
+      }> = [];
+      const commitItems: CommitItem[] = [];
       let totalCount = 0;
       let page = 1;
 
@@ -115,7 +122,12 @@ async function fetchContributionsForAccount(
 
         const data = (await searchRes.json()) as {
           total_count: number;
-          items: GitHubCommitSearchItem[];
+          items: Array<{
+            sha: string;
+            html_url: string;
+            repository?: { full_name: string };
+            commit: { author: { date: string }; message: string };
+          }>;
         };
 
         if (page === 1) {

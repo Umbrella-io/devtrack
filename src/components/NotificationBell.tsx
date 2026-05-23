@@ -128,7 +128,7 @@ export default function NotificationBell() {
             )}
           </div>
 
-          <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--border)]">
+          <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--border)]  scrollbar-thin">
             {notifications.length === 0 ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
                 No notifications yet

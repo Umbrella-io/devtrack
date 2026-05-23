@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { fetchIssuesMetrics } from "@/lib/github";
 import {
   isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
   metricsCacheKey,
   withMetricsCache,
   METRICS_CACHE_TTL_SECONDS,
