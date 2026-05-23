@@ -1,3 +1,4 @@
+import ActivityRingChart from "@/components/ActivityRingChart";
 import ContributionGraph from "@/components/ContributionGraph";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
@@ -77,6 +78,10 @@ export default async function DashboardPage() {
         <CommunityMetrics />
         <PRBreakdownChart />
         <CommitTimeChart />
+      </div>
+      {/* Row 2b: Activity Ring Chart */}
+      <div className="mt-6">
+        <ActivityRingChart />
       </div>
 
       <div className="mt-6">
