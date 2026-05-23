@@ -1,8 +1,5 @@
 import { Metadata } from "next";
 import BadgeSection from "@/components/BadgeSection";
-import ContributionGraph from "@/components/ContributionGraph";
-import StreakTracker from "@/components/StreakTracker";
-import TopRepos from "@/components/TopRepos";
 import BackToDashboard from "@/components/BackToDashboard";
 interface PublicProfileData {
   username: string;
@@ -219,7 +216,16 @@ function PublicContributionGraph({
  * Public variant of StreakTracker component.
  * Displays data passed as props.
  */
-function PublicStreakTracker({ streak }: { streak: any }) {
+function PublicStreakTracker({
+  streak,
+}: {
+  streak: {
+    current: number;
+    longest: number;
+    lastCommitDate: string | null;
+    totalActiveDays: number;
+  };
+}) {
   const stats = [
     {
       label: "Current Streak",
@@ -351,6 +357,7 @@ function PublicTopRepos({
     </div>
   );
 }
+
 
 
 
