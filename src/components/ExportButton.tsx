@@ -18,7 +18,7 @@ interface DayData {
 
 interface Goal {
   id: string;
-  label: string;
+  title: string;
   target: number;
   current: number;
 }
@@ -86,10 +86,10 @@ export default function ExportButton() {
       // Goals sheet
       if (goalsData && goalsData.length > 0) {
         csv += "\nGoals\n";
-        csv += "Label,Current,Target,Progress (%)\n";
+        csv += "Title,Current,Target,Progress (%)\n";
         goalsData.forEach((g) => {
           const pct = g.target > 0 ? ((g.current / g.target) * 100).toFixed(1) : "0";
-          csv += `"${g.label}",${g.current},${g.target},${pct}%\n`;
+          csv += `"${g.title}",${g.current},${g.target},${pct}%\n`;
         });
       }
 
@@ -144,10 +144,10 @@ export default function ExportButton() {
         doc.text("Goals Tracker", 14, currentY);
         autoTable(doc, {
           startY: currentY + 5,
-          head: [["Goal Label", "Current", "Target", "Progress"]],
+          head: [["Goal Title", "Current", "Target", "Progress"]],
           body: goalsData.map((g) => {
             const pct = g.target > 0 ? ((g.current / g.target) * 100).toFixed(1) : "0";
-            return [g.label, g.current, g.target, `${pct}%`];
+            return [g.title, g.current, g.target, `${pct}%`];
           }),
           styles: { fontSize: 10 },
           headStyles: { fillColor: [59, 130, 246] },
