@@ -17,6 +17,7 @@ import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
+import DeveloperPersona from "@/components/DeveloperPersona";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
@@ -46,6 +47,10 @@ export default async function DashboardPage() {
 
       <div className="mb-6">
         <WeeklySummaryCard />
+      </div>
+
+      <div className="mb-6">
+        <DeveloperPersona />
       </div>
 
       <div className="mb-6">
