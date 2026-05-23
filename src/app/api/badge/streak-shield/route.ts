@@ -15,6 +15,7 @@ interface StreakData {
   longest: number;
   lastCommitDate: string | null;
   totalActiveDays: number;
+  stale?: boolean;
 }
 
 async function fetchGitHubWithToken(
@@ -56,12 +57,20 @@ async function fetchStreak(
 
   if (!searchRes.ok) {
     const errorBody = await searchRes.text();
+    const isRateLimited = searchRes.status === 403;
     console.error(`GitHub API error fetching streak for ${username}:`, {
       status: searchRes.status,
       url,
       body: errorBody,
+      rateLimited: isRateLimited,
     });
-    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
+    return { 
+      current: 0, 
+      longest: 0, 
+      lastCommitDate: null, 
+      totalActiveDays: 0,
+      stale: isRateLimited ? true : undefined,
+    };
   }
 
   const data = (await searchRes.json()) as {
@@ -75,7 +84,7 @@ async function fetchStreak(
   const commitDays = Object.keys(daySet).sort();
 
   if (commitDays.length === 0) {
-    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
+    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0, stale: undefined };
   }
 
   let longestStreak = 1;
