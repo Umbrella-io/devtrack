@@ -3,8 +3,7 @@ import { encode } from "next-auth/jwt";
 
 const authSecret = "playwright-placeholder-secret-that-is-long-enough";
 
-test.beforeEach(async ({ page }) => {
-  const sessionToken = await encode({
+test.beforeEach(async ({ page })   const sessionToken = await encode({
     secret: authSecret,
     token: {
       name: "Playwright User",
@@ -124,7 +123,7 @@ test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.waitForTimeout(2000);
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
-  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "Commit Activity" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByText("Make 10 commits")).toBeVisible({ timeout: 10000 });
@@ -218,6 +217,30 @@ function mockMetricResponse(url) {
   }
   if (url.includes("/api/metrics/ci")) {
     return { successRate: 95, averageDurationMinutes: 3, flakiestWorkflow: null, totalRuns: 42, reposChecked: 5 };
+d: { commits: 8 } };
+  }
+  if (url.includes("/api/metrics/repo-health")) {
+    return { repositories: [] };
+  }
+  if (url.includes("/api/metrics/ci")) {
+    return { success: 6, failed: 1, cancelled: 0, skipped: 0 };
+  }
+  if (url.includes("/api/streak/freeze")) {
+    return { freezes: [] };
+  }
+  if (url.includes("/api/user/github-accounts")) {
+    return { accounts: [] };
+  }
+  return {};
+}
+totalRuns: 42, reposChecked: 5 };
+d: { commits: 8 } };
+  }
+  if (url.includes("/api/metrics/repo-health")) {
+    return { repositories: [] };
+  }
+  if (url.includes("/api/metrics/ci")) {
+    return { success: 6, failed: 1, cancelled: 0, skipped: 0 };
   }
   if (url.includes("/api/streak/freeze")) {
     return { freezes: [] };
