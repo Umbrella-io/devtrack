@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { cookies } from "next/headers";
 import Footer from "@/components/Footer";
 import Providers from "./providers";
 import PWARegister from "@/components/pwa-register";
@@ -42,32 +43,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = cookies();
+  const isDark = cookieStore.get("theme")?.value === "dark";
+
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const stored = localStorage.getItem('theme');
-                  const supportDarkMode =
-                    window.matchMedia('(prefers-color-scheme: dark)').matches === true;
-
-                  if (stored === 'dark' || (!stored && supportDarkMode)) {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.style.colorScheme = 'dark';
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.style.colorScheme = 'light';
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
-
+    <html
+      lang="en"
+      className={isDark ? "dark" : ""}
+      suppressHydrationWarning
+    >
+      <head />
       <body
         className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
