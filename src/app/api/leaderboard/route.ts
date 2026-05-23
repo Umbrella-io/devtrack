@@ -49,6 +49,9 @@ function getRateLimitKey(req: NextRequest): string {
 
 function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   const now = Date.now();
+  for (const [key, record] of ipRateLimits) {
+    if (now > record.resetAt) ipRateLimits.delete(key);
+  }
   const record = ipRateLimits.get(ip);
 
   if (!record || now > record.resetAt) {
@@ -62,6 +65,13 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   }
 
   return { allowed: false, retryAfter: Math.ceil((record.resetAt - now) / 1000) };
+}
+
+function cleanupCache(): void {
+  const now = Date.now();
+  if (leaderboardCache && now > leaderboardCache.expiresAt) {
+    leaderboardCache = null;
+  }
 }
 
 async function fetchGitHubJson<T>(path: string): Promise<T | null> {
@@ -196,6 +206,7 @@ async function buildLeaderboard(): Promise<LeaderboardPayload> {
 }
 
 export async function GET(req: NextRequest) {
+  cleanupCache();
   const ip = getRateLimitKey(req);
   const rateLimit = checkRateLimit(ip);
 
