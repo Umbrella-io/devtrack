@@ -60,6 +60,7 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
 .dark .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--muted-foreground); }
 .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
 @keyframes fadeUp {
   from {
     opacity: 0;
