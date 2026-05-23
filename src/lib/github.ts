@@ -1,7 +1,26 @@
 export const GITHUB_API = "https://api.github.com";
 
+/**
+ * Fetch wrapper with AbortController-based timeout for GitHub API calls.
+ * Prevents hanging requests under slow/stalled network conditions.
+ */
+async function githubFetch(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = 30_000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function fetchUserEvents(token: string): Promise<GitHubEvent[]> {
-  const res = await fetch(`${GITHUB_API}/user/events?per_page=100`, {
+  const res = await githubFetch(`${GITHUB_API}/user/events?per_page=100`, {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github+json",
@@ -12,7 +31,7 @@ export async function fetchUserEvents(token: string): Promise<GitHubEvent[]> {
 }
 
 export async function fetchUserRepos(token: string): Promise<GitHubRepo[]> {
-  const res = await fetch(
+  const res = await githubFetch(
     `${GITHUB_API}/user/repos?sort=pushed&per_page=10`,
     {
       headers: {
@@ -89,7 +108,7 @@ export async function fetchIssuesMetrics(
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const since30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const searchRes = await fetch(
+  const searchRes = await githubFetch(
     `https://api.github.com/search/issues?q=type:issue+author:@me+created:>=${since30d.toISOString().slice(0, 10)}&per_page=100`,
     { headers, cache: "no-store" }
   );
@@ -114,11 +133,11 @@ export async function fetchIssuesMetrics(
         )
       : 0;
 
-  const thisMonthRes = await fetch(
+  const thisMonthRes = await githubFetch(
     `https://api.github.com/search/issues?q=type:issue+author:@me+created:>=${thisMonthStart.toISOString().slice(0, 10)}&per_page=1`,
     { headers, cache: "no-store" }
   );
-  const lastMonthRes = await fetch(
+  const lastMonthRes = await githubFetch(
     `https://api.github.com/search/issues?q=type:issue+author:@me+created:${lastMonthStart.toISOString().slice(0, 10)}..${lastMonthEnd.toISOString().slice(0, 10)}&per_page=1`,
     { headers, cache: "no-store" }
   );
