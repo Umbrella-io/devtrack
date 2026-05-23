@@ -1,3 +1,11 @@
+/**
+ * Intended Use Case for this JWT System:
+ * The primary DevTrack web application uses NextAuth (session cookies) for authentication.
+ * This parallel JWT-based authentication system provides long-lived refresh tokens and 
+ * short-lived access tokens specifically designed for external API clients, CLI tools, 
+ * or mobile applications that cannot rely on browser-based NextAuth session mechanisms.
+ */
+
 import { createHmac, timingSafeEqual } from "crypto";
 
 export const ACCESS_TOKEN_MAX_AGE = 15 * 60; // 15 minutes
@@ -77,9 +85,9 @@ function cryptoTimingSafeEqual(a: string, b: string) {
 }
 
 export function getAuthTokenSecret() {
-  const secret = process.env.NEXTAUTH_SECRET;
+  const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
   if (!secret) {
-    throw new Error("NEXTAUTH_SECRET is required for JWT authentication");
+    throw new Error("JWT_SECRET or NEXTAUTH_SECRET is required for JWT authentication");
   }
   return secret;
 }

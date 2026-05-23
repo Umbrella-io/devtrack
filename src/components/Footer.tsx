@@ -47,7 +47,7 @@ export default function Footer() {
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://github.com/Priyanshu-byte-coder/devtrack/discussions"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 Discussions
               </a>
@@ -55,7 +55,7 @@ export default function Footer() {
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://github.com/Priyanshu-byte-coder/devtrack/issues"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 Issues
               </a>
@@ -63,7 +63,7 @@ export default function Footer() {
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://github.com/Priyanshu-byte-coder/devtrack"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 GitHub Repository
               </a>
@@ -79,7 +79,7 @@ export default function Footer() {
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://www.linkedin.com/in/priyanshu-doshi-21a54230a/"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 LinkedIn
               </a>
@@ -87,7 +87,7 @@ export default function Footer() {
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://github.com/Priyanshu-byte-coder"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 GitHub
               </a>
@@ -95,7 +95,7 @@ export default function Footer() {
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://portfolio-eta-gilt-84.vercel.app/"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 Portfolio
               </a>
@@ -103,6 +103,7 @@ export default function Footer() {
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="mailto:doshipriyanshu3@gmail.com"
                 target="_blank"
+                rel="noopener noreferrer"
               >
                   Email
               </a>
