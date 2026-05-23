@@ -35,70 +35,70 @@ const personaStyles: Record<PersonaData["persona"]["key"], {
   sparkle: string;
 }> = {
   night_owl: {
-    badge: "border-indigo-300/15 bg-slate-950/45 text-indigo-100",
-    icon: "border-indigo-300/15 bg-slate-950/40 text-indigo-100",
-    orb: "from-indigo-500/12 via-slate-900/10 to-transparent",
-    aura: "bg-gradient-to-br from-indigo-500/15 via-sky-500/8 to-transparent",
-    border: "motion-safe:hover:border-indigo-300/25",
-    shadow: "motion-safe:hover:shadow-[0_18px_42px_rgba(79,70,229,0.14)]",
-    shine: "via-indigo-200/12",
-    accent: "motion-safe:group-hover:shadow-[0_0_18px_rgba(96,165,250,0.22)]",
-    sparkle: "shadow-indigo-500/10",
+    badge: "border-[var(--accent)]/20 bg-[var(--accent)]/10 text-[var(--foreground)]",
+    icon: "border-[var(--accent)]/20 bg-[var(--background)]/60 text-[var(--foreground)]",
+    orb: "from-[var(--accent)]/12 via-[var(--background)]/10 to-transparent",
+    aura: "bg-gradient-to-br from-[var(--accent)]/14 via-[var(--accent)]/6 to-transparent",
+    border: "motion-safe:hover:border-[var(--accent)]/30",
+    shadow: "motion-safe:hover:shadow-[0_18px_42px_color-mix(in_srgb,var(--accent)_20%,transparent)]",
+    shine: "via-[var(--accent)]/12",
+    accent: "motion-safe:group-hover:shadow-[0_0_18px_color-mix(in_srgb,var(--accent)_26%,transparent)]",
+    sparkle: "shadow-[0_0_18px_color-mix(in_srgb,var(--accent)_12%,transparent)]",
   },
   early_bird: {
-    badge: "border-amber-300/15 bg-slate-950/45 text-amber-100",
-    icon: "border-amber-300/15 bg-slate-950/40 text-amber-100",
-    orb: "from-amber-400/12 via-slate-900/10 to-transparent",
-    aura: "bg-gradient-to-br from-amber-300/16 via-yellow-400/8 to-transparent",
-    border: "motion-safe:hover:border-amber-200/30",
-    shadow: "motion-safe:hover:shadow-[0_18px_42px_rgba(245,158,11,0.14)]",
-    shine: "via-amber-100/14",
-    accent: "motion-safe:group-hover:shadow-[0_0_18px_rgba(251,191,36,0.22)]",
-    sparkle: "shadow-amber-500/10",
+    badge: "border-[var(--success)]/20 bg-[var(--success)]/10 text-[var(--foreground)]",
+    icon: "border-[var(--success)]/20 bg-[var(--background)]/60 text-[var(--foreground)]",
+    orb: "from-[var(--success)]/12 via-[var(--background)]/10 to-transparent",
+    aura: "bg-gradient-to-br from-[var(--success)]/14 via-[var(--success)]/6 to-transparent",
+    border: "motion-safe:hover:border-[var(--success)]/28",
+    shadow: "motion-safe:hover:shadow-[0_18px_42px_color-mix(in_srgb,var(--success)_20%,transparent)]",
+    shine: "via-[var(--success)]/12",
+    accent: "motion-safe:group-hover:shadow-[0_0_18px_color-mix(in_srgb,var(--success)_26%,transparent)]",
+    sparkle: "shadow-[0_0_18px_color-mix(in_srgb,var(--success)_12%,transparent)]",
   },
   refactorer: {
-    badge: "border-emerald-300/15 bg-slate-950/45 text-emerald-100",
-    icon: "border-emerald-300/15 bg-slate-950/40 text-emerald-100",
-    orb: "from-emerald-400/12 via-slate-900/10 to-transparent",
-    aura: "bg-gradient-to-br from-emerald-400/15 via-cyan-400/8 to-transparent",
-    border: "motion-safe:hover:border-emerald-200/28",
-    shadow: "motion-safe:hover:shadow-[0_18px_42px_rgba(16,185,129,0.14)]",
-    shine: "via-emerald-100/12",
-    accent: "motion-safe:group-hover:shadow-[0_0_18px_rgba(52,211,153,0.22)]",
-    sparkle: "shadow-emerald-500/10",
+    badge: "border-[var(--success)]/20 bg-[var(--background)]/60 text-[var(--foreground)]",
+    icon: "border-[var(--success)]/20 bg-[var(--background)]/60 text-[var(--foreground)]",
+    orb: "from-[var(--success)]/10 via-[var(--accent)]/8 to-transparent",
+    aura: "bg-gradient-to-br from-[var(--success)]/12 via-[var(--accent)]/6 to-transparent",
+    border: "motion-safe:hover:border-[var(--success)]/28",
+    shadow: "motion-safe:hover:shadow-[0_18px_42px_color-mix(in_srgb,var(--success)_18%,transparent)]",
+    shine: "via-[var(--success)]/12",
+    accent: "motion-safe:group-hover:shadow-[0_0_18px_color-mix(in_srgb,var(--success)_24%,transparent)]",
+    sparkle: "shadow-[0_0_18px_color-mix(in_srgb,var(--success)_10%,transparent)]",
   },
   marathoner: {
-    badge: "border-fuchsia-300/15 bg-slate-950/45 text-fuchsia-100",
-    icon: "border-fuchsia-300/15 bg-slate-950/40 text-fuchsia-100",
-    orb: "from-fuchsia-500/12 via-slate-900/10 to-transparent",
-    aura: "bg-gradient-to-br from-fuchsia-400/15 via-pink-400/8 to-transparent",
-    border: "motion-safe:hover:border-fuchsia-200/28",
-    shadow: "motion-safe:hover:shadow-[0_18px_42px_rgba(217,70,239,0.14)]",
-    shine: "via-fuchsia-100/12",
-    accent: "motion-safe:group-hover:shadow-[0_0_18px_rgba(236,72,153,0.22)]",
-    sparkle: "shadow-fuchsia-500/10",
+    badge: "border-[var(--accent)]/20 bg-[var(--background)]/60 text-[var(--foreground)]",
+    icon: "border-[var(--accent)]/20 bg-[var(--background)]/60 text-[var(--foreground)]",
+    orb: "from-[var(--accent)]/10 via-[var(--muted)]/8 to-transparent",
+    aura: "bg-gradient-to-br from-[var(--accent)]/12 via-[var(--muted)]/6 to-transparent",
+    border: "motion-safe:hover:border-[var(--accent)]/28",
+    shadow: "motion-safe:hover:shadow-[0_18px_42px_color-mix(in_srgb,var(--accent)_18%,transparent)]",
+    shine: "via-[var(--accent)]/12",
+    accent: "motion-safe:group-hover:shadow-[0_0_18px_color-mix(in_srgb,var(--accent)_24%,transparent)]",
+    sparkle: "shadow-[0_0_18px_color-mix(in_srgb,var(--accent)_10%,transparent)]",
   },
   speed_runner: {
-    badge: "border-sky-300/15 bg-slate-950/45 text-sky-100",
-    icon: "border-sky-300/15 bg-slate-950/40 text-sky-100",
-    orb: "from-sky-400/12 via-slate-900/10 to-transparent",
-    aura: "bg-gradient-to-br from-orange-400/14 via-red-400/8 to-transparent",
-    border: "motion-safe:hover:border-sky-200/28",
-    shadow: "motion-safe:hover:shadow-[0_18px_42px_rgba(249,115,22,0.14)]",
-    shine: "via-orange-100/12",
-    accent: "motion-safe:group-hover:shadow-[0_0_18px_rgba(251,146,60,0.22)]",
-    sparkle: "shadow-sky-500/10",
+    badge: "border-[var(--destructive)]/20 bg-[var(--destructive)]/10 text-[var(--foreground)]",
+    icon: "border-[var(--destructive)]/20 bg-[var(--background)]/60 text-[var(--foreground)]",
+    orb: "from-[var(--destructive)]/12 via-[var(--background)]/10 to-transparent",
+    aura: "bg-gradient-to-br from-[var(--destructive)]/14 via-[var(--accent)]/6 to-transparent",
+    border: "motion-safe:hover:border-[var(--destructive)]/28",
+    shadow: "motion-safe:hover:shadow-[0_18px_42px_color-mix(in_srgb,var(--destructive)_18%,transparent)]",
+    shine: "via-[var(--destructive)]/12",
+    accent: "motion-safe:group-hover:shadow-[0_0_18px_color-mix(in_srgb,var(--destructive)_24%,transparent)]",
+    sparkle: "shadow-[0_0_18px_color-mix(in_srgb,var(--destructive)_10%,transparent)]",
   },
   balanced_builder: {
-    badge: "border-slate-300/15 bg-slate-950/45 text-slate-100",
-    icon: "border-slate-300/15 bg-slate-950/40 text-slate-100",
-    orb: "from-slate-500/12 via-slate-900/10 to-transparent",
-    aura: "bg-gradient-to-br from-slate-400/12 via-slate-200/6 to-transparent",
-    border: "motion-safe:hover:border-slate-200/25",
-    shadow: "motion-safe:hover:shadow-[0_18px_42px_rgba(148,163,184,0.12)]",
-    shine: "via-slate-100/10",
-    accent: "motion-safe:group-hover:shadow-[0_0_18px_rgba(148,163,184,0.18)]",
-    sparkle: "shadow-slate-500/10",
+    badge: "border-[var(--muted-foreground)]/20 bg-[var(--background)]/60 text-[var(--foreground)]",
+    icon: "border-[var(--muted-foreground)]/20 bg-[var(--background)]/60 text-[var(--foreground)]",
+    orb: "from-[var(--muted-foreground)]/10 via-[var(--background)]/10 to-transparent",
+    aura: "bg-gradient-to-br from-[var(--muted-foreground)]/10 via-[var(--muted)]/8 to-transparent",
+    border: "motion-safe:hover:border-[var(--muted-foreground)]/28",
+    shadow: "motion-safe:hover:shadow-[0_18px_42px_color-mix(in_srgb,var(--muted-foreground)_14%,transparent)]",
+    shine: "via-[var(--muted-foreground)]/10",
+    accent: "motion-safe:group-hover:shadow-[0_0_18px_color-mix(in_srgb,var(--muted-foreground)_20%,transparent)]",
+    sparkle: "shadow-[0_0_18px_color-mix(in_srgb,var(--muted-foreground)_10%,transparent)]",
   },
 };
 
@@ -158,7 +158,7 @@ export default function DeveloperPersona() {
     <section className={`group relative overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-[transform,box-shadow,border-color,background-color,filter] duration-300 ease-out motion-safe:transform-gpu motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-2xl ${theme.border} ${theme.shadow}`}>
       <div
         aria-hidden="true"
-        className={`absolute inset-0 bg-gradient-to-br opacity-95 transition-opacity duration-300 ease-out group-hover:opacity-100 ${data?.persona.gradient ?? "from-slate-500/8 via-slate-900/12 to-slate-950"}`}
+        className={`absolute inset-0 bg-gradient-to-br opacity-95 transition-opacity duration-300 ease-out group-hover:opacity-100 ${data?.persona.gradient ?? "from-[var(--background)]/8 via-[var(--background)]/12 to-[var(--background)]"}`}
       />
       <div
         aria-hidden="true"
@@ -166,11 +166,11 @@ export default function DeveloperPersona() {
       />
       <div
         aria-hidden="true"
-        className={`absolute inset-0 opacity-70 transition-opacity duration-300 ease-out group-hover:opacity-90 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.05),transparent_28%)]`}
+        className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,color-mix(in_srgb,var(--foreground)_8%,transparent),transparent_40%),radial-gradient(circle_at_bottom_right,color-mix(in_srgb,var(--foreground)_5%,transparent),transparent_28%)] opacity-70 transition-opacity duration-300 ease-out group-hover:opacity-90"
       />
       <div
         aria-hidden="true"
-        className={`absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.08),transparent_34%)] opacity-40 mix-blend-screen transition-opacity duration-300 ease-out group-hover:opacity-70 ${theme.aura}`}
+        className={`absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,color-mix(in_srgb,var(--foreground)_8%,transparent),transparent_34%)] opacity-40 mix-blend-screen transition-opacity duration-300 ease-out group-hover:opacity-70 ${theme.aura}`}
       />
       <div
         aria-hidden="true"
@@ -187,7 +187,6 @@ export default function DeveloperPersona() {
               Developer Persona & Smart Insights
             </h2>
           </div>
-
           <span
             className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium backdrop-blur transition-[transform,box-shadow,border-color,background-color,filter] duration-300 ease-out motion-safe:transform-gpu motion-safe:hover:-translate-y-0.5 motion-safe:hover:scale-[1.02] motion-safe:hover:shadow-lg ${theme.badge} ${theme.accent}`}
           >
@@ -224,19 +223,19 @@ export default function DeveloperPersona() {
             </div>
           </div>
         ) : error ? (
-          <div className="mt-5 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
+          <div className="mt-5 rounded-xl border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
             <p>{error}</p>
             <button
               type="button"
               onClick={() => void loadPersona()}
-              className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-200 transition-colors duration-200 ease-out hover:bg-red-500/10"
+              className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors duration-200 ease-out hover:bg-[var(--destructive)]/10"
             >
               Try again
             </button>
           </div>
         ) : data ? (
           <div className="mt-5 space-y-5">
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)]/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md transition-[transform,box-shadow,border-color,background-color,filter] duration-300 ease-out motion-safe:transform-gpu motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-[color:color-mix(in_srgb,var(--border)_68%,white_32%)] motion-safe:hover:shadow-[0_16px_36px_rgba(2,6,23,0.24)] motion-safe:hover:backdrop-blur-lg">
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)]/70 p-5 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--foreground)_4%,transparent)] backdrop-blur-md transition-[transform,box-shadow,border-color,background-color,filter] duration-300 ease-out motion-safe:transform-gpu motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-[var(--accent)]/25 motion-safe:hover:shadow-[0_16px_36px_color-mix(in_srgb,var(--accent)_16%,transparent)] motion-safe:hover:backdrop-blur-lg">
               <div className="flex items-start gap-4">
                 <div
                   className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border text-3xl shadow-lg transition-[transform,box-shadow,border-color,background-color,filter] duration-300 ease-out motion-safe:transform-gpu motion-safe:hover:-translate-y-0.5 motion-safe:hover:scale-[1.02] motion-safe:hover:shadow-xl ${theme.icon} ${theme.sparkle} ${theme.accent}`}
@@ -276,15 +275,15 @@ export default function DeveloperPersona() {
                   {data.insights.map((insight, index) => (
                     <article
                       key={`${insight.title}-${index}`}
-                      className={`group rounded-xl border border-[var(--border)] bg-[var(--control)]/70 p-4 transition-[transform,box-shadow,border-color,background-color,filter] duration-200 ease-out motion-safe:transform-gpu motion-safe:hover:-translate-y-0.5 motion-safe:hover:bg-[color-mix(in_srgb,var(--control)_86%,white_14%)] motion-safe:hover:shadow-md ${theme.border}`}
+                      className={`group rounded-xl border border-[var(--border)] bg-[var(--control)]/70 p-4 transition-[transform,box-shadow,border-color,background-color,filter] duration-200 ease-out motion-safe:transform-gpu motion-safe:hover:-translate-y-0.5 motion-safe:hover:bg-[var(--control)] motion-safe:hover:shadow-md ${theme.border}`}
                     >
                       <div className="flex items-start gap-3">
-                        <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--accent)] shadow-[0_0_0_0_rgba(0,0,0,0)] transition-[transform,box-shadow,background-color,opacity] duration-200 ease-out motion-safe:transform-gpu motion-safe:group-hover:scale-110 motion-safe:group-hover:opacity-90 ${theme.accent}`} />
+                        <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--accent)] shadow-[0_0_0_0_transparent] transition-[transform,box-shadow,background-color,opacity] duration-200 ease-out motion-safe:transform-gpu motion-safe:group-hover:scale-110 motion-safe:group-hover:opacity-90 ${theme.accent}`} />
                         <div className="min-w-0">
-                          <h4 className="text-sm font-semibold text-[var(--card-foreground)] transition-colors duration-200 ease-out group-hover:text-white">
+                          <h4 className="text-sm font-semibold text-[var(--card-foreground)] transition-colors duration-200 ease-out group-hover:text-[var(--foreground)]">
                             {insight.title}
                           </h4>
-                          <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)] transition-colors duration-200 ease-out group-hover:text-[var(--foreground)]/90">
+                          <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)] transition-colors duration-200 ease-out group-hover:text-[var(--foreground)]">
                             {insight.description}
                           </p>
                         </div>
