@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -83,14 +84,6 @@ async function fetchGitHubJson<T>(path: string): Promise<T | null> {
   }
 
   return (await res.json()) as T;
-}
-
-function toDateStr(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function dateDiffDays(a: string, b: string): number {
-  return (new Date(b).getTime() - new Date(a).getTime()) / 86400000;
 }
 
 function calculateCurrentStreak(commitDates: string[]): number {

@@ -3,11 +3,9 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { GITHUB_API } from "@/lib/github";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
-
-function toDateStr(d: Date): string { return d.toISOString().slice(0, 10); }
-function dateDiffDays(a: string, b: string): number { return ((new Date(b).getTime() - new Date(a).getTime()) / 86400000); }
 
 function getCurrentWeekStartUtc(): Date {
   const now = new Date();
