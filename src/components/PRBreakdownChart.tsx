@@ -113,18 +113,18 @@ export default function PRBreakdownChart() {
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
-             <Tooltip
+              <Tooltip
   contentStyle={{
-    backgroundColor: "#111827",
-    border: "1px solid #374151",
+    backgroundColor: getCSSVariable('--card'),
+    border: `1px solid ${getCSSVariable('--border')}`,
     borderRadius: "10px",
-    color: "#ffffff",
+    color: getCSSVariable('--foreground'),
   }}
   itemStyle={{
-    color: "#ffffff",
+    color: getCSSVariable('--foreground'),
   }}
   labelStyle={{
-    color: "#ffffff",
+    color: getCSSVariable('--foreground'),
   }}
 />
             </PieChart>
