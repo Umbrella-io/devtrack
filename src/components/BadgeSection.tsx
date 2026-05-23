@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 
 interface BadgeSectionProps {
   username: string;
@@ -49,7 +50,13 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Streak Badge
           </h3>
           <div className="mb-2">
-            <img src={streakBadgePreviewUrl} alt="DevTrack Streak" />
+            <Image
+              src={streakBadgePreviewUrl}
+              alt="DevTrack Streak"
+              width={200}
+              height={35}
+              priority
+            />
           </div>
           <CopyableCodeBlock code={streakMarkdown} />
         </div>
@@ -60,7 +67,13 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Commits Badge
           </h3>
           <div className="mb-2">
-            <img src={commitsBadgePreviewUrl} alt="DevTrack Commits" />
+            <Image
+              src={commitsBadgePreviewUrl}
+              alt="DevTrack Commits"
+              width={200}
+              height={35}
+              priority
+            />
           </div>
           <CopyableCodeBlock code={commitsMarkdown} />
         </div>
@@ -71,8 +84,20 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Combined (Both Badges)
           </h3>
           <div className="mb-2 flex gap-1">
-            <img src={streakBadgePreviewUrl} alt="DevTrack Streak" />
-            <img src={commitsBadgePreviewUrl} alt="DevTrack Commits" />
+            <Image
+              src={streakBadgePreviewUrl}
+              alt="DevTrack Streak"
+              width={200}
+              height={35}
+              priority
+            />
+            <Image
+              src={commitsBadgePreviewUrl}
+              alt="DevTrack Commits"
+              width={200}
+              height={35}
+              priority
+            />
           </div>
           <CopyableCodeBlock code={combinedMarkdown} />
         </div>
@@ -105,7 +130,7 @@ function CopyableCodeBlock({ code }: { code: string }) {
 
   return (
     <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-3 border border-[var(--border)]">
-      <code className="flex-1 text-xs text-[var(--card-foreground)] overflow-auto">
+      <code className="flex-1 text-xs text-[var(--card-foreground)] overflow-auto scrollbar-thin">
         {code}
       </code>
       <button

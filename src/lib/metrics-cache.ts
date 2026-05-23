@@ -3,11 +3,16 @@ import type { NextRequest } from "next/server";
 
 export const METRICS_CACHE_TTL_SECONDS = {
   contributions: 5 * 60,
+  discussions: 10 * 60,
   repos: 10 * 60,
+  "inactive-repos": 10 * 60,
   prs: 10 * 60,
   "pr-review-time": 10 * 60,
   streak: 2 * 60,
+  streak_freeze: 2 * 60,
   activity: 5 * 60,
+  issues: 10 * 60,
+  "coding-activity-insights": 5 * 60,
 } as const;
 
 type MetricsCacheEndpoint = keyof typeof METRICS_CACHE_TTL_SECONDS;
@@ -117,7 +122,7 @@ export async function cacheSet<T>(
     return;
   }
 
-if (typeof ttlSeconds !== "number" || ttlSeconds <= 0 || !Number.isFinite(ttlSeconds)) {
+  if (typeof ttlSeconds !== "number" || ttlSeconds <= 0 || !Number.isFinite(ttlSeconds)) {
     console.warn("Invalid TTL value:", ttlSeconds);
     return;
   }
