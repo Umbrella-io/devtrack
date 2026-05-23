@@ -3,7 +3,8 @@ import { encode } from "next-auth/jwt";
 
 const authSecret = "playwright-placeholder-secret-that-is-long-enough";
 
-test.beforeEach(async ({ page })   const sessionToken = await encode({
+test.beforeEach(async ({ page }) => {
+  const sessionToken = await encode({
     secret: authSecret,
     token: {
       name: "Playwright User",
@@ -213,34 +214,16 @@ function mockMetricResponse(url) {
     return { user: { commits: 10 }, friend: { commits: 8 } };
   }
   if (url.includes("/api/metrics/repo-health")) {
-    return { repositories: [] };
+    return { repos: [] };
   }
   if (url.includes("/api/metrics/ci")) {
-    return { successRate: 95, averageDurationMinutes: 3, flakiestWorkflow: null, totalRuns: 42, reposChecked: 5 };
-d: { commits: 8 } };
-  }
-  if (url.includes("/api/metrics/repo-health")) {
-    return { repositories: [] };
-  }
-  if (url.includes("/api/metrics/ci")) {
-    return { success: 6, failed: 1, cancelled: 0, skipped: 0 };
-  }
-  if (url.includes("/api/streak/freeze")) {
-    return { freezes: [] };
-  }
-  if (url.includes("/api/user/github-accounts")) {
-    return { accounts: [] };
-  }
-  return {};
-}
-totalRuns: 42, reposChecked: 5 };
-d: { commits: 8 } };
-  }
-  if (url.includes("/api/metrics/repo-health")) {
-    return { repositories: [] };
-  }
-  if (url.includes("/api/metrics/ci")) {
-    return { success: 6, failed: 1, cancelled: 0, skipped: 0 };
+    return {
+      successRate: 95,
+      averageDurationMinutes: 3,
+      flakiestWorkflow: null,
+      totalRuns: 42,
+      reposChecked: 5,
+    };
   }
   if (url.includes("/api/streak/freeze")) {
     return { freezes: [] };
