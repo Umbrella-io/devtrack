@@ -116,7 +116,7 @@ export default function FriendComparison() {
     </div>
 
       {error && (
-        <div className="p-4 mb-4 rounded-md border border-red-500/30 bg-red-500/10 text-red-500 text-sm flex justify-between items-center">
+        <div className="p-4 mb-4 rounded-md border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)] text-sm flex justify-between items-center">
           <span>{error}</span>
           <button onClick={() => setError("")} className="hover:underline">Dismiss</button>
         </div>
@@ -124,7 +124,7 @@ export default function FriendComparison() {
 
       {friendData && myData && (
         <div className="space-y-4">
-          <div className="overflow-x-auto pb-2">
+          <div className="overflow-x-auto pb-2  scrollbar-thin">
             <div className="min-w-[400px]">
               <div className="flex justify-between items-center text-sm font-medium text-[var(--muted-foreground)] px-2 mb-4">
                 <div className="w-1/3 text-left">You ({myData.username})</div>
@@ -169,7 +169,7 @@ export default function FriendComparison() {
             </a>
             <button
               onClick={clearComparison}
-              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-red-500/10 hover:text-red-500"
+              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)]"
             >
               Clear Comparison
             </button>

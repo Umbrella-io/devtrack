@@ -3,6 +3,9 @@ import { NextRequest } from "next/server";
 const WINDOW_MS = 60 * 1000;
 const BADGE_LIMIT = 20;
 
+// NOTE: This rate limiter is separate from the API middleware rate limiting.
+// It applies per-IP limiting specifically for badge generation endpoints.
+
 const buckets = new Map<string, number[]>();
 
 export type BadgeRateLimitResult = {

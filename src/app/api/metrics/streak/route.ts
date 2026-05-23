@@ -11,18 +11,9 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
-
-function dateDiffDays(a: string, b: string): number {
-  return (
-    (new Date(b).getTime() - new Date(a).getTime()) / (1000 * 60 * 60 * 24)
-  );
-}
-
-function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 async function fetchActiveDates(
   githubLogin: string,

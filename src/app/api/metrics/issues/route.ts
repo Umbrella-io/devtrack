@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { fetchIssuesMetrics } from "@/lib/github";
 import {
   isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
   metricsCacheKey,
   withMetricsCache,
 } from "@/lib/metrics-cache";
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
   try {
     // 3. Wrap the GitHub fetch in our bulletproof cache!
     const metrics = await withMetricsCache(
-      { bypass, key, ttlSeconds: 10 * 60 }, // Cache for 10 minutes
+      { bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.issues },
       () => fetchIssuesMetrics(session.accessToken!)
     );
     
