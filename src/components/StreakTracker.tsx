@@ -281,33 +281,33 @@ export default function StreakTracker() {
       ]
     : [];
 
-  const handleCopy = async () => {
-      if (!data) return;
+    const handleCopy = async () => {
+    if (!data) return;
 
-  const textToCopy = [
-    "🔥 DevTrack Stats",
-    `Current streak: ${data.current} days`,
-    `Longest streak: ${data.longest} days`,
-    `Active days: ${data.totalActiveDays}`,
-  ].join("\n");
+    const textToCopy = [
+      "🔥 DevTrack Stats",
+      `Current streak: ${data.current} days`,
+      `Longest streak: ${data.longest} days`,
+      `Active days: ${data.totalActiveDays}`,
+    ].join("\n");
 
-  if (!navigator.clipboard) {
-    toast.error("Clipboard is not supported in this browser.");
-    return;
-  }
+    if (!navigator.clipboard) {
+      toast.error("Clipboard is not supported in this browser.");
+      return;
+    }
 
-  try {
-    await navigator.clipboard.writeText(textToCopy);
+    try {
+      await navigator.clipboard.writeText(textToCopy);
 
-    setCopied(true);
+      setCopied(true);
 
-    toast.success("Streak stats copied to clipboard!");
+      toast.success("Streak stats copied to clipboard!");
 
-    setTimeout(() => setCopied(false), 2000);
-  } catch {
-    toast.error("Failed to copy streak stats.");
-  }
-};
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy streak stats.");
+    }
+  };
 
   const currentMilestone = 
     [...STREAK_MILESTONES]
