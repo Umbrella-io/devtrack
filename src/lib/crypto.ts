@@ -9,6 +9,10 @@ const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const KEY_ERROR_MESSAGE =
   "ENCRYPTION_KEY env var must be a 32-byte hex string";
+const IV_ERROR_MESSAGE =
+  "Encrypted token IV must be a 12-byte hex string";
+const PAYLOAD_ERROR_MESSAGE =
+  "Encrypted token payload must include at least a 16-byte auth tag";
 
 function getEncryptionKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY;
@@ -24,6 +28,24 @@ function getEncryptionKey(): Buffer {
   }
 
   return keyBuffer;
+}
+
+function assertFixedHex(value: string, expectedChars: number, message: string) {
+  if (!new RegExp(`^[0-9a-fA-F]{${expectedChars}}$`).test(value)) {
+    throw new Error(message);
+  }
+}
+
+function validateEncryptedTokenPayload(encrypted: string, iv: string) {
+  assertFixedHex(iv, IV_LENGTH * 2, IV_ERROR_MESSAGE);
+
+  if (
+    encrypted.length < AUTH_TAG_LENGTH * 2 ||
+    encrypted.length % 2 !== 0 ||
+    !/^[0-9a-fA-F]+$/.test(encrypted)
+  ) {
+    throw new Error(PAYLOAD_ERROR_MESSAGE);
+  }
 }
 
 export function encryptToken(plaintext: string): {
@@ -46,22 +68,13 @@ export function encryptToken(plaintext: string): {
   };
 }
 
-
 export function decryptToken(
   encrypted: string,
   iv: string
 ): string | null {
   try {
     const key = getEncryptionKey();
-
-    if (!/^[0-9a-fA-F]*$/.test(encrypted) || encrypted.length % 2 !== 0) {
-      throw new Error("Invalid encrypted token format");
-    }
-
-    if (!/^[0-9a-fA-F]*$/.test(iv) || iv.length % 2 !== 0) {
-      throw new Error("Invalid IV format");
-    }
-
+    validateEncryptedTokenPayload(encrypted, iv);
     const encryptedBuffer = Buffer.from(encrypted, "hex");
     const ivBuffer = Buffer.from(iv, "hex");
 
