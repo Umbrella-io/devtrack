@@ -33,12 +33,26 @@ export async function getLinkedTokens(userId: string): Promise<string[]> {
   }
 
   const rows = (data ?? []) as UserGitHubAccountRow[];
+  const tokens: string[] = [];
 
-  return rows
-    .map((row) =>
-      decryptToken(row.access_token_encrypted, row.access_token_iv)
-    )
-    .filter((token): token is string => token !== null);
+  for (const row of rows) {
+    try {
+      const decrypted = decryptToken(row.access_token_encrypted, row.access_token_iv);
+      if (decrypted) {
+        tokens.push(decrypted);
+      }
+    } catch (err) {
+      console.error(JSON.stringify({
+        event: "token_decryption_failure",
+        userId,
+        githubId: row.github_id,
+        error: err instanceof Error ? err.message : String(err),
+        timestamp: new Date().toISOString()
+      }));
+    }
+  }
+
+  return tokens;
 }
 
 export async function getRateLimitRemaining(token: string): Promise<number> {
@@ -170,7 +184,18 @@ export async function getAccountToken(
 
   const row = data as UserGitHubAccountRow;
 
-  return decryptToken(row.access_token_encrypted, row.access_token_iv);
+  try {
+    return decryptToken(row.access_token_encrypted, row.access_token_iv);
+  } catch (err) {
+    console.error(JSON.stringify({
+      event: "account_token_decryption_failure",
+      userId,
+      accountGithubId,
+      error: err instanceof Error ? err.message : String(err),
+      timestamp: new Date().toISOString()
+    }));
+    return null;
+  }
 }
 
 export function mergeMetrics<T>(

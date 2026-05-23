@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserByUsername } from "@/lib/supabase";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,9 @@ function getRateLimitKey(req: NextRequest): string {
 
 function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   const now = Date.now();
+  for (const [key, record] of ipRateLimits) {
+    if (now > record.resetAt) ipRateLimits.delete(key);
+  }
   const record = ipRateLimits.get(ip);
 
   if (!record || now > record.resetAt) {
@@ -155,16 +159,6 @@ async function fetchContributions(
   }
 
   return { days, total: data.total_count, data: commitsByDay };
-}
-
-function dateDiffDays(a: string, b: string): number {
-  return (
-    (new Date(b).getTime() - new Date(a).getTime()) / (1000 * 60 * 60 * 24)
-  );
-}
-
-function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 async function fetchStreak(
