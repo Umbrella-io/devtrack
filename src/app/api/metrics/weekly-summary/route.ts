@@ -3,11 +3,9 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { GITHUB_API } from "@/lib/github";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
-
-function toDateStr(d: Date): string { return d.toISOString().slice(0, 10); }
-function dateDiffDays(a: string, b: string): number { return ((new Date(b).getTime() - new Date(a).getTime()) / 86400000); }
 
 function getCurrentWeekStartUtc(): Date {
   const now = new Date();
@@ -68,7 +66,7 @@ export async function GET(req: NextRequest) {
 
       const commitsRes = await fetch(
         `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${fourteenDaysAgoStr}&per_page=100`,
-        { headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github.cloak-preview+json" }, cache: "no-store" }
+        { headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" }, cache: "no-store" }
       );
 const commitsData = (await commitsRes.json()) as {
         items: Array<{

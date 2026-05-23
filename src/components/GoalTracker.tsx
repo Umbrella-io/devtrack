@@ -33,6 +33,7 @@ export default function GoalTracker() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [activeConfettiGoalId, setActiveConfettiGoalId] = useState<string | null>(null);
   const prevGoalsRef = useRef<Map<string, boolean>>(new Map());
@@ -88,14 +89,23 @@ export default function GoalTracker() {
     setGoals((prev) => prev.filter((g) => g.id !== id));
     setConfirmingId(null);
     setDeletingId(id);
+    setDeleteError(null);
 
     try {
       const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
       if (!res.ok) {
         setGoals(previousGoals);
+        setDeleteError("Failed to delete goal. Please try again.");
+        setTimeout(() => {
+          setDeleteError(null);
+        }, 5000);
       }
     } catch {
       setGoals(previousGoals);
+      setDeleteError("Failed to delete goal. Please try again.");
+      setTimeout(() => {
+        setDeleteError(null);
+      }, 5000);
     } finally {
       setDeletingId(null);
     }
@@ -173,6 +183,26 @@ export default function GoalTracker() {
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Weekly Goals</h2>
 
+      {deleteError && (
+        <div
+          role="alert"
+          className="mb-4 rounded-lg border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 p-3 text-xs text-[var(--destructive)] flex items-center justify-between animate-in fade-in duration-200"
+        >
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>{deleteError}</span>
+          </div>
+          <button
+            onClick={() => setDeleteError(null)}
+            className="text-[var(--destructive)] hover:opacity-80 font-semibold text-xs ml-2"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No goals yet. Create one below.
@@ -204,7 +234,7 @@ export default function GoalTracker() {
                       )}
                     </div>
                     {completed && (
-                      <span className="text-xs font-medium text-emerald-500">
+                      <span className="text-xs font-medium text-[var(--success)]">
                         {completionLabel}
                       </span>
                     )}
@@ -221,7 +251,7 @@ export default function GoalTracker() {
                         <button
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
-                          className="text-red-400 hover:text-red-300 font-semibold transition-colors disabled:opacity-50"
+                          className="text-[var(--destructive)] hover:text-[var(--destructive)] font-semibold transition-colors disabled:opacity-50"
                           aria-label={`Confirm delete goal: ${goal.title}`}
                         >
                           Yes
@@ -239,7 +269,7 @@ export default function GoalTracker() {
                       <button
                         onClick={() => setConfirmingId(goal.id)}
                         disabled={isDeleting}
-                        className="text-[var(--muted-foreground)] hover:text-red-400 transition-colors disabled:opacity-50"
+                        className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors disabled:opacity-50"
                         aria-label={`Delete goal: ${goal.title}`}
                         title="Delete goal"
                       >
@@ -253,7 +283,7 @@ export default function GoalTracker() {
 
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
-                    className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
+                    className={`h-full rounded-full transition-all ${completed ? "bg-[var(--success)]" : "bg-[var(--accent)]"}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -296,6 +326,7 @@ export default function GoalTracker() {
               id="goal-target"
               type="number"
               min={1}
+              max={10000}
               value={target}
               onChange={(e) => setTarget(Number(e.target.value))}
               disabled={creating}
@@ -332,7 +363,7 @@ export default function GoalTracker() {
                 disabled={creating}
                 className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium border transition-all ${
                   recurrence === r
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
                     : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
                 }`}
               >
@@ -350,7 +381,7 @@ export default function GoalTracker() {
         <button
           type="submit"
           disabled={creating || !title.trim()}
-          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {creating ? (
             <>
@@ -363,7 +394,7 @@ export default function GoalTracker() {
         </button>
 
         {createError && (
-          <p className="text-sm text-red-500">{createError}</p>
+          <p className="text-sm text-[var(--destructive)]">{createError}</p>
         )}
       </form>
     </div>
@@ -425,4 +456,4 @@ function ConfettiBurst() {
       ))}
     </div>
   );
-}
+}
