@@ -1,14 +1,18 @@
+import ActivityRingChart from "@/components/ActivityRingChart";
 import ContributionGraph from "@/components/ContributionGraph";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
+import CommunityMetrics from "@/components/CommunityMetrics";
 import PRBreakdownChart from "@/components/PRBreakdownChart";
 import GoalTracker from "@/components/GoalTracker";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
 import PinnedRepos from "@/components/PinnedRepos";
+import InactiveRepositoriesCard from "@/components/InactiveRepositoriesCard";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CommitTimeChart from "@/components/CommitTimeChart";
+import CodingActivityInsightsCard from "@/components/CodingActivityInsightsCard";
 import PRReviewTrendChart from "@/components/PRReviewTrendChart";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
@@ -18,6 +22,8 @@ import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
+import LocalCodingTime from "@/components/LocalCodingTime";
+import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -48,7 +54,7 @@ export default async function DashboardPage() {
         <PersonalRecords />
       </div>
 
-      {/* Row 1: Contribution graph + heatmap + Friend Comparison on left, Streak on right */}
+      {/* Row 1: Contribution graph + Streak + Local Coding Time */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ContributionGraph />
@@ -62,14 +68,24 @@ export default async function DashboardPage() {
 
         <div>
           <StreakTracker />
+          <LocalCodingTime />
         </div>
       </div>
 
-      {/* Row 2: PR metrics, PR breakdown & Time Chart */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Row 2: PR metrics, community metrics, PR breakdown & Time Chart */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <PRMetrics />
+        <CommunityMetrics />
         <PRBreakdownChart />
         <CommitTimeChart />
+      </div>
+      {/* Row 2b: Activity Ring Chart */}
+      <div className="mt-6">
+        <ActivityRingChart />
+      </div>
+
+      <div className="mt-6">
+        <CodingActivityInsightsCard />
       </div>
 
       <div className="mt-6">
@@ -89,11 +105,21 @@ export default async function DashboardPage() {
         <PinnedRepos />
       </div>
 
-      {/* Row 5: Top repos + Language breakdown + Goal tracker */}
+      {/* Row 5: Inactive repository reminder */}
+      <div className="mt-6">
+        <InactiveRepositoriesCard />
+      </div>
+
+      {/* Row 6: Top repos + Language breakdown + Goal tracker */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <TopRepos />
         <LanguageBreakdown />
         <GoalTracker />
+      </div>
+
+      {/* Row 7: Recent GitHub activity */}
+      <div className="mt-6">
+        <RecentActivity />
       </div>
     </div>
   );

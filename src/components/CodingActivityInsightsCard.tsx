@@ -1,0 +1,285 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  type TooltipProps,
+} from "recharts";
+import { useAccount } from "@/components/AccountContext";
+import {
+  formatHourRange,
+  type CodingActivityInsight,
+} from "@/lib/coding-activity-insights";
+
+const DATA_WINDOW_DAYS = 90;
+
+function formatCommitCount(count: number): string {
+  return `${count} commit${count === 1 ? "" : "s"}`;
+}
+
+function InsightRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-lg bg-[var(--control)] px-3 py-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-medium text-[var(--card-foreground)]">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function HourTooltip({
+  active,
+  payload,
+}: TooltipProps<number, string>) {
+  if (!active || !payload || payload.length === 0) {
+    return null;
+  }
+
+  const entry = payload[0]?.payload as { hour?: number; count?: number } | undefined;
+  if (!entry || typeof entry.hour !== "number") {
+    return null;
+  }
+
+  const count = entry.count ?? 0;
+
+  return (
+    <div className="rounded-md border border-[var(--border)] bg-[var(--tooltip)] px-3 py-2 text-sm text-[var(--tooltip-foreground)] shadow-lg">
+      <div className="font-medium">{formatHourRange(entry.hour)}</div>
+      <div className="mt-1 text-xs text-[var(--muted-foreground)]">
+        {formatCommitCount(count)}
+      </div>
+    </div>
+  );
+}
+
+export default function CodingActivityInsightsCard() {
+  const { selectedAccount } = useAccount();
+  const [timezone, setTimezone] = useState<string | null>(null);
+  const [data, setData] = useState<CodingActivityInsight | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone ?? null);
+  }, []);
+
+  const fetchInsights = useCallback(() => {
+    if (!timezone) {
+      return;
+    }
+
+    const requestId = ++requestIdRef.current;
+    setLoading(true);
+    setError(null);
+
+    const params = new URLSearchParams();
+    params.set("timeZone", timezone);
+    if (selectedAccount !== null) {
+      params.set("accountId", selectedAccount);
+    }
+
+    fetch(`/api/metrics/coding-activity-insights?${params.toString()}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("API error");
+        }
+        return response.json();
+      })
+      .then((payload: CodingActivityInsight) => {
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setData(payload);
+      })
+      .catch(() => {
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setError("We couldn't load your coding activity insights right now. Please try again in a moment.");
+      })
+      .finally(() => {
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setLoading(false);
+      });
+  }, [selectedAccount, timezone]);
+
+  useEffect(() => {
+    if (!timezone) {
+      return;
+    }
+
+    fetchInsights();
+  }, [fetchInsights, timezone]);
+
+  const chartData = useMemo(
+    () => data?.hourlyCounts.map(({ hour, count }) => ({ hour, count })) ?? [],
+    [data]
+  );
+
+  const hasData = Boolean(
+    data && data.totalActivities > 0 && chartData.some((entry) => entry.count > 0)
+  );
+
+  const insightRows = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    const rows = [
+      {
+        label: "Most active",
+        value: `${data.mostActiveHour.label} with ${formatCommitCount(data.mostActiveHour.count)}`,
+      },
+      {
+        label: "Least active",
+        value: `${data.leastActiveHour.label} with ${formatCommitCount(data.leastActiveHour.count)}`,
+      },
+    ];
+
+    if (data.mostActiveDay) {
+      rows.push({
+        label: "Best day",
+        value: `${data.mostActiveDay.day} with ${formatCommitCount(data.mostActiveDay.count)}`,
+      });
+    }
+
+    return rows;
+  }, [data]);
+
+  const dataWindowLabel = `Last ${DATA_WINDOW_DAYS} days`;
+
+  const subtitle = data
+    ? `${dataWindowLabel} · Commits by hour · ${data.timezone}`
+    : timezone
+      ? `${dataWindowLabel} · Commits by hour · ${timezone}`
+      : `${dataWindowLabel} · Commits by hour · Local timezone`;
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+            Coding Activity Insights
+          </h2>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+            {subtitle}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={fetchInsights}
+          className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)]"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="space-y-4"
+        >
+          <span className="sr-only">Loading coding activity insights</span>
+          <div className="h-[260px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <div
+                key={item}
+                aria-hidden="true"
+                className="h-16 rounded-lg bg-[var(--card-muted)] animate-pulse"
+              />
+            ))}
+          </div>
+        </div>
+      ) : error ? (
+        <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={fetchInsights}
+            className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
+          >
+            Try again
+          </button>
+        </div>
+      ) : !hasData ? (
+        <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card-muted)] px-4 text-center">
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Not enough commit activity to generate coding insights yet.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="h-[260px] min-h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="var(--border)"
+                  opacity={0.35}
+                />
+                <XAxis
+                  dataKey="hour"
+                  axisLine={false}
+                  tickLine={false}
+                  interval={2}
+                  tickFormatter={(value) => String(value)}
+                  style={{ fill: "var(--muted-foreground)", fontSize: "0.75rem" }}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  axisLine={false}
+                  tickLine={false}
+                  width={28}
+                  style={{ fill: "var(--muted-foreground)", fontSize: "0.75rem" }}
+                />
+                <Tooltip content={HourTooltip} />
+                <Bar
+                  dataKey="count"
+                  fill="var(--accent)"
+                  radius={[4, 4, 0, 0]}
+                  barSize={10}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div
+            className={`grid gap-3 ${data?.mostActiveDay ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}
+          >
+            {insightRows.map((row) => (
+              <InsightRow key={row.label} label={row.label} value={row.value} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
