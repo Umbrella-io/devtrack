@@ -24,6 +24,10 @@ export default function WeeklySummaryCard() {
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  const maxCommits = summary ? Math.max(summary.commits.current, summary.commits.previous, 1) : 1;
+  const maxPRs = summary ? Math.max(summary.prs.thisWeek.merged, summary.prs.lastWeek.merged, 1) : 1;
+  const maxActiveDays = summary ? Math.max(summary.activeDays.thisWeek, summary.activeDays.lastWeek, 1) : 1;
+
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -113,7 +117,7 @@ export default function WeeklySummaryCard() {
                       <div
                         className="h-full bg-[var(--muted-foreground)]"
                         style={{
-                          width: `${((summary.commits.previous / (summary.commits.current || summary.commits.previous || 1)) * 100).toFixed(0)}%`,
+                          width: `${((summary.commits.previous / maxCommits) * 100).toFixed(0)}%`,
                         }}
                       />
                     </div>
@@ -129,7 +133,7 @@ export default function WeeklySummaryCard() {
                       <div
                         className="h-full bg-[var(--success)]"
                         style={{
-                          width: `${((summary.commits.current / (summary.commits.current || summary.commits.previous || 1)) * 100).toFixed(0)}%`,
+                          width: `${((summary.commits.current / maxCommits) * 100).toFixed(0)}%`,
                         }}
                       />
                     </div>
@@ -157,7 +161,7 @@ export default function WeeklySummaryCard() {
                       <div
                         className="h-full bg-[var(--muted-foreground)]"
                         style={{
-                          width: `${((summary.prs.lastWeek.merged / (summary.prs.thisWeek.merged || summary.prs.lastWeek.merged || 1)) * 100).toFixed(0)}%`,
+                          width: `${((summary.prs.lastWeek.merged / maxPRs) * 100).toFixed(0)}%`,
                         }}
                       />
                     </div>
@@ -173,7 +177,7 @@ export default function WeeklySummaryCard() {
                       <div
                         className="h-full bg-[var(--success)]"
                         style={{
-                          width: `${((summary.prs.thisWeek.merged / (summary.prs.thisWeek.merged || summary.prs.lastWeek.merged || 1)) * 100).toFixed(0)}%`,
+                          width: `${((summary.prs.thisWeek.merged / maxPRs) * 100).toFixed(0)}%`,
                         }}
                       />
                     </div>
@@ -201,7 +205,7 @@ export default function WeeklySummaryCard() {
                       <div
                         className="h-full bg-[var(--muted-foreground)]"
                         style={{
-                          width: `${((summary.activeDays.lastWeek / (summary.activeDays.thisWeek || summary.activeDays.lastWeek || 1)) * 100).toFixed(0)}%`,
+                          width: `${((summary.activeDays.lastWeek / maxActiveDays) * 100).toFixed(0)}%`,
                         }}
                       />
                     </div>
@@ -217,7 +221,7 @@ export default function WeeklySummaryCard() {
                       <div
                         className="h-full bg-[var(--success)]"
                         style={{
-                          width: `${((summary.activeDays.thisWeek / (summary.activeDays.thisWeek || summary.activeDays.lastWeek || 1)) * 100).toFixed(0)}%`,
+                          width: `${((summary.activeDays.thisWeek / maxActiveDays) * 100).toFixed(0)}%`,
                         }}
                       />
                     </div>
@@ -249,4 +253,3 @@ export default function WeeklySummaryCard() {
     </div>
   );
 }
-
