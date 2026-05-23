@@ -104,7 +104,7 @@ export default function Footer() {
                 href="mailto:doshipriyanshu3@gmail.com"
                 target="_blank" rel="noreferrer"
               >
-                  Email
+                Email
               </a>
             </div>
           </div>
