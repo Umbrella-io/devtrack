@@ -23,9 +23,9 @@ function collectFiles(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (["node_modules", ".next", "dist", ".git"].includes(entry.name)) continue;
+      if (["node_modules", ".next", "dist", ".git", "build", "coverage", "out"].includes(entry.name)) continue;
       out.push(...collectFiles(full));
-    } else if (/\.(js|jsx|ts|tsx)$/.test(entry.name)) {
+    } else if (/\.(js|jsx|mjs|cjs|ts|tsx)$/.test(entry.name)) {
       out.push(full);
     }
   }

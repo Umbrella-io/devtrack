@@ -49,6 +49,7 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Streak Badge
           </h3>
           <div className="mb-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={streakBadgePreviewUrl} alt="DevTrack Streak" />
           </div>
           <CopyableCodeBlock code={streakMarkdown} />
@@ -60,6 +61,7 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Commits Badge
           </h3>
           <div className="mb-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={commitsBadgePreviewUrl} alt="DevTrack Commits" />
           </div>
           <CopyableCodeBlock code={commitsMarkdown} />
@@ -71,7 +73,9 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Combined (Both Badges)
           </h3>
           <div className="mb-2 flex gap-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={streakBadgePreviewUrl} alt="DevTrack Streak" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={commitsBadgePreviewUrl} alt="DevTrack Commits" />
           </div>
           <CopyableCodeBlock code={combinedMarkdown} />
