@@ -122,10 +122,12 @@ export async function POST(req: NextRequest) {
     project_count: session.projectCount || 0,
   }));
 
-  for (const record of records) {
-    await supabaseAdmin
-      .from("local_coding_sessions")
-      .upsert(record, { onConflict: "user_id,date" });
+  const { error: upsertError } = await supabaseAdmin
+    .from("local_coding_sessions")
+    .upsert(records, { onConflict: "user_id,date" });
+
+  if (upsertError) {
+    return Response.json({ error: "Failed to sync sessions" }, { status: 500 });
   }
 
   return Response.json({
