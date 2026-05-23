@@ -1,44 +1,13 @@
-import { defineConfig, devices } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-const PORT = Number(process.env.PORT ?? 3000);
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${PORT}`;
+test("public profile route renders without requiring authentication", async ({ page }) => {
+  await page.goto("/u/playwright-user");
 
-export default defineConfig({
-  testDir: "./e2e",
-  timeout: 60_000,
-  expect: {
-    timeout: 15_000,
-  },
-  fullyParallel: true,
-  forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
-  use: {
-    baseURL,
-    trace: "retain-on-failure",
-    screenshot: "only-on-failure",
-    video: "retain-on-failure",
-  },
-  webServer: {
-    command: `node node_modules/next/dist/bin/next dev -H 127.0.0.1 -p ${PORT}`,
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    env: {
-      NEXTAUTH_SECRET: "playwright-placeholder-secret-that-is-long-enough",
-      NEXTAUTH_URL: baseURL,
-      NEXT_PUBLIC_APP_URL: baseURL,
-      GITHUB_ID: "playwright-github-id",
-      GITHUB_SECRET: "playwright-github-secret",
-      NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co",
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-anon-key",
-      SUPABASE_SERVICE_ROLE_KEY: "placeholder-service-role-key",
-    },
-  },
-  projects: [
-    {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
-    },
-  ],
+  await expect(page).toHaveURL(/\/u\/playwright-user$/);
+  await expect(
+    page.getByRole("heading", {
+      name: /(@playwright-user's Profile|Profile Not Found)/,
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in with GitHub" })).toHaveCount(0);
 });
