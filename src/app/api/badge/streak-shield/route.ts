@@ -4,6 +4,7 @@ import {
   checkBadgeRateLimit,
   getBadgeClientIp,
 } from "@/lib/badge-rate-limit";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ interface StreakData {
   longest: number;
   lastCommitDate: string | null;
   totalActiveDays: number;
+  stale?: boolean;
 }
 
 async function fetchGitHubWithToken(
@@ -32,16 +34,6 @@ async function fetchGitHubWithToken(
   return fetch(url, { headers, cache: "no-store" });
 }
 
-function dateDiffDays(a: string, b: string): number {
-  return (
-    (new Date(b).getTime() - new Date(a).getTime()) / (1000 * 60 * 60 * 24)
-  );
-}
-
-function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
 async function fetchStreak(
   username: string,
   token?: string
@@ -56,12 +48,20 @@ async function fetchStreak(
 
   if (!searchRes.ok) {
     const errorBody = await searchRes.text();
+    const isRateLimited = searchRes.status === 403;
     console.error(`GitHub API error fetching streak for ${username}:`, {
       status: searchRes.status,
       url,
       body: errorBody,
+      rateLimited: isRateLimited,
     });
-    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
+    return { 
+      current: 0, 
+      longest: 0, 
+      lastCommitDate: null, 
+      totalActiveDays: 0,
+      stale: isRateLimited ? true : undefined,
+    };
   }
 
   const data = (await searchRes.json()) as {
@@ -75,7 +75,7 @@ async function fetchStreak(
   const commitDays = Object.keys(daySet).sort();
 
   if (commitDays.length === 0) {
-    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
+    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0, stale: undefined };
   }
 
   let longestStreak = 1;

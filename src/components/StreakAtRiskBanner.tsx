@@ -74,7 +74,7 @@ export default function StreakAtRiskBanner({
   if (!isAtRisk || dismissed) return null;
 
   return (
-    <div className="mb-6 flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-amber-500 shadow-sm transition-all animate-in fade-in slide-in-from-top-4">
+    <div className="mb-6 flex items-center justify-between rounded-lg border border-[var(--warning)]/30 bg-[var(--warning)]/10 p-4 text-[var(--warning)] shadow-sm transition-all animate-in fade-in slide-in-from-top-4">
       <div className="flex items-center gap-3">
         <span className="text-xl" role="img" aria-label="Warning">
           ⚠️
@@ -90,7 +90,7 @@ export default function StreakAtRiskBanner({
       </div>
       <button
         onClick={() => setDismissed(true)}
-        className="ml-4 rounded-md p-1.5 opacity-70 hover:bg-amber-500/20 hover:opacity-100 transition-all"
+        className="ml-4 rounded-md p-1.5 opacity-70 hover:bg-[var(--warning)]/20 hover:opacity-100 transition-all"
         aria-label="Dismiss banner"
       >
         ✕

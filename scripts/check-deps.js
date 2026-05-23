@@ -7,15 +7,10 @@
 
 const fs = require("fs");
 const path = require("path");
+const { builtinModules } = require("module");
 
 // Node built-ins (not in package.json but valid to import)
-const BUILTINS = new Set([
-  "assert", "buffer", "child_process", "cluster", "crypto", "dgram",
-  "dns", "domain", "events", "fs", "http", "http2", "https", "module",
-  "net", "os", "path", "perf_hooks", "process", "punycode", "querystring",
-  "readline", "repl", "stream", "string_decoder", "timers", "tls", "tty",
-  "url", "util", "v8", "vm", "wasi", "worker_threads", "zlib",
-]);
+const BUILTINS = new Set(builtinModules);
 
 // Next.js / framework aliases that resolve internally
 const FRAMEWORK_ALIASES = new Set([
@@ -28,9 +23,9 @@ function collectFiles(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (["node_modules", ".next", "dist", ".git"].includes(entry.name)) continue;
+      if (["node_modules", ".next", "dist", ".git", "build", "coverage", "out"].includes(entry.name)) continue;
       out.push(...collectFiles(full));
-    } else if (/\.(ts|tsx)$/.test(entry.name)) {
+    } else if (/\.(js|jsx|mjs|cjs|ts|tsx)$/.test(entry.name)) {
       out.push(full);
     }
   }
@@ -78,7 +73,14 @@ function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
 
     for (const mod of extractImports(src)) {
       // Skip relative imports, path aliases (@/ is the src alias — not a pkg)
-      if (mod.startsWith(".") || mod.startsWith("/") || mod.startsWith("@/")) continue;
+      const INTERNAL_ALIASES = ["@/", "~/", "src/"];
+      if (
+        mod.startsWith(".") || 
+        mod.startsWith("/") || 
+        INTERNAL_ALIASES.some(alias => mod.startsWith(alias))
+      ) {
+        continue;
+      }
       const pkgName = extractPackageName(mod);
       if (BUILTINS.has(pkgName) || FRAMEWORK_ALIASES.has(pkgName)) continue;
       if (allDeps.has(pkgName)) continue;
