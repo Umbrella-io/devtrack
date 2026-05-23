@@ -76,7 +76,11 @@ export async function GET(req: NextRequest) {
         try {
           const signals = await fetchSignalsForRepo(session.accessToken!, repo.name, days);
           scores.push(computeHealthScore(repo.name, signals));
-        } catch {}
+        } catch (err) {
+          console.error(`Failed to fetch signals for repo ${repo}:`, err);
+          // Continue with remaining repos
+          continue;
+        }
       }
       return { repos: scores };
     });
