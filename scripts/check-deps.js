@@ -7,15 +7,10 @@
 
 const fs = require("fs");
 const path = require("path");
+const { builtinModules } = require("module");
 
 // Node built-ins (not in package.json but valid to import)
-const BUILTINS = new Set([
-  "assert", "buffer", "child_process", "cluster", "crypto", "dgram",
-  "dns", "domain", "events", "fs", "http", "http2", "https", "module",
-  "net", "os", "path", "perf_hooks", "process", "punycode", "querystring",
-  "readline", "repl", "stream", "string_decoder", "timers", "tls", "tty",
-  "url", "util", "v8", "vm", "wasi", "worker_threads", "zlib",
-]);
+const BUILTINS = new Set(builtinModules);
 
 // Next.js / framework aliases that resolve internally
 const FRAMEWORK_ALIASES = new Set([
