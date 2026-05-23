@@ -281,8 +281,8 @@ export default function StreakTracker() {
       ]
     : [];
 
-const handleCopy = async () => {
-  if (!data) return;
+  const handleCopy = async () => {
+      if (!data) return;
 
   const textToCopy = [
     "🔥 DevTrack Stats",
