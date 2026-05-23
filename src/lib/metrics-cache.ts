@@ -7,6 +7,7 @@ export const METRICS_CACHE_TTL_SECONDS = {
   prs: 10 * 60,
   "pr-review-time": 10 * 60,
   streak: 2 * 60,
+  streak_freeze: 2 * 60,
   activity: 5 * 60,
   issues: 10 * 60,
 } as const;
