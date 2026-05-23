@@ -45,7 +45,7 @@ export async function PATCH(
 
   const { error: updateError } = await supabaseAdmin
     .from("notifications")
-    .update({ read: true })
+    .update({ read: body.read })
     .eq("id", notificationId)
     .eq("user_id", user.id);
 
