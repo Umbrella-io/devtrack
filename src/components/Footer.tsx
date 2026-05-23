@@ -100,12 +100,13 @@ export default function Footer() {
                 Portfolio
               </a>
               <a
-                className="transition-colors hover:text-[var(--card-foreground)]"
-                href="mailto:doshipriyanshu3@gmail.com"
-                target="_blank"
-              >
-                  Email
-              </a>
+  className="transition-colors hover:text-[var(--card-foreground)]"
+  href="mailto:doshipriyanshu3@gmail.com"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  Email
+</a>
             </div>
           </div>
         </div>
