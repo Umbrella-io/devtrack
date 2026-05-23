@@ -1,8 +1,5 @@
 import { Metadata } from "next";
 import BadgeSection from "@/components/BadgeSection";
-import ContributionGraph from "@/components/ContributionGraph";
-import StreakTracker from "@/components/StreakTracker";
-import TopRepos from "@/components/TopRepos";
 import StatsCard from "@/components/StatsCard";
 import CopyLinkButton from "@/components/CopyLinkButton";
 
@@ -207,9 +204,11 @@ function PublicContributionGraph({
                 className="aspect-square rounded-sm"
                 style={{
                   backgroundColor:
+                    day.commits > 0 ? "var(--accent)" : "var(--control)",
+                  opacity:
                     day.commits > 0
-                      ? `hsl(var(--accent) / ${Math.min(day.commits / 10, 1)})`
-                      : "var(--control)",
+                      ? Math.max(0.2, Math.min(day.commits / 10, 1))
+                      : 1,
                 }}
                 title={`${day.day}: ${day.commits} commits`}
               />
