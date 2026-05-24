@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import { signIn } from "next-auth/react";
 
 export default function SignInPage() {
   return (
@@ -13,12 +15,12 @@ export default function SignInPage() {
           Track your developer journey, GitHub activity, and coding consistency.
         </p>
 
-        <Link
-          href="/api/auth/signin/github?callbackUrl=/dashboard"
+        <button
+          onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
           className="w-full inline-flex items-center justify-center gap-3 bg-[var(--background)] text-[var(--foreground)] font-semibold py-3 rounded-xl hover:opacity-90 transition-all duration-200 hover:scale-[1.02]"
         >
           Sign in with GitHub
-        </Link>
+        </button>
       </div>
     </main>
   );

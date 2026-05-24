@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function CopyLinkButton() {
   const [copied, setCopied] = useState(false);
@@ -9,11 +10,13 @@ export default function CopyLinkButton() {
     try {
       await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
+      toast.success("Link copied successfully!");
       setTimeout(() => {
         setCopied(false);
       }, 2000);
     } catch (error) {
       console.error("Failed to copy link:", error);
+      toast.error("Failed to copy link");
     }
   };
 

@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { logError } from "@/lib/error-handler";
 
 export const dynamic = "force-dynamic";
 
@@ -138,7 +139,15 @@ export async function POST(req: NextRequest) {
   try {
     staleResult = await markUserMetricsStale(githubLogin);
   } catch (error) {
-    console.error("Failed to mark GitHub metrics stale:", error);
+    logError(error, {
+      endpoint: "/api/webhooks/github",
+      operation: "mark_metrics_stale",
+      userId: githubLogin,
+      additionalContext: {
+        repository: (payload.repository?.full_name),
+        commitCount: payload.commits?.length,
+      },
+    });
     return NextResponse.json(
       { error: "Failed to trigger metric refresh" },
       { status: 500 }
