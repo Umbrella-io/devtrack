@@ -246,15 +246,17 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const accessToken = session.accessToken;
+  const githubLogin = session.githubLogin;
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
 
   if (!accountId) {
     try {
       const items = await fetchActivityForAccount(
-        session.accessToken,
-        session.githubLogin,
-        { bypass, userId: session.githubId ?? session.githubLogin }
+        accessToken,
+        githubLogin,
+        { bypass, userId: session.githubId ?? githubLogin }
       );
       return Response.json({ items: items.slice(0, 20) });
     } catch {
@@ -262,11 +264,13 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  if (!session.githubId) {
+  const githubId = session.githubId;
+
+  if (!githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
+  const userRow = await resolveAppUser(githubId, githubLogin);
 
   if (!userRow) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -275,9 +279,9 @@ export async function GET(req: NextRequest) {
   if (accountId === "combined") {
     const accounts = await getAllAccounts(
       {
-        token: session.accessToken,
-        githubId: session.githubId,
-        githubLogin: session.githubLogin,
+        token: accessToken,
+        githubId,
+        githubLogin,
       },
       userRow.id
     );
@@ -313,12 +317,12 @@ export async function GET(req: NextRequest) {
     return Response.json({ items: merged });
   }
 
-  if (accountId === session.githubId) {
+  if (accountId === githubId) {
     try {
       const items = await fetchActivityForAccount(
-        session.accessToken,
-        session.githubLogin,
-        { bypass, userId: session.githubId }
+        accessToken,
+        githubLogin,
+        { bypass, userId: githubId }
       );
       return Response.json({ items: items.slice(0, 15) });
     } catch {
