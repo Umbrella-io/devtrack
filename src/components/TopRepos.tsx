@@ -302,7 +302,6 @@ export default function TopRepos() {
               health?.grade === "green"
                 ? "bg-[var(--success)]/15 text-[var(--success)] border border-[var(--success)]/25"
                 : health?.grade === "yellow"
-                  ? "bg-[var(--muted-foreground)]/15 text-[var(--muted-foreground)] border border-[var(--muted-foreground)]/25"
                   ? "bg-[var(--warning)]/15 text-[var(--warning)] border border-[var(--warning)]/25"
                   : "bg-[var(--destructive)]/15 text-[var(--destructive)] border border-[var(--destructive)]/25";
             const visibleLanguages = repo.languages ? getVisibleLanguages(repo.languages) : [];

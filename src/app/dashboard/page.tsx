@@ -24,7 +24,6 @@ import { AIMentorWidget } from "@/components/AIMentorWidget";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
-import ProjectMetrics from "@/components/ProjectMetrics";
 import LocalCodingTime from "@/components/LocalCodingTime";
 import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
@@ -111,14 +110,14 @@ export default async function DashboardPage() {
         <DiscussionsWidget />
       </div>
 
-      {/* Row 4: Project tracking (Jira integration) */}
-      <div className="mt-6">
-        <ProjectMetrics />
-      </div>
-
-      {/* Row 5: Pinned repositories */}
+      {/* Row 4: Pinned repositories */}
       <div className="mt-6">
         <PinnedRepos />
+      </div>
+
+      {/* Row 5: Inactive repository reminder */}
+      <div className="mt-6">
+        <InactiveRepositoriesCard />
       </div>
 
       {/* Row 6: Top repos + Language breakdown + Goal tracker */}

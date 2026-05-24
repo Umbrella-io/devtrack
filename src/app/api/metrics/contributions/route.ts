@@ -82,6 +82,7 @@ async function fetchContributionsForAccount(
       const sinceStr = fromDate ?? toLocalDateStr(since);
 
       let allItems: GitHubCommitSearchItem[] = [];
+      const commitItems: CommitItem[] = [];
       let totalCount = 0;
       let page = 1;
 
@@ -148,7 +149,6 @@ async function fetchContributionsForAccount(
       }
 
       const commitsByDay: Record<string, number> = {};
-      const commitItems: CommitItem[] = [];
       for (const item of allItems) {
         const date = item.commit.author.date.slice(0, 10);
         commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;

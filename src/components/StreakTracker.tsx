@@ -381,18 +381,6 @@ export default function StreakTracker() {
       )}
       <div className="relative">
         {data && (
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
-            aria-label="Copy streak stats to clipboard"
-          >
-            {copied ? (
-              <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
-            ) : (
-              <span className="text-base opacity-80 hover:opacity-100">📋</span>
-            )}
-          </button>
           <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
             <button
               type="button"
