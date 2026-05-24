@@ -11,28 +11,32 @@ export default async function HomePage() {
   }
 
   const features = [
-    {
-      icon: "🔥",
-      title: "Streak Tracking",
-      description: "Never lose your streak and stay consistent every day.",
-    },
-    {
-      icon: "📊",
-      title: "PR Analytics",
-      description: "Understand your pull request activity and review velocity.",
-    },
-    {
-      icon: "🏆",
-      title: "Goals",
-      description: "Set coding goals and automatically track your progress.",
-    },
-    {
-      icon: "🌐",
-      title: "Public Profile",
-      description:
-        "Share your developer stats and achievements with the world.",
-    },
-  ];
+  {
+    icon: "🔥",
+    title: "Streak Tracking",
+    description: "Never lose your streak and stay consistent every day.",
+    link: "/login-required",
+  },
+  {
+    icon: "📊",
+    title: "PR Analytics",
+    description: "Understand your pull request activity and review velocity.",
+    link: "/login-required",
+  },
+  {
+    icon: "🏆",
+    title: "Goals",
+    description: "Set coding goals and automatically track your progress.",
+    link: "/login-required",
+  },
+  {
+    icon: "🌐",
+    title: "Public Profile",
+    description:
+      "Share your developer stats and achievements with the world.",
+    link: "/login-required",
+  },
+];
 
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-20">
@@ -69,20 +73,21 @@ export default async function HomePage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="border border-[var(--border)] rounded-2xl p-6 bg-[var(--card)] hover:border-[var(--muted-foreground)] transition"
-            >
-              <div className="text-4xl mb-4">{feature.icon}</div>
+           <Link
+  key={feature.title}
+  href={feature.link}
+  className="border border-[var(--border)] rounded-2xl p-6 bg-[var(--card)] hover:border-[var(--muted-foreground)] hover:shadow-lg hover:scale-105 transition duration-300 cursor-pointer block"
+>
+  <div className="text-4xl mb-4">{feature.icon}</div>
 
-              <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
-                {feature.title}
-              </h3>
+  <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
+    {feature.title}
+  </h3>
 
-              <p className="text-[var(--muted-foreground)] text-sm leading-relaxed">
-                {feature.description}
-              </p>
-            </div>
+  <p className="text-[var(--muted-foreground)] text-sm leading-relaxed">
+    {feature.description}
+  </p>
+</Link>
           ))}
         </div>
       </section>
