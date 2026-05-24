@@ -4,6 +4,7 @@ import { useAccount } from "@/components/AccountContext";
 import { useCountUp } from "@/hooks/useCountUp";
 import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
+import { toast } from "sonner";
 
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
@@ -188,12 +189,12 @@ export default function StreakTracker() {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
-        <div className="rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-4 text-sm text-[var(--destructive)]">
+        <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
             type="button"
             onClick={fetchStreak}
-            className="mt-3 rounded-md border border-[var(--destructive-muted-border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive-muted)]"
+            className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again
           </button>
@@ -284,23 +285,32 @@ export default function StreakTracker() {
       ]
     : [];
 
-  const handleCopy = () => {
+    const handleCopy = async () => {
     if (!data) return;
+
     const textToCopy = [
       "🔥 DevTrack Stats",
       `Current streak: ${data.current} days`,
       `Longest streak: ${data.longest} days`,
-      `Active days: ${data.totalActiveDays}`
-    ].join('\n');
+      `Active days: ${data.totalActiveDays}`,
+    ].join("\n");
 
     if (!navigator.clipboard) {
+      toast.error("Clipboard is not supported in this browser.");
       return;
     }
 
-    navigator.clipboard.writeText(textToCopy).then(() => {
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+
       setCopied(true);
+
+      toast.success("Streak stats copied to clipboard!");
+
       setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {});
+    } catch {
+      toast.error("Failed to copy streak stats.");
+    }
   };
 
   const currentMilestone = 
@@ -359,7 +369,7 @@ export default function StreakTracker() {
             aria-label="Copy streak stats to clipboard"
           >
             {copied ? (
-              <span className="text-xs font-medium text-green-500">Copied!</span>
+              <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
             ) : (
               <span className="text-base opacity-80 hover:opacity-100">📋</span>
             )}
@@ -497,7 +507,7 @@ export default function StreakTracker() {
                 type="button"
                 onClick={handleCancelFreeze}
                 disabled={cancelling}
-                className="rounded-md bg-[var(--destructive-muted)] px-2.5 py-1 text-xs font-medium text-[var(--destructive)] transition hover:opacity-80 disabled:opacity-60"
+                className="rounded-md bg-[var(--destructive)]/10 px-2.5 py-1 text-xs font-medium text-[var(--destructive)] transition hover:bg-[var(--destructive)]/20 disabled:opacity-60"
               >
                 {cancelling ? "Removing..." : "Yes, remove"}
               </button>
@@ -689,7 +699,7 @@ function StreakCalendar({
               title={tooltipText}
             >
               {!isFuture && (
-                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-[var(--accent-foreground)] opacity-0 group-hover:opacity-100 transition-opacity">
                   {dayData.dayOfMonth}
                 </span>
               )}
@@ -851,7 +861,7 @@ function calculateMonthlyTrend(contrib: ContributionData | undefined | null): Mo
 
     if (deltaCalc > 0) {
       text = `↑${formatted}% vs last month`;
-      colorClass = "text-green-500 font-medium";
+      colorClass = "text-[var(--success)] font-medium";
     } else if (deltaCalc < 0) {
       text = `↓${Math.abs(deltaCalc).toFixed(0)}% vs last month`;
       colorClass = "text-[var(--destructive)] font-medium";

@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import {
+  pruneExpiredLeaderboardCache,
+  pruneExpiredRateLimits,
+  type LeaderboardCacheEntry,
+  type RateLimitEntry,
+} from "@/lib/leaderboard-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -32,10 +39,9 @@ interface LeaderboardPayload {
   leaders: Record<LeaderboardMetric, LeaderboardEntry[]>;
 }
 
-let leaderboardCache: { expiresAt: number; payload: LeaderboardPayload } | null =
-  null;
+let leaderboardCache: LeaderboardCacheEntry<LeaderboardPayload> | null = null;
 
-const ipRateLimits = new Map<string, { count: number; resetAt: number }>();
+const ipRateLimits = new Map<string, RateLimitEntry>();
 
 function getRateLimitKey(req: NextRequest): string {
   return (
@@ -63,6 +69,12 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   return { allowed: false, retryAfter: Math.ceil((record.resetAt - now) / 1000) };
 }
 
+function cleanupCache(): void {
+  const now = Date.now();
+  pruneExpiredRateLimits(ipRateLimits, now);
+  leaderboardCache = pruneExpiredLeaderboardCache(leaderboardCache, now);
+}
+
 async function fetchGitHubJson<T>(path: string): Promise<T | null> {
   const token = process.env.GITHUB_TOKEN;
   const headers: Record<string, string> = {
@@ -83,14 +95,6 @@ async function fetchGitHubJson<T>(path: string): Promise<T | null> {
   }
 
   return (await res.json()) as T;
-}
-
-function toDateStr(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function dateDiffDays(a: string, b: string): number {
-  return (new Date(b).getTime() - new Date(a).getTime()) / 86400000;
 }
 
 function calculateCurrentStreak(commitDates: string[]): number {
@@ -203,6 +207,7 @@ async function buildLeaderboard(): Promise<LeaderboardPayload> {
 }
 
 export async function GET(req: NextRequest) {
+  cleanupCache();
   const ip = getRateLimitKey(req);
   const rateLimit = checkRateLimit(ip);
 

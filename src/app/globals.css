@@ -13,6 +13,7 @@
   --border: #cbd5e1;
   --accent: #6366f1;
   --success: #10b981;
+  --warning: #f59e0b;
   --destructive: #ef4444;
   --accent-soft: rgba(99, 102, 241, 0.15);
   --accent-foreground: #ffffff;
@@ -37,7 +38,8 @@
   --border: #334155;
   --accent: #818cf8;
   --success: #10b981;
-  --destructive: #ef4444;
+  --warning: #fbbf24;
+  --destructive: #f87171;
   --accent-soft: rgba(99, 102, 241, 0.2);
   --accent-foreground: #ffffff;
   --control: #334155;
@@ -54,4 +56,31 @@ body {
   background: var(--background);
   color: var(--foreground);
   transition: background-color 200ms ease, color 200ms ease;
+}
+/* Custom slim scrollbar for dashboard widgets */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted-foreground) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: var(--muted-foreground); border-radius: 9999px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+.dark .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--muted-foreground); }
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeUp 0.7s ease-out;
 }

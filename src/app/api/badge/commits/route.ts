@@ -4,6 +4,7 @@ import {
   checkBadgeRateLimit,
   getBadgeClientIp,
 } from "@/lib/badge-rate-limit";
+import { logError } from "@/lib/error-handler";
 
 export const dynamic = "force-dynamic";
 
@@ -102,7 +103,13 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error generating commits badge:", error);
+    logError(error, {
+      endpoint: "/api/badge/commits",
+      operation: "generate_badge",
+      additionalContext: {
+        username: req.nextUrl.searchParams.get("user"),
+      },
+    });
 
     const svg = generateBadgeSVG({
       label: "Commits",

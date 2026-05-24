@@ -74,7 +74,7 @@ export async function GET() {
 
   const { data: linkedAccounts } = await supabaseAdmin
     .from("user_github_accounts")
-    .select("*")
+    .select("id, user_id, github_id, github_login, created_at")
     .eq("user_id", user.id);
   sections.linkedAccounts = linkedAccounts || [];
 
