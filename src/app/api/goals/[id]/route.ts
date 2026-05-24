@@ -69,7 +69,8 @@ export async function PATCH(
 
   const updates: Record<string, unknown> = {};
 
-  const { title, target, unit, recurrence } = body as Record<string, unknown>;
+  const { title, target, unit, recurrence, current } =
+  body as Record<string, unknown>;
 
   if (title !== undefined) {
     if (typeof title !== "string" || title.trim().length === 0) {
@@ -95,6 +96,31 @@ export async function PATCH(
     }
     updates.target = target;
   }
+
+if (current !== undefined) {
+  if (
+    typeof current !== "number" ||
+    !Number.isInteger(current) ||
+    current < 0
+  ) {
+    return Response.json(
+      { error: "current must be a non-negative integer" },
+      { status: 400 }
+    );
+  }
+
+  const effectiveTarget =
+    typeof target === "number" ? target : existing.target;
+
+  if (current > effectiveTarget) {
+    return Response.json(
+      { error: "current cannot exceed target" },
+      { status: 400 }
+    );
+  }
+
+  updates.current = current;
+}
 
   if (unit !== undefined) {
     const safeUnit = typeof unit === "string" ? unit.slice(0, 30) : "commits";
