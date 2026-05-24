@@ -1,31 +1,30 @@
-export interface LeaderboardCacheEntry<T> {
+export type LeaderboardCacheEntry<T> = {
   expiresAt: number;
   payload: T;
-}
+};
 
-export interface RateLimitEntry {
+export type RateLimitEntry = {
   count: number;
   resetAt: number;
+};
+
+export function pruneExpiredLeaderboardCache<T>(
+  entry: LeaderboardCacheEntry<T> | null,
+  now: number = Date.now()
+): LeaderboardCacheEntry<T> | null {
+  if (!entry) {
+    return null;
+  }
+  return entry.expiresAt <= now ? null : entry;
 }
 
 export function pruneExpiredRateLimits(
-  entries: Map<string, RateLimitEntry>,
+  buckets: Map<string, RateLimitEntry>,
   now: number = Date.now()
 ): void {
-  for (const [key, entry] of entries.entries()) {
-    if (entry.resetAt <= now) {
-      entries.delete(key);
+  for (const [key, record] of buckets) {
+    if (record.resetAt <= now) {
+      buckets.delete(key);
     }
   }
-}
-
-export function pruneExpiredLeaderboardCache<T>(
-  cache: LeaderboardCacheEntry<T> | null,
-  now: number = Date.now()
-): LeaderboardCacheEntry<T> | null {
-  if (!cache) {
-    return null;
-  }
-
-  return cache.expiresAt <= now ? null : cache;
 }
