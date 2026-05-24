@@ -2,15 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 import {
-  cacheGet,
-  cacheSet,
-  isMetricsCacheBypassed,
-} from "@/lib/metrics-cache";
-import {
-  getUpstashConfig,
-  upstashRateLimitFixedWindow,
-  upstashTryAcquireLock,
-} from "@/lib/upstash-rest";
+  pruneExpiredLeaderboardCache,
+  pruneExpiredRateLimits,
+  type LeaderboardCacheEntry,
+  type RateLimitEntry,
+} from "@/lib/leaderboard-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +44,10 @@ interface LeaderboardPayload {
   leaders: Record<LeaderboardMetric, LeaderboardEntry[]>;
 }
 
+let leaderboardCache: LeaderboardCacheEntry<LeaderboardPayload> | null = null;
+
+const ipRateLimits = new Map<string, RateLimitEntry>();
+
 function getRateLimitKey(req: NextRequest): string {
   return (
     req.ip ??
@@ -60,10 +60,7 @@ const memoryRateLimits = new Map<string, { count: number; resetAt: number }>();
 
 function checkMemoryRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   const now = Date.now();
-  for (const [key, record] of memoryRateLimits) {
-    if (now > record.resetAt) memoryRateLimits.delete(key);
-  }
-  const record = memoryRateLimits.get(ip);
+  const record = ipRateLimits.get(ip);
 
   if (!record || now > record.resetAt) {
     memoryRateLimits.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
@@ -78,54 +75,10 @@ function checkMemoryRateLimit(ip: string): { allowed: boolean; retryAfter?: numb
   return { allowed: false, retryAfter: Math.ceil((record.resetAt - now) / 1000) };
 }
 
-async function checkRateLimit(ip: string): Promise<{ allowed: boolean; retryAfter?: number }> {
-  if (getUpstashConfig()) {
-    return upstashRateLimitFixedWindow({
-      key: `leaderboard-rate-limit:${ip}`,
-      limit: RATE_LIMIT_REQUESTS,
-      windowSeconds: Math.ceil(RATE_LIMIT_WINDOW_MS / 1000),
-    });
-  }
-
-  return checkMemoryRateLimit(ip);
-}
-
-function isFresh(payload: LeaderboardPayload): boolean {
-  const generatedAt = Date.parse(payload.generatedAt);
-  if (!Number.isFinite(generatedAt)) {
-    return false;
-  }
-  return Date.now() - generatedAt < CACHE_REFRESH_SECONDS * 1000;
-}
-
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  concurrency: number,
-  mapper: (item: T, index: number) => Promise<R>
-): Promise<R[]> {
-  const safeConcurrency =
-    Number.isFinite(concurrency) && concurrency > 0 ? Math.floor(concurrency) : 1;
-  const results: R[] = new Array(items.length);
-  let cursor = 0;
-
-  async function worker() {
-    while (true) {
-      const index = cursor;
-      cursor += 1;
-      if (index >= items.length) {
-        return;
-      }
-      results[index] = await mapper(items[index], index);
-    }
-  }
-
-  const workers = Array.from(
-    { length: Math.min(safeConcurrency, items.length) },
-    () => worker()
-  );
-
-  await Promise.all(workers);
-  return results;
+function cleanupCache(): void {
+  const now = Date.now();
+  pruneExpiredRateLimits(ipRateLimits, now);
+  leaderboardCache = pruneExpiredLeaderboardCache(leaderboardCache, now);
 }
 
 async function fetchGitHubJson<T>(path: string): Promise<T | null> {

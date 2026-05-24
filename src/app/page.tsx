@@ -36,7 +36,7 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-20">
-      <div className="max-w-2xl text-center">
+      <div className="max-w-2xl text-center fade-up">
         <h1 className="text-5xl font-bold mb-4 text-[var(--foreground)]">
           DevTrack
         </h1>
@@ -47,7 +47,7 @@ export default async function HomePage() {
         <div className="flex gap-4 justify-center">
           <Link
             href="/api/auth/signin/github?callbackUrl=/dashboard"
-            className="bg-[var(--foreground)] text-[var(--background)] px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition"
+            className=" border border-[var(--border)] bg-[var(--card)] text-[var(--card-foreground)] px-6 py-3 rounded-lg font-semibold hover:bg-[var(--control)] hover:border-[var(--foreground)] hover:scale-105 transition"
           >
             Sign in with GitHub
           </Link>
@@ -55,14 +55,14 @@ export default async function HomePage() {
             href="https://github.com/Priyanshu-byte-coder/devtrack"
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-[var(--border)] text-[var(--foreground)] px-6 py-3 rounded-lg font-semibold hover:border-[var(--foreground)] transition"
+             className=" border border-[var(--border)] bg-[var(--card)] text-[var(--card-foreground)] px-6 py-3 rounded-lg font-semibold hover:bg-[var(--control)] hover:border-[var(--foreground)] hover:scale-105 transition"
           >
             View on GitHub
           </a>
         </div>
       </div>
 
-      <section className="w-full max-w-6xl mt-24">
+      <section className="w-full max-w-6xl mt-24 fade-up">
         <h2 className="text-3xl font-bold text-center text-[var(--foreground)] mb-12">
           Everything you need to track your coding growth
         </h2>
@@ -71,7 +71,7 @@ export default async function HomePage() {
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="border border-[var(--border)] rounded-2xl p-6 bg-[var(--card)] hover:border-[var(--muted-foreground)] transition"
+              className="border border-[var(--border)] rounded-2xl p-6 bg-[var(--card)] hover:border-[var(--muted-foreground)] hover:scale-105 transition"
             >
               <div className="text-4xl mb-4">{feature.icon}</div>
 

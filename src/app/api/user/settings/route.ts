@@ -157,21 +157,25 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { hasLeaderboardOptIn, hasPinnedRepos } = settingsResult;
-
   const updates: { is_public?: boolean; leaderboard_opt_in?: boolean; pinned_repos?: string[] } = {};
 
-  if (typeof is_public === "boolean") {
+  if (is_public !== undefined && is_public !== null && typeof is_public === "boolean") {
     updates.is_public = is_public;
   }
 
-  if (hasLeaderboardOptIn && typeof leaderboard_opt_in === "boolean") {
+  if (
+    hasLeaderboardOptIn &&
+    leaderboard_opt_in !== undefined &&
+    leaderboard_opt_in !== null &&
+    typeof leaderboard_opt_in === "boolean"
+  ) {
     updates.leaderboard_opt_in = leaderboard_opt_in;
     if (leaderboard_opt_in) {
       updates.is_public = true;
     }
   }
 
-  if (hasPinnedRepos && Array.isArray(pinned_repos)) {
+  if (hasPinnedRepos && pinned_repos !== undefined && pinned_repos !== null && Array.isArray(pinned_repos)) {
     if (pinned_repos.length > 3) {
       return NextResponse.json({ error: "Maximum 3 pins allowed" }, { status: 400 });
     }

@@ -218,27 +218,6 @@ async function fetchFormattedActivityWithFallback(
   }
 }
 
-async function fetchActivityForAccount(
-  token: string,
-  githubLogin: string,
-  cacheContext: { bypass: boolean; userId: string }
-): Promise<ActivityItem[]> {
-  const key = metricsCacheKey(cacheContext.userId, "activity", {
-    githubLogin,
-  });
-
-  return withMetricsCache(
-    {
-      bypass: cacheContext.bypass,
-      key,
-      ttlSeconds: METRICS_CACHE_TTL_SECONDS.activity,
-    },
-    async () => {
-      return fetchFormattedActivityWithFallback(token, githubLogin);
-    }
-  );
-}
-
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
@@ -246,111 +225,125 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const accessToken: string = session.accessToken;
+  const githubLogin: string = session.githubLogin;
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
-
-  if (!accountId) {
-    try {
-      const items = await fetchActivityForAccount(
-        session.accessToken,
-        session.githubLogin,
-        { bypass, userId: session.githubId ?? session.githubLogin }
-      );
-      return Response.json({ items: items.slice(0, 20) });
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
-    }
-  }
-
-  if (!session.githubId) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
-
-  if (!userRow) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (accountId === "combined") {
-    const accounts = await getAllAccounts(
-      {
-        token: session.accessToken,
-        githubId: session.githubId,
-        githubLogin: session.githubLogin,
-      },
-      userRow.id
-    );
-
-    const results = await Promise.allSettled(
-      accounts.map((account) =>
-        fetchActivityForAccount(account.token, account.githubLogin, {
-          bypass,
-          userId: account.githubId,
-        })
-      )
-    );
-
-    const merged = results
-      .filter(
-        (result): result is PromiseFulfilledResult<ActivityItem[]> =>
-          result.status === "fulfilled"
-      )
-      .flatMap((result) => result.value)
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
-      .slice(0, 15);
-
-    if (merged.length === 0 && results.length > 0) {
-      const allFailed = results.every((result) => result.status === "rejected");
-      if (allFailed) {
-        return Response.json({ error: "GitHub API error" }, { status: 502 });
-      }
-    }
-
-    return Response.json({ items: merged });
-  }
-
-  if (accountId === session.githubId) {
-    try {
-      const items = await fetchActivityForAccount(
-        session.accessToken,
-        session.githubLogin,
-        { bypass, userId: session.githubId }
-      );
-      return Response.json({ items: items.slice(0, 15) });
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
-    }
-  }
-
-  const token = await getAccountToken(userRow.id, accountId);
-
-  if (!token) {
-    return Response.json({ error: "Account not found" }, { status: 404 });
-  }
-
-  const { data: accountRow } = await supabaseAdmin
-    .from("user_github_accounts")
-    .select("github_login")
-    .eq("user_id", userRow.id)
-    .eq("github_id", accountId)
-    .single();
-
-  if (!accountRow?.github_login) {
-    return Response.json({ error: "Account not found" }, { status: 404 });
-  }
+  const cacheKey = metricsCacheKey(
+    session.githubId ?? githubLogin,
+    "activity",
+    { accountId: accountId || undefined }
+  );
 
   try {
-    const items = await fetchActivityForAccount(
-      token,
-      accountRow.github_login,
-      { bypass, userId: accountId }
+    const result = await withMetricsCache(
+      {
+        bypass,
+        key: cacheKey,
+        ttlSeconds: METRICS_CACHE_TTL_SECONDS.activity,
+      },
+      async () => {
+        if (!accountId) {
+          const items = await fetchFormattedActivityWithFallback(
+            accessToken,
+            githubLogin
+          );
+          return { items: items.slice(0, 20) };
+        }
+
+        if (!session.githubId) {
+          throw new Error("Unauthorized");
+        }
+
+        const userRow = await resolveAppUser(session.githubId, githubLogin);
+
+        if (!userRow) {
+          throw new Error("Unauthorized");
+        }
+
+        if (accountId === "combined") {
+          const accounts = await getAllAccounts(
+            {
+              token: accessToken,
+              githubId: session.githubId,
+              githubLogin: githubLogin,
+            },
+            userRow.id
+          );
+
+          const results = await Promise.allSettled(
+            accounts.map((account) =>
+              fetchFormattedActivityWithFallback(account.token, account.githubLogin)
+            )
+          );
+
+          const merged = results
+            .filter(
+              (result): result is PromiseFulfilledResult<ActivityItem[]> =>
+                result.status === "fulfilled"
+            )
+            .flatMap((result) => result.value)
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            )
+            .slice(0, 15);
+
+          if (merged.length === 0 && results.length > 0) {
+            const allFailed = results.every(
+              (result) => result.status === "rejected"
+            );
+            if (allFailed) {
+              throw new Error("GitHub API error");
+            }
+          }
+
+          return { items: merged };
+        }
+
+        if (accountId === session.githubId) {
+          const items = await fetchFormattedActivityWithFallback(
+            accessToken,
+            githubLogin
+          );
+          return { items: items.slice(0, 15) };
+        }
+
+        const token = await getAccountToken(userRow.id, accountId);
+
+        if (!token) {
+          throw new Error("Account not found");
+        }
+
+        const { data: accountRow } = await supabaseAdmin
+          .from("user_github_accounts")
+          .select("github_login")
+          .eq("user_id", userRow.id)
+          .eq("github_id", accountId)
+          .single();
+
+        if (!accountRow?.github_login) {
+          throw new Error("Account not found");
+        }
+
+        const items = await fetchFormattedActivityWithFallback(
+          token,
+          accountRow.github_login
+        );
+        return { items: items.slice(0, 15) };
+      }
     );
-    return Response.json({ items: items.slice(0, 15) });
-  } catch {
+
+    return Response.json(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "Unauthorized") {
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      if (error.message === "Account not found") {
+        return Response.json({ error: "Account not found" }, { status: 404 });
+      }
+    }
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }
