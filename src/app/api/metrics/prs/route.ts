@@ -488,7 +488,7 @@ export async function GET(req: NextRequest) {
       });
       const [gitlab, reviews] = await Promise.all([
         getGitLabMetrics(gitlabToken, gitlabCacheContext),
-        fetchReviewMetrics(session.accessToken).catch(() => null),
+        fetchReviewMetrics(accessToken).catch(() => null),
       ]);
       return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
     } catch {
@@ -560,7 +560,7 @@ export async function GET(req: NextRequest) {
     }
     const [gitlab, reviews] = await Promise.all([
       getGitLabMetrics(gitlabToken, gitlabCacheContext),
-      fetchReviewMetrics(session.accessToken).catch(() => null),
+      fetchReviewMetrics(accessToken).catch(() => null),
     ]);
     return Response.json({ ...formatPRMetricsResponse(merged, gitlab), reviews });
   }

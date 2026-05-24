@@ -11,6 +11,7 @@ import {
 } from "@/lib/metrics-cache";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getGitHubAccessToken } from "@/lib/server-github-token";
 import type { InactiveRepo, InactiveReposResponse, RepoVisibility } from "@/types/inactive-repos";
 
 export const dynamic = "force-dynamic";
@@ -127,8 +128,9 @@ async function fetchInactiveReposForAccount(
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
+  const accessToken = await getGitHubAccessToken(req);
 
-  if (!session?.accessToken || !session.githubLogin) {
+  if (!accessToken || !session?.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -139,7 +141,7 @@ export async function GET(req: NextRequest) {
   if (!accountId) {
     try {
       const result = await fetchInactiveReposForAccount(
-        session.accessToken,
+        accessToken,
         session.githubLogin,
         thresholdDays,
         { bypass, userId: session.githubId ?? session.githubLogin }
@@ -164,8 +166,8 @@ export async function GET(req: NextRequest) {
   if (accountId === "combined") {
     const accounts = await getAllAccounts(
       {
-        token: session.accessToken,
-        githubId: session.githubId,
+        token: accessToken,
+        githubId: session.githubId!,
         githubLogin: session.githubLogin,
       },
       userRow.id
@@ -195,7 +197,7 @@ export async function GET(req: NextRequest) {
   if (accountId === session.githubId) {
     try {
       const result = await fetchInactiveReposForAccount(
-        session.accessToken,
+        accessToken,
         session.githubLogin,
         thresholdDays,
         { bypass, userId: session.githubId }

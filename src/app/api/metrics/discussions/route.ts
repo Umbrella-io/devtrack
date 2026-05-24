@@ -13,6 +13,7 @@ import {
   withMetricsCache,
 } from "@/lib/metrics-cache";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { getGitHubAccessToken } from "@/lib/server-github-token";
 
 export const dynamic = "force-dynamic";
 
@@ -112,7 +113,8 @@ function formatDiscussionsMetrics(metrics: DiscussionsMetrics) {
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.accessToken) {
+  const accessToken = await getGitHubAccessToken(req);
+  if (!accessToken) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -122,9 +124,9 @@ export async function GET(req: NextRequest) {
 
   if (!accountId) {
     try {
-      const result = await fetchDiscussionsMetrics(session.accessToken, days, {
+      const result = await fetchDiscussionsMetrics(accessToken, days, {
         bypass,
-        userId: session.githubId ?? session.githubLogin ?? "primary",
+        userId: session?.githubId ?? session?.githubLogin ?? "primary",
       });
       return Response.json(formatDiscussionsMetrics(result));
     } catch {
@@ -132,7 +134,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  if (!session.githubId || !session.githubLogin) {
+  if (!session?.githubId || !session?.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -145,7 +147,7 @@ export async function GET(req: NextRequest) {
   if (accountId === "combined") {
     const accounts = await getAllAccounts(
       {
-        token: session.accessToken,
+        token: accessToken,
         githubId: session.githubId,
         githubLogin: session.githubLogin,
       },
@@ -172,7 +174,7 @@ export async function GET(req: NextRequest) {
 
   const token =
     accountId === session.githubId
-      ? session.accessToken
+      ? accessToken
       : await getAccountToken(userRow.id, accountId);
 
   if (!token) {

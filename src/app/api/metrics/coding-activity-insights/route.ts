@@ -14,6 +14,7 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { getGitHubAccessToken } from "@/lib/server-github-token";
 import {
   summarizeCodingActivity,
   type CodingActivityInsight,
@@ -138,8 +139,9 @@ async function buildInsightsForAccount(
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
+  const accessToken = await getGitHubAccessToken(req);
 
-  if (!session?.accessToken || !session.githubLogin) {
+  if (!accessToken || !session?.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -151,7 +153,7 @@ export async function GET(req: NextRequest) {
   if (!accountId) {
     try {
       const data = await buildInsightsForAccount(
-        session.accessToken,
+        accessToken,
         session.githubLogin,
         timeZone,
         { bypass, userId: cacheUserId }
@@ -176,8 +178,8 @@ export async function GET(req: NextRequest) {
     if (accountId === "combined") {
       const accounts = await getAllAccounts(
         {
-          token: session.accessToken,
-          githubId: session.githubId,
+          token: accessToken,
+          githubId: session.githubId!,
           githubLogin: session.githubLogin,
         },
         userRow.id
@@ -210,7 +212,7 @@ export async function GET(req: NextRequest) {
 
     if (accountId === session.githubId) {
       const data = await buildInsightsForAccount(
-        session.accessToken,
+        accessToken,
         session.githubLogin,
         timeZone,
         { bypass, userId: session.githubId }

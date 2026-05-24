@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
+import { getGitHubAccessToken } from "@/lib/server-github-token";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,8 @@ const MAX_RESULTS = 6;
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.accessToken) {
+  const accessToken = await getGitHubAccessToken(req);
+  if (!accessToken) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
   const searchRes = await fetch(
     `${GITHUB_API}/search/users?q=${encodeURIComponent(`${q} in:login`)}&per_page=${MAX_RESULTS}`,
     {
-      headers: { Authorization: `Bearer ${session.accessToken}` },
+      headers: { Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
     }
   );
