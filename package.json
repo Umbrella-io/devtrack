@@ -7,10 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.4",
+    "@upstash/redis": "^1.38.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "html-to-image": "^1.11.13",
@@ -31,7 +33,9 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
     "postcss": "^8.4.38",
+    "tailwind-scrollbar": "^3.1.0",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^1.6.0"
   }
 }
