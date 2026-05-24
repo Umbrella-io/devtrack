@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import {
+  pruneExpiredLeaderboardCache,
+  pruneExpiredRateLimits,
+  type LeaderboardCacheEntry,
+  type RateLimitEntry,
+} from "@/lib/leaderboard-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -33,10 +39,9 @@ interface LeaderboardPayload {
   leaders: Record<LeaderboardMetric, LeaderboardEntry[]>;
 }
 
-let leaderboardCache: { expiresAt: number; payload: LeaderboardPayload } | null =
-  null;
+let leaderboardCache: LeaderboardCacheEntry<LeaderboardPayload> | null = null;
 
-const ipRateLimits = new Map<string, { count: number; resetAt: number }>();
+const ipRateLimits = new Map<string, RateLimitEntry>();
 
 function getRateLimitKey(req: NextRequest): string {
   return (
@@ -49,9 +54,6 @@ function getRateLimitKey(req: NextRequest): string {
 
 function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   const now = Date.now();
-  for (const [key, record] of ipRateLimits) {
-    if (now > record.resetAt) ipRateLimits.delete(key);
-  }
   const record = ipRateLimits.get(ip);
 
   if (!record || now > record.resetAt) {
@@ -69,9 +71,8 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
 
 function cleanupCache(): void {
   const now = Date.now();
-  if (leaderboardCache && now > leaderboardCache.expiresAt) {
-    leaderboardCache = null;
-  }
+  pruneExpiredRateLimits(ipRateLimits, now);
+  leaderboardCache = pruneExpiredLeaderboardCache(leaderboardCache, now);
 }
 
 async function fetchGitHubJson<T>(path: string): Promise<T | null> {

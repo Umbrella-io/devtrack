@@ -7,7 +7,6 @@ import {
   METRICS_CACHE_TTL_SECONDS,
   metricsCacheKey,
   withMetricsCache,
-  METRICS_CACHE_TTL_SECONDS,
 } from "@/lib/metrics-cache";
 
 export const dynamic = "force-dynamic";

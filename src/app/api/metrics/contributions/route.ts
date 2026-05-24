@@ -86,7 +86,6 @@ async function fetchContributionsForAccount(
         repository?: { full_name: string };
         commit: { author: { date: string }; message: string };
       }> = [];
-      const commitItems: CommitItem[] = [];
       let totalCount = 0;
       let page = 1;
 

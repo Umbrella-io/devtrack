@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface CompareData {
   username: string;
@@ -10,6 +10,13 @@ interface CompareData {
   prs: number;
 }
 
+interface SuggestedUser {
+  username: string;
+  avatarUrl: string;
+}
+
+const SUGGEST_DEBOUNCE_MS = 300;
+
 export default function FriendComparison() {
   const [friendUsername, setFriendUsername] = useState("");
   const [comparingUser, setComparingUser] = useState("");
@@ -17,6 +24,15 @@ export default function FriendComparison() {
   const [friendData, setFriendData] = useState<CompareData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [suggestQuery, setSuggestQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<SuggestedUser[]>([]);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suppressNextSuggestFetch, setSuppressNextSuggestFetch] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const trimmedFriendUsername = useMemo(() => friendUsername.trim(), [friendUsername]);
 
   // Fetch my data on mount
   useEffect(() => {
@@ -28,17 +44,89 @@ export default function FriendComparison() {
       .catch(() => {});
   }, []);
 
+  // Debounce search input for suggestions
+  useEffect(() => {
+    const timer = setTimeout(() => setSuggestQuery(friendUsername), SUGGEST_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [friendUsername]);
+
+  // Fetch suggestions
+  useEffect(() => {
+    const q = suggestQuery.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      setSuggestOpen(false);
+      setActiveIndex(-1);
+      return;
+    }
+
+    if (suppressNextSuggestFetch) {
+      setSuppressNextSuggestFetch(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSuggestLoading(true);
+
+    fetch(`/api/users/search?q=${encodeURIComponent(q)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        const users = Array.isArray(data?.users) ? (data.users as SuggestedUser[]) : [];
+        setSuggestions(users);
+        setSuggestOpen(users.length > 0);
+        setActiveIndex(-1);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSuggestions([]);
+        setSuggestOpen(false);
+        setActiveIndex(-1);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setSuggestLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [suggestQuery, suppressNextSuggestFetch]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      const container = containerRef.current;
+      if (!container) return;
+      if (e.target instanceof Node && container.contains(e.target)) return;
+      setSuggestOpen(false);
+      setActiveIndex(-1);
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
+  const chooseSuggestion = (user: SuggestedUser) => {
+    setFriendUsername(user.username);
+    setSuppressNextSuggestFetch(true);
+    setSuggestions([]);
+    setSuggestOpen(false);
+    setActiveIndex(-1);
+  };
+
   const handleCompare = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!friendUsername.trim()) return;
+    if (!trimmedFriendUsername) return;
 
     setLoading(true);
     setError("");
     setFriendData(null);
-    setComparingUser(friendUsername.trim());
+    setComparingUser(trimmedFriendUsername);
+    setSuggestOpen(false);
+    setActiveIndex(-1);
 
     try {
-      const res = await fetch(`/api/metrics/compare?username=${encodeURIComponent(friendUsername.trim())}`);
+      const res = await fetch(`/api/metrics/compare?username=${encodeURIComponent(trimmedFriendUsername)}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -47,7 +135,7 @@ export default function FriendComparison() {
         setFriendData(data);
         window.dispatchEvent(
           new CustomEvent("devtrack:compare-user", {
-            detail: { username: friendUsername.trim() },
+            detail: { username: trimmedFriendUsername },
           })
         );
       }
@@ -63,6 +151,9 @@ export default function FriendComparison() {
     setComparingUser("");
     setFriendData(null);
     setError("");
+    setSuggestions([]);
+    setSuggestOpen(false);
+    setActiveIndex(-1);
     window.dispatchEvent(new CustomEvent("devtrack:clear-compare-user"));
   };
 
@@ -97,17 +188,85 @@ export default function FriendComparison() {
         onSubmit={handleCompare}
         className="flex flex-col sm:flex-row gap-2 w-full"
       >
-        <input
-          type="text"
-          placeholder="GitHub username..."
-          value={friendUsername}
-          onChange={(e) => setFriendUsername(e.target.value)}
-          className="min-w-0 flex-1 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
-        />
+        <div ref={containerRef} className="relative min-w-0 flex-1">
+          <input
+            type="text"
+            role="combobox"
+            placeholder="GitHub username..."
+            value={friendUsername}
+            onChange={(e) => setFriendUsername(e.target.value)}
+            onFocus={() => {
+              if (suggestions.length > 0) setSuggestOpen(true);
+            }}
+            onKeyDown={(e) => {
+              if (!suggestOpen || suggestions.length === 0) return;
+
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setActiveIndex((prev) => Math.min(prev + 1, suggestions.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setActiveIndex((prev) => Math.max(prev - 1, 0));
+              } else if (e.key === "Enter") {
+                if (activeIndex >= 0 && activeIndex < suggestions.length) {
+                  e.preventDefault();
+                  chooseSuggestion(suggestions[activeIndex]);
+                }
+              } else if (e.key === "Escape") {
+                setSuggestOpen(false);
+                setActiveIndex(-1);
+              }
+            }}
+            aria-autocomplete="list"
+            aria-expanded={suggestOpen}
+            aria-controls="friend-compare-suggestions"
+            className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+          />
+
+          {suggestOpen && suggestions.length > 0 && (
+            <div
+              id="friend-compare-suggestions"
+              role="listbox"
+              className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-[var(--border)] bg-[var(--card)] shadow-lg"
+            >
+              {suggestions.map((u, idx) => (
+                <button
+                  key={u.username}
+                  type="button"
+                  role="option"
+                  aria-selected={idx === activeIndex}
+                  onMouseEnter={() => setActiveIndex(idx)}
+                  onClick={() => chooseSuggestion(u)}
+                  className={[
+                    "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
+                    idx === activeIndex
+                      ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                      : "hover:bg-[var(--control)]",
+                  ].join(" ")}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={u.avatarUrl}
+                    alt=""
+                    className="h-5 w-5 rounded-full"
+                    loading="lazy"
+                  />
+                  <span className="truncate">{u.username}</span>
+                </button>
+              ))}
+
+              {suggestLoading && (
+                <div className="px-3 py-2 text-xs text-[var(--muted-foreground)]">
+                  Loading…
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <button
           type="submit"
-          disabled={loading || !friendUsername.trim()}
+          disabled={loading || !trimmedFriendUsername}
           className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors disabled:opacity-50 hover:opacity-90"
         >
           {loading ? "Loading..." : "Compare"}
