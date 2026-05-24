@@ -6,6 +6,7 @@ import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
+import { Flame, Trophy, Calendar, Zap, Copy, CheckCircle, Medal, Star, Sparkles } from "lucide-react";
 
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
@@ -256,10 +257,10 @@ export default function StreakTracker() {
     );
   }
   const MILESTONES = [
-    { days: 30, label: "30-day streak!", emoji: "🏅" },
-    { days: 14, label: "2-week streak!", emoji: "⭐" },
-    { days: 7, label: "7-day streak!", emoji: "🔥" },
-    { days: 3, label: "3-day streak!", emoji: "✨" },
+    { days: 30, label: "30-day streak!", icon: Medal },
+    { days: 14, label: "2-week streak!", icon: Star },
+    { days: 7, label: "7-day streak!", icon: Flame },
+    { days: 3, label: "3-day streak!", icon: Sparkles },
   ];
 
   const badge = MILESTONES.find((m) => (data?.current ?? 0) >= m.days);
@@ -273,7 +274,7 @@ export default function StreakTracker() {
           value: animatedCurrent,
           unit: "days",
           highlight: data.current > 0,
-          icon: "🔥",
+          icon: Flame,
           tooltip: "Current consecutive coding days",
         },
         {
@@ -281,7 +282,7 @@ export default function StreakTracker() {
           value: animatedLongest,
           unit: "days",
           highlight: false,
-          icon: "🏆",
+          icon: Trophy,
           tooltip: "Your longest streak ever",
         },
         {
@@ -289,7 +290,7 @@ export default function StreakTracker() {
           value: animatedActiveDays,
           unit: "days",
           highlight: false,
-          icon: "📅",
+          icon: Calendar,
           tooltip: "Days you made commits in the last 90 days",
         },
         {
@@ -302,7 +303,7 @@ export default function StreakTracker() {
             : "—",
           unit: "",
           highlight: false,
-          icon: "⚡",
+          icon: Zap,
           tooltip: "Your most recent commit",
         },
       ]
@@ -381,6 +382,7 @@ export default function StreakTracker() {
       )}
       <div className="relative">
         {data && (
+<<<<<<< HEAD
           <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
             <button
               type="button"
@@ -409,6 +411,20 @@ export default function StreakTracker() {
               <span>SHARE</span>
             </button>
           </div>
+=======
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
+            aria-label="Copy streak stats to clipboard"
+          >
+            {copied ? (
+              <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
+            ) : (
+              <Copy size={16} className="opacity-80 hover:opacity-100" />
+            )}
+          </button>
+>>>>>>> 55f127b (Changes icons to lucide icons)
         )}
 
         <div ref={containerRef} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -427,8 +443,11 @@ export default function StreakTracker() {
                 ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
                 : "bg-[var(--control)]"
             }`}
+            title={stat.tooltip}
           >
-          <div className="text-xl mb-1" title={stat.tooltip} aria-label={stat.tooltip} role="img">{stat.icon}</div>
+            <div className="flex justify-center mb-1">
+              <stat.icon size={24} className="text-[var(--accent)]" aria-hidden="true" />
+            </div>
             <div
               className={`text-2xl font-bold ${
                 stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
@@ -483,7 +502,7 @@ export default function StreakTracker() {
       )}
       {badge && (
         <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
-          <span>{badge.emoji}</span>
+          <badge.icon size={18} className="text-[var(--accent)]" aria-hidden="true" />
           <span className="text-sm font-medium text-[var(--accent)]">{badge.label}</span>
         </div>
       )}
@@ -541,7 +560,10 @@ export default function StreakTracker() {
 
       {!freezeLoading && freeze?.hasFreeze && (
         <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-4 py-3">
-          <span className="text-sm font-medium text-[var(--accent)]">✓ Freeze active today</span>
+          <div className="flex items-center gap-2">
+            <CheckCircle size={18} className="text-[var(--accent)]" aria-hidden="true" />
+            <span className="text-sm font-medium text-[var(--accent)]">Freeze active today</span>
+          </div>
           {confirmCancel ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--muted-foreground)]">Remove freeze?</span>
