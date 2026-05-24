@@ -59,6 +59,11 @@ function getRedisClient(): Redis | null {
   return redisClient;
 }
 
+// Exposed for endpoints that need Redis primitives (incr/expire/ttl), not just get/set.
+export function getMetricsRedisClient(): Redis | null {
+  return getRedisClient();
+}
+
 export function isMetricsCacheBypassed(req: NextRequest): boolean {
   const bypassParam =
     req.nextUrl.searchParams.get("refresh") ??
