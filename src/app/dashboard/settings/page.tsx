@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import PrivacySettings from "@/components/PrivacySettings";
+import { toast } from "sonner";
 
 interface UserSettings {
   id: string;
@@ -235,8 +236,11 @@ function SettingsPageContent() {
     const link = `${window.location.origin}/u/${settings.github_login}`;
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
+      toast.success("Link copied successfully!");
       setTimeout(() => setCopied(false), 2000);
-    }).catch(() => { });
+    }).catch(() => { 
+      toast.error("Failed to copy link");
+     });
   };
 
   const handleRemoveAccount = async (githubId: string) => {
