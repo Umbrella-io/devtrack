@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+declare global {
+  // eslint-disable-next-line no-var
+  var metricsMemoryCache: Map<string, { value: unknown; expiresAt: number }> | undefined;
+}
+
 const mockRedisGet = vi.fn();
 const mockRedisSet = vi.fn();
 
@@ -141,7 +146,7 @@ describe('cacheGet', () => {
     const { cacheGet } = await import('../src/lib/metrics-cache');
     const result = await cacheGet('stale-key');
     expect(result).toBeNull();
-    const cached = globalThis.metricsMemoryCache;
+    const cached = globalThis.metricsMemoryCache!;
     expect(cached.has('stale-key')).toBe(false);
   });
 
