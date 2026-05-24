@@ -45,6 +45,16 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
+  await page.route("**/api/goals/sync", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        synced: true,
+        updated: 1,
+      }),
+    });
+  });
+
   await page.route("**/api/user/settings", async (route) => {
     await route.fulfill({
       contentType: "application/json",
