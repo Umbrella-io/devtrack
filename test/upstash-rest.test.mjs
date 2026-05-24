@@ -1,42 +1,25 @@
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const os = require("node:os");
-const path = require("node:path");
-const test = require("node:test");
-const ts = require("typescript");
+import assert from "node:assert/strict";
+import test from "node:test";
 
-function loadUpstashRestModule() {
-  const sourcePath = path.join(__dirname, "..", "src", "lib", "upstash-rest.ts");
-  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "devtrack-upstash-rest-"));
-  const outPath = path.join(outDir, "upstash-rest.cjs");
-  const source = fs.readFileSync(sourcePath, "utf8");
-  const output = ts.transpileModule(source, {
-    compilerOptions: {
-      esModuleInterop: true,
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2020,
-    },
-  }).outputText;
-
-  fs.writeFileSync(outPath, output);
-  return require(outPath);
-}
+import {
+  getUpstashConfig,
+  upstashRateLimitFixedWindow,
+  upstashTryAcquireLock,
+} from "../src/lib/upstash-rest.ts";
 
 test("getUpstashConfig returns null when env is missing", () => {
-  const mod = loadUpstashRestModule();
   delete process.env.UPSTASH_REDIS_REST_URL;
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
-  assert.equal(mod.getUpstashConfig(), null);
+  assert.equal(getUpstashConfig(), null);
 });
 
 test("upstashRateLimitFixedWindow sets expiry for new buckets", async () => {
-  const mod = loadUpstashRestModule();
   process.env.UPSTASH_REDIS_REST_URL = "https://example.upstash.io";
   process.env.UPSTASH_REDIS_REST_TOKEN = "token";
 
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
   let call = 0;
-  global.fetch = async (url, init) => {
+  globalThis.fetch = async (url, init) => {
     call += 1;
     assert.ok(String(url).includes("/pipeline"));
     const body = JSON.parse(init.body);
@@ -61,24 +44,23 @@ test("upstashRateLimitFixedWindow sets expiry for new buckets", async () => {
   };
 
   try {
-    const result = await mod.upstashRateLimitFixedWindow({
+    const result = await upstashRateLimitFixedWindow({
       key: "k",
       limit: 20,
       windowSeconds: 60,
     });
     assert.deepEqual(result, { allowed: true });
   } finally {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   }
 });
 
 test("upstashRateLimitFixedWindow returns retryAfter from TTL", async () => {
-  const mod = loadUpstashRestModule();
   process.env.UPSTASH_REDIS_REST_URL = "https://example.upstash.io";
   process.env.UPSTASH_REDIS_REST_TOKEN = "token";
 
-  const originalFetch = global.fetch;
-  global.fetch = async () => ({
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
     ok: true,
     async json() {
       return [{ result: 21 }, { result: 10 }];
@@ -86,25 +68,24 @@ test("upstashRateLimitFixedWindow returns retryAfter from TTL", async () => {
   });
 
   try {
-    const result = await mod.upstashRateLimitFixedWindow({
+    const result = await upstashRateLimitFixedWindow({
       key: "k2",
       limit: 20,
       windowSeconds: 60,
     });
     assert.deepEqual(result, { allowed: false, retryAfter: 10 });
   } finally {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   }
 });
 
 test("upstashTryAcquireLock returns true only when SET succeeds", async () => {
-  const mod = loadUpstashRestModule();
   process.env.UPSTASH_REDIS_REST_URL = "https://example.upstash.io";
   process.env.UPSTASH_REDIS_REST_TOKEN = "token";
 
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
   let returnedOk = false;
-  global.fetch = async () => ({
+  globalThis.fetch = async () => ({
     ok: true,
     async json() {
       returnedOk = !returnedOk;
@@ -113,16 +94,10 @@ test("upstashTryAcquireLock returns true only when SET succeeds", async () => {
   });
 
   try {
-    assert.equal(
-      await mod.upstashTryAcquireLock({ key: "lock", ttlSeconds: 30 }),
-      true
-    );
-    assert.equal(
-      await mod.upstashTryAcquireLock({ key: "lock", ttlSeconds: 30 }),
-      false
-    );
+    assert.equal(await upstashTryAcquireLock({ key: "lock", ttlSeconds: 30 }), true);
+    assert.equal(await upstashTryAcquireLock({ key: "lock", ttlSeconds: 30 }), false);
   } finally {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   }
 });
 
