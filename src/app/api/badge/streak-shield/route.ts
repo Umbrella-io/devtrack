@@ -4,17 +4,20 @@ import {
   checkBadgeRateLimit,
   getBadgeClientIp,
 } from "@/lib/badge-rate-limit";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { logError } from "@/lib/error-handler";
+import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
 export const dynamic = "force-dynamic";
 
 const GITHUB_API = "https://api.github.com";
-const GITHUB_USERNAME_RE = /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i;
 
 interface StreakData {
   current: number;
   longest: number;
   lastCommitDate: string | null;
   totalActiveDays: number;
+  stale?: boolean;
 }
 
 async function fetchGitHubWithToken(
@@ -32,16 +35,6 @@ async function fetchGitHubWithToken(
   return fetch(url, { headers, cache: "no-store" });
 }
 
-function dateDiffDays(a: string, b: string): number {
-  return (
-    (new Date(b).getTime() - new Date(a).getTime()) / (1000 * 60 * 60 * 24)
-  );
-}
-
-function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
 async function fetchStreak(
   username: string,
   token?: string
@@ -50,18 +43,30 @@ async function fetchStreak(
   since.setDate(since.getDate() - 90);
   const sinceStr = since.toISOString().slice(0, 10);
 
-  const url = `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`;
+  const url = new URL(`${GITHUB_API}/search/commits`);
+  url.searchParams.set("q", `author:${username} author-date:>=${sinceStr}`);
+  url.searchParams.set("per_page", "100");
+  url.searchParams.set("sort", "author-date");
+  url.searchParams.set("order", "desc");
 
-  const searchRes = await fetchGitHubWithToken(url, token);
+  const searchRes = await fetchGitHubWithToken(url.toString(), token);
 
   if (!searchRes.ok) {
     const errorBody = await searchRes.text();
+    const isRateLimited = searchRes.status === 403;
     console.error(`GitHub API error fetching streak for ${username}:`, {
       status: searchRes.status,
-      url,
+      url: url.toString(),
       body: errorBody,
+      rateLimited: isRateLimited,
     });
-    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
+    return { 
+      current: 0, 
+      longest: 0, 
+      lastCommitDate: null, 
+      totalActiveDays: 0,
+      stale: isRateLimited ? true : undefined,
+    };
   }
 
   const data = (await searchRes.json()) as {
@@ -75,7 +80,7 @@ async function fetchStreak(
   const commitDays = Object.keys(daySet).sort();
 
   if (commitDays.length === 0) {
-    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
+    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0, stale: undefined };
   }
 
   let longestStreak = 1;
@@ -139,11 +144,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const username = req.nextUrl.searchParams.get("user");
+    const username = normalizeGitHubUsername(req.nextUrl.searchParams.get("user"));
 
-    if (!username || !GITHUB_USERNAME_RE.test(username)) {
+    if (!username) {
       return NextResponse.json(
-        { error: "Invalid username" },
+        { error: "Invalid GitHub username" },
         { status: 400 }
       );
     }
@@ -169,7 +174,13 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error generating streak badge:", error);
+    logError(error, {
+      endpoint: "/api/badge/streak-shield",
+      operation: "generate_badge",
+      additionalContext: {
+        username: req.nextUrl.searchParams.get("user"),
+      },
+    });
 
     const svg = generateBadgeSVG({
       label: "DevTrack",

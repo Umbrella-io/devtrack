@@ -54,6 +54,7 @@ export default function IssueMetrics() {
 
   const trendColor =
     metrics && metrics.trend > 0 ? "text-[var(--success)]" : "text-[var(--destructive)]";
+    metrics && metrics.trend > 0 ? "text-green-400" : "text-[var(--destructive)]";
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
