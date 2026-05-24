@@ -6,6 +6,7 @@ import { redirect, useSearchParams } from "next/navigation";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import PrivacySettings from "@/components/PrivacySettings";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface UserSettings {
   id: string;
@@ -118,16 +119,13 @@ function SettingsPageContent() {
 
   const statusMessage = useMemo(
     () =>
-      getStatusMessage(
-        searchParams.get("success"),
-        searchParams.get("error")
-      ),
+      getStatusMessage(searchParams.get("success"), searchParams.get("error")),
     [searchParams]
   );
 
   const { theme, setTheme } = useHeatmapTheme();
 
-  // Redirect to signin if not authenticated
+ // Redirect to signin if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
       redirect("/");
@@ -234,13 +232,16 @@ function SettingsPageContent() {
   const copyShareLink = () => {
     if (!settings) return;
     const link = `${window.location.origin}/u/${settings.github_login}`;
-    navigator.clipboard.writeText(link).then(() => {
-      setCopied(true);
-      toast.success("Link copied successfully!");
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => { 
-      toast.error("Failed to copy link");
-     });
+    navigator.clipboard
+      .writeText(link)
+      .then(() => {
+        setCopied(true);
+        toast.success("Link copied successfully!");
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        toast.error("Failed to copy link");
+      });
   };
 
   const handleRemoveAccount = async (githubId: string) => {
@@ -303,13 +304,25 @@ function SettingsPageContent() {
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">
-            Settings
-          </h1>
-          <p className="mt-2 text-[var(--muted-foreground)]">
-            Manage your profile and preferences
-          </p>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <Link href="/dashboard">
+            <button className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--accent)] md:bg-[var(--accent)] md:text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 md:h-auto md:w-auto md:rounded-lg md:px-4 md:py-2">
+              <span className="text-lg items-center transition-transform duration-200 group-hover:-translate-x-1.5">
+                ←
+              </span>
+              <span className="ml-2 hidden text-sm font-medium md:inline">
+                Back to Dashboard
+              </span>
+            </button>
+          </Link>
+          <div className="sm:text-left mr-2">
+            <h1 className="text-3xl pl-2 text-center font-bold text-[var(--foreground)]">
+              Settings
+            </h1>
+            <p className="md:text-right text-center mt-2 text-[var(--muted-foreground)]">
+              Manage your profile and preferences
+            </p>
+          </div>
         </div>
 
         {statusMessage && (
@@ -550,6 +563,16 @@ function SettingsPageContent() {
         </div>
 
         <PrivacySettings />
+        <div className="mt-4 flex justify-center items-center pt-6">
+          <Link href="/dashboard">
+            <button className="group inline-flex items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95">
+              <span className="mr-2 transition-transform duration-200 group-hover:-translate-x-1.5">
+                ←
+              </span>
+              Back to Dashboard
+            </button>
+          </Link>
+        </div>
       </div>
     </div>
   );
