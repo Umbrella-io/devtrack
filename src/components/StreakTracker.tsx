@@ -427,7 +427,7 @@ export default function StreakTracker() {
                 ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
                 : "bg-[var(--control)]"
             }`}
-            title={stat.tooltip}
+            aria-label={stat.tooltip}
           >
             <div className="flex justify-center mb-1">
               <stat.icon size={24} className="text-[var(--accent)]" aria-hidden="true" />
@@ -449,7 +449,6 @@ export default function StreakTracker() {
 
               <button
                 type="button"
-                title={stat.tooltip}
                 aria-label={stat.tooltip}
                 className="text-[var(--muted-foreground)] hover:text-[var(--accent)] focus:outline-none"
               >

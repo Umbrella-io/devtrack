@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
+import type { LucideIcon } from "lucide-react";
 import { Flame, Trophy, Zap, Package, Download } from "lucide-react";
 
 interface StatsCardProps {
@@ -275,7 +276,7 @@ function StatBox({
   accent = false,
   small = false,
 }: {
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   label: string;
   value: string;
   unit: string;
