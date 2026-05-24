@@ -6,6 +6,93 @@ import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
+async function fetchUserSettings(userId: string) {
+  // Tier 1: All columns
+  const res1 = await supabaseAdmin
+    .from("users")
+    .select("id, github_login, is_public, leaderboard_opt_in, pinned_repos")
+    .eq("id", userId)
+    .single();
+
+  if (!res1.error) {
+    return {
+      data: res1.data as any,
+      error: null,
+      hasLeaderboardOptIn: true,
+      hasPinnedRepos: true,
+      leaderboard_opt_in: (res1.data as any).leaderboard_opt_in ?? false,
+      pinned_repos: (res1.data as any).pinned_repos || [],
+    };
+  }
+
+  if (res1.error.code !== "42703") {
+    return {
+      data: null,
+      error: res1.error,
+      hasLeaderboardOptIn: false,
+      hasPinnedRepos: false,
+      leaderboard_opt_in: false,
+      pinned_repos: [] as string[],
+    };
+  }
+
+  // Tier 2
+  const res2 = await supabaseAdmin
+    .from("users")
+    .select("id, github_login, is_public, leaderboard_opt_in")
+    .eq("id", userId)
+    .single();
+
+  if (!res2.error) {
+    return {
+      data: res2.data as any,
+      error: null,
+      hasLeaderboardOptIn: true,
+      hasPinnedRepos: false,
+      leaderboard_opt_in: (res2.data as any).leaderboard_opt_in ?? false,
+      pinned_repos: [] as string[],
+    };
+  }
+
+  if (res2.error.code !== "42703") {
+    return {
+      data: null,
+      error: res2.error,
+      hasLeaderboardOptIn: false,
+      hasPinnedRepos: false,
+      leaderboard_opt_in: false,
+      pinned_repos: [] as string[],
+    };
+  }
+
+  // Tier 3
+  const res3 = await supabaseAdmin
+    .from("users")
+    .select("id, github_login, is_public")
+    .eq("id", userId)
+    .single();
+
+  if (!res3.error) {
+    return {
+      data: res3.data as any,
+      error: null,
+      hasLeaderboardOptIn: false,
+      hasPinnedRepos: false,
+      leaderboard_opt_in: false,
+      pinned_repos: [] as string[],
+    };
+  }
+
+  return {
+    data: null,
+    error: res3.error,
+    hasLeaderboardOptIn: false,
+    hasPinnedRepos: false,
+    leaderboard_opt_in: false,
+    pinned_repos: [] as string[],
+  };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,6 +107,10 @@ export async function GET(req: NextRequest) {
     );
 
     if (!user) {
+      console.error("Failed to resolve user for settings GET:", {
+        githubId: session.githubId,
+      });
+
       return NextResponse.json(
         { error: "Failed to resolve user" },
         { status: 500 }
@@ -33,6 +124,11 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (error || !data) {
+<<<<<<< HEAD
+=======
+      console.error("Error fetching user:", error);
+
+>>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
       return NextResponse.json(
         { error: "Failed to fetch user settings" },
         { status: 500 }
@@ -40,8 +136,13 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json(data);
+<<<<<<< HEAD
   } catch (error) {
     console.error("GET settings error:", error);
+=======
+  } catch (err) {
+    console.error("GET /settings unexpected error:", err);
+>>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
 
     return NextResponse.json(
       { error: "Internal server error" },
@@ -49,7 +150,6 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -65,6 +165,13 @@ export async function PATCH(req: NextRequest) {
     );
 
     if (!user) {
+<<<<<<< HEAD
+=======
+      console.error("Failed to resolve user for settings PATCH:", {
+        githubId: session.githubId,
+      });
+
+>>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
       return NextResponse.json(
         { error: "User not found" },
         { status: 404 }
@@ -92,12 +199,23 @@ export async function PATCH(req: NextRequest) {
       typeof leaderboard_opt_in !== "boolean"
     ) {
       return NextResponse.json(
+<<<<<<< HEAD
         { error: "No valid fields provided" },
+=======
+        { error: "At least one boolean setting is required" },
+>>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
         { status: 400 }
       );
     }
 
+<<<<<<< HEAD
     const updates: any = {};
+=======
+    const updates: {
+      is_public?: boolean;
+      leaderboard_opt_in?: boolean;
+    } = {};
+>>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
 
     if (typeof is_public === "boolean") {
       updates.is_public = is_public;
@@ -111,23 +229,45 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
+<<<<<<< HEAD
     const { data, error } = await supabaseAdmin
+=======
+    const { data: updated, error: updateError } = await supabaseAdmin
+>>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
       .from("users")
       .update(updates)
       .eq("id", user.id)
       .select("id, github_login, is_public, leaderboard_opt_in")
       .single();
 
+<<<<<<< HEAD
     if (error || !data) {
+=======
+    if (updateError || !updated) {
+      console.error("Error updating settings:", updateError);
+
+>>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
       return NextResponse.json(
         { error: "Failed to update settings" },
         { status: 500 }
       );
     }
 
+<<<<<<< HEAD
     return NextResponse.json(data);
   } catch (error) {
     console.error("PATCH settings error:", error);
+=======
+    return NextResponse.json({
+      id: updated.id,
+      github_login: updated.github_login,
+      is_public: updated.is_public,
+      leaderboard_opt_in:
+        updated.leaderboard_opt_in ?? false,
+    });
+  } catch (err) {
+    console.error("PATCH /settings unexpected error:", err);
+>>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
 
     return NextResponse.json(
       { error: "Internal server error" },
