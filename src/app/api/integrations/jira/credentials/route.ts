@@ -15,7 +15,7 @@ interface JiraCredentialsInput {
 }
 
 function validateJiraDomain(domain: string): boolean {
-  const domainRegex = /^[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z0-9][-a-zA-Z0-9.]*$/;
+  const domainRegex = /^[a-zA-Z0-9][-a-zA-Z0-9]*\.atlassian\.net$/;
   return domainRegex.test(domain);
 }
 

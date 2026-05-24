@@ -107,6 +107,7 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/ci**",
     "**/api/streak/freeze**",
     "**/api/user/github-accounts**",
+    "**/api/integrations/jira**",
   ];
 
   for (const pattern of metricRoutes) {
@@ -225,6 +226,9 @@ function mockMetricResponse(url) {
   }
   if (url.includes("/api/streak/freeze")) {
     return { freezes: [] };
+  }
+  if (url.includes("/api/integrations/jira")) {
+    return null;
   }
   if (url.includes("/api/user/github-accounts")) {
     return { accounts: [] };

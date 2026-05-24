@@ -253,9 +253,18 @@ export default function ProjectMetrics() {
   if (error) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
-          Project Tracking
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+            Project Tracking
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90"
+          >
+            Connect Jira
+          </button>
+        </div>
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
@@ -266,6 +275,94 @@ export default function ProjectMetrics() {
             Try again
           </button>
         </div>
+        {showForm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-[var(--card)] rounded-xl p-6 w-full max-w-md border border-[var(--border)]">
+              <h3 className="text-lg font-semibold mb-4 text-[var(--card-foreground)]">
+                Connect Jira
+              </h3>
+              <form onSubmit={handleConnect} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                    Jira Domain
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="your-company.atlassian.net"
+                    value={formData.jiraDomain}
+                    onChange={(e) =>
+                      setFormData({ ...formData, jiraDomain: e.target.value })
+                    }
+                    className="w-full rounded-md border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-[var(--foreground)]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    className="w-full rounded-md border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-[var(--foreground)]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                    API Token
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Get from id.atlassian.com/manage-profile"
+                    value={formData.apiToken}
+                    onChange={(e) =>
+                      setFormData({ ...formData, apiToken: e.target.value })
+                    }
+                    className="w-full rounded-md border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-[var(--foreground)]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                    Project Key (optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. PROJ"
+                    value={formData.projectKey}
+                    onChange={(e) =>
+                      setFormData({ ...formData, projectKey: e.target.value })
+                    }
+                    className="w-full rounded-md border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-[var(--foreground)]"
+                  />
+                </div>
+                {connectionError && (
+                  <p className="text-sm text-[var(--destructive)]">{connectionError}</p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={connecting}
+                    className="flex-1 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90 disabled:opacity-50"
+                  >
+                    {connecting ? "Connecting..." : "Connect"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--control)]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
