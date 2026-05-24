@@ -53,6 +53,7 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
@@ -113,11 +114,13 @@ export async function POST(req: Request) {
   }
 
   let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+
+try {
+  body = await req.json();
+} catch {
+  return Response.json({ error: "Invalid JSON" }, { status: 400 });
+}
+
 
   if (typeof body !== "object" || body === null) {
     return Response.json({ error: "Invalid request body" }, { status: 400 });
