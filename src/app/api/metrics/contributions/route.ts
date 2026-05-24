@@ -81,12 +81,7 @@ async function fetchContributionsForAccount(
       since.setDate(since.getDate() - days);
       const sinceStr = fromDate ?? toLocalDateStr(since);
 
-      let allItems: Array<{
-        sha: string;
-        html_url: string;
-        repository?: { full_name: string };
-        commit: { author: { date: string }; message: string };
-      }> = [];
+      let allItems: GitHubCommitSearchItem[] = [];
       const commitItems: CommitItem[] = [];
       let totalCount = 0;
       let page = 1;
@@ -133,12 +128,7 @@ async function fetchContributionsForAccount(
 
         const data = (await searchRes.json()) as {
           total_count: number;
-          items: Array<{
-            sha: string;
-            html_url: string;
-            repository?: { full_name: string };
-            commit: { author: { date: string }; message: string };
-          }>;
+          items: GitHubCommitSearchItem[];
         };
 
         if (page === 1) {
