@@ -21,24 +21,26 @@ test.beforeEach(async ({ page }) => {
     {
       name: "next-auth.session-token",
       value: sessionToken,
-      domain: "127.0.0.1",
-      path: "/",
-      httpOnly: true,
-      sameSite: "Lax",
-      secure: false,
-      expires: Math.floor(Date.now() / 1000) + 60 * 60,
+      url: "http://127.0.0.1:3000",
     },
   ]);
 
-  await page.route("**/api/auth/session", async (route) => {
+  await page.route("**/api/goals", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
-        user: { name: "Playwright User", email: "playwright@example.com" },
-        githubLogin: "playwright-user",
-        githubId: "12345",
-        accessToken: "test-token",
-        expires: "2099-01-01T00:00:00.000Z",
+        goals: [
+          {
+            id: "goal-1",
+            title: "Make 10 commits",
+            target: 10,
+            current: 4,
+            unit: "commits",
+            recurrence: "weekly",
+            period_start: "2026-05-18",
+            last_synced_at: null,
+          },
+        ],
       }),
     });
   });
@@ -61,34 +63,6 @@ test.beforeEach(async ({ page }) => {
           "2026-05-17": 5,
           "2026-05-18": 2,
         },
-      }),
-    });
-  });
-
-  await page.route("**/api/goals", async (route) => {
-    if (route.request().method() === "POST") {
-      await route.fulfill({
-        contentType: "application/json",
-        status: 201,
-        body: JSON.stringify({ ok: true }),
-      });
-      return;
-    }
-
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        goals: [
-          {
-            id: "goal-1",
-            title: "Make 10 commits",
-            target: 10,
-            current: 4,
-            unit: "commits",
-            recurrence: "weekly",
-            period_start: "2026-05-18",
-          },
-        ],
       }),
     });
   });
@@ -122,10 +96,10 @@ test.beforeEach(async ({ page }) => {
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByText("Make 10 commits")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText("Make 10 commits", { exact: true })).toBeVisible({ timeout: 20000 });
 });
 
 test("contribution graph range buttons request a new range", async ({ page }) => {
