@@ -82,7 +82,17 @@ function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
         continue;
       }
       const pkgName = extractPackageName(mod);
-      if (BUILTINS.has(pkgName) || FRAMEWORK_ALIASES.has(pkgName)) continue;
+
+      const normalizedPkg = pkgName.startsWith("node:")
+        ? pkgName.slice(5)
+        : pkgName;
+
+      if (
+        BUILTINS.has(normalizedPkg) ||
+        FRAMEWORK_ALIASES.has(normalizedPkg)
+      ) {
+        continue;
+      }
       if (allDeps.has(pkgName)) continue;
 
       if (!missing.has(pkgName)) missing.set(pkgName, new Set());
