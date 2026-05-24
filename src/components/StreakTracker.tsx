@@ -382,7 +382,6 @@ export default function StreakTracker() {
       )}
       <div className="relative">
         {data && (
-<<<<<<< HEAD
           <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
             <button
               type="button"
@@ -393,7 +392,7 @@ export default function StreakTracker() {
               {copied ? (
                 <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
               ) : (
-                <span className="text-base opacity-80 hover:opacity-100">📋</span>
+                <Copy size={16} className="opacity-80 hover:opacity-100" />
               )}
             </button>
             <button
@@ -411,22 +410,7 @@ export default function StreakTracker() {
               <span>SHARE</span>
             </button>
           </div>
-=======
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
-            aria-label="Copy streak stats to clipboard"
-          >
-            {copied ? (
-              <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
-            ) : (
-              <Copy size={16} className="opacity-80 hover:opacity-100" />
-            )}
-          </button>
->>>>>>> 55f127b (Changes icons to lucide icons)
         )}
-
         <div ref={containerRef} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
