@@ -245,6 +245,38 @@ export default function GoalTracker() {
                       {goal.current}/{goal.target} {goal.unit}
                     </span>
 
+                    <button
+  onClick={async () => {
+    const newCurrent = goal.current + 1;
+
+    if (newCurrent > goal.target) return;
+
+    const res = await fetch(`/api/goals/${goal.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        current: newCurrent,
+      }),
+    });
+
+    if (res.ok) {
+      setGoals((prevGoals) =>
+        prevGoals.map((g) =>
+          g.id === goal.id
+            ? { ...g, current: newCurrent }
+            : g
+        )
+      );
+    }
+  }}
+  disabled={goal.current >= goal.target}
+  className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+>
+  +1
+</button>
+
                     {isConfirming ? (
                       <span className="flex items-center gap-1 text-xs">
                         <span className="text-[var(--muted-foreground)]">Delete?</span>
