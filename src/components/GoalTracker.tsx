@@ -408,6 +408,11 @@ export default function GoalTracker() {
 
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
+                    role="progressbar"
+                    aria-valuenow={goal.current}
+                    aria-valuemin={0}
+                    aria-valuemax={goal.target}
+                    aria-label={`Goal progress: ${goal.current} of ${goal.target} ${goal.unit}`}
                     className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
                     style={{ width: `${pct}%` }}
                   />
