@@ -15,18 +15,16 @@
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.1",
     "@upstash/redis": "^1.38.0",
-    "@vercel/analytics": "^1.1.4",
-    "@vercel/speed-insights": "^1.0.4",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
-<<<<<<< HEAD
     "next": "^14.2.35",
-=======
     "next": "^9.3.3",
->>>>>>> a6fe0f3 (feat: add global keyboard shortcut Alt+T / Option+T to toggle theme  - Relocated shortcut listening logic to root Providers to make theme toggling global (works on dashboard, settings, and public profile pages). - Changed trigger from plain 'T' key to 'Alt+T' (Windows/Linux) and 'Option+T' (Mac) to avoid browser shortcuts and typing conflicts. - Ensured shortcuts do not fire when typing inside inputs, textareas, selects, or contenteditable elements. - Updated ShortcutsModal to dynamically show 'Option + T' for macOS users and 'Alt + T' for Windows/Linux based on user-agent detection. - Streamlined header trigger button and maintained standard layout.)
+    "next": "^14.2.35",
     "next-auth": "^4.24.14",
     "react": "^18",
     "react-dom": "^18",
@@ -34,17 +32,17 @@
     "sonner": "^2.0.7"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0",
+    "@playwright/test": "1.49.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.19",
     "eslint": "^8",
-    "eslint-config-next": "^16.2.6",
+    "eslint-config-next": "14.2.3",
     "postcss": "^8.4.38",
     "tailwind-scrollbar": "^3.1.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
-    "vitest": "^4.1.7"
+    "vitest": "^1.6.0"
   }
 }
