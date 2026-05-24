@@ -11,6 +11,7 @@ import {
   Line,
   AreaChart,
   Area,
+
   XAxis,
   YAxis,
   CartesianGrid,
@@ -483,7 +484,7 @@ export default function ContributionGraph() {
                   type="button"
                   onClick={() => setChartType(chart.key)}
                   aria-pressed={chartType === chart.key}
-                  className={`px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none ${
+                  className={`px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                     chartType === chart.key
                       ? "bg-[var(--accent)] text-[var(--background)]"
                       : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
