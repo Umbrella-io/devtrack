@@ -174,7 +174,7 @@ export default function RecentActivity() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
+        <div className="max-h-[320px] space-y-3 overflow-y-auto pr-1">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
@@ -198,7 +198,7 @@ export default function RecentActivity() {
           No recent GitHub activity yet.
         </p>
       ) : (
-        <ul className="space-y-3 border-l border-[var(--border)] pl-4">
+        <ul className="max-h-[320px] space-y-3 overflow-y-auto border-l border-[var(--border)] pl-4 pr-1">
           {items.map((item) => (
             <li key={item.id} className="relative">
               <span

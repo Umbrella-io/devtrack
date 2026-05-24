@@ -49,3 +49,30 @@ body {
   color: var(--foreground);
   transition: background-color 200ms ease, color 200ms ease;
 }
+/* Custom slim scrollbar for dashboard widgets */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted-foreground) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: var(--muted-foreground); border-radius: 9999px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+.dark .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--muted-foreground); }
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeUp 0.7s ease-out;
+}
