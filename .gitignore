@@ -34,4 +34,7 @@ Thumbs.db
 # Claude Code local settings
 .claude/
 
+# Test generated output
+test/__generated__/
+
 desktop.ini
