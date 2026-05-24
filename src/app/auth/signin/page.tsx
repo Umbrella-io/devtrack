@@ -5,7 +5,8 @@ import { signIn } from "next-auth/react";
 export default function SignInPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
-      <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] backdrop-blur-md p-8 shadow-2xl text-center">
+      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] p-8 text-center shadow-[var(--shadow-medium)]">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[var(--accent)]/20 blur-2xl" />
 
         <h1 className="text-4xl font-bold text-[var(--foreground)] mb-3">
           DevTrack
@@ -17,7 +18,7 @@ export default function SignInPage() {
 
         <button
           onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
-          className="w-full inline-flex items-center justify-center gap-3 bg-[var(--background)] text-[var(--foreground)] font-semibold py-3 rounded-xl hover:opacity-90 transition-all duration-200 hover:scale-[1.02]"
+          className="primary-button relative w-full inline-flex items-center justify-center gap-3 rounded-xl py-3 font-semibold"
         >
           Sign in with GitHub
         </button>

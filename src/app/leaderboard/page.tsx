@@ -92,7 +92,7 @@ export default async function LeaderboardPage({
           )}
         </div>
 
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card)]/90 p-2 shadow-[var(--shadow-soft)]">
           {tabs.map((tab) => {
             const active = tab.id === activeTab;
             return (
@@ -101,7 +101,7 @@ export default async function LeaderboardPage({
                 href={`/leaderboard?tab=${tab.id}`}
                 className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${
                   active
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm"
                     : "border-[var(--border)] bg-[var(--card)] text-[var(--card-foreground)] hover:bg-[var(--control)]"
                 }`}
               >
@@ -111,7 +111,7 @@ export default async function LeaderboardPage({
           })}
         </div>
 
-        <section className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
+        <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-soft)]">
           <div className="grid grid-cols-[72px_1fr_110px_110px] border-b border-[var(--border)] bg-[var(--control)] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)] md:grid-cols-[80px_1fr_140px_140px_120px]">
             <div>Rank</div>
             <div>Contributor</div>
@@ -168,7 +168,7 @@ export default async function LeaderboardPage({
                 <div>
                   <Link
                     href={entry.profileUrl}
-                    className="inline-flex rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] hover:bg-[var(--control)]"
+                    className="secondary-button inline-flex rounded-lg px-3 py-2 text-sm font-medium"
                   >
                     View
                   </Link>

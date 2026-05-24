@@ -39,12 +39,12 @@ export default function DashboardHeader() {
   }, [session]);
 
   return (
-    <header className="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-lg backdrop-blur-md p-5 md:p-6 transition-all duration-300 hover:shadow-2xl">
+    <header className="mb-8 rounded-3xl border border-[var(--border)] bg-[var(--card)]/95 p-5 shadow-[var(--shadow-soft)] backdrop-blur-md transition-all duration-300 hover:shadow-[var(--shadow-medium)] md:p-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
 
         {/* Left Section */}
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-[var(--foreground)] to-[var(--accent)] bg-clip-text text-transparent">
+          <h1 className="bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-3xl font-extrabold text-transparent md:text-4xl">
             Dashboard
           </h1>
 
@@ -61,14 +61,14 @@ export default function DashboardHeader() {
               href={`/u/${session.githubLogin}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-semibold shadow-md hover:scale-105 hover:shadow-xl transition-all duration-300"
+              className="primary-button rounded-xl px-4 py-2 text-sm font-semibold"
               title="View your public profile"
             >
               Share Profile
             </a>
           )}
 
-          <div className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card-muted)] px-3 py-2 shadow-sm">
+          <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] px-3 py-2 shadow-sm">
 
             <div className="hover:scale-110 transition-transform duration-200">
               <KeyboardShortcuts />

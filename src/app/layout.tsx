@@ -51,10 +51,8 @@ export default function RootLayout({
               (function() {
                 try {
                   const stored = localStorage.getItem('theme');
-                  const supportDarkMode =
-                    window.matchMedia('(prefers-color-scheme: dark)').matches === true;
 
-                  if (stored === 'dark' || (!stored && supportDarkMode)) {
+                  if (stored === 'dark') {
                     document.documentElement.classList.add('dark');
                     document.documentElement.style.colorScheme = 'dark';
                   } else {
