@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 export default function SignInPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
@@ -13,12 +11,12 @@ export default function SignInPage() {
           Track your developer journey, GitHub activity, and coding consistency.
         </p>
 
-        <Link
+        <a
           href="/api/auth/signin/github?callbackUrl=/dashboard"
           className="w-full inline-flex items-center justify-center gap-3 bg-[var(--background)] text-[var(--foreground)] font-semibold py-3 rounded-xl hover:opacity-90 transition-all duration-200 hover:scale-[1.02]"
         >
           Sign in with GitHub
-        </Link>
+        </a>
       </div>
     </main>
   );
