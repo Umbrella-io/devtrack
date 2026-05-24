@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import Footer from "@/components/Footer";
 import Providers from "./providers";
-import Navbar from "@/components/Navbar";
 import PWARegister from "@/components/pwa-register";
 import "./globals.css";
 import { Toaster } from "sonner";
@@ -73,8 +72,6 @@ export default function RootLayout({
         <PWARegister />
 
         <div className="flex min-h-screen flex-col">
-          <Navbar />
-
           <div className="flex-1">
             <Providers>{children}</Providers>
           </div>
