@@ -13,6 +13,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.43.4",
     "@upstash/redis": "^1.38.0",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "html-to-image": "^1.11.13",
@@ -22,7 +24,8 @@
     "next-auth": "^4.24.7",
     "react": "^18",
     "react-dom": "^18",
-    "recharts": "^2.12.7"
+    "recharts": "^2.12.7",
+    "sonner": "^2.0.7"
   },
   "devDependencies": {
     "@playwright/test": "1.49.1",

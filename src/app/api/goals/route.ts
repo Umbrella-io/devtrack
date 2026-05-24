@@ -25,13 +25,12 @@ const MAX_UNIT_LEN = 30;
 const MIN_TARGET = 1;
 const MAX_TARGET = 10_000;
 
+// Hard cap to prevent storage exhaustion and catastrophic Promise.all execution
+const MAX_GOALS_PER_USER = 20;
+
 function getPeriodStart(recurrence: Recurrence): string {
   const now = new Date();
   if (recurrence === "weekly") {
-    // Use UTC methods so the Monday boundary is the same regardless of the
-    // server's local timezone. getDay() / setDate() / setHours() all operate
-    // in local time, which can push the reset boundary a day early or late
-    // on servers that are not running in UTC.
     const day = now.getUTCDay();
     const diff = day === 0 ? -6 : 1 - day; // Monday
     const monday = new Date(now);
@@ -40,8 +39,6 @@ function getPeriodStart(recurrence: Recurrence): string {
     return monday.toISOString();
   }
   if (recurrence === "monthly") {
-    // Date.UTC avoids the local-timezone offset that the Date constructor
-    // applies when month/day/hour arguments are passed directly.
     return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
   }
   return new Date(0).toISOString(); // 'none' never resets
