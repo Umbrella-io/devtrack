@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import PRStatusDonutChart from "./PRStatusDonutChart";
-
+interface ReviewMetrics {
+  totalReviews: number;
+  approvalRate: string;
+  avgFirstReviewHours: number | null;
+  topRepos: { repo: string; count: number }[];
+}
 interface PRMetricsSummary {
   open: number;
   merged: number;
@@ -15,6 +20,7 @@ interface PRMetricsSummary {
 
 interface PRData extends PRMetricsSummary {
   gitlab?: PRMetricsSummary;
+  reviews?: ReviewMetrics;
 }
 
 function formatReviewCycle(hours: number | null): string {
@@ -36,6 +42,7 @@ export default function PRMetrics() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"authored" | "reviews">("authored");
 
   const fetchMetrics = useCallback(() => {
     setLoading(true);
@@ -120,7 +127,33 @@ export default function PRMetrics() {
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("authored")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              activeTab === "authored"
+                ? "bg-[var(--accent)] text-white"
+                : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
+            }`}
+          >
+            PRs Authored
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("reviews")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              activeTab === "reviews"
+                ? "bg-[var(--accent)] text-white"
+                : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
+            }`}
+          >
+            Reviews Given
+          </button>
+        </div>
+      </div>
       {loading ? (
         <div
           role="status"
@@ -214,6 +247,40 @@ export default function PRMetrics() {
                 />
               </div>
             </div>
+          )}
+        </div>
+      )}
+      {/* Reviews Given Tab */}
+      {!loading && !error && activeTab === "reviews" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { label: "Total Reviews Given", value: metrics?.reviews?.totalReviews ?? 0 },
+              { label: "Approval Rate", value: metrics?.reviews?.approvalRate ?? "0%" },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-lg bg-[var(--control)] p-4 text-center">
+                <div className="text-2xl font-bold text-[var(--accent)]">{stat.value}</div>
+                <div className="mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+          {metrics?.reviews?.topRepos && metrics.reviews.topRepos.length > 0 && (
+            <div>
+              <p className="mb-3 text-sm font-medium text-[var(--muted-foreground)]">Most Reviewed Repos</p>
+              <div className="space-y-2">
+                {metrics.reviews.topRepos.map((item) => (
+                  <div key={item.repo} className="flex items-center justify-between rounded-lg bg-[var(--control)] px-4 py-2">
+                    <span className="truncate text-sm text-[var(--card-foreground)]">{item.repo}</span>
+                    <span className="ml-4 shrink-0 text-sm font-semibold text-[var(--accent)]">
+                      {item.count} review{item.count !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {(metrics?.reviews?.totalReviews ?? 0) === 0 && (
+            <p className="text-sm text-[var(--muted-foreground)]">No reviews found for this period.</p>
           )}
         </div>
       )}

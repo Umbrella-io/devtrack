@@ -12,10 +12,13 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GITHUB_ID ?? "",
       clientSecret: process.env.GITHUB_SECRET ?? "",
       authorization: {
-        params: { scope: "read:user user:email repo" },
+        params: { scope: "read:user user:email repo read:discussion" },
       },
     }),
   ],
+  pages: {
+  signIn: "/auth/signin",
+},
   session: {
     strategy: "jwt",
     maxAge: SESSION_MAX_AGE,
@@ -59,4 +62,5 @@ export const authOptions: NextAuthOptions = {
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: true,
 };

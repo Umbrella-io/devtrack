@@ -1,47 +1,35 @@
 import { Metadata } from "next";
 import BadgeSection from "@/components/BadgeSection";
-import ContributionGraph from "@/components/ContributionGraph";
-import StreakTracker from "@/components/StreakTracker";
-import TopRepos from "@/components/TopRepos";
 import StatsCard from "@/components/StatsCard";
 import CopyLinkButton from "@/components/CopyLinkButton";
-
-interface PublicProfileData {
-  username: string;
-  userId: string;
-  repos: Array<{ name: string; commits: number; url: string }>;
-  contributions: {
-    days: number;
-    total: number;
-    data: Record<string, number>;
-  };
-  streak: {
-    current: number;
-    longest: number;
-    lastCommitDate: string | null;
-    totalActiveDays: number;
-  };
-}
+import { getUserByUsername } from "@/lib/supabase";
+import {
+  fetchPublicTopRepos,
+  fetchPublicContributions,
+  fetchPublicStreak,
+  type PublicProfileData,
+} from "@/lib/public-profile-data";
 
 async function fetchPublicProfile(
   username: string
 ): Promise<PublicProfileData | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const user = await getUserByUsername(username);
+  if (!user) return null;
 
-  try {
-    const res = await fetch(`${baseUrl}/api/public/${username}`, {
-      cache: "no-store",
-    });
+  const githubToken = process.env.GITHUB_TOKEN;
+  const [repos, contributions, streak] = await Promise.all([
+    fetchPublicTopRepos(user.github_login, githubToken, 30),
+    fetchPublicContributions(user.github_login, githubToken, 30),
+    fetchPublicStreak(user.github_login, githubToken),
+  ]);
 
-    if (!res.ok) {
-      return null;
-    }
-
-    return res.json();
-  } catch (error) {
-    console.error(`Error fetching public profile for ${username}:`, error);
-    return null;
-  }
+  return {
+    username: user.github_login,
+    userId: user.id,
+    repos,
+    contributions,
+    streak,
+  };
 }
 
 export async function generateMetadata({
@@ -91,12 +79,22 @@ export default async function PublicProfilePage({
   if (!profile) {
     return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
             Profile Not Found
           </h1>
-          <p className="text-[var(--muted-foreground)] mb-6">
-            This profile is not available or is private.
+          <p className="text-[var(--muted-foreground)] mb-2">
+            This profile is not available or has not been made public.
+          </p>
+          <p className="text-sm text-[var(--muted-foreground)] mb-6">
+            If this is your profile, go to{" "}
+            <a
+              href="/dashboard/settings"
+              className="text-[var(--accent)] underline hover:opacity-80"
+            >
+              Settings
+            </a>{" "}
+            and enable <strong>Public Profile</strong>.
           </p>
           <a
             href="/"
@@ -207,9 +205,11 @@ function PublicContributionGraph({
                 className="aspect-square rounded-sm"
                 style={{
                   backgroundColor:
+                    day.commits > 0 ? "var(--accent)" : "var(--control)",
+                  opacity:
                     day.commits > 0
-                      ? `hsl(var(--accent) / ${Math.min(day.commits / 10, 1)})`
-                      : "var(--control)",
+                      ? Math.max(0.2, Math.min(day.commits / 10, 1))
+                      : 1,
                 }}
                 title={`${day.day}: ${day.commits} commits`}
               />
