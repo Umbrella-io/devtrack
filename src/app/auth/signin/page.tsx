@@ -50,8 +50,6 @@ export default function SignInPage() {
       }}
     >
       <MouseSpotlight />
-
-      {/* Subtle grid */}
       <div
         aria-hidden
         style={{
@@ -124,18 +122,6 @@ export default function SignInPage() {
             border: "none", cursor: "pointer",
             transition: "background 0.2s, transform 0.1s",
             marginBottom: 20,
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "#fff";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = A;
-          }}
-          onMouseDown={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.97)";
-          }}
-          onMouseUp={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
           }}
         >
           <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
