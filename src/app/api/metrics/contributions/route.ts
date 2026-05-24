@@ -15,6 +15,7 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +67,7 @@ async function fetchContributionsForAccount(
   const key = metricsCacheKey(cacheContext.userId, "contributions", {
     days,
     githubLogin,
+    from: fromDate ?? undefined,
   });
 
   return withMetricsCache(
@@ -79,7 +81,13 @@ async function fetchContributionsForAccount(
       since.setDate(since.getDate() - days);
       const sinceStr = fromDate ?? toLocalDateStr(since);
 
-      let allItems: Array<{ commit: { author: { date: string } } }> = [];
+      let allItems: Array<{
+        sha: string;
+        html_url: string;
+        repository?: { full_name: string };
+        commit: { author: { date: string }; message: string };
+      }> = [];
+      const commitItems: CommitItem[] = [];
       let totalCount = 0;
       let page = 1;
 
@@ -87,8 +95,18 @@ async function fetchContributionsForAccount(
       // Authenticated GitHub Search rate limits are low (~30 req/min). We handle 429/403
       // responses gracefully by returning partial results rather than failing the endpoint.
       while (page <= 10) {
+        const searchUrl = new URL(`${GITHUB_API}/search/commits`);
+        searchUrl.searchParams.set(
+          "q",
+          `author:${githubLogin} author-date:>=${sinceStr}`
+        );
+        searchUrl.searchParams.set("per_page", "100");
+        searchUrl.searchParams.set("page", String(page));
+        searchUrl.searchParams.set("sort", "author-date");
+        searchUrl.searchParams.set("order", "desc");
+
         const searchRes = await fetch(
-          `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
+          searchUrl.toString(),
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -115,7 +133,12 @@ async function fetchContributionsForAccount(
 
         const data = (await searchRes.json()) as {
           total_count: number;
-          items: Array<{ commit: { author: { date: string } } }>;
+          items: Array<{
+            sha: string;
+            html_url: string;
+            repository?: { full_name: string };
+            commit: { author: { date: string }; message: string };
+          }>;
         };
 
         if (page === 1) {
@@ -148,7 +171,7 @@ async function fetchContributionsForAccount(
         });
       }
 
-      return { days, total: totalCount, data: commitsByDay };
+      return { days, total: totalCount, data: commitsByDay, commits: commitItems };
     }
   );
 }
@@ -282,14 +305,19 @@ export async function GET(req: NextRequest) {
   } else {
     const daysParam = req.nextUrl.searchParams.get("days");
     const parsedDays = daysParam ? parseInt(daysParam, 10) : NaN;
-    const days = isNaN(parsedDays) ? 30 : Math.max(1, Math.min(365, parsedDays));
+    days = isNaN(parsedDays) ? 30 : Math.max(1, Math.min(365, parsedDays));
   }
   
   const accountId = req.nextUrl.searchParams.get("accountId");
-  const username = req.nextUrl.searchParams.get("username")?.trim();
+  const usernameParam = req.nextUrl.searchParams.get("username");
+  const username = usernameParam ? normalizeGitHubUsername(usernameParam) : null;
   const bypass = isMetricsCacheBypassed(req);
   const gitlabToken =
     typeof session.gitlabToken === "string" ? session.gitlabToken : undefined;
+
+  if (usernameParam && !username) {
+    return Response.json({ error: "Invalid GitHub username" }, { status: 400 });
+  }
 
   // Compare mode path: explicitly fetch contributions for a target username.
   if (username) {

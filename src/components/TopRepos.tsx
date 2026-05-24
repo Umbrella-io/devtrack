@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
+import RepoHealthPanel from "@/components/RepoHealthPanel";
 
 interface RepoLanguage {
   name: string;
@@ -84,7 +85,7 @@ export default function TopRepos() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [pinnedRepos, setPinnedRepos] = useState<string[]>([]);
   const [pinError, setPinError] = useState<string | null>(null);
-
+  const [activeHealthRepo, setActiveHealthRepo] = useState<string | null>(null);
   useEffect(() => {
     fetch("/api/user/settings")
       .then((r) => r.json())
@@ -238,12 +239,12 @@ export default function TopRepos() {
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+        <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
             type="button"
             onClick={fetchRepos}
-            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+            className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again
           </button>
@@ -294,10 +295,10 @@ export default function TopRepos() {
               : undefined;
             const badgeClass =
               health?.grade === "green"
-                ? "bg-green-500/15 text-green-300 border border-green-500/25"
+                ? "bg-[var(--success)]/15 text-[var(--success)] border border-[var(--success)]/25"
                 : health?.grade === "yellow"
-                  ? "bg-yellow-500/15 text-yellow-300 border border-yellow-500/25"
-                  : "bg-red-500/15 text-red-300 border border-red-500/25";
+                  ? "bg-[var(--warning)]/15 text-[var(--warning)] border border-[var(--warning)]/25"
+                  : "bg-[var(--destructive)]/15 text-[var(--destructive)] border border-[var(--destructive)]/25";
             const visibleLanguages = repo.languages ? getVisibleLanguages(repo.languages) : [];
             return (
               <li key={repo.name}>
@@ -321,12 +322,15 @@ export default function TopRepos() {
                     {healthLoading ? (
                       <div className="h-5 w-9 rounded bg-[var(--card-muted)] animate-pulse" />
                     ) : health ? (
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${badgeClass}`}
+                      <button
+                        type="button"
+                        onClick={() => setActiveHealthRepo(repo.name)}
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold cursor-pointer ${badgeClass}`}
                         title={badgeTitle}
+                        aria-label={`View health breakdown for ${shortName}`}
                       >
                         {health.score}
-                      </span>
+                      </button>
                     ) : (
                       <span
                         className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-2 py-0.5 text-xs font-semibold text-[var(--muted-foreground)]"
@@ -400,6 +404,13 @@ export default function TopRepos() {
          {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
         </p>
      )}
+      {activeHealthRepo && healthScores[activeHealthRepo] && (
+        <RepoHealthPanel
+          health={healthScores[activeHealthRepo]}
+          isOpen={true}
+          onClose={() => setActiveHealthRepo(null)}
+        />
+      )}
     </div>
   );
 }

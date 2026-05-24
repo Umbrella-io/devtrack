@@ -33,6 +33,7 @@ export default function GoalTracker() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [activeConfettiGoalId, setActiveConfettiGoalId] = useState<string | null>(null);
   const prevGoalsRef = useRef<Map<string, boolean>>(new Map());
@@ -88,14 +89,17 @@ export default function GoalTracker() {
     setGoals((prev) => prev.filter((g) => g.id !== id));
     setConfirmingId(null);
     setDeletingId(id);
+    setDeleteError(null);
 
     try {
       const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
       if (!res.ok) {
         setGoals(previousGoals);
+        setDeleteError("Failed to delete goal. Please try again.");
       }
     } catch {
       setGoals(previousGoals);
+      setDeleteError("Failed to delete goal. Please check your connection.");
     } finally {
       setDeletingId(null);
     }
@@ -173,6 +177,13 @@ export default function GoalTracker() {
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Weekly Goals</h2>
 
+      {deleteError && (
+        <div className="mb-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-3 text-sm text-[var(--destructive)] flex justify-between items-center">
+          <p>{deleteError}</p>
+          <button onClick={() => setDeleteError(null)} className="text-[var(--destructive)] hover:opacity-80 ml-2" aria-label="Dismiss error">✕</button>
+        </div>
+      )}
+
       {goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No goals yet. Create one below.
@@ -215,13 +226,45 @@ export default function GoalTracker() {
                       {goal.current}/{goal.target} {goal.unit}
                     </span>
 
+                    <button
+  onClick={async () => {
+    const newCurrent = goal.current + 1;
+
+    if (newCurrent > goal.target) return;
+
+    const res = await fetch(`/api/goals/${goal.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        current: newCurrent,
+      }),
+    });
+
+    if (res.ok) {
+      setGoals((prevGoals) =>
+        prevGoals.map((g) =>
+          g.id === goal.id
+            ? { ...g, current: newCurrent }
+            : g
+        )
+      );
+    }
+  }}
+  disabled={goal.current >= goal.target}
+  className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+>
+  +1
+</button>
+
                     {isConfirming ? (
                       <span className="flex items-center gap-1 text-xs">
                         <span className="text-[var(--muted-foreground)]">Delete?</span>
                         <button
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
-                          className="text-red-400 hover:text-red-300 font-semibold transition-colors disabled:opacity-50"
+                          className="text-[var(--destructive)] hover:opacity-80 font-semibold transition-colors disabled:opacity-50"
                           aria-label={`Confirm delete goal: ${goal.title}`}
                         >
                           Yes
@@ -239,7 +282,7 @@ export default function GoalTracker() {
                       <button
                         onClick={() => setConfirmingId(goal.id)}
                         disabled={isDeleting}
-                        className="text-[var(--muted-foreground)] hover:text-red-400 transition-colors disabled:opacity-50"
+                        className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors disabled:opacity-50"
                         aria-label={`Delete goal: ${goal.title}`}
                         title="Delete goal"
                       >
@@ -296,6 +339,7 @@ export default function GoalTracker() {
               id="goal-target"
               type="number"
               min={1}
+              max={10000}
               value={target}
               onChange={(e) => setTarget(Number(e.target.value))}
               disabled={creating}
@@ -332,7 +376,7 @@ export default function GoalTracker() {
                 disabled={creating}
                 className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium border transition-all ${
                   recurrence === r
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
                     : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
                 }`}
               >
@@ -350,7 +394,7 @@ export default function GoalTracker() {
         <button
           type="submit"
           disabled={creating || !title.trim()}
-          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {creating ? (
             <>
@@ -363,7 +407,7 @@ export default function GoalTracker() {
         </button>
 
         {createError && (
-          <p className="text-sm text-red-500">{createError}</p>
+          <p className="text-sm text-[var(--destructive)]">{createError}</p>
         )}
       </form>
     </div>
@@ -425,4 +469,4 @@ function ConfettiBurst() {
       ))}
     </div>
   );
-}
+}
