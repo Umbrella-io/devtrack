@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import Footer from "@/components/Footer";
 import Providers from "./providers";
+import Navbar from "@/components/Navbar";
 import PWARegister from "@/components/pwa-register";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -48,7 +50,9 @@ export default function RootLayout({
               (function() {
                 try {
                   const stored = localStorage.getItem('theme');
-                  const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+                  const supportDarkMode =
+                    window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
                   if (stored === 'dark' || (!stored && supportDarkMode)) {
                     document.documentElement.classList.add('dark');
                     document.documentElement.style.colorScheme = 'dark';
@@ -62,13 +66,22 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}>
+
+      <body
+        className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
+      >
         <PWARegister />
+
         <div className="flex min-h-screen flex-col">
+          <Navbar />
+
           <div className="flex-1">
             <Providers>{children}</Providers>
           </div>
+
           <Footer />
+
+          <Toaster richColors position="top-right" />
         </div>
       </body>
     </html>
