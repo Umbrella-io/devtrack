@@ -1,6 +1,8 @@
+import ActivityRingChart from "@/components/ActivityRingChart";
 import ContributionGraph from "@/components/ContributionGraph";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
+import CommunityMetrics from "@/components/CommunityMetrics";
 import PRBreakdownChart from "@/components/PRBreakdownChart";
 import GoalTracker from "@/components/GoalTracker";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -75,11 +77,16 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 2: PR metrics, PR breakdown & Time Chart */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Row 2: PR metrics, community metrics, PR breakdown & Time Chart */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <PRMetrics />
+        <CommunityMetrics />
         <PRBreakdownChart />
         <CommitTimeChart />
+      </div>
+      {/* Row 2b: Activity Ring Chart */}
+      <div className="mt-6">
+        <ActivityRingChart />
       </div>
 
       <div className="mt-6">

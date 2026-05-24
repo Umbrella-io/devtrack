@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   // 1. Verify user exists
   const userRes = await fetch(`${GITHUB_API}/users/${username}`, {
     headers: { Authorization: `Bearer ${session.accessToken}` },
-    next: { revalidate: 3600 },
+    cache: "no-store",
   });
 
   if (!userRes.ok) {
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
         Authorization: `Bearer ${session.accessToken}`,
         Accept: "application/vnd.github+json",
       },
-      next: { revalidate: 3600 },
+      cache: "no-store",
     }
   );
 
@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
   // 3. Top Language from repos
   const reposRes = await fetch(`${GITHUB_API}/users/${username}/repos?per_page=100&sort=pushed`, {
     headers: { Authorization: `Bearer ${session.accessToken}` },
-    next: { revalidate: 3600 },
+    cache: "no-store",
   });
   
   if (reposRes.ok) {
@@ -125,7 +125,7 @@ export async function GET(req: NextRequest) {
     `${GITHUB_API}/search/issues?q=type:pr+author:${username}&per_page=1`,
     {
       headers: { Authorization: `Bearer ${session.accessToken}` },
-      next: { revalidate: 3600 },
+      cache: "no-store",
     }
   );
   let prs = 0;
