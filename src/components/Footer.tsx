@@ -47,7 +47,7 @@ export default function Footer() {
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://github.com/Priyanshu-byte-coder/devtrack/discussions"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 Discussions
               </a>
@@ -55,7 +55,7 @@ export default function Footer() {
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://github.com/Priyanshu-byte-coder/devtrack/issues"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 Issues
               </a>
@@ -63,7 +63,7 @@ export default function Footer() {
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://github.com/Priyanshu-byte-coder/devtrack"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 GitHub Repository
               </a>
