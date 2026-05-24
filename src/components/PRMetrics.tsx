@@ -174,17 +174,17 @@ export default function PRMetrics() {
           <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
         </div>
       ) : error ? (
-        <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
+        <div className="rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
             type="button"
             onClick={fetchMetrics}
-            className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
+            className="mt-3 rounded-md border border-[var(--destructive-muted-border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive-muted)]"
           >
             Try again
           </button>
         </div>
-      ) : (
+      ) : activeTab === "authored" ? (
         <div className="space-y-6">
           {/* Stat grid */}
           <div>
@@ -249,9 +249,7 @@ export default function PRMetrics() {
             </div>
           )}
         </div>
-      )}
-      {/* Reviews Given Tab */}
-      {!loading && !error && activeTab === "reviews" && (
+      ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             {[

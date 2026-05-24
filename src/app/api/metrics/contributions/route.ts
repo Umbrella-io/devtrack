@@ -132,12 +132,7 @@ async function fetchContributionsForAccount(
 
         const data = (await searchRes.json()) as {
           total_count: number;
-          items: Array<{
-            sha: string;
-            html_url: string;
-            repository?: { full_name: string };
-            commit: { author: { date: string }; message: string };
-          }>;
+          items: GitHubCommitSearchItem[];
         };
 
         if (page === 1) {

@@ -31,6 +31,10 @@
   --success-border: rgba(16, 185, 129, 0.2);
   --chart-cyan: #0891b2;
   --chart-orange: #ea580c;
+  --destructive: #ef4444;
+  --destructive-muted: rgba(239, 68, 68, 0.1);
+  --destructive-muted-border: rgba(239, 68, 68, 0.3);
+  --destructive-foreground: #ffffff;
 }
 
 .dark {
@@ -62,6 +66,10 @@
   --success-border: rgba(16, 185, 129, 0.2);
   --chart-cyan: #22d3ee;
   --chart-orange: #f97316;
+  --destructive: #f87171;
+  --destructive-muted: rgba(248, 113, 113, 0.1);
+  --destructive-muted-border: rgba(248, 113, 113, 0.3);
+  --destructive-foreground: #ffffff;
 }
 
 body {
