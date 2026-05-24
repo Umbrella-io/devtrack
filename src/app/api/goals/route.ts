@@ -204,22 +204,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-
-  const { data: goal, error } = await supabaseAdmin
-    .from("goals")
-    .insert({
-      user_id: user.id,
-      title: title.trim(),
-      target,
-      unit: safeUnit,
-      recurrence: safeRecurrence,
-      period_start: getPeriodStart(safeRecurrence),
-      current: 0,
-    })
-    .select()
-    .single();
-
-  if (error) return Response.json({ error: error.message }, { status: 500 });
-
-  return Response.json({ goal }, { status: 201 });
 }
