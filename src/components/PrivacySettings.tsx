@@ -72,7 +72,7 @@ export default function PrivacySettings() {
   }
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <h2 className="text-xl font-semibold text-[var(--card-foreground)] mb-1">
         Privacy & Data
       </h2>
