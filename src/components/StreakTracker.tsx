@@ -1,10 +1,11 @@
 "use client";
-
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { useCountUp } from "@/hooks/useCountUp";
 import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
+import { toast } from "sonner";
+import { toPng } from "html-to-image";
 
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
@@ -140,12 +141,15 @@ export default function StreakTracker() {
   const [freezeLoading, setFreezeLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const animatedCurrent = useCountUp(data?.current ?? 0);
   const animatedLongest = useCountUp(data?.longest ?? 0);
   const animatedActiveDays = useCountUp(data?.totalActiveDays ?? 0);
 
-  const fetchFreeze = useCallback(async () => {
+const fetchFreeze = useCallback(async () => {
     setFreezeLoading(true);
     try {
       const response = await fetch("/api/streak/freeze");
@@ -155,6 +159,27 @@ export default function StreakTracker() {
       setFreeze(null);
     } finally {
       setFreezeLoading(false);
+    }
+  }, []);
+
+  const handleDownload = useCallback(async () => {
+    if (!containerRef.current) return;
+    try {
+      setIsDownloading(true);
+      const dataUrl = await toPng(containerRef.current, {
+        cacheBust: true,
+        style: { margin: "0" },
+      });
+      const link = document.createElement("a");
+      link.download = "devtrack-streak.png";
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to generate image", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  }, []);
     }
   }, []);
 
@@ -300,7 +325,7 @@ export default function StreakTracker() {
       ]
     : [];
 
-  const handleCopy = () => {
+const handleCopy = async () => {
     if (!data || !navigator.clipboard) return;
     const textToCopy = [
       "🔥 DevTrack Stats",
@@ -308,11 +333,22 @@ export default function StreakTracker() {
       `Longest streak: ${data.longest} days`,
       `Active days: ${data.totalActiveDays}`,
     ].join("\n");
+if (!navigator.clipboard) {
+      toast.error("Clipboard is not supported in this browser.");
+      return;
+    }
 
-    navigator.clipboard.writeText(textToCopy).then(() => {
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+
       setCopied(true);
+
+      toast.success("Streak stats copied to clipboard!");
+
       setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {});
+    } catch {
+      toast.error("Failed to copy streak stats.");
+    }
   };
 
   const currentMilestone = [...STREAK_MILESTONES].reverse().find((milestone) => (
@@ -334,16 +370,70 @@ export default function StreakTracker() {
       {shouldShowBanner && currentMilestone && (
         <StreakMilestoneBanner streak={currentMilestone} onDismiss={handleDismissBanner} />
       )}
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm" aria-busy={isRefreshing}>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
-          <div className="flex items-center gap-1.5">
+<div className="relative" aria-busy={isRefreshing}>
+        {data && (
+          <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
             <button
               type="button"
               onClick={refreshWidget}
               disabled={isRefreshing}
               aria-label="Refresh Commit Streaks"
               className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] hover:text-[var(--card-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isRefreshing ? "animate-spin" : ""}><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><polyline points="21 3 21 8 16 8"></polyline></svg>
+            </button>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
+              aria-label="Copy streak stats to clipboard"
+            >
+              {copied ? (
+                <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
+              ) : (
+                <span className="text-base opacity-80 hover:opacity-100">📋</span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="cursor-pointer flex h-8 items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-70 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors gap-1.5 shadow-sm"
+              aria-label="Download streak stats as image"
+            >
+              {isDownloading ? (
+                <span className="w-4 h-4 rounded-full border-2 border-[var(--accent-foreground)]/30 border-t-[var(--accent-foreground)] animate-spin" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              )}
+              <span>SHARE</span>
+            </button>
+          </div>
+        )}
+
+        <div ref={containerRef} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+              Commit Streaks
+            </h2>
+            {data && <div className="h-8 w-36" />}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className={`rounded-lg p-4 text-center ${
+              stat.highlight
+                ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
+                : "bg-[var(--control)]"
+            }`}
+          >
+          <div className="text-xl mb-1" title={stat.tooltip} aria-label={stat.tooltip} role="img">{stat.icon}</div>
+            <div
+              className={`text-2xl font-bold ${
+                stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
+              }`}
+            >
             >
               <span className={isRefreshing ? "inline-block animate-spin" : "inline-block"} aria-hidden="true">↺</span>
             </button>
@@ -446,11 +536,38 @@ export default function StreakTracker() {
               </div>
             )}
 
-            {lastUpdated && (
+{lastUpdated && (
               <p className="mt-2 text-right text-xs text-[var(--muted-foreground)]">
                 {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
               </p>
             )}
+          </div>
+        {/* Streak Calendar Section */}
+        {contributionData ? (
+          <>
+            {/*
+              Freeze dates are managed via the streak freeze API (/api/streak/freeze).
+              Users can activate a freeze from the freeze button in this component.
+              The calendar displays existing freeze dates from the API response.
+              Future: add UI to manually mark/unmark past dates as frozen.
+            */}
+            <StreakCalendar
+              contributions={contributionData.data}
+              freezeDates={
+                freeze?.freezeDate
+                  ? Array.from(new Set([...freezeDates, freeze.freezeDate]))
+                  : freezeDates
+              }
+              currentMonth={calendarMonth}
+              onMonthChange={setCalendarMonth}
+            />
+          </>
+        ) : null}
+        </div>
+      </div>
+    </>
+  );
+}
 
             {!freezeLoading && freeze?.hasFreeze && (
               <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-4 py-3">
