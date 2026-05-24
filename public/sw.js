@@ -1,6 +1,6 @@
 const STATIC_CACHE = "devtrack-static-v1";
 const API_CACHE = "devtrack-api-v1";
-const SKIP_CACHE_PATHS = ["/api/auth", "/_next/"];
+const SKIP_CACHE_PATHS = ["/api/auth", "/auth/", "/_next/"];
 
 const STATIC_ASSETS = [
   "/",
@@ -12,10 +12,10 @@ const STATIC_ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS)),
+    caches.open(STATIC_CACHE).then((cache) =>
+      Promise.allSettled(STATIC_ASSETS.map((url) => cache.add(url))),
+    ).then(() => self.skipWaiting()),
   );
-
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
