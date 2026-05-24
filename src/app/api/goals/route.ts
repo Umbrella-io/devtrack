@@ -105,9 +105,19 @@ export async function POST(req: Request) {
     recurrence?: Recurrence;
   };
 
-  if (!body.title || !body.target) {
-    return Response.json({ error: "title and target required" }, { status: 400 });
-  }
+  if (!body.title || body.target === undefined) {
+  return Response.json(
+    { error: "title and target required" },
+    { status: 400 }
+  );
+}
+
+if (!Number.isInteger(body.target) || body.target <= 0) {
+  return Response.json(
+    { error: "target must be a positive integer" },
+    { status: 400 }
+  );
+}
 
   const recurrence: Recurrence = body.recurrence ?? "none";
   if (!["none", "weekly", "monthly"].includes(recurrence)) {
