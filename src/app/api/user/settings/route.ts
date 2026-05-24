@@ -124,11 +124,8 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (error || !data) {
-<<<<<<< HEAD
-=======
       console.error("Error fetching user:", error);
 
->>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
       return NextResponse.json(
         { error: "Failed to fetch user settings" },
         { status: 500 }
@@ -136,13 +133,8 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json(data);
-<<<<<<< HEAD
-  } catch (error) {
-    console.error("GET settings error:", error);
-=======
   } catch (err) {
     console.error("GET /settings unexpected error:", err);
->>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
 
     return NextResponse.json(
       { error: "Internal server error" },
@@ -165,13 +157,10 @@ export async function PATCH(req: NextRequest) {
     );
 
     if (!user) {
-<<<<<<< HEAD
-=======
       console.error("Failed to resolve user for settings PATCH:", {
         githubId: session.githubId,
       });
 
->>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
       return NextResponse.json(
         { error: "User not found" },
         { status: 404 }
@@ -199,23 +188,15 @@ export async function PATCH(req: NextRequest) {
       typeof leaderboard_opt_in !== "boolean"
     ) {
       return NextResponse.json(
-<<<<<<< HEAD
-        { error: "No valid fields provided" },
-=======
         { error: "At least one boolean setting is required" },
->>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
         { status: 400 }
       );
     }
 
-<<<<<<< HEAD
-    const updates: any = {};
-=======
     const updates: {
       is_public?: boolean;
       leaderboard_opt_in?: boolean;
     } = {};
->>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
 
     if (typeof is_public === "boolean") {
       updates.is_public = is_public;
@@ -229,35 +210,22 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
-<<<<<<< HEAD
-    const { data, error } = await supabaseAdmin
-=======
     const { data: updated, error: updateError } = await supabaseAdmin
->>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
       .from("users")
       .update(updates)
       .eq("id", user.id)
       .select("id, github_login, is_public, leaderboard_opt_in")
       .single();
 
-<<<<<<< HEAD
-    if (error || !data) {
-=======
     if (updateError || !updated) {
       console.error("Error updating settings:", updateError);
 
->>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
       return NextResponse.json(
         { error: "Failed to update settings" },
         { status: 500 }
       );
     }
 
-<<<<<<< HEAD
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error("PATCH settings error:", error);
-=======
     return NextResponse.json({
       id: updated.id,
       github_login: updated.github_login,
@@ -267,7 +235,6 @@ export async function PATCH(req: NextRequest) {
     });
   } catch (err) {
     console.error("PATCH /settings unexpected error:", err);
->>>>>>> 41ff0a7 (fix: secure debug endpoint and improve API error handling)
 
     return NextResponse.json(
       { error: "Internal server error" },
