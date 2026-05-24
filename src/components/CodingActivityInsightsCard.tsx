@@ -389,3 +389,8 @@ export default function CodingActivityInsightsCard() {
 
       </div>
     )}
+        </div>
+      )}
+    </div>
+  );
+}
