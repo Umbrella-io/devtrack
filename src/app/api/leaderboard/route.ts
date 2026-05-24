@@ -1,13 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import {
+  cacheGet,
+  cacheSet,
+  isMetricsCacheBypassed,
+} from "@/lib/metrics-cache";
+import {
+  pruneExpiredLeaderboardCache,
+  pruneExpiredRateLimits,
+  type LeaderboardCacheEntry,
+  type RateLimitEntry,
+} from "@/lib/leaderboard-cache";
+import {
+  getUpstashConfig,
+  upstashRateLimitFixedWindow,
+  upstashTryAcquireLock,
+} from "@/lib/upstash-rest";
 
 export const dynamic = "force-dynamic";
 
 const GITHUB_API = "https://api.github.com";
-const CACHE_TTL_MS = 60 * 60 * 1000;
+const CACHE_REFRESH_SECONDS = 60 * 60; // 1 hour
+const CACHE_STALE_SECONDS = 6 * 60 * 60; // 6 hours
 const RATE_LIMIT_REQUESTS = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const USER_CONCURRENCY = Number(process.env.LEADERBOARD_USER_CONCURRENCY ?? 5);
+
+const LEADERBOARD_CACHE_KEY = "leaderboard:v1";
+const LEADERBOARD_BUILD_LOCK_KEY = "leaderboard:build-lock:v1";
 
 type LeaderboardMetric = "streak" | "commits" | "prs";
 
@@ -33,29 +54,24 @@ interface LeaderboardPayload {
   leaders: Record<LeaderboardMetric, LeaderboardEntry[]>;
 }
 
-let leaderboardCache: { expiresAt: number; payload: LeaderboardPayload } | null =
-  null;
-
-const ipRateLimits = new Map<string, { count: number; resetAt: number }>();
-
 function getRateLimitKey(req: NextRequest): string {
   return (
     req.ip ??
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     req.headers.get("x-real-ip") ??
     "unknown"
   );
 }
 
-function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+let memoryLeaderboardCache: LeaderboardCacheEntry<LeaderboardPayload> | null = null;
+const memoryRateLimits = new Map<string, RateLimitEntry>();
+
+function checkMemoryRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   const now = Date.now();
-  for (const [key, record] of ipRateLimits) {
-    if (now > record.resetAt) ipRateLimits.delete(key);
-  }
-  const record = ipRateLimits.get(ip);
+  pruneExpiredRateLimits(memoryRateLimits, now);
+  const record = memoryRateLimits.get(ip);
 
   if (!record || now > record.resetAt) {
-    ipRateLimits.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    memoryRateLimits.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return { allowed: true };
   }
 
@@ -67,11 +83,56 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   return { allowed: false, retryAfter: Math.ceil((record.resetAt - now) / 1000) };
 }
 
-function cleanupCache(): void {
-  const now = Date.now();
-  if (leaderboardCache && now > leaderboardCache.expiresAt) {
-    leaderboardCache = null;
+async function checkRateLimit(
+  ip: string
+): Promise<{ allowed: boolean; retryAfter?: number }> {
+  if (getUpstashConfig()) {
+    return upstashRateLimitFixedWindow({
+      key: `leaderboard-rate-limit:${ip}`,
+      limit: RATE_LIMIT_REQUESTS,
+      windowSeconds: Math.ceil(RATE_LIMIT_WINDOW_MS / 1000),
+    });
   }
+
+  return checkMemoryRateLimit(ip);
+}
+
+function isFresh(payload: LeaderboardPayload): boolean {
+  const generatedAt = Date.parse(payload.generatedAt);
+  if (!Number.isFinite(generatedAt)) {
+    return false;
+  }
+  return Date.now() - generatedAt < CACHE_REFRESH_SECONDS * 1000;
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const safeConcurrency =
+    Number.isFinite(concurrency) && concurrency > 0 ? Math.floor(concurrency) : 1;
+  const results: R[] = new Array(items.length);
+  let cursor = 0;
+
+  async function worker() {
+    while (true) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) {
+        return;
+      }
+      results[index] = await mapper(items[index], index);
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(safeConcurrency, items.length) },
+    () => worker()
+  );
+
+  await Promise.all(workers);
+  return results;
 }
 
 async function fetchGitHubJson<T>(path: string): Promise<T | null> {
@@ -161,8 +222,12 @@ async function buildLeaderboard(): Promise<LeaderboardPayload> {
   const monthStart = toDateStr(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)));
   const streakStart = toDateStr(new Date(Date.now() - 90 * 86400000));
 
-  const rows = await Promise.all(
-    ((users ?? []) as PublicUser[]).map(async (user) => {
+  const safeUsers = (users ?? []) as PublicUser[];
+
+  const rows = await mapWithConcurrency(
+    safeUsers,
+    USER_CONCURRENCY,
+    async (user) => {
       const [monthlyCommits, streakCommits, prs] = await Promise.all([
         fetchCommitStats(user.github_login, monthStart),
         fetchCommitStats(user.github_login, streakStart),
@@ -185,7 +250,7 @@ async function buildLeaderboard(): Promise<LeaderboardPayload> {
         prs,
         score,
       };
-    })
+    }
   );
 
   const rankBy = (metric: LeaderboardMetric) =>
@@ -196,7 +261,7 @@ async function buildLeaderboard(): Promise<LeaderboardPayload> {
 
   return {
     generatedAt: now.toISOString(),
-    refreshSeconds: CACHE_TTL_MS / 1000,
+    refreshSeconds: CACHE_REFRESH_SECONDS,
     leaders: {
       streak: rankBy("streak"),
       commits: rankBy("commits"),
@@ -206,9 +271,8 @@ async function buildLeaderboard(): Promise<LeaderboardPayload> {
 }
 
 export async function GET(req: NextRequest) {
-  cleanupCache();
   const ip = getRateLimitKey(req);
-  const rateLimit = checkRateLimit(ip);
+  const rateLimit = await checkRateLimit(ip);
 
   if (!rateLimit.allowed) {
     return NextResponse.json(
@@ -217,15 +281,60 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (leaderboardCache && Date.now() < leaderboardCache.expiresAt) {
-    return NextResponse.json(leaderboardCache.payload);
+  const bypass = isMetricsCacheBypassed(req);
+  if (!bypass) {
+    memoryLeaderboardCache = pruneExpiredLeaderboardCache(memoryLeaderboardCache);
+    if (memoryLeaderboardCache && isFresh(memoryLeaderboardCache.payload)) {
+      return NextResponse.json(memoryLeaderboardCache.payload, {
+        headers: { "x-devtrack-leaderboard-cache": "memory" },
+      });
+    }
+
+    const cached = await cacheGet<LeaderboardPayload>(LEADERBOARD_CACHE_KEY);
+    if (cached && isFresh(cached)) {
+      memoryLeaderboardCache = {
+        payload: cached,
+        expiresAt: Date.now() + CACHE_REFRESH_SECONDS * 1000,
+      };
+      return NextResponse.json(cached);
+    }
+
+    // Avoid thundering herd on cache misses across serverless instances.
+    if (getUpstashConfig()) {
+      const locked = await upstashTryAcquireLock({
+        key: LEADERBOARD_BUILD_LOCK_KEY,
+        ttlSeconds: 5 * 60,
+      });
+
+      if (!locked) {
+        if (cached) {
+          return NextResponse.json(cached, {
+            headers: { "x-devtrack-leaderboard-cache": "stale" },
+          });
+        }
+        return NextResponse.json(
+          { error: "Leaderboard is rebuilding. Please retry shortly." },
+          { status: 503, headers: { "Retry-After": "5" } }
+        );
+      }
+    }
   }
 
   try {
     const payload = await buildLeaderboard();
-    leaderboardCache = { payload, expiresAt: Date.now() + CACHE_TTL_MS };
+    await cacheSet(LEADERBOARD_CACHE_KEY, payload, CACHE_STALE_SECONDS);
+    memoryLeaderboardCache = {
+      payload,
+      expiresAt: Date.now() + CACHE_REFRESH_SECONDS * 1000,
+    };
     return NextResponse.json(payload);
   } catch {
+    const cached = await cacheGet<LeaderboardPayload>(LEADERBOARD_CACHE_KEY);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { "x-devtrack-leaderboard-cache": "error-stale" },
+      });
+    }
     return NextResponse.json(
       { error: "Failed to build leaderboard" },
       { status: 500 }

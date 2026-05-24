@@ -225,10 +225,12 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const accessToken: string = session.accessToken;
+  const githubLogin: string = session.githubLogin;
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
   const cacheKey = metricsCacheKey(
-    session.githubId ?? session.githubLogin,
+    session.githubId ?? githubLogin,
     "activity",
     { accountId: accountId || undefined }
   );
@@ -243,8 +245,8 @@ export async function GET(req: NextRequest) {
       async () => {
         if (!accountId) {
           const items = await fetchFormattedActivityWithFallback(
-            session.accessToken,
-            session.githubLogin
+            accessToken,
+            githubLogin
           );
           return { items: items.slice(0, 20) };
         }
@@ -253,7 +255,7 @@ export async function GET(req: NextRequest) {
           throw new Error("Unauthorized");
         }
 
-        const userRow = await resolveAppUser(session.githubId, session.githubLogin);
+        const userRow = await resolveAppUser(session.githubId, githubLogin);
 
         if (!userRow) {
           throw new Error("Unauthorized");
@@ -262,9 +264,9 @@ export async function GET(req: NextRequest) {
         if (accountId === "combined") {
           const accounts = await getAllAccounts(
             {
-              token: session.accessToken,
+              token: accessToken,
               githubId: session.githubId,
-              githubLogin: session.githubLogin,
+              githubLogin: githubLogin,
             },
             userRow.id
           );
@@ -301,8 +303,8 @@ export async function GET(req: NextRequest) {
 
         if (accountId === session.githubId) {
           const items = await fetchFormattedActivityWithFallback(
-            session.accessToken,
-            session.githubLogin
+            accessToken,
+            githubLogin
           );
           return { items: items.slice(0, 15) };
         }
