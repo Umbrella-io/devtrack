@@ -5,6 +5,7 @@ import {
   getBadgeClientIp,
 } from "@/lib/badge-rate-limit";
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { logError } from "@/lib/error-handler";
 
 export const dynamic = "force-dynamic";
 
@@ -169,7 +170,13 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error generating streak badge:", error);
+    logError(error, {
+      endpoint: "/api/badge/streak-shield",
+      operation: "generate_badge",
+      additionalContext: {
+        username: req.nextUrl.searchParams.get("user"),
+      },
+    });
 
     const svg = generateBadgeSVG({
       label: "DevTrack",
