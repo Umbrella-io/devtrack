@@ -12,6 +12,7 @@ interface Goal {
   unit: string;
   recurrence: Recurrence;
   period_start: string;
+  last_synced_at: string | null;
 }
 
 const RECURRENCE_LABELS: Record<Recurrence, string> = {
@@ -23,6 +24,8 @@ const RECURRENCE_LABELS: Record<Recurrence, string> = {
 export default function GoalTracker() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [title, setTitle] = useState("");
@@ -42,18 +45,64 @@ export default function GoalTracker() {
   const loadGoals = useCallback(async () => {
     const response = await fetch("/api/goals");
     const data: { goals: Goal[] } = await response.json();
-    setGoals(data.goals ?? []);
+    const fetchedGoals = data.goals ?? [];
+    setGoals(fetchedGoals);
+    return fetchedGoals;
   }, []);
 
+  /** Sync commit-based goals from GitHub, then reload */
+  const handleSync = useCallback(async () => {
+    setSyncing(true);
+    setSyncError(null);
+    try {
+      const res = await fetch("/api/goals/sync", { method: "POST" });
+      if (!res.ok) {
+        let msg = "Sync failed. Please try again.";
+        try {
+          const errData = await res.json();
+          if (errData && errData.error) {
+            msg = errData.error;
+          }
+        } catch {}
+        if (res.status === 401) {
+          msg = "Unauthorized. Please log in again.";
+        } else if (res.status === 502) {
+          msg = "GitHub sync failed: Expired token or missing repo scope.";
+        }
+        setSyncError(msg);
+        return;
+      }
+      await loadGoals();
+      setLastUpdated(new Date());
+      setMinutesAgo(0);
+    } catch {
+      setSyncError("Network error. Failed to sync goals.");
+    } finally {
+      setSyncing(false);
+    }
+  }, [loadGoals]);
+
+  // On mount: load goals then auto-sync if stale
   useEffect(() => {
     loadGoals()
+      .then(async (fetchedGoals) => {
+        const needsSync = fetchedGoals.some((g: Goal) => {
+          if (g.unit !== "commits") return false;
+          if (!g.last_synced_at) return true;
+          const syncedAt = new Date(g.last_synced_at).getTime();
+          return Date.now() - syncedAt > 15 * 60 * 1000; // > 15 mins
+        });
+        if (needsSync) {
+          await handleSync();
+        }
+      })
       .catch(() => {})
       .finally(() => {
         setLoading(false);
         setLastUpdated(new Date());
         setMinutesAgo(0);
       });
-  }, [loadGoals]);
+  }, [loadGoals, handleSync]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -80,7 +129,13 @@ export default function GoalTracker() {
     setTarget(7);
     setUnit("commits");
     setRecurrence("none");
-    await loadGoals().catch(() => {});
+
+    // Immediately sync if it was a commit-based goal
+    if (unit === "commits") {
+      await handleSync();
+    } else {
+      await loadGoals().catch(() => {});
+    }
     setCreating(false);
   }
 
@@ -96,16 +151,10 @@ export default function GoalTracker() {
       if (!res.ok) {
         setGoals(previousGoals);
         setDeleteError("Failed to delete goal. Please try again.");
-        setTimeout(() => {
-          setDeleteError(null);
-        }, 5000);
       }
     } catch {
       setGoals(previousGoals);
-      setDeleteError("Failed to delete goal. Please try again.");
-      setTimeout(() => {
-        setDeleteError(null);
-      }, 5000);
+      setDeleteError("Failed to delete goal. Please check your connection.");
     } finally {
       setDeletingId(null);
     }
@@ -181,25 +230,53 @@ export default function GoalTracker() {
 
   return (
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Weekly Goals</h2>
-
-      {deleteError && (
-        <div
-          role="alert"
-          className="mb-4 rounded-lg border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 p-3 text-xs text-[var(--destructive)] flex items-center justify-between animate-in fade-in duration-200"
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Goals</h2>
+        <button
+          onClick={handleSync}
+          disabled={syncing}
+          title="Refresh commit-based goals from GitHub"
+          aria-label="Refresh commit goals"
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-1 text-xs text-[var(--muted-foreground)] transition hover:text-[var(--card-foreground)] hover:border-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>{deleteError}</span>
-          </div>
-          <button
-            onClick={() => setDeleteError(null)}
-            className="text-[var(--destructive)] hover:opacity-80 font-semibold text-xs ml-2"
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`}
+            aria-hidden="true"
           >
-            Dismiss
+            <path
+              fillRule="evenodd"
+              d="M15.312 3.312a.75.75 0 011.06 1.06l-1.43 1.43A8 8 0 1118 10a.75.75 0 01-1.5 0 6.5 6.5 0 10-1.923 4.596l-1.43-1.43a.75.75 0 011.06-1.06l2.75 2.75a.75.75 0 010 1.06l-2.75 2.75a.75.75 0 01-1.06-1.06l1.43-1.43A8 8 0 012 10 8 8 0 0115.312 3.312z"
+              clipRule="evenodd"
+            />
+          </svg>
+          {syncing ? "Syncing…" : "Refresh"}
+        </button>
+      </div>
+
+      {/* Sync Error */}
+      {syncError && (
+        <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-3 py-2 text-xs text-[var(--destructive)]">
+          <span>⚠️ {syncError}</span>
+          <button
+            type="button"
+            onClick={() => setSyncError(null)}
+            className="text-[var(--destructive)] hover:opacity-70 font-semibold"
+            aria-label="Dismiss error"
+          >
+            ✕
           </button>
+        </div>
+      )}
+
+      {/* Delete Error */}
+      {deleteError && (
+        <div className="mb-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-3 text-sm text-[var(--destructive)] flex justify-between items-center">
+          <p>{deleteError}</p>
+          <button onClick={() => setDeleteError(null)} className="text-[var(--destructive)] hover:opacity-80 ml-2" aria-label="Dismiss error">✕</button>
         </div>
       )}
 
@@ -215,13 +292,14 @@ export default function GoalTracker() {
             const isDeleting = deletingId === goal.id;
             const completed = goal.current >= goal.target;
             const completionLabel = getCompletionLabel(goal);
+            const isAutoSynced = goal.unit === "commits";
 
             return (
               <li key={goal.id} className="relative">
                 {activeConfettiGoalId === goal.id && <ConfettiBurst />}
                 <div className="flex justify-between items-center text-sm mb-1">
                   <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[var(--card-foreground)]">{goal.title}</span>
                       {goal.recurrence !== "none" && (
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
@@ -232,9 +310,30 @@ export default function GoalTracker() {
                           {RECURRENCE_LABELS[goal.recurrence]}
                         </span>
                       )}
+                      {isAutoSynced && (
+                        <span
+                          title={
+                            goal.last_synced_at
+                              ? `Last synced: ${new Date(goal.last_synced_at).toLocaleTimeString()}`
+                              : "Auto-synced from GitHub commits"
+                          }
+                          className="inline-flex items-center gap-0.5 rounded-full bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)]"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="w-2.5 h-2.5"
+                            aria-hidden="true"
+                          >
+                            <path d="M11.983 1.907a.75.75 0 00-1.292-.657l-8.5 9.5A.75.75 0 002.75 12h6.572l-1.305 6.093a.75.75 0 001.292.657l8.5-9.5A.75.75 0 0017.25 8h-6.572l1.305-6.093z" />
+                          </svg>
+                          Auto-synced
+                        </span>
+                      )}
                     </div>
                     {completed && (
-                      <span className="text-xs font-medium text-[var(--success)]">
+                      <span className="text-xs font-medium text-emerald-500">
                         {completionLabel}
                       </span>
                     )}
@@ -245,37 +344,31 @@ export default function GoalTracker() {
                       {goal.current}/{goal.target} {goal.unit}
                     </span>
 
-                    <button
-  onClick={async () => {
-    const newCurrent = goal.current + 1;
-
-    if (newCurrent > goal.target) return;
-
-    const res = await fetch(`/api/goals/${goal.id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        current: newCurrent,
-      }),
-    });
-
-    if (res.ok) {
-      setGoals((prevGoals) =>
-        prevGoals.map((g) =>
-          g.id === goal.id
-            ? { ...g, current: newCurrent }
-            : g
-        )
-      );
-    }
-  }}
-  disabled={goal.current >= goal.target}
-  className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
->
-  +1
-</button>
+                    {/* Manual +1 only for non-auto-synced goals */}
+                    {!isAutoSynced && (
+                      <button
+                        onClick={async () => {
+                          const newCurrent = goal.current + 1;
+                          if (newCurrent > goal.target) return;
+                          const res = await fetch(`/api/goals/${goal.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ current: newCurrent }),
+                          });
+                          if (res.ok) {
+                            setGoals((prevGoals) =>
+                              prevGoals.map((g) =>
+                                g.id === goal.id ? { ...g, current: newCurrent } : g
+                              )
+                            );
+                          }
+                        }}
+                        disabled={goal.current >= goal.target}
+                        className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        +1
+                      </button>
+                    )}
 
                     {isConfirming ? (
                       <span className="flex items-center gap-1 text-xs">
@@ -283,7 +376,7 @@ export default function GoalTracker() {
                         <button
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
-                          className="text-[var(--destructive)] hover:text-[var(--destructive)] font-semibold transition-colors disabled:opacity-50"
+                          className="text-[var(--destructive)] hover:opacity-80 font-semibold transition-colors disabled:opacity-50"
                           aria-label={`Confirm delete goal: ${goal.title}`}
                         >
                           Yes
@@ -305,7 +398,7 @@ export default function GoalTracker() {
                         aria-label={`Delete goal: ${goal.title}`}
                         title="Delete goal"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
                           <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
                         </svg>
                       </button>
@@ -315,7 +408,7 @@ export default function GoalTracker() {
 
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
-                    className={`h-full rounded-full transition-all ${completed ? "bg-[var(--success)]" : "bg-[var(--accent)]"}`}
+                    className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -369,15 +462,17 @@ export default function GoalTracker() {
             <label htmlFor="goal-unit" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
               Unit
             </label>
-            <input
+            <select
               id="goal-unit"
-              type="text"
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
-              placeholder="commits"
               disabled={creating}
               className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
-            />
+            >
+              <option value="commits">Commits ⚡</option>
+              <option value="prs">PRs</option>
+              <option value="hours">Hours</option>
+            </select>
           </div>
         </div>
 
@@ -410,6 +505,12 @@ export default function GoalTracker() {
           )}
         </div>
 
+        {unit === "commits" && (
+          <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--accent)]/10 px-3 py-2">
+            ⚡ This goal will auto-update from your GitHub commit count each period.
+          </p>
+        )}
+
         <button
           type="submit"
           disabled={creating || !title.trim()}
@@ -424,7 +525,6 @@ export default function GoalTracker() {
             "Add goal"
           )}
         </button>
-
         {createError && (
           <p className="text-sm text-[var(--destructive)]">{createError}</p>
         )}
