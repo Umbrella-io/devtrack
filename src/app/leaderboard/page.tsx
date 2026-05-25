@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Footer from "@/components/Footer";
 
 type LeaderboardTab = "streak" | "commits" | "prs";
 
@@ -178,6 +179,7 @@ export default async function LeaderboardPage({
           )}
         </section>
       </div>
+      <Footer />
     </main>
   );
 }

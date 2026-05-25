@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Syne, JetBrains_Mono } from "next/font/google";
-import Footer from "@/components/Footer";
 import Providers from "./providers";
 import PWARegister from "@/components/pwa-register";
 import "./globals.css";
@@ -86,8 +85,6 @@ export default function RootLayout({
           <div className="flex-1">
             <Providers>{children}</Providers>
           </div>
-
-          <Footer />
 
           <Toaster richColors position="top-right" />
         </div>

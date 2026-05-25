@@ -27,6 +27,7 @@ import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
 import CodingTimeCard from "@/components/CodingTimeCard";
 import RecentActivity from "@/components/RecentActivity";
+import Footer from "@/components/Footer";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -138,6 +139,7 @@ export default async function DashboardPage() {
       <div className="mt-6">
         <RecentActivity />
       </div>
+      <Footer />
     </div>
   );
 }
