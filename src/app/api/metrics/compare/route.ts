@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
 export const dynamic = "force-dynamic";
 
@@ -13,26 +14,29 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let username = req.nextUrl.searchParams.get("username");
-  if (!username) {
+  const usernameParam = req.nextUrl.searchParams.get("username");
+  if (!usernameParam) {
     return Response.json({ error: "Username required" }, { status: 400 });
   }
 
-  username = username.trim();
+  let username = usernameParam.trim();
   if (username.length === 0) {
     return Response.json({ error: "Username required" }, { status: 400 });
-  }
-
-  if (username.length > 39 || !/^[a-zA-Z0-9-_]+$/.test(username)) {
-    return Response.json({ error: "Invalid username format" }, { status: 400 });
   }
 
   if (username === "me") {
     username = session.githubLogin as string;
   }
 
+  const normalizedUsername = normalizeGitHubUsername(username);
+  if (!normalizedUsername) {
+    return Response.json({ error: "Invalid GitHub username" }, { status: 400 });
+  }
+
+  const encodedUsername = encodeURIComponent(normalizedUsername);
+
   // 1. Verify user exists
-  const userRes = await fetch(`${GITHUB_API}/users/${username}`, {
+  const userRes = await fetch(`${GITHUB_API}/users/${encodedUsername}`, {
     headers: { Authorization: `Bearer ${session.accessToken}` },
     cache: "no-store",
   });
@@ -51,16 +55,22 @@ export async function GET(req: NextRequest) {
   since30.setDate(since30.getDate() - 30);
   const since30Str = since30.toISOString().slice(0, 10);
 
-  const commitsRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${since90Str}&per_page=100&sort=author-date&order=desc`,
-    {
-      headers: {
-        Authorization: `Bearer ${session.accessToken}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    }
+  const commitsUrl = new URL(`${GITHUB_API}/search/commits`);
+  commitsUrl.searchParams.set(
+    "q",
+    `author:${normalizedUsername} author-date:>=${since90Str}`
   );
+  commitsUrl.searchParams.set("per_page", "100");
+  commitsUrl.searchParams.set("sort", "author-date");
+  commitsUrl.searchParams.set("order", "desc");
+
+  const commitsRes = await fetch(commitsUrl.toString(), {
+    headers: {
+      Authorization: `Bearer ${session.accessToken}`,
+      Accept: "application/vnd.github+json",
+    },
+    cache: "no-store",
+  });
 
   let streak = 0;
   let commits30d = 0;
@@ -103,7 +113,11 @@ export async function GET(req: NextRequest) {
   }
 
   // 3. Top Language from repos
-  const reposRes = await fetch(`${GITHUB_API}/users/${username}/repos?per_page=100&sort=pushed`, {
+  const reposUrl = new URL(`${GITHUB_API}/users/${encodedUsername}/repos`);
+  reposUrl.searchParams.set("per_page", "100");
+  reposUrl.searchParams.set("sort", "pushed");
+
+  const reposRes = await fetch(reposUrl.toString(), {
     headers: { Authorization: `Bearer ${session.accessToken}` },
     cache: "no-store",
   });
@@ -121,13 +135,14 @@ export async function GET(req: NextRequest) {
   }
 
   // 4. PRs
-  const prsRes = await fetch(
-    `${GITHUB_API}/search/issues?q=type:pr+author:${username}&per_page=1`,
-    {
-      headers: { Authorization: `Bearer ${session.accessToken}` },
-      cache: "no-store",
-    }
-  );
+  const prsUrl = new URL(`${GITHUB_API}/search/issues`);
+  prsUrl.searchParams.set("q", `type:pr author:${normalizedUsername}`);
+  prsUrl.searchParams.set("per_page", "1");
+
+  const prsRes = await fetch(prsUrl.toString(), {
+    headers: { Authorization: `Bearer ${session.accessToken}` },
+    cache: "no-store",
+  });
   let prs = 0;
   if (prsRes.ok) {
     const prsData = await prsRes.json();
@@ -135,7 +150,7 @@ export async function GET(req: NextRequest) {
   }
 
   return Response.json({
-    username,
+    username: normalizedUsername,
     streak,
     commits30d,
     topLanguage,

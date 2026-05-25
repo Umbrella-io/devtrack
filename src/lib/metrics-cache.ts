@@ -8,6 +8,7 @@ export const METRICS_CACHE_TTL_SECONDS = {
   "inactive-repos": 10 * 60,
   prs: 10 * 60,
   "pr-review-time": 10 * 60,
+  insights: 10 * 60,
   streak: 2 * 60,
   streak_freeze: 2 * 60,
   activity: 5 * 60,
@@ -89,7 +90,7 @@ function isTruthyCacheBypass(value: string | null): boolean {
   return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }
 
-function getRedisClient(): Redis | null {
+export function getRedisClient(): Redis | null {
   if (redisClient !== undefined) {
     return redisClient;
   }

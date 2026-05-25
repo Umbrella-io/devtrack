@@ -6,7 +6,9 @@ create table if not exists users (
   github_login text not null,
   is_public    boolean default false,
   created_at   timestamptz default now(),
-  updated_at   timestamptz default now()
+  updated_at   timestamptz default now(),
+  wakatime_api_key_encrypted text,
+  wakatime_api_key_iv text
 );
 
 create table if not exists goals (
@@ -35,3 +37,22 @@ create table if not exists metric_snapshots (
 );
 
 create index if not exists snapshots_user_time on metric_snapshots(user_id, snapshot_at);
+
+-- -------------------------------------------------------
+-- AI Mentor: cached insights & Claude-generated summaries
+-- -------------------------------------------------------
+create table if not exists ai_insights (
+  id           text primary key default gen_random_uuid()::text,
+  user_id      text not null,
+  insight_type text not null check (insight_type in ('weekly_summary', 'pattern', 'recommendation')),
+  content      jsonb not null,
+  generated_at timestamptz default now(),
+  expires_at   timestamptz default now() + interval '24 hours'
+);
+
+create index if not exists idx_ai_insights_user_id on ai_insights(user_id);
+create index if not exists idx_ai_insights_type    on ai_insights(insight_type);
+
+-- Unique index required by the upsert conflict target in /api/ai-insights
+create unique index if not exists idx_ai_insights_user_type
+  on ai_insights(user_id, insight_type);

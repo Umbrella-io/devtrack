@@ -41,13 +41,26 @@ function calculateCurrentStreak(activeDates: Set<string>): number {
 async function fetchActiveDates(githubLogin: string, token: string): Promise<Set<string>> {
   const since = new Date();
   since.setDate(since.getDate() - 90);
-  const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${since.toISOString().slice(0, 10)}&per_page=100&sort=author-date&order=desc`,
-    { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }, cache: "no-store" }
-  );
-  if (!searchRes.ok) throw new Error("GitHub API error");
-  const data = (await searchRes.json()) as { items: Array<{ commit: { author: { date: string } } }> };
-  return new Set(data.items.map(item => item.commit.author.date.slice(0, 10)));
+  const sinceStr = since.toISOString().slice(0, 10);
+
+  const activeDates = new Set<string>();
+  let page = 1;
+
+  while (true) {
+    const searchRes = await fetch(
+      `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
+      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }, cache: "no-store" }
+    );
+    if (!searchRes.ok) throw new Error("GitHub API error");
+    const data = (await searchRes.json()) as { items: Array<{ commit: { author: { date: string } } }> };
+    for (const item of data.items) {
+      activeDates.add(item.commit.author.date.slice(0, 10));
+    }
+    if (data.items.length < 100 || page >= 10) break;
+    page++;
+  }
+
+  return activeDates;
 }
 
 export async function GET(req: NextRequest) {
