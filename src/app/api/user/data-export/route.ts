@@ -21,7 +21,7 @@ export async function GET() {
 
   const { data: userData } = await supabaseAdmin
     .from("users")
-    .select("*")
+    .select("id, github_login, is_public, leaderboard_opt_in, created_at")
     .eq("id", user.id)
     .single();
   if (userData) {
@@ -35,13 +35,13 @@ export async function GET() {
 
   const { data: goals } = await supabaseAdmin
     .from("goals")
-    .select("*")
+    .select("id, user_id, title, description, status, created_at, updated_at")
     .eq("user_id", user.id);
   sections.goals = goals || [];
 
   const { data: snapshots } = await supabaseAdmin
     .from("metric_snapshots")
-    .select("*")
+    .select("id, user_id, streak_current, streak_longest, total_commits, total_prs, total_issues, snapshot_at")
     .eq("user_id", user.id)
     .order("snapshot_at", { ascending: false })
     .limit(1000);
@@ -62,13 +62,13 @@ export async function GET() {
 
   const { data: streakFreezes } = await supabaseAdmin
     .from("streak_freezes")
-    .select("*")
+    .select("id, user_id, freeze_date, created_at")
     .eq("user_id", user.id);
   sections.streakFreezes = streakFreezes || [];
 
   const { data: streakMilestones } = await supabaseAdmin
     .from("streak_milestones")
-    .select("*")
+    .select("id, user_id, streak_length, milestone_type, achieved_at")
     .eq("user_id", user.id);
   sections.streakMilestones = streakMilestones || [];
 
@@ -80,7 +80,7 @@ export async function GET() {
 
   const { data: localCodingSessions } = await supabaseAdmin
     .from("local_coding_sessions")
-    .select("*")
+    .select("id, user_id, date, duration_minutes, lines_added, lines_deleted, commits_count")
     .eq("user_id", user.id)
     .order("date", { ascending: false })
     .limit(365);

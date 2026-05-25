@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { encryptToken } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ async function fetchUserSettings(userId: string) {
   // Tier 1: All columns
   const res1 = await supabaseAdmin
     .from("users")
-    .select("id, github_login, is_public, leaderboard_opt_in, pinned_repos")
+    .select("id, github_login, is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv")
     .eq("id", userId)
     .single();
 
@@ -20,8 +21,11 @@ async function fetchUserSettings(userId: string) {
       error: null,
       hasLeaderboardOptIn: true,
       hasPinnedRepos: true,
+      hasWakatimeKey: true,
       leaderboard_opt_in: (res1.data as any).leaderboard_opt_in ?? false,
       pinned_repos: (res1.data as any).pinned_repos || [],
+      wakatime_api_key_encrypted: (res1.data as any).wakatime_api_key_encrypted || null,
+      wakatime_api_key_iv: (res1.data as any).wakatime_api_key_iv || null,
     };
   }
 
@@ -31,8 +35,11 @@ async function fetchUserSettings(userId: string) {
       error: res1.error,
       hasLeaderboardOptIn: false,
       hasPinnedRepos: false,
+      hasWakatimeKey: false,
       leaderboard_opt_in: false,
       pinned_repos: [] as string[],
+      wakatime_api_key_encrypted: null,
+      wakatime_api_key_iv: null,
     };
   }
 
@@ -49,8 +56,11 @@ async function fetchUserSettings(userId: string) {
       error: null,
       hasLeaderboardOptIn: true,
       hasPinnedRepos: false,
+      hasWakatimeKey: false,
       leaderboard_opt_in: (res2.data as any).leaderboard_opt_in ?? false,
       pinned_repos: [] as string[],
+      wakatime_api_key_encrypted: null,
+      wakatime_api_key_iv: null,
     };
   }
 
@@ -60,8 +70,11 @@ async function fetchUserSettings(userId: string) {
       error: res2.error,
       hasLeaderboardOptIn: false,
       hasPinnedRepos: false,
+      hasWakatimeKey: false,
       leaderboard_opt_in: false,
       pinned_repos: [] as string[],
+      wakatime_api_key_encrypted: null,
+      wakatime_api_key_iv: null,
     };
   }
 
@@ -78,8 +91,11 @@ async function fetchUserSettings(userId: string) {
       error: null,
       hasLeaderboardOptIn: false,
       hasPinnedRepos: false,
+      hasWakatimeKey: false,
       leaderboard_opt_in: false,
       pinned_repos: [] as string[],
+      wakatime_api_key_encrypted: null,
+      wakatime_api_key_iv: null,
     };
   }
 
@@ -88,8 +104,11 @@ async function fetchUserSettings(userId: string) {
     error: res3.error,
     hasLeaderboardOptIn: false,
     hasPinnedRepos: false,
+    hasWakatimeKey: false,
     leaderboard_opt_in: false,
     pinned_repos: [] as string[],
+    wakatime_api_key_encrypted: null,
+    wakatime_api_key_iv: null,
   };
 }
 
@@ -121,6 +140,7 @@ export async function GET(req: NextRequest) {
     is_public: (result.data as any).is_public,
     leaderboard_opt_in: result.leaderboard_opt_in,
     pinned_repos: result.pinned_repos,
+    has_wakatime_key: !!result.wakatime_api_key_encrypted && !!result.wakatime_api_key_iv,
   });
 }
 
@@ -140,14 +160,14 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  let body: { is_public?: boolean; leaderboard_opt_in?: boolean; pinned_repos?: string[] };
+  let body: { is_public?: boolean; leaderboard_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { is_public, leaderboard_opt_in, pinned_repos } = body;
+  const { is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key } = body;
 
   // Retrieve supported columns first
   const settingsResult = await fetchUserSettings(user.id);
@@ -156,8 +176,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
 
-  const { hasLeaderboardOptIn, hasPinnedRepos } = settingsResult;
-  const updates: { is_public?: boolean; leaderboard_opt_in?: boolean; pinned_repos?: string[] } = {};
+  const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey } = settingsResult;
+  const updates: { is_public?: boolean; leaderboard_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key_encrypted?: string | null; wakatime_api_key_iv?: string | null } = {};
 
   if (is_public !== undefined && is_public !== null && typeof is_public === "boolean") {
     updates.is_public = is_public;
@@ -182,6 +202,27 @@ export async function PATCH(req: NextRequest) {
     updates.pinned_repos = pinned_repos;
   }
 
+  if (hasWakatimeKey && wakatime_api_key !== undefined) {
+    if (wakatime_api_key === "") {
+      updates.wakatime_api_key_encrypted = null;
+      updates.wakatime_api_key_iv = null;
+    } else if (typeof wakatime_api_key === "string") {
+      try {
+        const testRes = await fetch("https://wakatime.com/api/v1/users/current/summaries?range=Today", {
+          headers: { Authorization: `Basic ${Buffer.from(wakatime_api_key + ":").toString("base64")}` },
+        });
+        if (!testRes.ok) {
+          return NextResponse.json({ error: "Invalid Wakatime API key" }, { status: 400 });
+        }
+        const { encrypted, iv } = encryptToken(wakatime_api_key);
+        updates.wakatime_api_key_encrypted = encrypted;
+        updates.wakatime_api_key_iv = iv;
+      } catch (err) {
+        return NextResponse.json({ error: "Failed to validate or encrypt Wakatime key" }, { status: 500 });
+      }
+    }
+  }
+
   // If there are no updates (or none that are supported by the schema)
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({
@@ -190,6 +231,7 @@ export async function PATCH(req: NextRequest) {
       is_public: (settingsResult.data as any).is_public,
       leaderboard_opt_in: settingsResult.leaderboard_opt_in,
       pinned_repos: settingsResult.pinned_repos,
+      has_wakatime_key: !!settingsResult.wakatime_api_key_encrypted && !!settingsResult.wakatime_api_key_iv,
     });
   }
 
@@ -197,6 +239,10 @@ export async function PATCH(req: NextRequest) {
   const selectCols = ["id", "github_login", "is_public"];
   if (hasLeaderboardOptIn) selectCols.push("leaderboard_opt_in");
   if (hasPinnedRepos) selectCols.push("pinned_repos");
+  if (hasWakatimeKey) {
+    selectCols.push("wakatime_api_key_encrypted");
+    selectCols.push("wakatime_api_key_iv");
+  }
 
   const { data: updated, error: updateError } = await supabaseAdmin
     .from("users")
@@ -216,5 +262,6 @@ export async function PATCH(req: NextRequest) {
     is_public: (updated as any).is_public,
     leaderboard_opt_in: (updated as any).leaderboard_opt_in ?? false,
     pinned_repos: (updated as any).pinned_repos || [],
+    has_wakatime_key: !!(updated as any).wakatime_api_key_encrypted && !!(updated as any).wakatime_api_key_iv,
   });
 }
