@@ -1,10 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { formatActivity } from '../src/lib/activity-formatter';
 
-vi.mock('@/lib/supabase', () => ({ supabaseAdmin: {} as any }));
-vi.mock('@/lib/auth', () => ({ authOptions: {} }));
-vi.mock('next-auth', () => ({ getServerSession: vi.fn() }));
-
-import { formatActivity } from '../src/app/api/metrics/activity/route';
 
 describe('formatActivity', () => {
   const baseEvent = {
