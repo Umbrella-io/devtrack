@@ -8,7 +8,7 @@
 
 ### UI Interactions
 
-![DevTrack UI Interactions](./public/assets/gifs/ui-interactions.gif)
+![DevTrack UI Interactions](./public/assets/gifs/feature-hover-demo.gif)
 
 ![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
