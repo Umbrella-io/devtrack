@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import PrivacySettings from "@/components/PrivacySettings";
 import { toast } from "sonner";
@@ -238,9 +239,9 @@ function SettingsPageContent() {
       setCopied(true);
       toast.success("Link copied successfully!");
       setTimeout(() => setCopied(false), 2000);
-    }).catch(() => { 
+    }).catch(() => {
       toast.error("Failed to copy link");
-     });
+    });
   };
 
   const handleRemoveAccount = async (githubId: string) => {
@@ -304,21 +305,27 @@ function SettingsPageContent() {
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] mb-4 transition-colors"
+          >
+            ← Back to Dashboard
+          </Link>
+
           <h1 className="text-3xl font-bold text-[var(--foreground)]">
             Settings
           </h1>
+
           <p className="mt-2 text-[var(--muted-foreground)]">
             Manage your profile and preferences
           </p>
         </div>
-
         {statusMessage && (
           <div
-            className={`mb-6 rounded-xl border p-4 text-sm ${
-              statusMessage.kind === "success"
+            className={`mb-6 rounded-xl border p-4 text-sm ${statusMessage.kind === "success"
                 ? "border-green-500/30 bg-green-500/10 text-green-400"
                 : "border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] text-[var(--destructive)]"
-            }`}
+              }`}
           >
             {statusMessage.message}
           </div>
@@ -347,16 +354,14 @@ function SettingsPageContent() {
                   className="sr-only"
                 />
                 <div
-                  className={`block w-10 h-6 rounded-full transition-colors ${
-                    settings.is_public
+                  className={`block w-10 h-6 rounded-full transition-colors ${settings.is_public
                       ? "bg-[var(--accent)]"
                       : "bg-[var(--control)]"
-                  }`}
+                    }`}
                 />
                 <div
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
-                    settings.is_public ? "translate-x-4" : ""
-                  }`}
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${settings.is_public ? "translate-x-4" : ""
+                    }`}
                 />
               </div>
             </label>
@@ -452,16 +457,14 @@ function SettingsPageContent() {
                   className="sr-only"
                 />
                 <div
-                  className={`block h-6 w-10 rounded-full transition-colors ${
-                    settings.leaderboard_opt_in
+                  className={`block h-6 w-10 rounded-full transition-colors ${settings.leaderboard_opt_in
                       ? "bg-[var(--accent)]"
                       : "bg-[var(--control)]"
-                  }`}
+                    }`}
                 />
                 <div
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
-                    settings.leaderboard_opt_in ? "translate-x-4" : ""
-                  }`}
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${settings.leaderboard_opt_in ? "translate-x-4" : ""
+                    }`}
                 />
               </div>
             </label>
