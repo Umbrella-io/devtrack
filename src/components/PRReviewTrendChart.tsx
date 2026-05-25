@@ -287,6 +287,7 @@ export default function PRReviewTrendChart() {
                     if (point.avgReviewDays === null) {
                       return (
                         <circle
+                          key={`dot-null-${props.index}`}
                           cx={props.cx}
                           cy={props.cy}
                           r={4}
@@ -298,6 +299,7 @@ export default function PRReviewTrendChart() {
 
                     return (
                       <circle
+                        key={`dot-${props.index}`}
                         cx={props.cx}
                         cy={props.cy}
                         r={5}

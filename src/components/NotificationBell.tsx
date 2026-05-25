@@ -89,6 +89,7 @@ export default function NotificationBell() {
         onClick={handleOpen}
         className="relative rounded-lg p-2 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-colors"
         aria-label={`Notifications — ${unreadCount} unread`}
+        suppressHydrationWarning
       >
         {/* icon */}
         <svg
