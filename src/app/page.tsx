@@ -37,12 +37,12 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-24 bg-[var(--background)]">
       {/* Hero Section */}
-      <div className="max-w-3xl text-center">
-        <h1 className="text-6xl font-extrabold mb-6 text-[var(--foreground)] tracking-tight drop-shadow-sm">
+      <div className="max-w-2xl text-center px-2">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6 text-[var(--foreground)] tracking-tight drop-shadow-sm">
           DevTrack
         </h1>
 
-        <p className="text-xl text-[var(--muted-foreground)] leading-relaxed mb-10">
+        <p className="text-base sm:text-xl text-[var(--muted-foreground)] leading-relaxed mb-10">
           Open-source developer productivity dashboard. Track coding habits,
           visualize GitHub contributions, and hit your goals.
         </p>
@@ -68,7 +68,7 @@ export default async function HomePage() {
 
       {/* Features Section */}
       <section className="w-full max-w-6xl mt-32">
-        <h2 className="text-4xl font-bold text-center text-[var(--foreground)] mb-14">
+        <h2 className="text-2xl sm:text-4xl font-bold text-center text-[var(--foreground)] mb-14">
           Everything you need to track your coding growth
         </h2>
 
