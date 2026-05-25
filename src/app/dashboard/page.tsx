@@ -19,6 +19,7 @@ import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
+import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import { AIMentorWidget } from "@/components/AIMentorWidget";
 import ExportButton from "@/components/ExportButton";
@@ -73,6 +74,9 @@ export default async function DashboardPage() {
           </div>
           <div className="mt-6">
             <FriendComparison />
+          </div>
+          <div className="mt-6">
+            <RepoAnalyticsExplorer />
           </div>
         </div>
 
