@@ -70,20 +70,6 @@ export async function POST() {
 
   const today = todayStr();
 
-  const { data: existing } = await supabaseAdmin
-    .from("streak_freezes")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("freeze_date", today)
-    .maybeSingle();
-
-  if (existing) {
-    return Response.json(
-      { error: "You already have an unused streak freeze." },
-      { status: 409 }
-    );
-  }
-
   const { data: freeze, error } = await supabaseAdmin
     .from("streak_freezes")
     .upsert({ user_id: user.id, freeze_date: today }, { onConflict: "user_id,freeze_date" })
