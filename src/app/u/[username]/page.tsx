@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import BadgeSection from "@/components/BadgeSection";
 import StatsCard from "@/components/StatsCard";
 import CopyLinkButton from "@/components/CopyLinkButton";
+import ThemeToggle from "@/components/ThemeToggle"; 
 import { getUserByUsername } from "@/lib/supabase";
 import {
   fetchPublicTopRepos,
@@ -125,16 +126,18 @@ export default async function PublicProfilePage({
           </p>
         </div>
         {/* Download stats card button — client component */}
-        <StatsCard
-          username={profile.username}
-          avatarUrl={avatarUrl}
-          currentStreak={profile.streak.current}
-          longestStreak={profile.streak.longest}
-          totalCommits={profile.contributions.total}
-          topRepo={topRepo}
-        />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <StatsCard
+            username={profile.username}
+            avatarUrl={avatarUrl}
+            currentStreak={profile.streak.current}
+            longestStreak={profile.streak.longest}
+            totalCommits={profile.contributions.total}
+            topRepo={topRepo}
+          />
+        </div>
       </div>
-
       {/* Row 1: Contribution graph + Streak */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
