@@ -103,6 +103,7 @@ export default function Footer() {
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="mailto:doshipriyanshu3@gmail.com"
                 target="_blank"
+                rel="noopener noreferrer"
               >
                   Email
               </a>
