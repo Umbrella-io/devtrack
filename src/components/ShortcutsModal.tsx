@@ -13,7 +13,7 @@ interface ShortcutItem {
 }
 
 const SHORTCUTS: ShortcutItem[] = [
-  { key: "T", action: "Toggle theme" },
+  { key: "Alt + T", action: "Toggle theme" },
   { key: "B", action: "Toggle chart" },
   { key: "R", action: "Reload data" },
   { key: "?", action: "Show shortcuts" },

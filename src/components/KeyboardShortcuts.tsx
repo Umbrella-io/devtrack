@@ -33,7 +33,7 @@ export default function KeyboardShortcuts() {
         return;
       }
 
-      if (e.key.toLowerCase() === "t") {
+      if (e.altKey && e.key.toLowerCase() === "t") {
         keyboardToggleRef.current = true;
         toggleTheme();
         e.preventDefault();
