@@ -11,7 +11,8 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { toDateStr } from "@/lib/dateUtils";
+import { calculateStreakFromDates, toContributionDate } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,7 @@ async function fetchActiveDates(
         };
 
         for (const item of data.items) {
-          activeDates.add(item.commit.author.date.slice(0, 10));
+          activeDates.add(toContributionDate(item.commit.author.date));
         }
 
         if (data.items.length < 100 || page >= 10) break;
@@ -67,73 +68,6 @@ async function fetchActiveDates(
   );
 
   return new Set(dates);
-}
-
-function calculateStreakFromDates(
-  activeDates: Set<string>,
-  freezeDates: Set<string>
-): {
-  current: number;
-  longest: number;
-  lastCommitDate: string | null;
-  totalActiveDays: number;
-  freezeDates: string[];
-} {
-  const combinedDates = new Set<string>([
-    ...Array.from(activeDates),
-    ...Array.from(freezeDates),
-  ]);
-  const commitDays = Array.from(combinedDates).sort();
-
-  if (commitDays.length === 0) {
-    return {
-      current: 0,
-      longest: 0,
-      lastCommitDate: null,
-      totalActiveDays: 0,
-      freezeDates: Array.from(freezeDates),
-    };
-  }
-
-  let longestStreak = 1;
-  let currentRun = 1;
-  const runs: { start: string; end: string; length: number }[] = [];
-  let runStart = commitDays[0];
-
-  for (let i = 1; i < commitDays.length; i++) {
-    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
-    if (diff === 1) {
-      currentRun++;
-      if (currentRun > longestStreak) {
-        longestStreak = currentRun;
-      }
-    } else {
-      runs.push({ start: runStart, end: commitDays[i - 1], length: currentRun });
-      runStart = commitDays[i];
-      currentRun = 1;
-    }
-  }
-  runs.push({
-    start: runStart,
-    end: commitDays[commitDays.length - 1],
-    length: currentRun,
-  });
-
-  const lastDay = commitDays[commitDays.length - 1];
-  const today = toDateStr(new Date());
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
-
-  const lastRun = runs[runs.length - 1];
-  const currentStreak =
-    lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
-
-  return {
-    current: currentStreak,
-    longest: longestStreak,
-    lastCommitDate: lastDay,
-    totalActiveDays: commitDays.length,
-    freezeDates: Array.from(freezeDates),
-  };
 }
 
 export async function GET(req: NextRequest) {

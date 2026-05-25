@@ -51,7 +51,10 @@ describe('StreakTracker - StreakData interface', () => {
 
 describe('StreakTracker - copy to clipboard behavior', () => {
   beforeEach(() => {
-    global.navigator = {} as Navigator;
+    Object.defineProperty(globalThis, 'navigator', {
+      value: {},
+      configurable: true,
+    });
   });
 
   it('copies streak data as formatted string', async () => {
@@ -59,6 +62,7 @@ describe('StreakTracker - copy to clipboard behavior', () => {
     Object.defineProperty(global.navigator, 'clipboard', {
       value: { writeText: writeTextMock },
       writable: true,
+      configurable: true,
     });
 
     const streakData = 'Current: 15 days | Longest: 30 days';
@@ -70,6 +74,7 @@ describe('StreakTracker - copy to clipboard behavior', () => {
     Object.defineProperty(global.navigator, 'clipboard', {
       value: undefined,
       writable: true,
+      configurable: true,
     });
     expect(global.navigator.clipboard).toBeUndefined();
   });
