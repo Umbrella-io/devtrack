@@ -107,6 +107,13 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/ci**",
     "**/api/streak/freeze**",
     "**/api/user/github-accounts**",
+    "**/api/metrics/activity**",
+    "**/api/metrics/commit-time**",
+    "**/api/metrics/personal-records**",
+    "**/api/metrics/discussions**",
+    "**/api/metrics/pr-review-trend**",
+    "**/api/metrics/inactive-repos**",
+    "**/api/notifications**",
   ];
 
   for (const pattern of metricRoutes) {
@@ -117,6 +124,15 @@ test.beforeEach(async ({ page }) => {
       });
     });
   }
+
+  // Mock goals/sync so GoalTracker doesn't hang waiting for Supabase
+  await page.route("**/api/goals/sync**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      status: 200,
+      body: JSON.stringify({ ok: true }),
+    });
+  });
 });
 
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
