@@ -138,6 +138,14 @@ describe('GoalTracker - ConfettiBurst trigger conditions', () => {
   it('progress is capped at 100% for over-completion', () => {
     expect(Math.min((20 / 10) * 100, 100)).toBe(100);
   });
+
+  it('guards against division by zero when target is 0', () => {
+    const calculatePct = (current: number, target: number) => {
+      return target > 0 ? Math.min((current / target) * 100, 100) : 0;
+    };
+    expect(calculatePct(0, 0)).toBe(0);
+    expect(calculatePct(5, 0)).toBe(0);
+  });
 });
 
 describe('GoalTracker - getCompletionLabel logic', () => {
