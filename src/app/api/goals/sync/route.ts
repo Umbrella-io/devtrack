@@ -59,9 +59,9 @@ export async function POST() {
   // Use a range filter (.gte / .lte) instead of string equality.
   const { data: commitGoals, error: goalsError } = await supabaseAdmin
     .from("goals")
-    .select("id")
+    .select("id, unit")
     .eq("user_id", user.id)
-    .eq("unit", "commits")
+    .in("unit", ["commits", "prs"])
     .gte("period_start", weekStart)
     .lte("period_start", weekEnd);
 
@@ -94,16 +94,47 @@ export async function POST() {
 
   // ── 4. Update all commit-based goals with the real commit count ───────────
   const now = new Date().toISOString();
-  const ids = commitGoals.map((g) => g.id);
+  const commitGoalsToUpdate = commitGoals.filter(g => g.unit === "commits");
+  const prGoalsToUpdate = commitGoals.filter(g => g.unit === "prs");
 
-  const { error: updateError } = await supabaseAdmin
-    .from("goals")
-    .update({ current: commitCount, last_synced_at: now })
-    .in("id", ids);
+  let totalUpdated = 0;
 
-  if (updateError) {
-    return Response.json({ error: "Failed to update goals" }, { status: 500 });
+  // Update commits
+  if (commitGoalsToUpdate.length > 0) {
+    const commitIds = commitGoalsToUpdate.map(g => g.id);
+    await supabaseAdmin
+      .from("goals")
+      .update({ current: commitCount, last_synced_at: now })
+      .in("id", commitIds);
+    totalUpdated += commitIds.length;
   }
 
-  return Response.json({ updated: ids.length, commitCount });
+  // Count PRs for the current week
+  if (prGoalsToUpdate.length > 0) {
+    const prRes = await fetch(
+      `${GITHUB_API}/search/issues?q=author:${session.githubLogin}+type:pr+is:merged+merged:${weekStart}..${weekEnd}&per_page=100`,
+      {
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+          Accept: "application/vnd.github+json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (prRes.ok) {
+      const prData = await prRes.json() as { total_count: number };
+      const prCount = prData.total_count || 0;
+      const prIds = prGoalsToUpdate.map(g => g.id);
+      
+      await supabaseAdmin
+        .from("goals")
+        .update({ current: prCount, last_synced_at: now })
+        .in("id", prIds);
+      
+      totalUpdated += prIds.length;
+    }
+  }
+
+  return Response.json({ updated: totalUpdated, commitCount });
 }
