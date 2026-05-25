@@ -437,9 +437,9 @@ function CommitTicker() {
       borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`,
       padding: '10px 0', overflow: 'hidden', background: BG,
     }}>
-      <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold">
+      <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold">
   DevTrack
-</h1>
+</h2>
       <div className="lnd-ticker" style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap' }}>
         {doubled.map((c, i) => (
           <span
