@@ -6,7 +6,9 @@ create table if not exists users (
   github_login text not null,
   is_public    boolean default false,
   created_at   timestamptz default now(),
-  updated_at   timestamptz default now()
+  updated_at   timestamptz default now(),
+  wakatime_api_key_encrypted text,
+  wakatime_api_key_iv text
 );
 
 create table if not exists goals (
