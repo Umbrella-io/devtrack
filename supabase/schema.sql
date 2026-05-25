@@ -4,6 +4,7 @@ create table if not exists users (
   id           text primary key default gen_random_uuid()::text,
   github_id    text unique not null,
   github_login text not null,
+  webhook_url  text,
   bio          text default '' check (char_length(bio) <= 500),
   is_public    boolean default false,
   leaderboard_opt_in boolean default false,
