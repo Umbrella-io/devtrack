@@ -31,7 +31,6 @@ interface User {
  * Look up a user by GitHub username only if their profile is public.
  * Returns the user row if found and is_public is true, otherwise null.
  */
- fix-settings-api-500
 export async function getUserByUsername(
   username: string
 ): Promise<User | null> {
@@ -50,16 +49,6 @@ export async function getUserByUsername(
         // No rows found
         return null;
       }
-
-export async function getUserByUsername(username: string): Promise<User | null> {
-  const { data, error } = await supabaseAdmin
-    .from("users")
-    .select("id,github_id,github_login,is_public,created_at,updated_at")
-    .eq("github_login", username)
-    .eq("is_public", true)
-    .single();
- main
-
       console.error("Error fetching user:", error);
       return null;
     }
@@ -78,7 +67,6 @@ export async function updateUserPublicFlag(
   userId: string,
   isPublic: boolean
 ): Promise<User | null> {
- fix-settings-api-500
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
@@ -93,14 +81,6 @@ export async function updateUserPublicFlag(
       console.error("Error updating user public flag:", error);
       return null;
     }
-
-  const { data, error } = await supabaseAdmin
-    .from("users")
-    .update({ is_public: isPublic })
-    .eq("id", userId)
-    .select("id,github_id,github_login,is_public,created_at,updated_at")
-    .single();
- main
 
     return data as User;
   } catch (err) {
