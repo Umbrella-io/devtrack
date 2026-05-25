@@ -147,7 +147,7 @@ export default function WrappedPage() {
 
       <div className="relative z-50 mt-8 flex gap-4">
         <a 
-          href={`https://twitter.com/intent/tweet?text=Check out my ${data.year} Year in Code on DevTrack!&url=https://devtrack.com`}
+          href={tweetUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-full bg-blue-500 px-6 py-2 font-medium text-white transition hover:bg-blue-600"
@@ -186,8 +186,16 @@ export default function WrappedPage() {
       </div>
 
       {/* Click areas for navigation */}
-      <div className="absolute inset-y-0 left-0 z-40 w-1/3 cursor-pointer" onClick={handlePrev}></div>
-      <div className="absolute inset-y-0 right-0 z-40 w-2/3 cursor-pointer" onClick={handleNext}></div>
+      <button 
+        aria-label="Previous slide"
+        className="absolute inset-y-0 left-0 z-40 w-1/3 appearance-none bg-transparent outline-none cursor-pointer" 
+        onClick={handlePrev} 
+      />
+      <button 
+        aria-label="Next slide"
+        className="absolute inset-y-0 right-0 z-40 w-2/3 appearance-none bg-transparent outline-none cursor-pointer" 
+        onClick={handleNext} 
+      />
 
       {/* Slides */}
       <div className="relative z-10 h-full w-full">

@@ -2,8 +2,6 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { GITHUB_API } from "@/lib/github";
-import { resolveAppUser } from "@/lib/resolve-user";
-import { dateDiffDays } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +24,10 @@ export async function GET(req: NextRequest) {
 
   const yearParam = req.nextUrl.searchParams.get("year");
   const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
+
+  if (!Number.isFinite(year) || year < 1970 || year > 2100) {
+    return NextResponse.json({ error: "Invalid year" }, { status: 400 });
+  }
 
   const from = `${year}-01-01T00:00:00Z`;
   const to = `${year}-12-31T23:59:59Z`;
@@ -68,7 +70,7 @@ export async function GET(req: NextRequest) {
       }
     `;
 
-    const [graphqlRes, prSearchRes, commitSearchRes] = await Promise.all([
+    const [graphqlRes, prSearchRes] = await Promise.all([
       fetch("https://api.github.com/graphql", {
         method: "POST",
         headers: {
@@ -80,10 +82,6 @@ export async function GET(req: NextRequest) {
       }),
       fetch(`${GITHUB_API}/search/issues?q=type:pr+author:${login}+is:merged+created:${year}-01-01..${year}-12-31&per_page=1`, {
         headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      }),
-      fetch(`${GITHUB_API}/search/commits?q=author:${login}+author-date:${year}-01-01..${year}-12-31&per_page=100`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       })
     ]);
@@ -153,27 +151,33 @@ export async function GET(req: NextRequest) {
 
     // Peak hour
     let peakHour = null;
-    if (commitSearchRes.ok) {
-      const commitData = await commitSearchRes.json();
-      const items = commitData.items || [];
-      if (items.length > 0) {
-        const hourCounts: Record<number, number> = {};
-        for (const item of items) {
-          const date = new Date(item.commit.author.date);
-          const hour = date.getHours(); // Local hour of the user based on server processing? 
-          // Wait, server time is UTC. Let's just use getUTCHours or assume user's timezone if possible.
-          // Since it's server side, let's just use getHours() which will be UTC or server local.
-          // To be precise we should pass the client timezone, but for simplicity let's use UTC hour and tell user "UTC".
-          // Actually, many developers use UTC. Or we can just do getHours().
-          const h = date.getHours();
-          hourCounts[h] = (hourCounts[h] || 0) + 1;
-        }
-        let maxCount = -1;
-        for (const [hour, count] of Object.entries(hourCounts)) {
-          if (count > maxCount) {
-            maxCount = count;
-            peakHour = parseInt(hour, 10);
-          }
+    let allCommitItems: any[] = [];
+    let page = 1;
+    while (page <= 10) {
+      const commitRes = await fetch(`${GITHUB_API}/search/commits?q=author:${login}+author-date:${year}-01-01..${year}-12-31&per_page=100&page=${page}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      });
+      if (!commitRes.ok) break;
+      const data = await commitRes.json();
+      const items = data.items || [];
+      allCommitItems = allCommitItems.concat(items);
+      if (items.length < 100) break;
+      page++;
+    }
+
+    if (allCommitItems.length > 0) {
+      const hourCounts: Record<number, number> = {};
+      for (const item of allCommitItems) {
+        const date = new Date(item.commit.author.date);
+        const h = date.getUTCHours();
+        hourCounts[h] = (hourCounts[h] || 0) + 1;
+      }
+      let maxCount = -1;
+      for (const [hour, count] of Object.entries(hourCounts)) {
+        if (count > maxCount) {
+          maxCount = count;
+          peakHour = parseInt(hour, 10);
         }
       }
     }
