@@ -25,6 +25,7 @@ import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
+import CodingTimeCard from "@/components/CodingTimeCard";
 import RecentActivity from "@/components/RecentActivity";
 import DashboardHeader from "@/components/DashboardHeader";
 import { authOptions } from "@/lib/auth";
@@ -82,6 +83,9 @@ export default async function DashboardPage() {
         <div>
           <StreakTracker />
           <LocalCodingTime />
+          <div className="mt-6">
+            <CodingTimeCard />
+          </div>
         </div>
       </div>
 
