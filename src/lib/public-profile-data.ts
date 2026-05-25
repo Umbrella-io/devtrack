@@ -1,4 +1,5 @@
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import type { GitHubAchievement } from "@/lib/github-achievements";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -27,6 +28,8 @@ export interface PublicProfileData {
   repos: TopRepo[];
   contributions: ContributionData;
   streak: StreakData;
+  achievements: GitHubAchievement[];
+  achievementsError?: string | null;
 }
 
 async function ghFetch(url: string, token?: string): Promise<Response> {
