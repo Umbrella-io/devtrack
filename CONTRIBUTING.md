@@ -40,6 +40,7 @@ First-time contributors: start with `good-first-issue` only.
 
 ## Setting Up Locally
 
+
 Full step-by-step guide: **[DEVELOPMENT.md](./DEVELOPMENT.md)**
 
 Short version:
@@ -56,7 +57,21 @@ npm run dev
 Stuck? Check [Common errors](./DEVELOPMENT.md#common-errors) in `DEVELOPMENT.md` first.
 
 ---
+## Keeping Your Fork Up to Date
 
+Before starting work on a new issue, sync your fork with the upstream repository to avoid merge conflicts.
+
+```bash
+git remote add upstream https://github.com/Priyanshu-byte-coder/devtrack.git
+git fetch upstream
+git checkout main
+git merge upstream/main
+git push origin main
+```
+
+You only need to add the `upstream` remote once. After that, use `git fetch upstream` and merge regularly before creating a new branch.
+
+---
 ## Project Structure
 
 Key files:
@@ -105,6 +120,23 @@ docs: add Supabase setup troubleshooting
 ---
 
 ## Submitting a PR
+
+
+
+### Pre-PR Checklist
+
+Before opening a Pull Request, make sure:
+
+- [ ] The issue is assigned to you
+- [ ] Your branch is based on the latest `main`
+- [ ] `npm run lint` passes without errors
+- [ ] No unnecessary files are included
+- [ ] Documentation has been updated if needed
+- [ ] The PR description is filled out completely
+- [ ] The issue is linked using `Closes #<issue-number>`
+- [ ] You have tested your changes locally
+
+Following this checklist helps speed up the review process and reduces the likelihood of review revisions.
 
 1. Push your branch to your fork
 2. Open a PR against `main`
