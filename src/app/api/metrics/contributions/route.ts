@@ -6,7 +6,7 @@ import {
   getAllAccounts,
   mergeMetrics,
 } from "@/lib/github-accounts";
-import { GITHUB_API, GitHubCommitSearchItem, CommitItem } from "@/lib/github";
+import { GITHUB_API, GitHubCommitSearchItem, CommitItem, searchOrgCommits } from "@/lib/github";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -274,6 +274,61 @@ async function mergeGitLabContributions(
   };
 }
 
+async function fetchOrgContributions(
+  token: string,
+  orgName: string,
+  githubLogin: string,
+  days: number,
+  cacheContext: { bypass: boolean; userId: string }
+): Promise<ContributionResponse> {
+  const key = metricsCacheKey(cacheContext.userId, "contributions", {
+    days,
+    org: orgName,
+  });
+
+  return withMetricsCache(
+    {
+      bypass: cacheContext.bypass,
+      key,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.contributions,
+    },
+    async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      const sinceStr = toLocalDateStr(since);
+
+      const allItems = await searchOrgCommits(
+        token,
+        orgName,
+        githubLogin,
+        sinceStr
+      );
+
+      const commitsByDay: Record<string, number> = {};
+      const commitItems: CommitItem[] = [];
+
+      for (const item of allItems) {
+        const date = item.commit.author.date.slice(0, 10);
+        commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
+        commitItems.push({
+          sha: item.sha,
+          message: item.commit.message.split("\n")[0],
+          date,
+          repo: item.repository?.full_name ?? "unknown",
+          url: item.html_url,
+        });
+      }
+
+      return {
+        days,
+        total: allItems.length,
+        data: commitsByDay,
+        commits: commitItems,
+      };
+    }
+  );
+}
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken || !session.githubLogin) {
@@ -307,6 +362,31 @@ export async function GET(req: NextRequest) {
 
   if (usernameParam && !username) {
     return Response.json({ error: "Invalid GitHub username" }, { status: 400 });
+  }
+
+  // Org mode path: fetch contributions from an organization
+  if (accountId?.startsWith("org:")) {
+    try {
+      const orgName = accountId.slice(4); // Remove "org:" prefix
+      if (!orgName) {
+        return Response.json({ error: "Invalid organization name" }, { status: 400 });
+      }
+
+      if (!session.githubId) {
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      const result = await fetchOrgContributions(
+        session.accessToken,
+        orgName,
+        session.githubLogin,
+        days,
+        { bypass, userId: session.githubId }
+      );
+      return Response.json(result);
+    } catch {
+      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    }
   }
 
   // Compare mode path: explicitly fetch contributions for a target username.

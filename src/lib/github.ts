@@ -192,3 +192,135 @@ export async function fetchIssuesMetrics(
     mostActiveRepo,
   };
 }
+
+/**
+ * Fetch organizations the user is a member of
+ */
+export interface GitHubOrg {
+  id: number;
+  login: string;
+  avatar_url: string;
+  description: string | null;
+  public_repos: number;
+  type: "Organization" | "User";
+}
+
+export async function fetchUserOrgs(token: string): Promise<GitHubOrg[]> {
+  const orgs: GitHubOrg[] = [];
+  const perPage = 100;
+
+  for (let page = 1; page <= 10; page++) {
+    const res = await githubFetch(
+      `${GITHUB_API}/user/orgs?per_page=${perPage}&page=${page}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+      }
+    );
+
+    if (!res.ok) {
+      if (res.status === 403) {
+        // read:org scope not available
+        return [];
+      }
+      throw new Error(`GitHub API error: ${res.status}`);
+    }
+
+    const pageOrgs = (await res.json()) as GitHubOrg[];
+    orgs.push(...pageOrgs);
+
+    if (pageOrgs.length < perPage) {
+      break;
+    }
+  }
+
+  return orgs;
+}
+
+/**
+ * Fetch repositories for a specific organization
+ */
+export interface FetchOrgReposOptions {
+  perPage?: number;
+  maxPages?: number;
+}
+
+export async function fetchOrgRepos(
+  token: string,
+  orgName: string,
+  options: FetchOrgReposOptions = {}
+): Promise<GitHubRepo[]> {
+  const perPage = options.perPage ?? 100;
+  const maxPages = options.maxPages ?? 10;
+  const repos: GitHubRepo[] = [];
+
+  for (let page = 1; page <= maxPages; page++) {
+    const res = await githubFetch(
+      `${GITHUB_API}/orgs/${orgName}/repos?per_page=${perPage}&page=${page}&sort=pushed&direction=desc`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+      }
+    );
+
+    if (!res.ok) {
+      if (res.status === 404 || res.status === 403) {
+        // Org doesn't exist or user doesn't have access
+        return [];
+      }
+      throw new Error(`GitHub API error: ${res.status}`);
+    }
+
+    const pageRepos = (await res.json()) as GitHubRepo[];
+    repos.push(...pageRepos);
+
+    if (pageRepos.length < perPage) {
+      break;
+    }
+  }
+
+  return repos;
+}
+
+/**
+ * Search for commits in organization repositories
+ */
+export async function searchOrgCommits(
+  token: string,
+  orgName: string,
+  author: string,
+  since?: string,
+  until?: string
+): Promise<GitHubCommitSearchItem[]> {
+  let query = `org:${orgName} author:${author}`;
+
+  if (since) {
+    query += ` committer-date:>=${since}`;
+  }
+  if (until) {
+    query += ` committer-date:<=${until}`;
+  }
+
+  const res = await githubFetch(
+    `${GITHUB_API}/search/commits?q=${encodeURIComponent(query)}&per_page=100`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github.cloak-preview+json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    // If search fails, return empty array (likely due to missing scope)
+    return [];
+  }
+
+  const data = (await res.json()) as { items?: GitHubCommitSearchItem[] };
+  return data.items ?? [];
+}
