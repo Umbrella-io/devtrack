@@ -156,9 +156,12 @@ function LandingNav() {
       <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: TEXT, letterSpacing: '-0.02em' }}>
         <span style={{ color: A }}>▲</span> DEVTRACK
       </span>
-      <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-nav-link">
-        SIGN IN →
-      </a>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+        <a href="/dashboard" className="lnd-nav-link">Dashboard</a>
+        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-nav-link">
+          SIGN IN →
+        </a>
+      </div>
     </nav>
   );
 }
