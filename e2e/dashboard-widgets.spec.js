@@ -15,6 +15,7 @@ test.beforeEach(async ({ page }) => {
       accessToken: "test-token",
     },
     maxAge: 60 * 60,
+    cookieName: "next-auth.session-token",
   });
 
   await page.context().addCookies([
@@ -89,6 +90,45 @@ test.beforeEach(async ({ page }) => {
             period_start: "2026-05-18",
           },
         ],
+      }),
+    });
+  });
+
+  await page.route("**/api/goals/sync", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ updated: 1, commitCount: 4 }),
+    });
+  });
+
+  await page.route("**/api/ai-insights**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: {
+          insights: [
+            {
+              id: "insight-1",
+              type: "productivity",
+              title: "High Consistency",
+              description: "You have coded 5 days this week!",
+              severity: "positive",
+            },
+          ],
+          trend: { direction: "up", percentage: 15 },
+          aiSummary: "Great job shipping features this week. Keep up the high standard!",
+          generatedAt: "2026-05-18T12:00:00.000Z",
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/notifications**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        notifications: [],
+        unreadCount: 0,
       }),
     });
   });

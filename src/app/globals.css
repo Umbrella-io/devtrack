@@ -29,24 +29,23 @@
 
 .dark {
   color-scheme: dark;
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --muted-foreground: #94a3b8;
-  --card: #1e293b;
-  --card-foreground: #f8fafc;
-  --card-muted: #334155;
-  --border: #334155;
+  --background: #080808;
+  --foreground: #e8e8e8;
+  --muted-foreground: #666666;
+  --card: #0e0e0e;
+  --card-foreground: #e8e8e8;
+  --card-muted: #161616;
+  --border: #222222;
   --accent: #818cf8;
   --success: #10b981;
   --warning: #fbbf24;
   --destructive: #f87171;
-  --accent-soft: rgba(99, 102, 241, 0.2);
-  --accent-foreground: #ffffff;
-  --control: #334155;
-  --control-hover: #475569;
-  --tooltip: #1e293b;
-  --tooltip-foreground: #f8fafc;
-  --destructive: #f87171;
+  --accent-soft: rgba(129, 140, 248, 0.12);
+  --accent-foreground: #000000;
+  --control: #161616;
+  --control-hover: #252525;
+  --tooltip: #0e0e0e;
+  --tooltip-foreground: #e8e8e8;
   --destructive-muted: rgba(248, 113, 113, 0.1);
   --destructive-muted-border: rgba(248, 113, 113, 0.3);
   --destructive-foreground: #ffffff;
@@ -84,6 +83,24 @@ body {
 .fade-up {
   animation: fadeUp 0.7s ease-out;
 }
+
+/* ─────────────────────────────────────────
+   DARK MODE GLOBAL TYPOGRAPHY
+   ───────────────────────────────────────── */
+.dark h1 {
+  font-family: var(--font-syne, system-ui, sans-serif);
+  letter-spacing: -0.03em;
+}
+
+/* Slim dark scrollbar matching theme */
+.dark {
+  scrollbar-width: thin;
+  scrollbar-color: #222 transparent;
+}
+.dark::-webkit-scrollbar       { width: 6px; height: 6px; }
+.dark::-webkit-scrollbar-track { background: transparent; }
+.dark::-webkit-scrollbar-thumb { background: #222; border-radius: 6px; }
+.dark::-webkit-scrollbar-thumb:hover { background: #333; }
 
 /* ─────────────────────────────────────────
    LANDING PAGE
