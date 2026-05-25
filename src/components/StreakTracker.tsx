@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { toPng } from "html-to-image";
 
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
+const STREAK_FREEZE_TOOLTIP =
+  "A streak freeze protects your streak for one missed day. You can only use one freeze at a time.";
 
 interface StreakData {
   current: number;
@@ -46,6 +48,7 @@ export default function StreakTracker() {
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [applyingFreeze, setApplyingFreeze] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -186,6 +189,38 @@ export default function StreakTracker() {
       fetchFreeze();
     } finally {
       setCancelling(false);
+    }
+  }
+
+  async function handleApplyFreeze() {
+    setApplyingFreeze(true);
+
+    try {
+      const res = await fetch("/api/streak/freeze", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to apply freeze");
+
+      const streakUrl =
+        selectedAccount !== null
+          ? `/api/metrics/streak?accountId=${encodeURIComponent(selectedAccount)}`
+          : "/api/metrics/streak";
+      const [streakRes, freezeRes] = await Promise.all([
+        fetch(streakUrl),
+        fetch("/api/streak/freeze"),
+      ]);
+      const [streakData, freezeData] = await Promise.all([
+        streakRes.json() as Promise<StreakData>,
+        freezeRes.json() as Promise<FreezeData>,
+      ]);
+
+      setData(streakData);
+      setFreeze(freezeData);
+      setFreezeDates(streakData.freezeDates || []);
+      toast.success("Streak freeze activated.");
+    } catch {
+      fetchFreeze();
+      toast.error("Couldn't activate your streak freeze. Please try again.");
+    } finally {
+      setApplyingFreeze(false);
     }
   }
 
@@ -537,6 +572,32 @@ export default function StreakTracker() {
             ? "Updated just now"
             : `Updated ${minutesAgo} min ago`}
         </p>
+      )}
+
+      {!freezeLoading && !freeze?.hasFreeze && (
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3">
+          <span className="text-sm font-medium text-[var(--card-foreground)]">Protect your streak</span>
+          <div className="group relative">
+            <button
+              type="button"
+              onClick={handleApplyFreeze}
+              disabled={applyingFreeze}
+              aria-describedby="streak-freeze-tooltip"
+              title={STREAK_FREEZE_TOOLTIP}
+              className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {applyingFreeze ? "Freezing..." : "Freeze Streak"}
+            </button>
+            <div
+              id="streak-freeze-tooltip"
+              role="tooltip"
+              className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 w-64 rounded-lg bg-[var(--tooltip)] px-3 py-2 text-xs font-medium text-[var(--tooltip-foreground)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 group-active:opacity-100"
+            >
+              {STREAK_FREEZE_TOOLTIP}
+              <div className="absolute right-6 top-full h-2 w-2 rotate-45 bg-[var(--tooltip)]" />
+            </div>
+          </div>
+        </div>
       )}
 
       {!freezeLoading && freeze?.hasFreeze && (
