@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import PRStatusDonutChart from "./PRStatusDonutChart";
+import MiniPRTrendChart from "./MiniPRTrendChart";
+
 interface ReviewMetrics {
   totalReviews: number;
   approvalRate: string;
@@ -203,6 +205,7 @@ export default function PRMetrics() {
                 </div>
               ))}
             </div>
+            <MiniPRTrendChart />
           </div>
 
           {/* PR status donut chart */}
