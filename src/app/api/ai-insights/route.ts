@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { weeklyProductivityPrompt } from "@/lib/ai-prompts";
 import {
   analyzePatterns,
   computeTrends,
@@ -128,18 +129,16 @@ export async function GET(request: Request) {
           ? `+${trend.percentage}%`
           : `-${trend.percentage}%`;
 
-      const prompt = `You are a senior engineering mentor reviewing a developer's GitHub activity from the past week.
-
-Here is their data:
-- Active coding days: ${metrics.streak.activeDays}
-- Current streak: ${metrics.streak.current} days
-- Total commits (90d): ${totalCommits}
-- PRs merged: ${metrics.prs.merged}, open: ${metrics.prs.open}
-- Avg PR merge time: ${metrics.prs.avgMergeTimeDays.toFixed(1)} days
-- Top repository: ${topRepoName}
-- Activity trend: ${trendLabel} vs prior period
-
-Write a warm, concise 3-sentence weekly summary. Start with a highlight, add one observation, end with one actionable tip. Address the developer as "you". No bullet points.`;
+      const prompt = weeklyProductivityPrompt({
+        activeDays: metrics.streak.activeDays,
+        currentStreak: metrics.streak.current,
+        totalCommits,
+        prsMerged: metrics.prs.merged,
+        prsOpen: metrics.prs.open,
+        avgMergeTimeDays: metrics.prs.avgMergeTimeDays,
+        topRepoName,
+        trendLabel,
+      });
 
       const groqRes = await fetch(
         "https://api.groq.com/openai/v1/chat/completions",
