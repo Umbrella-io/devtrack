@@ -37,7 +37,7 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-20">
       <div className="max-w-2xl text-center">
-        <h1 className="text-5xl font-bold mb-4 text-[var(--foreground)]">
+        <h1 className="text-3xl sm:text-5xl break-words font-bold mb-4 text-[var(--foreground)]">
           DevTrack
         </h1>
         <p className="text-xl text-[var(--muted-foreground)] mb-8">
@@ -73,7 +73,7 @@ export default async function HomePage() {
               key={feature.title}
               className="border border-[var(--border)] rounded-2xl p-6 bg-[var(--card)] hover:border-[var(--muted-foreground)] transition"
             >
-              <div className="text-4xl mb-4">{feature.icon}</div>
+              <div className="text-2xl sm:text-4xl mb-4">{feature.icon}</div>
 
               <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
                 {feature.title}

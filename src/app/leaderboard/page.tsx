@@ -76,7 +76,7 @@ export default async function LeaderboardPage({
             >
               DevTrack
             </Link>
-            <h1 className="mt-3 text-3xl font-bold text-[var(--foreground)] md:text-4xl">
+            <h1 className="mt-3 text-3xl font-bold text-[var(--foreground)] md:text-2xl sm:text-4xl">
               Public Leaderboard
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-[var(--muted-foreground)] md:text-base">
@@ -111,8 +111,10 @@ export default async function LeaderboardPage({
           })}
         </div>
 
-        <section className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
-          <div className="grid grid-cols-[72px_1fr_110px_110px] border-b border-[var(--border)] bg-[var(--control)] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)] md:grid-cols-[80px_1fr_140px_140px_120px]">
+        <section className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
+          <div className="grid grid-cols-[56px_minmax(0,1fr)_80px_80px]
+sm:grid-cols-[56px_minmax(0,1fr)_80px_80px]
+sm:grid-cols-[72px_1fr_110px_110px] border-b border-[var(--border)] bg-[var(--control)] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)] md:grid-cols-[80px_1fr_140px_140px_120px]">
             <div>Rank</div>
             <div>Contributor</div>
             <div>{activeMeta.label}</div>
@@ -132,7 +134,7 @@ export default async function LeaderboardPage({
             rows.map((entry) => (
               <div
                 key={`${activeTab}-${entry.username}`}
-                className="grid grid-cols-[72px_1fr_110px_110px] items-center border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[80px_1fr_140px_140px_120px]"
+                className="grid grid-cols-[56px_minmax(0,1fr)_80px_80px] sm:grid-cols-[72px_1fr_110px_110px] items-center border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[80px_1fr_140px_140px_120px]"
               >
                 <div className="text-lg font-bold text-[var(--card-foreground)]">
                   #{entry.rank}

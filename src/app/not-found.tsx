@@ -6,12 +6,12 @@ export default function NotFound() {
       <div className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--card)] p-8 shadow-sm">
         <div className="mb-6 flex justify-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--accent-soft)]">
-            <span className="text-4xl" role="img" aria-label="Not Found">
+            <span className="text-2xl sm:text-4xl" role="img" aria-label="Not Found">
               🕳️
             </span>
           </div>
         </div>
-        <h1 className="mb-2 text-4xl font-bold text-[var(--card-foreground)]">404</h1>
+        <h1 className="mb-2 text-2xl sm:text-4xl font-bold text-[var(--card-foreground)]">404</h1>
         <h2 className="mb-4 text-xl font-semibold text-[var(--card-foreground)]">
           Oops! Page not found
         </h2>

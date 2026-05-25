@@ -209,7 +209,7 @@ export default function StreakTracker() {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm min-h-[420px]">
         <div className="flex h-full flex-col items-center justify-center text-center">
-          <div className="mb-4 text-4xl">📉</div>
+          <div className="mb-4 text-2xl sm:text-4xl">📉</div>
 
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
             No contribution data found

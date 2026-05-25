@@ -80,7 +80,7 @@ export default async function PublicProfilePage({
     return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors flex items-center justify-center">
         <div className="text-center max-w-md">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+          <h1 className="text-3xl md:text-2xl sm:text-4xl font-bold mb-2">
             Profile Not Found
           </h1>
           <p className="text-[var(--muted-foreground)] mb-2">
@@ -115,7 +115,7 @@ export default async function PublicProfilePage({
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
+            <h1 className="text-3xl md:text-2xl sm:text-4xl font-bold text-[var(--foreground)]">
               @{profile.username}&apos;s Profile
             </h1>
             <CopyLinkButton />
