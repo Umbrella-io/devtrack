@@ -2,6 +2,14 @@
 
 > Open-source developer productivity dashboard — track coding habits, visualize GitHub contribution patterns, and set personal development goals.
 
+### Dashboard Overview
+
+![DevTrack Dashboard Demo](./public/assets/gifs/dashboard-demo.gif)
+
+### UI Interactions
+
+![DevTrack UI Interactions](./public/assets/gifs/ui-interactions.gif)
+
 ![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
@@ -21,28 +29,28 @@ Developer metrics are scattered across GitHub, Jira, Notion, and half a dozen ot
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| **GitHub OAuth** | Sign in with GitHub — no extra account needed |
+| Feature                   | Description                                                              |
+| ------------------------- | ------------------------------------------------------------------------ |
+| **GitHub OAuth**          | Sign in with GitHub — no extra account needed                            |
 | **Commit Activity Chart** | Visualize daily commit activity with 7d / 14d / 30d / 90d range selector |
-| **Commit Streak Tracker** | Current streak, longest streak, active days — stay consistent |
-| **PR Analytics** | Average review time, merge rate, open/closed PR count |
-| **Top Repositories** | Ranked list of your most active repos over any time range |
-| **Weekly Goal Tracker** | Set coding goals and track progress with a progress bar UI |
-| **No separate backend** | Next.js API routes + Supabase, deploy to Vercel for free |
+| **Commit Streak Tracker** | Current streak, longest streak, active days — stay consistent            |
+| **PR Analytics**          | Average review time, merge rate, open/closed PR count                    |
+| **Top Repositories**      | Ranked list of your most active repos over any time range                |
+| **Weekly Goal Tracker**   | Set coding goals and track progress with a progress bar UI               |
+| **No separate backend**   | Next.js API routes + Supabase, deploy to Vercel for free                 |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
-| Auth | GitHub OAuth via NextAuth.js |
-| Database | Supabase (PostgreSQL) |
-| API | Next.js Route Handlers (`/app/api/`) |
-| Charts | Recharts |
-| Deployment | Vercel (free, auto-deploys from GitHub) |
+| Layer      | Technology                                        |
+| ---------- | ------------------------------------------------- |
+| Frontend   | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Auth       | GitHub OAuth via NextAuth.js                      |
+| Database   | Supabase (PostgreSQL)                             |
+| API        | Next.js Route Handlers (`/app/api/`)              |
+| Charts     | Recharts                                          |
+| Deployment | Vercel (free, auto-deploys from GitHub)           |
 
 ---
 
@@ -167,6 +175,7 @@ See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for full guidelines, commit style, 
 ## Roadmap
 
 ### Done
+
 - [x] GitHub OAuth sign-in
 - [x] Contribution bar chart
 - [x] PR analytics widget
@@ -178,6 +187,7 @@ See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for full guidelines, commit style, 
 - [x] Time range selector on contribution chart
 
 ### Open for contribution
+
 - [ ] Dark mode toggle ([#1](../../issues/1))
 - [ ] Responsive mobile layout ([#14](../../issues/14))
 - [ ] Create Goal form UI ([#13](../../issues/13))
