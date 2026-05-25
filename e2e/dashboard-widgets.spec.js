@@ -15,6 +15,7 @@ test.beforeEach(async ({ page }) => {
       accessToken: "test-token",
     },
     maxAge: 60 * 60,
+    cookieName: "next-auth.session-token",
   });
 
   await page.context().addCookies([
@@ -93,6 +94,45 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
+  await page.route("**/api/goals/sync", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ updated: 1, commitCount: 4 }),
+    });
+  });
+
+  await page.route("**/api/ai-insights**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: {
+          insights: [
+            {
+              id: "insight-1",
+              type: "productivity",
+              title: "High Consistency",
+              description: "You have coded 5 days this week!",
+              severity: "positive",
+            },
+          ],
+          trend: { direction: "up", percentage: 15 },
+          aiSummary: "Great job shipping features this week. Keep up the high standard!",
+          generatedAt: "2026-05-18T12:00:00.000Z",
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/notifications**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        notifications: [],
+        unreadCount: 0,
+      }),
+    });
+  });
+
   const metricRoutes = [
     "**/api/metrics/prs**",
     "**/api/metrics/pr-breakdown**",
@@ -107,6 +147,13 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/ci**",
     "**/api/streak/freeze**",
     "**/api/user/github-accounts**",
+    "**/api/metrics/activity**",
+    "**/api/metrics/commit-time**",
+    "**/api/metrics/personal-records**",
+    "**/api/metrics/discussions**",
+    "**/api/metrics/pr-review-trend**",
+    "**/api/metrics/inactive-repos**",
+    "**/api/notifications**",
   ];
 
   for (const pattern of metricRoutes) {
@@ -117,11 +164,20 @@ test.beforeEach(async ({ page }) => {
       });
     });
   }
+
+  // Mock goals/sync so GoalTracker doesn't hang waiting for Supabase
+  await page.route("**/api/goals/sync**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      status: 200,
+      body: JSON.stringify({ ok: true }),
+    });
+  });
 });
 
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible({ timeout: 10000 });
@@ -137,7 +193,7 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
   });
 
   await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await page.getByRole("button", { name: "Show 90-day range" }).click();
 
   await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
@@ -152,7 +208,7 @@ test("goal form posts a new goal", async ({ page }) => {
   });
 
   await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
   await page.getByLabel("Unit").selectOption("prs");

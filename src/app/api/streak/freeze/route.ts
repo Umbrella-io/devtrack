@@ -70,6 +70,13 @@ export async function POST() {
 
   const today = todayStr();
 
+  const { data: existing } = await supabaseAdmin
+    .from("streak_freezes")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("freeze_date", today)
+    .maybeSingle();
+
   const { data: freeze, error } = await supabaseAdmin
     .from("streak_freezes")
     .upsert({ user_id: user.id, freeze_date: today }, { onConflict: "user_id,freeze_date" })
@@ -80,7 +87,9 @@ export async function POST() {
     return Response.json({ error: "Failed to apply freeze." }, { status: 500 });
   }
 
-  return Response.json({ freeze }, { status: 201 });
+  const alreadyExisted = existing !== null;
+
+  return Response.json({ freeze, already_existed: alreadyExisted }, { status: 201 });
 }
 
 // DELETE /api/streak/freeze
