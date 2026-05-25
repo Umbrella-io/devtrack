@@ -39,17 +39,28 @@ export default function DashboardHeader() {
   }, [session]);
 
   return (
-    <header className="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-lg backdrop-blur-md p-5 md:p-6 transition-all duration-300 hover:shadow-2xl">
+    <header className="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 transition-colors duration-300">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
 
         {/* Left Section */}
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-[var(--foreground)] to-[var(--accent)] bg-clip-text text-transparent">
-            Dashboard
+          <p
+            className="text-xs font-medium text-[var(--accent)] mb-1 tracking-widest uppercase"
+            style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", letterSpacing: "0.12em" }}
+          >
+            ▲ DEVTRACK
+          </p>
+          <h1
+            className="text-3xl md:text-4xl font-extrabold text-[var(--foreground)]"
+            style={{ fontFamily: "var(--font-syne, system-ui, sans-serif)", letterSpacing: "-0.03em", lineHeight: 1 }}
+          >
+            DASHBOARD
           </h1>
-
-          <p className="mt-2 text-sm md:text-base text-[var(--muted-foreground)]">
-            Your coding activity at a glance 🚀
+          <p
+            className="mt-2 text-xs text-[var(--muted-foreground)]"
+            style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", letterSpacing: "0.06em" }}
+          >
+            coding activity at a glance
           </p>
         </div>
 
@@ -61,17 +72,19 @@ export default function DashboardHeader() {
               href={`/u/${session.githubLogin}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-semibold shadow-md hover:scale-105 hover:shadow-xl transition-all duration-300"
+              className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium transition-opacity hover:opacity-90"
+              style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", fontSize: 12 }}
               title="View your public profile"
             >
               Share Profile
             </a>
           )}
 
-          <div className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card-muted)] px-3 py-2 shadow-sm">
+          <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-muted)] px-3 py-2">
 
+            <div>
               <KeyboardShortcuts />
-            
+            </div>
 
             <div className="hover:scale-110 transition-transform duration-200">
               <NotificationBell />
