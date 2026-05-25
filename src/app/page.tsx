@@ -76,7 +76,7 @@ export default async function HomePage() {
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="border border-[var(--border)] rounded-2xl p-7 bg-[var(--card-muted)] hover:border-[var(--muted-foreground)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+              className="border border-[var(--border)] rounded-2xl p-7 bg-[var(--card-muted)] hover:shadow-md transition-shadow duration-300 cursor-default"
             >
               <div className="w-14 h-14 rounded-2xl bg-[var(--card)] flex items-center justify-center text-3xl mb-5">
                 {feature.icon}
@@ -89,6 +89,10 @@ export default async function HomePage() {
               <p className="text-[var(--muted-foreground)] text-sm leading-relaxed">
                 {feature.description}
               </p>
+              <p className="mt-3 text-xs text-[var(--muted-foreground)] opacity-70">
+                Sign in to explore this feature
+              </p>
+
             </div>
           ))}
         </div>

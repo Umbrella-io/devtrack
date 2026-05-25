@@ -22,6 +22,7 @@ import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
+import { AIMentorWidget } from "@/components/AIMentorWidget";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
@@ -34,6 +35,9 @@ import { redirect } from "next/navigation";
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/");
+  // If the JWT callback detected that the GitHub token has been revoked,
+  // redirect to the landing page so the user must re-authenticate.
+  if (session.error === "TokenRevoked") redirect("/");
 
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">      <DashboardWidgets />
@@ -52,6 +56,10 @@ export default async function DashboardPage() {
 
       <div className="mb-6">
         <WeeklySummaryCard />
+      </div>
+
+      <div className="mb-6">
+        <AIMentorWidget />
       </div>
 
       <div className="mb-6">
