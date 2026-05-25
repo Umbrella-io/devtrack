@@ -19,7 +19,7 @@ test("unauthenticated request to /dashboard redirects to landing page", async ({
   await page.goto("/dashboard", { waitUntil: "load" });
   await expect(page).toHaveURL(/\/$/, { timeout: 10_000 });
   await expect(
-    page.getByRole("link", { name: "Sign in with GitHub" })
+    page.getByRole("link", { name: "Sign in with GitHub" }).first()
   ).toBeVisible({ timeout: 5_000 });
 });
 
