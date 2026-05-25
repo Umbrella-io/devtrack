@@ -21,21 +21,22 @@ export default function IssueMetrics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchMetrics() {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await fetch(`/api/metrics/issues`);
-        if (!res.ok) throw new Error("Failed to load metrics");
-        const result = (await res.json()) as IssueMetricsData;
-        setData(result);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load issue metrics");
-      } finally {
-        setLoading(false);
-      }
+  async function fetchMetrics() {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch(`/api/metrics/issues`);
+      if (!res.ok) throw new Error("Failed to load metrics");
+      const result = (await res.json()) as IssueMetricsData;
+      setData(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load issue metrics");
+    } finally {
+      setLoading(false);
     }
+  }
+
+  useEffect(() => {
     fetchMetrics();
   }, []);
 
@@ -43,9 +44,9 @@ export default function IssueMetrics() {
     return (
       <div className="w-full p-6 rounded-xl border border-[var(--border)] bg-[var(--card)] animate-pulse space-y-6">
         <div className="h-6 w-48 bg-[var(--muted)] rounded" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="p-4 rounded-lg bg-[var(--muted)]/20 h-20" />
+            <div key={i} className="h-20 rounded-lg bg-[var(--card-muted)] p-4" />
           ))}
         </div>
         <div className="h-[250px] w-full bg-[var(--muted)]/10 rounded-lg" />
@@ -55,36 +56,59 @@ export default function IssueMetrics() {
 
   if (error || !data) {
     return (
-      <div className="w-full p-6 rounded-xl border border-red-500/30 bg-red-500/10 text-red-500 text-center">
+      <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)] text-center">
         <p>{error || "Error loading issue metrics"}</p>
+        <button
+          type="button"
+          onClick={fetchMetrics}
+          className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
+        >
+          Try again
+        </button>
       </div>
     );
   }
 
+  // Map incoming data safely into semantic arrays to reuse clean main components
+  const statsDisplay = [
+    { label: "Open Issues", value: data.stats.totalOpen },
+    { label: "Opened This Week", value: data.stats.openedThisWeek },
+    { label: "Closed This Week", value: data.stats.closedThisWeek },
+    { label: "Avg Days to Close", value: `${data.stats.avgDaysToClose}d` },
+  ];
+
+  // Dynamic status evaluation strictly using theme tokens instead of raw color definitions
+  const trendLabel = data.stats.openedThisWeek > data.stats.closedThisWeek ? "+ Velocity increase" : "Stable velocity";
+  const trendColor = data.stats.openedThisWeek > data.stats.closedThisWeek ? "text-[var(--destructive)]" : "text-[var(--success)]";
+
   return (
-    <div className="w-full p-6 rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] space-y-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-6 text-[var(--foreground)]">
       <div>
-        <h3 className="text-lg font-bold tracking-tight">Issue Tracker Metrics</h3>
+        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+          Issue Analytics
+        </h2>
         <p className="text-sm text-[var(--muted-foreground)]">Snapshot of issue velocities and timeline histories</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-lg bg-[var(--popover)] border border-[var(--border)]">
-          <p className="text-xs font-medium uppercase text-[var(--muted-foreground)]">Open Issues</p>
-          <p className="text-2xl font-bold text-[var(--accent)] mt-1">{data.stats.totalOpen}</p>
-        </div>
-        <div className="p-4 rounded-lg bg-[var(--popover)] border border-[var(--border)]">
-          <p className="text-xs font-medium uppercase text-[var(--muted-foreground)]">Opened This Week</p>
-          <p className="text-2xl font-bold text-[var(--foreground)] mt-1">{data.stats.openedThisWeek}</p>
-        </div>
-        <div className="p-4 rounded-lg bg-[var(--popover)] border border-[var(--border)]">
-          <p className="text-xs font-medium uppercase text-[var(--muted-foreground)]">Closed This Week</p>
-          <p className="text-2xl font-bold text-[var(--success)] mt-1">{data.stats.closedThisWeek}</p>
-        </div>
-        <div className="p-4 rounded-lg bg-[var(--popover)] border border-[var(--border)]">
-          <p className="text-xs font-medium uppercase text-[var(--muted-foreground)]">Avg Days to Close</p>
-          <p className="text-2xl font-bold text-[var(--accent)] mt-1">{data.stats.avgDaysToClose}d</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statsDisplay.map((stat, idx) => (
+          <div
+            key={stat.label}
+            className="rounded-lg bg-[var(--control)] p-4 text-center border border-[var(--border)]"
+          >
+            <div className="text-2xl font-bold text-[var(--accent)] truncate" title={String(stat.value)}>
+              {stat.value}
+            </div>
+            <div className="mt-1 text-sm text-[var(--muted-foreground)]">
+              {stat.label}
+            </div>
+            {idx === 0 && (
+              <div className={`mt-1 text-xs font-medium ${trendColor}`}>
+                {trendLabel}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       <div className="space-y-2">

@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateBadgeSVG } from "../badge-utils";
+import {
+  checkBadgeRateLimit,
+  getBadgeClientIp,
+} from "@/lib/badge-rate-limit";
+import { logError } from "@/lib/error-handler";
+import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
 export const dynamic = "force-dynamic";
 
@@ -25,17 +31,19 @@ async function fetchCommitsThisMonth(
   token?: string
 ): Promise<number> {
   const since = new Date();
-  since.setDate(1); // First day of current month
+  since.setDate(1);
   const sinceStr = since.toISOString().slice(0, 10);
 
-  const url = `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=1`;
-  const searchRes = await fetchGitHubWithToken(url, token);
+  const url = new URL(`${GITHUB_API}/search/commits`);
+  url.searchParams.set("q", `author:${username} author-date:>=${sinceStr}`);
+  url.searchParams.set("per_page", "1");
+  const searchRes = await fetchGitHubWithToken(url.toString(), token);
 
   if (!searchRes.ok) {
     const errorBody = await searchRes.text();
     console.error(`GitHub API error fetching commits for ${username}:`, {
       status: searchRes.status,
-      url,
+      url: url.toString(),
       body: errorBody,
     });
     return 0;
@@ -49,41 +57,40 @@ async function fetchCommitsThisMonth(
 }
 
 export async function GET(req: NextRequest) {
+  const ip = getBadgeClientIp(req);
+  const rateLimit = checkBadgeRateLimit(ip);
+
+  if (!rateLimit.allowed) {
+    return new NextResponse("Rate limit exceeded", {
+      status: 429,
+      headers: {
+        "Retry-After": String(
+          Math.max(rateLimit.reset - Math.floor(Date.now() / 1000), 1)
+        ),
+        "X-RateLimit-Limit": "20",
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": String(rateLimit.reset),
+      },
+    });
+  }
+
   try {
-    const username = req.nextUrl.searchParams.get("user");
+    const username = normalizeGitHubUsername(req.nextUrl.searchParams.get("user"));
 
     if (!username) {
       return NextResponse.json(
-        { error: "Missing 'user' query parameter" },
+        { error: "Invalid GitHub username" },
         { status: 400 }
       );
     }
 
-    // Validate username is a string and not too long
-    if (typeof username !== "string" || username.length > 50) {
-      return NextResponse.json(
-        { error: "Invalid username" },
-        { status: 400 }
-      );
-    }
-
-    console.log(`Fetching commits badge for user: ${username}`);
-
-    // Use GITHUB_TOKEN env var if available for higher rate limits
     const githubToken = process.env.GITHUB_TOKEN;
-    if (!githubToken) {
-      console.warn("⚠️ GITHUB_TOKEN not set - using unauthenticated API (60 req/hour limit)");
-    }
-
-    // Fetch commits data
     const commits = await fetchCommitsThisMonth(username, githubToken);
-    console.log(`Commits for ${username}: ${commits}`);
 
-    // Generate SVG badge
     const svg = generateBadgeSVG({
       label: "📦 Commits",
       value: `${commits} this month`,
-      color: "#6366f1", // DevTrack indigo
+      color: "#6366f1",
       labelColor: "#333333",
     });
 
@@ -91,14 +98,21 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "image/svg+xml;charset=utf-8",
-        "Cache-Control": "max-age=3600, public",
+        "Cache-Control": "s-maxage=3600, stale-while-revalidate=86400",
         "X-Content-Type-Options": "nosniff",
+        "X-RateLimit-Remaining": String(rateLimit.remaining),
+        "X-RateLimit-Reset": String(rateLimit.reset),
       },
     });
   } catch (error) {
-    console.error("Error generating commits badge:", error);
+    logError(error, {
+      endpoint: "/api/badge/commits",
+      operation: "generate_badge",
+      additionalContext: {
+        username: req.nextUrl.searchParams.get("user"),
+      },
+    });
 
-    // Return error badge
     const svg = generateBadgeSVG({
       label: "Commits",
       value: "Error",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { getSafeErrorMessage } from "@/lib/error-utils";
 
 export default function Error({
   error,
@@ -10,8 +11,9 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
-    console.error(error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error(error);
+    }
   }, [error]);
 
   return (
@@ -37,18 +39,18 @@ export default function Error({
           </div>
         </div>
         <h1 className="mb-2 text-2xl font-bold text-[var(--card-foreground)]">
-          Something went wrong!
+          Something went wrong
         </h1>
         <p className="mb-6 text-sm text-[var(--muted-foreground)]">
-          An unexpected error occurred. Please try again.
+          {getSafeErrorMessage(error)}
         </p>
-        <div className="mb-8 rounded-lg bg-[var(--control)] p-3 text-left text-xs text-[var(--muted-foreground)]">
-          <code className="break-words font-mono">
-            {error.message || "Unknown error"}
-          </code>
-        </div>
+        {error.digest && (
+          <p className="mb-4 text-xs text-[var(--muted-foreground)]">
+            Error ID: <code className="font-mono">{error.digest}</code>
+          </p>
+        )}
         <button
-          onClick={() => reset()}
+          onClick={reset}
           className="inline-flex w-full items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
         >
           Try again

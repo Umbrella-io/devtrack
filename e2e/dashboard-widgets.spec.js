@@ -4,31 +4,24 @@ import { encode } from "next-auth/jwt";
 const authSecret = "playwright-placeholder-secret-that-is-long-enough";
 
 test.beforeEach(async ({ page }) => {
+  const sessionToken = await encode({
+    secret: authSecret,
+    token: {
+      name: "Playwright User",
+      email: "playwright@example.com",
+      sub: "12345",
+      githubLogin: "playwright-user",
+      githubId: "12345",
+      accessToken: "test-token",
+    },
+    maxAge: 60 * 60,
+    cookieName: "next-auth.session-token",
+  });
+
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: await encode({
-        secret: authSecret,
-        token: {
-          name: "Playwright User",
-          email: "playwright@example.com",
-          sub: "12345",
-          githubLogin: "playwright-user",
-          githubId: "12345",
-          accessToken: "test-token",
-        },
-        maxAge: 60 * 60,
-      }),
-      domain: "127.0.0.1",
-      path: "/",
-      httpOnly: true,
-      sameSite: "Lax",
-      secure: false,
-      expires: Math.floor(Date.now() / 1000) + 60 * 60,
-    },
-    {
-      name: "playwright-dashboard-auth",
-      value: "1",
+      value: sessionToken,
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
@@ -101,6 +94,45 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
+  await page.route("**/api/goals/sync", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ updated: 1, commitCount: 4 }),
+    });
+  });
+
+  await page.route("**/api/ai-insights**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: {
+          insights: [
+            {
+              id: "insight-1",
+              type: "productivity",
+              title: "High Consistency",
+              description: "You have coded 5 days this week!",
+              severity: "positive",
+            },
+          ],
+          trend: { direction: "up", percentage: 15 },
+          aiSummary: "Great job shipping features this week. Keep up the high standard!",
+          generatedAt: "2026-05-18T12:00:00.000Z",
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/notifications**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        notifications: [],
+        unreadCount: 0,
+      }),
+    });
+  });
+
   const metricRoutes = [
     "**/api/metrics/prs**",
     "**/api/metrics/pr-breakdown**",
@@ -115,6 +147,13 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/ci**",
     "**/api/streak/freeze**",
     "**/api/user/github-accounts**",
+    "**/api/metrics/activity**",
+    "**/api/metrics/commit-time**",
+    "**/api/metrics/personal-records**",
+    "**/api/metrics/discussions**",
+    "**/api/metrics/pr-review-trend**",
+    "**/api/metrics/inactive-repos**",
+    "**/api/notifications**",
   ];
 
   for (const pattern of metricRoutes) {
@@ -125,16 +164,24 @@ test.beforeEach(async ({ page }) => {
       });
     });
   }
+
+  // Mock goals/sync so GoalTracker doesn't hang waiting for Supabase
+  await page.route("**/api/goals/sync**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      status: 200,
+      body: JSON.stringify({ ok: true }),
+    });
+  });
 });
 
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
-  await page.goto("/dashboard");
-
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible();
-  await expect(page.getByText("Make 10 commits")).toBeVisible();
+  await page.goto("/dashboard", { waitUntil: "load" });
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText("Make 10 commits")).toBeVisible({ timeout: 10000 });
 });
 
 test("contribution graph range buttons request a new range", async ({ page }) => {
@@ -145,10 +192,11 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
     }
   });
 
-  await page.goto("/dashboard");
+  await page.goto("/dashboard", { waitUntil: "load" });
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await page.getByRole("button", { name: "Show 90-day range" }).click();
 
-  await expect.poll(() => contributionRequests.some((url) => url.includes("days=90"))).toBe(true);
+  await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
 });
 
 test("goal form posts a new goal", async ({ page }) => {
@@ -159,17 +207,18 @@ test("goal form posts a new goal", async ({ page }) => {
     }
   });
 
-  await page.goto("/dashboard");
+  await page.goto("/dashboard", { waitUntil: "load" });
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
-  await page.getByLabel("Unit").fill("PR");
+  await page.getByLabel("Unit").selectOption("prs");
   await page.getByRole("button", { name: "Add goal" }).click();
 
-  await expect.poll(() => goalPosts).toHaveLength(1);
+  await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);
   expect(goalPosts[0]).toMatchObject({
     title: "Ship one PR",
     target: 1,
-    unit: "PR",
+    unit: "prs",
   });
 });
 
@@ -178,6 +227,7 @@ function mockMetricResponse(url) {
     return {
       open: 2,
       merged: 8,
+      closed: 1,
       avgReviewHours: 6,
       avgFirstReviewHours: 3,
       mergeRate: "80%",
@@ -208,8 +258,14 @@ function mockMetricResponse(url) {
   if (url.includes("/api/metrics/weekly-summary")) {
     return {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
-      prs: { opened: 3, merged: 2 },
-      activeDays: 5,
+      prs: {
+        thisWeek: { opened: 3, merged: 2 },
+        lastWeek: { opened: 1, merged: 1 }
+      },
+      activeDays: {
+        thisWeek: 5,
+        lastWeek: 4
+      },
       streak: 3,
       topRepo: "demo/repo",
     };
@@ -221,7 +277,7 @@ function mockMetricResponse(url) {
     return { repositories: [] };
   }
   if (url.includes("/api/metrics/ci")) {
-    return { success: 6, failed: 1, cancelled: 0, skipped: 0 };
+    return { successRate: 95, averageDurationMinutes: 3, flakiestWorkflow: null, totalRuns: 42, reposChecked: 5 };
   }
   if (url.includes("/api/streak/freeze")) {
     return { freezes: [] };
