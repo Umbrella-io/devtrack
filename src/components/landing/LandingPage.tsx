@@ -857,27 +857,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
    ═══════════════════════════════════════════ */
 function LandingFooter() {
   return (
-    <footer style={{
-      borderTop: `1px solid #111`,
-      padding: '24px clamp(20px,4vw,48px)',
-      display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
-      justifyContent: 'space-between', alignItems: 'center',
-    }}>
-      <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
-        © {new Date().getFullYear()} DEVTRACK
-      </span>
-      <div style={{ display: 'flex', gap: 20 }}>
-        {[
-          { label: 'GitHub', href: 'https://github.com/Priyanshu-byte-coder/devtrack' },
-          { label: 'Docs', href: 'https://github.com/Priyanshu-byte-coder/devtrack/blob/main/DEVELOPMENT.md' },
-          { label: 'Issues', href: 'https://github.com/Priyanshu-byte-coder/devtrack/issues' },
-        ].map(l => (
-          <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="lnd-footer-link">
-            {l.label}
-          </a>
-        ))}
-      </div>
-    </footer>
+    
   );
 }
 
