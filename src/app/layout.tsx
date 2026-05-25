@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Syne, JetBrains_Mono } from "next/font/google";
 import Footer from "@/components/Footer";
 import Providers from "./providers";
 import PWARegister from "@/components/pwa-register";
@@ -9,6 +9,18 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"] });
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
+  weight: ["700", "800"],
+  display: "swap",
+});
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "DevTrack — Developer Productivity Dashboard",
@@ -51,15 +63,12 @@ export default function RootLayout({
               (function() {
                 try {
                   const stored = localStorage.getItem('theme');
-                  const supportDarkMode =
-                    window.matchMedia('(prefers-color-scheme: dark)').matches === true;
-
-                  if (stored === 'dark' || (!stored && supportDarkMode)) {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.style.colorScheme = 'dark';
-                  } else {
+                  if (stored === 'light') {
                     document.documentElement.classList.remove('dark');
                     document.documentElement.style.colorScheme = 'light';
+                  } else {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.style.colorScheme = 'dark';
                   }
                 } catch (e) {}
               })();
@@ -69,7 +78,7 @@ export default function RootLayout({
       </head>
 
       <body
-        className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
+        className={`${inter.className} ${syne.variable} ${jetbrains.variable} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
         <PWARegister />
 
