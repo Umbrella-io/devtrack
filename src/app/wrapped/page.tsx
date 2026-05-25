@@ -50,6 +50,10 @@ export default function WrappedPage() {
     );
   }
 
+  const tweetText = encodeURIComponent(`Check out my ${data?.year} Year in Code on DevTrack!`);
+  const shareUrl = encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : 'https://devtrack.com');
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${tweetText}&url=${shareUrl}`;
+
   const slides = [
     // Slide 0: Intro
     <div key="intro" className="flex h-full flex-col items-center justify-center text-center">

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
               {year} Year in Code
             </h1>
             <p style={{ fontSize: "30px", color: "#a1a1aa", marginTop: "10px" }}>
-              @{login}'s DevTrack Recap
+              {`@${login}'s DevTrack Recap`}
             </p>
           </div>
 
