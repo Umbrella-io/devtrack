@@ -20,6 +20,10 @@ export function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+export function dateDiffDays(a: string, b: string): number {
+  return (new Date(b).getTime() - new Date(a).getTime()) / 86400000;
+}
+
 export function getThisWeekRange(): { start: string; end: string } {
   const now = new Date();
   const weekStart = getUtcWeekStart(now);
