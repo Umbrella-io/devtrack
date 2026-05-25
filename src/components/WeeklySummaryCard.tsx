@@ -10,10 +10,10 @@ interface WeeklySummaryData {
     trend: "up" | "down" | "same";
   };
   prs: {
-    opened: number;
-    merged: number;
+    thisWeek: { opened: number; merged: number };
+    lastWeek: { opened: number; merged: number };
   };
-  activeDays: number;
+  activeDays: { thisWeek: number; lastWeek: number };
   streak: number;
   topRepo: string | null;
 }
@@ -23,6 +23,10 @@ export default function WeeklySummaryCard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const maxCommits = summary ? Math.max(summary.commits.current, summary.commits.previous, 1) : 1;
+  const maxPRs = summary ? Math.max(summary.prs.thisWeek.merged, summary.prs.lastWeek.merged, 1) : 1;
+  const maxActiveDays = summary ? Math.max(summary.activeDays.thisWeek, summary.activeDays.lastWeek, 1) : 1;
 
   useEffect(() => {
     setLoading(true);
@@ -83,65 +87,166 @@ export default function WeeklySummaryCard() {
             {error}
           </div>
         ) : summary ? (
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
-              <span className="text-sm text-[var(--muted-foreground)]">
-                Commits
-              </span>
-              <div className="flex items-center gap-2">
+          <div className="mt-4 space-y-4">
+            {/* Commits Comparison */}
+            <div className="rounded-lg bg-[var(--control)] p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-sm text-[var(--muted-foreground)]">
+                  Commits
+                </span>
                 <span className="text-base font-semibold text-[var(--card-foreground)]">
                   {summary.commits.current}
+                  {summary.commits.trend !== "same" && (
+                    <span
+                      className="ml-2 text-sm font-medium"
+                      style={{
+                        color: summary.commits.trend === "up" ? "var(--success)" : "var(--destructive)",
+                      }}
+                    >
+                      {summary.commits.trend === "up" ? "+" : "-"}
+                      {Math.abs(summary.commits.delta)}
+                    </span>
+                  )}
                 </span>
-                {summary.commits.trend === "up" && (
-                  <span className="text-sm font-medium text-[var(--success)]">
-                    + {summary.commits.delta}
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-16 text-xs text-[var(--muted-foreground)]">Last week</span>
+                  <div className="flex-1">
+                    <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--muted-foreground)]"
+                        style={{
+                          width: `${((summary.commits.previous / maxCommits) * 100).toFixed(0)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
+                    {((summary.commits.previous / (summary.commits.current + summary.commits.previous || 1)) * 100).toFixed(0)}%
                   </span>
-                )}
-                {summary.commits.trend === "down" && (
-                  <span className="text-sm font-medium text-[var(--destructive)]">
-                    - {Math.abs(summary.commits.delta)}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
+                  <div className="flex-1">
+                    <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--success)]"
+                        style={{
+                          width: `${((summary.commits.current / maxCommits) * 100).toFixed(0)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
+                    {((summary.commits.current / (summary.commits.current + summary.commits.previous || 1)) * 100).toFixed(0)}%
                   </span>
-                )}
-                {summary.commits.trend === "same" && (
-                  <span className="text-sm font-medium text-[var(--muted-foreground)]">
-                    0
-                  </span>
-                )}
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
-              <span className="text-sm text-[var(--muted-foreground)]">PRs</span>
-              <span className="text-base font-semibold text-[var(--card-foreground)]">
-                {summary.prs.opened} opened / {summary.prs.merged} merged
-              </span>
+            {/* PRs Comparison */}
+            <div className="rounded-lg bg-[var(--control)] p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-sm text-[var(--muted-foreground)]">PRs Merged</span>
+                <span className="text-base font-semibold text-[var(--card-foreground)]">
+                  {summary.prs.thisWeek.merged}
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-16 text-xs text-[var(--muted-foreground)]">Last week</span>
+                  <div className="flex-1">
+                    <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--muted-foreground)]"
+                        style={{
+                          width: `${((summary.prs.lastWeek.merged / maxPRs) * 100).toFixed(0)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
+                    {((summary.prs.lastWeek.merged / (summary.prs.thisWeek.merged + summary.prs.lastWeek.merged || 1)) * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
+                  <div className="flex-1">
+                    <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--success)]"
+                        style={{
+                          width: `${((summary.prs.thisWeek.merged / maxPRs) * 100).toFixed(0)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
+                    {((summary.prs.thisWeek.merged / (summary.prs.thisWeek.merged + summary.prs.lastWeek.merged || 1)) * 100).toFixed(0)}%
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
-              <span className="text-sm text-[var(--muted-foreground)]">
-                Active days
-              </span>
-              <span className="text-base font-semibold text-[var(--card-foreground)]">
-                {summary.activeDays} / 7 days
-              </span>
+            {/* Active Days Comparison */}
+            <div className="rounded-lg bg-[var(--control)] p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-sm text-[var(--muted-foreground)]">Active Days</span>
+                <span className="text-base font-semibold text-[var(--card-foreground)]">
+                  {summary.activeDays.thisWeek} / 7
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-16 text-xs text-[var(--muted-foreground)]">Last week</span>
+                  <div className="flex-1">
+                    <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--muted-foreground)]"
+                        style={{
+                          width: `${((summary.activeDays.lastWeek / maxActiveDays) * 100).toFixed(0)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
+                    {((summary.activeDays.lastWeek / (summary.activeDays.thisWeek + summary.activeDays.lastWeek || 1)) * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
+                  <div className="flex-1">
+                    <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--success)]"
+                        style={{
+                          width: `${((summary.activeDays.thisWeek / maxActiveDays) * 100).toFixed(0)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
+                    {((summary.activeDays.thisWeek / (summary.activeDays.thisWeek + summary.activeDays.lastWeek || 1)) * 100).toFixed(0)}%
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
-              <span className="text-sm text-[var(--muted-foreground)]">
-                Streak
-              </span>
-              <span className="text-base font-semibold text-[var(--card-foreground)]">
-                {summary.streak} day streak
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
-              <span className="text-sm text-[var(--muted-foreground)]">
-                Top repo
-              </span>
-              <span className="text-base font-semibold text-[var(--card-foreground)]">
-                {summary.topRepo ?? "-"}
-              </span>
+            {/* Streak & Top Repo */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
+                <span className="text-sm text-[var(--muted-foreground)]">Streak</span>
+                <span className="text-base font-semibold text-[var(--card-foreground)]">
+                  {summary.streak} day streak
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
+                <span className="text-sm text-[var(--muted-foreground)]">Top repo</span>
+                <span className="text-base font-semibold text-[var(--card-foreground)]">
+                  {summary.topRepo ?? "-"}
+                </span>
+              </div>
             </div>
           </div>
         ) : null)}

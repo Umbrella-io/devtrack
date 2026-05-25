@@ -19,7 +19,7 @@ const SHORTCUTS: ShortcutItem[] = [
   { key: "?", action: "Show shortcuts" },
 ];
 
-export default function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
+export default function ShortcutsModal({ isOpen, onClose}: ShortcutsModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -82,7 +82,7 @@ export default function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps)
         aria-labelledby="modal-title"
         className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl transition-transform"
         onClick={(e) => e.stopPropagation()}
-      >
+     >
         <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
           <h2 id="modal-title" className="text-lg font-semibold text-[var(--card-foreground)]">
             Keyboard Shortcuts

@@ -121,12 +121,10 @@ test.beforeEach(async ({ page }) => {
 
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
-  await page.waitForTimeout(2000);
-
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByText("Make 10 commits")).toBeVisible({ timeout: 10000 });
 });
 
@@ -139,7 +137,7 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
   });
 
   await page.goto("/dashboard", { waitUntil: "load" });
-  await page.waitForTimeout(2000);
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
   await page.getByRole("button", { name: "Show 90-day range" }).click();
 
   await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
@@ -154,17 +152,17 @@ test("goal form posts a new goal", async ({ page }) => {
   });
 
   await page.goto("/dashboard", { waitUntil: "load" });
-  await page.waitForTimeout(2000);
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
-  await page.getByLabel("Unit").fill("PR");
+  await page.getByLabel("Unit").selectOption("prs");
   await page.getByRole("button", { name: "Add goal" }).click();
 
   await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);
   expect(goalPosts[0]).toMatchObject({
     title: "Ship one PR",
     target: 1,
-    unit: "PR",
+    unit: "prs",
   });
 });
 
@@ -204,8 +202,14 @@ function mockMetricResponse(url) {
   if (url.includes("/api/metrics/weekly-summary")) {
     return {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
-      prs: { opened: 3, merged: 2 },
-      activeDays: 5,
+      prs: {
+        thisWeek: { opened: 3, merged: 2 },
+        lastWeek: { opened: 1, merged: 1 }
+      },
+      activeDays: {
+        thisWeek: 5,
+        lastWeek: 4
+      },
       streak: 3,
       topRepo: "demo/repo",
     };

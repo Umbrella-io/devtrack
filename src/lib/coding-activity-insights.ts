@@ -27,6 +27,19 @@ export interface CodingActivityInsight {
   };
   totalActivities: number;
   dayCounts?: CodingActivityInsightDayCount[];
+
+  consistencyScore?: number;
+  averageDailyCommits?: number;
+  productivityLevel?: string;
+
+  recommendations?: string[];
+
+  weeklyTrend?: {
+    direction: "up" | "down" | "stable";
+    percentage: number;
+  };
+
+  summary?: string[];
 }
 
 const DAY_NAMES = [
@@ -127,6 +140,132 @@ function pickLowestNonZeroCount<T extends { count: number }>(items: T[]): T | nu
   }, nonZeroItems[0]);
 }
 
+function calculateConsistencyScore(
+  dayCounts: CodingActivityInsightDayCount[]
+): number {
+  const activeDays = dayCounts.filter((day) => day.count > 0).length;
+
+  return Math.round((activeDays / 7) * 100);
+}
+
+function calculateAverageDailyCommits(
+  totalActivities: number
+): number {
+  return Number((totalActivities / 7).toFixed(1));
+}
+
+function determineProductivityLevel(score: number): string {
+  if (score >= 85) return "Excellent";
+  if (score >= 70) return "Very Good";
+  if (score >= 50) return "Good";
+  if (score >= 30) return "Moderate";
+
+  return "Low";
+}
+
+function generateRecommendations(
+  consistencyScore: number,
+  averageDailyCommits: number
+): string[] {
+  const recommendations: string[] = [];
+
+  if (consistencyScore < 50) {
+    recommendations.push(
+      "Try contributing more consistently throughout the week."
+    );
+  }
+
+  if (averageDailyCommits < 3) {
+    recommendations.push(
+      "Increase small daily commits to improve coding momentum."
+    );
+  }
+
+  if (consistencyScore >= 80) {
+    recommendations.push(
+      "Excellent consistency! Maintain your current workflow."
+    );
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push(
+      "Your coding activity looks healthy and balanced."
+    );
+  }
+
+  return recommendations;
+}
+
+function generateSummary(
+  mostActiveDay: { day: string; count: number } | undefined,
+  consistencyScore: number,
+  productivityLevel: string
+): string[] {
+  const summary: string[] = [];
+
+  if (mostActiveDay) {
+    summary.push(
+      `Your most productive day was ${mostActiveDay.day} with ${mostActiveDay.count} commits.`
+    );
+  }
+
+  summary.push(
+    `Your weekly consistency score is ${consistencyScore}%.`
+  );
+
+  summary.push(
+    `Overall productivity level: ${productivityLevel}.`
+  );
+
+  return summary;
+}
+
+function calculateWeeklyTrend(
+  dayCounts: CodingActivityInsightDayCount[]
+): {
+  direction: "up" | "down" | "stable";
+  percentage: number;
+} {
+  const firstHalf = dayCounts
+    .slice(0, 3)
+    .reduce((sum, day) => sum + day.count, 0);
+
+  const secondHalf = dayCounts
+    .slice(3)
+    .reduce((sum, day) => sum + day.count, 0);
+
+  if (firstHalf === secondHalf) {
+    return {
+      direction: "stable",
+      percentage: 0,
+    };
+  }
+
+  if (secondHalf > firstHalf) {
+    const percentage = firstHalf === 0
+      ? 100
+      : Math.round(
+          ((secondHalf - firstHalf) / firstHalf) * 100
+        );
+
+    return {
+      direction: "up",
+      percentage,
+    };
+  }
+
+  const percentage = secondHalf === 0
+    ? 100
+    : Math.round(
+        ((firstHalf - secondHalf) / firstHalf) * 100
+      );
+
+  return {
+    direction: "down",
+    percentage,
+  };
+}
+
 export function summarizeCodingActivity(
   timestamps: string[],
   timeZone: string
@@ -160,6 +299,35 @@ export function summarizeCodingActivity(
   const leastActiveHour = pickLowestNonZeroCount(hourlyCounts) ?? hourlyCounts[0];
   const mostActiveDay = pickHighestCount(dayCounts);
 
+  const consistencyScore =
+    calculateConsistencyScore(dayCounts);
+
+  const averageDailyCommits =
+    calculateAverageDailyCommits(totalActivities);
+
+  const productivityLevel =
+    determineProductivityLevel(consistencyScore);
+
+  const recommendations =
+    generateRecommendations(
+      consistencyScore,
+      averageDailyCommits
+    );
+
+  const weeklyTrend =
+  calculateWeeklyTrend(dayCounts);
+  
+  const summary = generateSummary(
+    mostActiveDay && mostActiveDay.count > 0
+      ? {
+          day: mostActiveDay.day,
+          count: mostActiveDay.count,
+        }
+      : undefined,
+    consistencyScore,
+    productivityLevel
+  );
+
   return {
     timezone: formatTimeZoneLabel(timeZone),
     hourlyCounts,
@@ -178,6 +346,18 @@ export function summarizeCodingActivity(
         ? { day: mostActiveDay.day, count: mostActiveDay.count }
         : undefined,
     totalActivities,
-    dayCounts: dayCounts.some((item) => item.count > 0) ? dayCounts : undefined,
+    dayCounts: dayCounts.some((item) => item.count > 0) 
+    ? dayCounts 
+    : undefined,
+
+    consistencyScore,
+    averageDailyCommits,
+    productivityLevel,
+    recommendations,
+
+     weeklyTrend,
+
+    summary,
   };
 }
+
