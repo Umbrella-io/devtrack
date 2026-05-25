@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import PrivacySettings from "@/components/PrivacySettings";
 import { toast } from "sonner";
@@ -304,6 +305,12 @@ function SettingsPageContent() {
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--accent)] transition-colors mb-4 group"
+          >
+            <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Dashboard
+          </Link>
           <h1 className="text-3xl font-bold text-[var(--foreground)]">
             Settings
           </h1>
