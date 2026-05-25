@@ -82,8 +82,9 @@ export default function DashboardHeader() {
 
           <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-muted)] px-3 py-2">
 
+            <div>
               <KeyboardShortcuts />
-            
+            </div>
 
             <div className="hover:scale-110 transition-transform duration-200">
               <NotificationBell />
