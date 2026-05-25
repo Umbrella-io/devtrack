@@ -87,9 +87,17 @@ test.beforeEach(async ({ page }) => {
             unit: "commits",
             recurrence: "weekly",
             period_start: "2026-05-18",
+            last_synced_at: new Date().toISOString(),
           },
         ],
       }),
+    });
+  });
+
+  await page.route("**/api/goals/sync", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ updated: 1, commitCount: 4 }),
     });
   });
 
