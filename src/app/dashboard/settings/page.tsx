@@ -12,6 +12,7 @@ interface UserSettings {
   github_login: string;
   is_public: boolean;
   leaderboard_opt_in: boolean;
+  has_wakatime_key?: boolean;
 }
 
 interface LinkedAccount {
@@ -115,6 +116,8 @@ function SettingsPageContent() {
   const [removingAccountId, setRemovingAccountId] = useState<string | null>(
     null
   );
+  const [wakatimeKey, setWakatimeKey] = useState("");
+  const [savingWakatime, setSavingWakatime] = useState(false);
 
   const statusMessage = useMemo(
     () =>
@@ -228,6 +231,32 @@ function SettingsPageContent() {
       console.error("Error updating leaderboard setting:", error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveWakatime = async () => {
+    if (!settings) return;
+    setSavingWakatime(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wakatime_api_key: wakatimeKey }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setWakatimeKey("");
+        toast.success(wakatimeKey === "" ? "Wakatime key removed" : "Wakatime key saved successfully!");
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to update Wakatime key");
+      }
+    } catch (error) {
+      console.error("Error updating Wakatime key:", error);
+      toast.error("Failed to update Wakatime key");
+    } finally {
+      setSavingWakatime(false);
     }
   };
 
@@ -546,6 +575,48 @@ function SettingsPageContent() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                Wakatime Integration
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                Connect your Wakatime account to display accurate coding time and language usage.
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="wakatime-key" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
+                API Key
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="wakatime-key"
+                  type="password"
+                  value={wakatimeKey}
+                  onChange={(e) => setWakatimeKey(e.target.value)}
+                  placeholder={settings.has_wakatime_key ? "•••••••••••••••• (Configured)" : "Enter your Wakatime API key"}
+                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveWakatime}
+                  disabled={savingWakatime}
+                  className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60 min-w-[80px]"
+                >
+                  {savingWakatime ? "Saving..." : "Save"}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+                {settings.has_wakatime_key ? "Leave blank and click Save to remove your key." : "You can find your API key in your Wakatime Settings."}
+              </p>
+            </div>
           </div>
         </div>
 
