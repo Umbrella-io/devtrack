@@ -1,143 +1,129 @@
 # Contributing to DevTrack
 
-Thanks for your interest in contributing! This guide will get you from zero to a merged PR.
+Thank you for your interest in contributing to DevTrack! Whether you are a GSSoC participant or a general open-source contributor, we are thrilled to have you.
 
-> ⭐ If DevTrack has been useful to you, consider [starring the repo](https://github.com/Priyanshu-byte-coder/devtrack) — it helps the project grow and reach more developers.
+Following these guidelines helps ensure a smooth, efficient, and consistent development process for everyone.
 
 ---
 
 ## Table of Contents
 
-- [Code of Conduct](#code-of-conduct)
-- [How to Find an Issue](#how-to-find-an-issue)
-- [Setting Up Locally](#setting-up-locally)
-- [Making Changes](#making-changes)
-- [Submitting a PR](#submitting-a-pr)
-- [Review Process](#review-process)
-- [Issue Labels](#issue-labels)
+1. [Onboarding & Claiming Issues](#1-onboarding--claiming-issues)
+2. [Local Development Setup](#2-local-development-setup)
+3. [Branching and Workflow](#3-branching-and-workflow)
+4. [Commit Guidelines](#4-commit-guidelines)
+5. [Code Style & Standards](#5-code-style--standards)
+6. [Pull Request (PR) Checklist](#6-pull-request-pr-checklist)
 
 ---
 
-## Code of Conduct
+## 1. Onboarding & Claiming Issues
 
-This project follows the [Contributor Covenant](./CODE_OF_CONDUCT.md). Be respectful.
-
----
-
-## How to Find an Issue
-
-1. Go to [Issues](../../issues)
-2. Filter by label:
-   - `good-first-issue` — no prior codebase knowledge needed, well-scoped
-   - `medium` — requires reading some existing code
-   - `advanced` — architectural changes, requires discussion first
-3. Comment "I'd like to work on this" to get assigned
-4. **Do not open a PR for an unassigned issue**
-
-First-time contributors: start with `good-first-issue` only.
+To keep the development queue clean and organized:
+* **Claim Before You Build:** Comment on the open issue you want to work on. Wait for a maintainer to assign it to you before writing code.
+* **Avoid Duplicates:** Check the active Pull Requests and assigned issues first to ensure someone else is not already working on the same task.
+* **Ask Questions:** If an issue's requirements are unclear, comment directly on the issue to seek clarification.
 
 ---
 
-## Setting Up Locally
+## 2. Local Development Setup
 
-Full step-by-step guide: **[DEVELOPMENT.md](./DEVELOPMENT.md)**
+To run DevTrack on your machine, follow these steps:
 
-Short version:
+### Prerequisites
+Make sure you have [Node.js](https://nodejs.org/) (v18 or higher recommended) and npm installed.
 
-```bash
-git clone https://github.com/Priyanshu-byte-coder/devtrack.git
-cd devtrack
-npm install
-cp .env.example .env.local
-# fill in .env.local — see DEVELOPMENT.md for exact values
-npm run dev
+### Steps
+1. **Fork the Repository:** Click the "Fork" button at the top-right of the [DevTrack repository](https://github.com/Priyanshu-byte-coder/devtrack) to create your own copy.
+2. **Clone Your Fork:**
+   ```bash
+   git clone https://github.com/<your-username>/devtrack.git
+   cd devtrack
+   ```
+3. **Configure Upstream Remote:**
+   ```bash
+   git remote add upstream https://github.com/Priyanshu-byte-coder/devtrack.git
+   ```
+4. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
+5. **Environment Configuration:**
+   * Copy the example environment file:
+     ```bash
+     cp .env.example .env.local
+     ```
+   * Open `.env.local` and populate any required configuration values (e.g., Supabase, NextAuth credentials).
+6. **Start the Dev Server:**
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
+
+---
+
+## 3. Branching and Workflow
+
+Always create a descriptive branch for your changes rather than committing directly to `main`.
+
+### Branch Naming Conventions
+Choose a prefix matching the nature of your task:
+* **Features:** `feat/<short-description>` (e.g., `feat/add-404-page`)
+* **Bug Fixes:** `fix/<short-description>` (e.g., `fix/streak-at-risk-mobile`)
+* **Documentation:** `docs/<short-description>` (e.g., `docs/add-contributing-guidelines`)
+* **Tests:** `test/<short-description>` (e.g., `test/timezone-parsing`)
+* **Refactoring:** `refactor/<short-description>` (e.g., `refactor/webhooks-signature`)
+
+---
+
+## 4. Commit Guidelines
+
+We use **Conventional Commits** to keep our repository history structured, descriptive, and clean.
+
+### Format
+```text
+<type>(<scope>): <short description>
 ```
 
-Stuck? Check [Common errors](./DEVELOPMENT.md#common-errors) in `DEVELOPMENT.md` first.
+### Types
+* `feat`: A new feature
+* `fix`: A bug fix
+* `docs`: Documentation changes
+* `style`: Code style changes (white-space, formatting, missing semi-colons, etc.)
+* `refactor`: A code change that neither fixes a bug nor adds a feature
+* `test`: Adding missing tests or correcting existing ones
+* `chore`: Updating build tasks, package manager configs, etc.
+
+### Examples
+* `feat(landing): add custom 404 page for better branding`
+* `fix(dashboard): resolve mobile layout stats card overflow`
+* `docs(readme): update setup prerequisites in README`
 
 ---
 
-## Project Structure
+## 5. Code Style & Standards
 
-Key files:
-
-| Path | Purpose |
-|------|---------|
-| `src/app/api/metrics/contributions/` | Commit activity from GitHub API |
-| `src/app/api/metrics/prs/` | PR analytics from GitHub API |
-| `src/app/api/metrics/streak/` | Commit streak calculation |
-| `src/app/api/metrics/repos/` | Top repositories by commits |
-| `src/app/api/goals/` | Weekly goals CRUD via Supabase |
-| `src/lib/auth.ts` | NextAuth config, GitHub OAuth, Supabase user upsert |
-| `src/lib/supabase.ts` | Supabase admin client (server-side only) |
-| `src/components/` | Dashboard UI components |
-| `supabase/schema.sql` | DB schema — run once in Supabase SQL Editor |
-
-See [DEVELOPMENT.md](./DEVELOPMENT.md) for architecture walkthrough and how to add new widgets.
+To maintain a professional codebase:
+* **Automated Formatting:** We use ESLint and Prettier. Ensure your files are clean before committing:
+  ```bash
+  npm run lint
+  ```
+* **No Unused Code:** Remove any unused imports, commented-out dead code blocks, or active `console.log` statements prior to opening a PR.
+* **Accessibility (a11y):** Build with semantic HTML elements and include proper ARIA roles and labels for interactive components.
 
 ---
 
-## Making Changes
+## 6. Pull Request (PR) Checklist
 
-### Branch naming
+Before submitting your PR to the upstream repository, verify the following:
 
-```
-feat/issue-42-add-dark-mode
-fix/issue-17-pr-count-off-by-one
-docs/update-setup-guide
-```
-
-### Commit style (Conventional Commits)
-
-```
-feat: add dark mode toggle to dashboard
-fix: correct PR merge rate calculation
-docs: add Supabase setup troubleshooting
-```
-
-### Code style
-
-- TypeScript strict mode — no `any` types
-- ESLint + Prettier — run `npm run lint` before pushing
-- Components: one file per component, named exports
-- API routes: use `getServerSession(authOptions)` for auth checks, never trust client input
+- [ ] **Tests Pass:** All unit/integration tests run and pass without errors (`npx vitest run`).
+- [ ] **No Build Errors:** The application builds correctly (`npm run build`).
+- [ ] **No Console Errors:** Verify in the browser console that there are no warnings or runtime exceptions.
+- [ ] **Descriptive PR Details:** Fill out the PR template completely. Link the issue being closed (e.g., `Closes #123`).
+- [ ] **Screenshots Included:** If your change modifies any UI or styling, attach clear mobile and desktop screenshots or a short demo GIF in the PR description.
+- [ ] **Clean Git History:** Rebase your branch against the latest upstream `main` to resolve conflicts cleanly.
 
 ---
 
-## Submitting a PR
-
-1. Push your branch to your fork
-2. Open a PR against `main`
-3. Fill out the PR template completely
-4. Link the issue: `Closes #42`
-5. Ensure CI passes (lint + type check)
-
-PRs without a linked issue will not be reviewed.
-
----
-
-## Review Process
-
-- First response within **48 hours**
-- Address all review comments before requesting re-review
-- After approval, maintainer merges (contributors do not self-merge)
-
----
-
-## Issue Labels
-
-| Label | Meaning |
-|-------|---------|
-| `good-first-issue` | Beginner friendly, scoped, documented |
-| `medium` | Requires some context, moderate complexity |
-| `advanced` | Architectural, discuss in issue before coding |
-| `bug` | Something broken |
-| `enhancement` | New feature or improvement |
-| `docs` | Documentation only |
-| `~1h` `~2h` `~4h` `~8h` | Estimated effort |
-
----
-
-## Questions?
-
-Open a [GitHub Discussion](../../discussions) — don't open an issue for questions.
+Thank you for contributing to DevTrack! 🚀
