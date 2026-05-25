@@ -692,6 +692,7 @@ function SetupSection() {
    ═══════════════════════════════════════════ */
 function ContributeSection({ stats }: { stats: RepoStats }) {
   const [ref, vis] = useScrollReveal(0.08);
+  const rankedContributors = stats.contributors.slice(0, 5);
 
   const statTiles = [
     { icon: '★', value: stats.stars,          suffix: '',  label: 'GITHUB STARS' },
@@ -741,28 +742,226 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
         ))}
       </div>
 
-      {/* Headline + tagline */}
-      <div style={{ maxWidth: 680, marginBottom: 40 }}>
-        <h2 style={{
-          fontFamily: DISP, fontWeight: 800,
-          fontSize: 'clamp(28px,4vw,52px)', color: TEXT,
-          letterSpacing: '-0.03em', lineHeight: 1.05,
-          margin: '0 0 16px',
-        }}>
-          BUILT IN PUBLIC.<br />
-          <span style={{ color: A }}>SHIP WITH US.</span>
-        </h2>
-        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>
-          DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
-          who actually use it. Every widget, every metric, every API was contributed by
-          someone in this list. {stats.goodFirstIssues > 0 && (
-            <span style={{ color: TEXT }}>
-              {stats.goodFirstIssues} issues are tagged good&nbsp;first&nbsp;issue and waiting right now.
-            </span>
-          )}
-        </p>
-      </div>
+      {/* Headline + tagline + left-side ranking */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 32,
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          marginBottom: 40,
+          flexDirection: 'row-reverse', // This moves leaderboard to left side
+        }}
+      >
+        <div style={{ flex: '1 1 420px', maxWidth: 680 }}>
+          <h2 style={{
+            fontFamily: DISP, fontWeight: 800,
+            fontSize: 'clamp(28px,4vw,52px)', color: TEXT,
+            letterSpacing: '-0.03em', lineHeight: 1.05,
+            margin: '0 0 16px',
+          }}>
+            BUILT IN PUBLIC.<br />
+            <span style={{ color: A }}>SHIP WITH US.</span>
+          </h2>
+          <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>
+            DevTrack is fully open source - MIT licensed, self-hostable, and built by developers
+            who actually use it. Every widget, every metric, every API was contributed by
+            someone in this list. {stats.goodFirstIssues > 0 && (
+              <span style={{ color: TEXT }}>
+                {stats.goodFirstIssues} issues are tagged good&nbsp;first&nbsp;issue and waiting right now.
+              </span>
+            )}
+          </p>
+        </div>
 
+        {rankedContributors.length > 0 && (
+          <div style={{ flex: '0 1 400px', width: '100%', maxWidth: 420, marginRight: 'auto' }}>
+            <div style={{ 
+              fontFamily: MONO, 
+              fontSize: 10, 
+              color: '#444', 
+              letterSpacing: '0.1em', 
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <span style={{ 
+                display: 'inline-block', 
+                width: 4, 
+                height: 4, 
+                borderRadius: '50%', 
+                background: A,
+                animation: 'pulse 2s infinite',
+              }} />
+              TOP CONTRIBUTORS
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {rankedContributors.map((c, i) => {
+                const isGold = i === 0;
+                const isSilver = i === 1;
+                const isBronze = i === 2;
+                const borderColor = isGold ? '#fbbf24' : isSilver ? '#e5e7eb' : isBronze ? '#cd7f32' : '#1a1a1a';
+                const bgGradient = isGold ? 'linear-gradient(135deg, rgba(251,191,36,0.05) 0%, rgba(251,191,36,0.02) 100%)' :
+                                  isSilver ? 'linear-gradient(135deg, rgba(229,231,235,0.05) 0%, rgba(229,231,235,0.02) 100%)' :
+                                  isBronze ? 'linear-gradient(135deg, rgba(205,127,50,0.05) 0%, rgba(205,127,50,0.02) 100%)' :
+                                  'none';
+                const badge = isGold ? '🥇' : isSilver ? '🥈' : isBronze ? '🥉' : `${i + 1}`;
+                const rankColor = isGold ? '#fbbf24' : isSilver ? '#9ca3af' : isBronze ? '#cd7f32' : A;
+                
+                return (
+                  <a
+                    key={c.login}
+                    href={c.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`#${i + 1} @${c.login}`}
+                    className="contributor-card"
+                    style={{
+                      width: '100%',
+                      background: bgGradient || '#0e0e0e',
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: 12,
+                      padding: '12px 16px',
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                      textDecoration: 'none',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={e => {
+                      const el = e.currentTarget;
+                      el.style.transform = 'translateX(4px) translateY(-2px)';
+                      el.style.borderColor = A;
+                      el.style.boxShadow = `0 8px 20px rgba(129,140,248,0.15), 0 0 0 1px ${A}40`;
+                      el.style.background = isGold ? 'linear-gradient(135deg, rgba(251,191,36,0.12) 0%, rgba(129,140,248,0.04) 100%)' :
+                                            isSilver ? 'linear-gradient(135deg, rgba(229,231,235,0.12) 0%, rgba(129,140,248,0.04) 100%)' :
+                                            isBronze ? 'linear-gradient(135deg, rgba(205,127,50,0.12) 0%, rgba(129,140,248,0.04) 100%)' :
+                                            'linear-gradient(135deg, rgba(129,140,248,0.08) 0%, rgba(129,140,248,0.02) 100%)';
+                      
+                      const shine = el.querySelector('.shine-effect') as HTMLElement;
+                      if (shine) {
+                        shine.style.transform = 'translateX(100%)';
+                        setTimeout(() => {
+                          shine.style.transform = 'translateX(-100%)';
+                        }, 50);
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      const el = e.currentTarget;
+                      el.style.transform = 'translateX(0) translateY(0)';
+                      el.style.borderColor = borderColor;
+                      el.style.boxShadow = 'none';
+                      el.style.background = bgGradient || '#0e0e0e';
+                    }}
+                  >
+                    <div 
+                      className="shine-effect"
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: '-100%',
+                        width: '100%',
+                        height: '100%',
+                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)',
+                        transition: 'transform 0.5s ease',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    
+                    <div style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${rankColor}20, ${rankColor}05)`,
+                      border: `1px solid ${rankColor}40`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: isGold || isSilver || isBronze ? 20 : 12,
+                      fontWeight: 600,
+                      fontFamily: MONO,
+                      color: rankColor,
+                      flexShrink: 0,
+                      transition: 'all 0.2s ease',
+                    }}>
+                      {badge}
+                    </div>
+                    
+                    <img
+                      src={`${c.avatar_url}&s=64`}
+                      alt={c.login}
+                      width={40}
+                      height={40}
+                      loading="lazy"
+                      style={{ 
+                        borderRadius: '50%', 
+                        border: `2px solid ${borderColor}`,
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0,
+                      }}
+                      onMouseEnter={e => {
+                        const img = e.currentTarget;
+                        img.style.transform = 'scale(1.05)';
+                        img.style.borderColor = A;
+                      }}
+                      onMouseLeave={e => {
+                        const img = e.currentTarget;
+                        img.style.transform = 'scale(1)';
+                        img.style.borderColor = borderColor;
+                      }}
+                    />
+                    
+                    <div style={{ 
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                    }}>
+                      <span style={{ 
+                        fontFamily: MONO, 
+                        fontSize: 13, 
+                        fontWeight: 500,
+                        color: TEXT,
+                        transition: 'color 0.2s ease',
+                      }}>
+                        @{c.login}
+                      </span>
+                      <span style={{
+                        fontFamily: MONO,
+                        fontSize: 9,
+                        color: '#444',
+                        letterSpacing: '0.05em',
+                      }}>
+                        {isGold ? '🏆 TOP CONTRIBUTOR' : isSilver ? '⭐ CORE MEMBER' : isBronze ? '🌟 ACTIVE MEMBER' : `RANK #${i + 1}`}
+                      </span>
+                    </div>
+                    
+                    <div style={{
+                      width: 24,
+                      height: 24,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#333',
+                      transition: 'all 0.2s ease',
+                      fontSize: 16,
+                    }}>
+                      →
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+      
       {/* Contributor avatars */}
       {stats.contributors.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', marginBottom: 40, gap: 0 }}>
@@ -887,6 +1086,18 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       className="lnd-root"
       style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}
     >
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.5;
+            transform: scale(0.8);
+          }
+        }
+      `}</style>
       <MouseSpotlight />
       <LandingNav />
       <HeroSection />
