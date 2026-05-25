@@ -37,7 +37,7 @@ export default function NotificationBell() {
   }, [fetchNotifications]);
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+   function handleClickOutside(e: MouseEvent | TouchEvent) {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(e.target as Node)
@@ -47,10 +47,12 @@ export default function NotificationBell() {
     }
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+  document.removeEventListener("mousedown", handleClickOutside);
+  document.removeEventListener("touchstart", handleClickOutside);
+};
   }, []);
-
   const handleOpen = useCallback(async () => {
     setOpen((prev) => {
       const next = !prev;
