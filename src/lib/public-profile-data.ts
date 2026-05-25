@@ -159,6 +159,10 @@ export async function fetchPublicStreak(
   };
 }
 
+/**
+ * Calculates the top language by sampling the user's 30 most recently updated
+ * repositories and counting which primary language appears most frequently.
+ */
 export async function fetchTopLanguage(
   username: string,
   token?: string

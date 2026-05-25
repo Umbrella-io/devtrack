@@ -10,8 +10,8 @@ export const runtime = "edge";
 export const alt = "DevTrack Profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-// Cache for 24 hours
-export const revalidate = 86400;
+// Do not export `revalidate` here because the GitHub-backed data fetches used by
+// this route are currently performed as uncached requests by the shared helpers.
 
 export default async function Image({
   params,
