@@ -33,6 +33,9 @@ import { redirect } from "next/navigation";
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/");
+  // If the JWT callback detected that the GitHub token has been revoked,
+  // redirect to the landing page so the user must re-authenticate.
+  if (session.error === "TokenRevoked") redirect("/");
 
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
