@@ -41,6 +41,34 @@ function InsightRow({
     </div>
   );
 }
+function TrendBadge({
+  direction,
+  percentage,
+}: {
+  direction: "up" | "down" | "stable";
+  percentage: number;
+}) {
+  const styles =
+    direction === "up"
+      ? "bg-green-500/10 text-green-400 border-green-500/20"
+      : direction === "down"
+        ? "bg-red-500/10 text-red-400 border-red-500/20"
+        : "bg-blue-500/10 text-blue-400 border-blue-500/20";
+
+  const label =
+    direction === "up"
+      ? `↑ ${percentage}% Improving`
+      : direction === "down"
+        ? `↓ ${percentage}% Declining`
+        : "Stable Activity";
+
+  return (
+    <div
+    className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${styles}`} >
+      {label}
+    </div>
+  );
+}
 
 function HourTooltip({
   active,
@@ -113,7 +141,7 @@ export default function CodingActivityInsightsCard() {
           return;
         }
 
-        setError("We couldn't load your coding activity insights right now. Please try again in a moment.");
+        setError("We couldn't load your AI Productivity Insights right now. Please try again in a moment.");
       })
       .finally(() => {
         if (requestId !== requestIdRef.current) {
@@ -155,6 +183,29 @@ export default function CodingActivityInsightsCard() {
         label: "Least active",
         value: `${data.leastActiveHour.label} with ${formatCommitCount(data.leastActiveHour.count)}`,
       },
+      {
+        label: "Consistency",
+        value: `${data.consistencyScore ?? 0}% weekly consistency`,
+      },
+
+      {
+          label: "Productivity",
+          value:
+            data.productivityLevel === "Excellent"
+              ? "🟢 Excellent"
+              : data.productivityLevel === "Very Good"
+                ? "🔵 Very Good"
+                : data.productivityLevel === "Good"
+                  ? "🟡 Good"
+                  : data.productivityLevel === "Moderate"
+                    ? "🟠 Moderate"
+                    : "🔴 Low",
+        },
+
+      {
+        label: "Daily Average",
+        value: `${data.averageDailyCommits ?? 0} commits/day`,
+      },
     ];
 
     if (data.mostActiveDay) {
@@ -182,6 +233,14 @@ export default function CodingActivityInsightsCard() {
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
             Coding Activity Insights
           </h2>
+          {data?.weeklyTrend ? (
+            <div className="mt-2">
+              <TrendBadge
+                direction={data.weeklyTrend.direction}
+                percentage={data.weeklyTrend.percentage}
+              />
+            </div>
+          ) : null}
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             {subtitle}
           </p>
@@ -228,7 +287,7 @@ export default function CodingActivityInsightsCard() {
       ) : !hasData ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card-muted)] px-4 text-center">
           <p className="text-sm text-[var(--muted-foreground)]">
-            Not enough commit activity to generate coding insights yet.
+            Not enough coding activity was detected to generate AI-powered productivity insights yet.
           </p>
         </div>
       ) : (
@@ -272,12 +331,64 @@ export default function CodingActivityInsightsCard() {
           </div>
 
           <div
-            className={`grid gap-3 ${data?.mostActiveDay ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}
-          >
-            {insightRows.map((row) => (
-              <InsightRow key={row.label} label={row.label} value={row.value} />
-            ))}
+      className={`grid gap-3 ${
+        data?.mostActiveDay
+          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          : "grid-cols-1 sm:grid-cols-2"
+      }`}
+    >
+      {insightRows.map((row) => (
+        <InsightRow
+          key={row.label}
+          label={row.label}
+          value={row.value}
+        />
+      ))}
+    </div>
+
+    {(data?.summary?.length || data?.recommendations?.length) && (
+      <div className="space-y-4 rounded-xl border border-[var(--border)] bg-[var(--card-muted)] p-4">
+
+        {data.summary?.length ? (
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-[var(--card-foreground)]">
+              AI Productivity Summary
+            </h3>
+
+            <div className="space-y-2">
+              {data.summary.map((item, index) => (
+                <div
+                  key={index}
+                  className="rounded-md bg-[var(--control)] px-3 py-2 text-sm text-[var(--card-foreground)]"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
           </div>
+        ) : null}
+
+        {data.recommendations?.length ? (
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-[var(--card-foreground)]">
+              Smart Recommendations
+            </h3>
+
+            <div className="space-y-2">
+              {data.recommendations.map((item, index) => (
+                <div
+                  key={index}
+                  className="rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--muted-foreground)]"
+                >
+                  • {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+      </div>
+    )}
         </div>
       )}
     </div>

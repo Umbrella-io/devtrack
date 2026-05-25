@@ -183,3 +183,4 @@ sm:grid-cols-[72px_1fr_110px_110px] border-b border-[var(--border)] bg-[var(--co
     </main>
   );
 }
+

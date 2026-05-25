@@ -21,7 +21,6 @@ export default function SignInPage() {
         >
           Sign in with GitHub
         </button>
-
       </div>
     </main>
   );

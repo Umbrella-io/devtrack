@@ -345,3 +345,5 @@ export default function ContributionHeatmap({
     </div>
   );
 }
+
+

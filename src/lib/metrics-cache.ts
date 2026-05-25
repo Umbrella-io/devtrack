@@ -17,22 +17,69 @@ export const METRICS_CACHE_TTL_SECONDS = {
 
 type MetricsCacheEndpoint = keyof typeof METRICS_CACHE_TTL_SECONDS;
 type CacheParamValue = boolean | number | string | null | undefined;
+type MemoryCacheEntry = { value: unknown; expiresAt: number };
 
 let redisClient: Redis | null | undefined;
+const MAX_MEMORY_CACHE_ENTRIES = 500;
 
 /* ============================================================
    Persists across Next.js Fast Refresh in local development
    ============================================================ */
 const globalForCache = globalThis as unknown as {
-  metricsMemoryCache: Map<string, { value: any; expiresAt: number }>;
+  metricsMemoryCache?: Map<string, MemoryCacheEntry>;
 };
 
 const memoryCache =
-  globalForCache.metricsMemoryCache ||
-  new Map<string, { value: any; expiresAt: number }>();
+  globalForCache.metricsMemoryCache ?? new Map<string, MemoryCacheEntry>();
 
 if (process.env.NODE_ENV !== "production") {
   globalForCache.metricsMemoryCache = memoryCache;
+}
+
+function ensureMemoryCacheCapacity(): void {
+  while (memoryCache.size > MAX_MEMORY_CACHE_ENTRIES) {
+    const oldestKey = memoryCache.keys().next().value;
+    if (oldestKey === undefined) {
+      break;
+    }
+    memoryCache.delete(oldestKey);
+  }
+}
+
+function isValidTtl(ttlSeconds: number): boolean {
+  return Number.isFinite(ttlSeconds) && ttlSeconds > 0;
+}
+
+function getMemoryCacheValue<T>(key: string): T | null {
+  const hit = memoryCache.get(key);
+  if (!hit) {
+    return null;
+  }
+
+  if (hit.expiresAt <= Date.now()) {
+    memoryCache.delete(key);
+    return null;
+  }
+
+  memoryCache.delete(key);
+  memoryCache.set(key, hit);
+  return hit.value as T;
+}
+
+function setMemoryCacheValue<T>(
+  key: string,
+  value: T,
+  ttlSeconds: number
+): void {
+  if (!isValidTtl(ttlSeconds)) {
+    return;
+  }
+
+  memoryCache.set(key, {
+    value,
+    expiresAt: Date.now() + ttlSeconds * 1000,
+  });
+  ensureMemoryCacheCapacity();
 }
 
 function isTruthyCacheBypass(value: string | null): boolean {
@@ -42,7 +89,7 @@ function isTruthyCacheBypass(value: string | null): boolean {
   return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }
 
-function getRedisClient(): Redis | null {
+export function getRedisClient(): Redis | null {
   if (redisClient !== undefined) {
     return redisClient;
   }
@@ -84,23 +131,27 @@ export function metricsCacheKey(
   return `metrics:${userId}:${endpoint}:${cacheParams.toString() || "default"}`;
 }
 
-export async function cacheGet<T>(key: string): Promise<T | null> {
+export async function cacheGet<T>(
+  key: string,
+  ttlSeconds?: number
+): Promise<T | null> {
+  const memoryValue = getMemoryCacheValue<T>(key);
+  if (memoryValue !== null) {
+    return memoryValue;
+  }
+
   const redis = getRedisClient();
   
   if (redis) {
     try {
-      return await redis.get<T>(key);
+      const redisValue = await redis.get<T>(key);
+      if (redisValue !== null && ttlSeconds !== undefined) {
+        setMemoryCacheValue(key, redisValue, ttlSeconds);
+      }
+      return redisValue;
     } catch {
       return null;
     }
-  }
-
-  const hit = memoryCache.get(key);
-  if (hit && hit.expiresAt > Date.now()) {
-    return hit.value as T;
-  }
-  if (hit) {
-    memoryCache.delete(key);
   }
   
   return null;
@@ -111,6 +162,10 @@ export async function cacheSet<T>(
   value: T,
   ttlSeconds: number
 ): Promise<void> {
+  if (!isValidTtl(ttlSeconds)) {
+    return;
+  }
+
   const redis = getRedisClient();
   
   if (redis) {
@@ -119,28 +174,9 @@ export async function cacheSet<T>(
     } catch {
       // Cache failures must not break dashboard metrics.
     }
-    return;
   }
 
-if (typeof ttlSeconds !== "number" || ttlSeconds <= 0 || !Number.isFinite(ttlSeconds)) {
-    console.warn("Invalid TTL value:", ttlSeconds);
-    return;
-  }
-
-  /* 🌟 ULTIMATE FIX: Bound the Memory Cache size to prevent OOM 🌟 */
-  const MAX_CACHE_ENTRIES = 1000;
-  if (memoryCache.size >= MAX_CACHE_ENTRIES) {
-    // Evict the oldest entry (First In, First Out approach)
-    const firstKey = memoryCache.keys().next().value;
-    if (firstKey !== undefined) {
-      memoryCache.delete(firstKey);
-    }
-  }
-
-  memoryCache.set(key, {
-    value,
-    expiresAt: Date.now() + ttlSeconds * 1000,
-  });
+  setMemoryCacheValue(key, value, ttlSeconds);
 }
 
 export async function withMetricsCache<T>(
@@ -152,7 +188,7 @@ export async function withMetricsCache<T>(
   loadFresh: () => Promise<T>
 ): Promise<T> {
   if (!options.bypass) {
-    const cached = await cacheGet<T>(options.key);
+    const cached = await cacheGet<T>(options.key, options.ttlSeconds);
     if (cached !== null) {
       return cached;
     }
