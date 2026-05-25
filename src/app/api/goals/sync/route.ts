@@ -57,7 +57,7 @@ export async function POST() {
   // ── 2. Fetch all commit-based goals for this week ─────────────────────────
   // Fix for Bug 1: column is `period_start` (full ISO timestamp), not `week_start`.
   // Use a range filter (.gte / .lte) instead of string equality.
-  const { data: commitGoals, error: goalsError } = await supabaseAdmin
+  const { data: activityGoals, error: goalsError } = await supabaseAdmin
     .from("goals")
     .select("id, unit")
     .eq("user_id", user.id)
@@ -69,7 +69,7 @@ export async function POST() {
     return Response.json({ error: "Failed to fetch goals" }, { status: 500 });
   }
 
-  if (!commitGoals || commitGoals.length === 0) {
+  if (!activityGoals || activityGoals.length === 0) {
     return Response.json({ updated: 0, commitCount: 0 });
   }
 
@@ -94,18 +94,23 @@ export async function POST() {
 
   // ── 4. Update all commit-based goals with the real commit count ───────────
   const now = new Date().toISOString();
-  const commitGoalsToUpdate = commitGoals.filter(g => g.unit === "commits");
-  const prGoalsToUpdate = commitGoals.filter(g => g.unit === "prs");
+  const commitGoalsToUpdate = activityGoals.filter(g => g.unit === "commits");
+  const prGoalsToUpdate = activityGoals.filter(g => g.unit === "prs");
 
   let totalUpdated = 0;
 
   // Update commits
   if (commitGoalsToUpdate.length > 0) {
     const commitIds = commitGoalsToUpdate.map(g => g.id);
-    await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from("goals")
       .update({ current: commitCount, last_synced_at: now })
       .in("id", commitIds);
+      
+    if (updateError) {
+      return Response.json({ error: "Failed to update commit goals" }, { status: 500 });
+    }
+    
     totalUpdated += commitIds.length;
   }
 
@@ -127,12 +132,18 @@ export async function POST() {
       const prCount = prData.total_count || 0;
       const prIds = prGoalsToUpdate.map(g => g.id);
       
-      await supabaseAdmin
+      const { error: prUpdateError } = await supabaseAdmin
         .from("goals")
         .update({ current: prCount, last_synced_at: now })
         .in("id", prIds);
+        
+      if (prUpdateError) {
+        return Response.json({ error: "Failed to update PR goals" }, { status: 500 });
+      }
       
       totalUpdated += prIds.length;
+    } else {
+      return Response.json({ error: "GitHub API error fetching PRs" }, { status: 502 });
     }
   }
 

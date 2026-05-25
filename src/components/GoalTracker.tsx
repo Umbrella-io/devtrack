@@ -134,7 +134,7 @@ export default function GoalTracker() {
     setDeadline("");
 
     // Immediately sync if it was a commit-based goal or prs
-    if (unit === "commits") {
+    if (unit === "commits" || unit === "prs") {
       await handleSync();
     } else {
       await loadGoals().catch(() => {});

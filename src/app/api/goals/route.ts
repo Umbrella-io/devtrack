@@ -147,6 +147,7 @@ try {
   if (typeof deadline === "string") {
     const d = new Date(deadline);
     if (!isNaN(d.getTime())) {
+      d.setUTCHours(23, 59, 59, 999);
       safeDeadline = d.toISOString();
     }
   }
