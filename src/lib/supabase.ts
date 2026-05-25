@@ -20,7 +20,9 @@ interface User {
  * Look up a user by GitHub username only if their profile is public.
  * Returns the user row if found and is_public is true, otherwise null.
  */
-export async function getUserByUsername(username: string): Promise<User | null> {
+export async function getUserByUsername(
+  username: string
+): Promise<User | null> {
   const { data, error } = await supabaseAdmin
     .from("users")
     .select("id,github_id,github_login,is_public,created_at,updated_at")
@@ -30,9 +32,9 @@ export async function getUserByUsername(username: string): Promise<User | null> 
 
   if (error) {
     if (error.code === "PGRST116") {
-      // No rows found
       return null;
     }
+
     console.error("Error fetching user:", error);
     return null;
   }
