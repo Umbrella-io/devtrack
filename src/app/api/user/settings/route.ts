@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { encryptToken } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ async function fetchUserSettings(userId: string) {
   // Tier 1: All columns
   const res1 = await supabaseAdmin
     .from("users")
-    .select("id, github_login, is_public, leaderboard_opt_in, pinned_repos")
+    .select("id, github_login, is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv")
     .eq("id", userId)
     .single();
 
@@ -20,8 +21,11 @@ async function fetchUserSettings(userId: string) {
       error: null,
       hasLeaderboardOptIn: true,
       hasPinnedRepos: true,
+      hasWakatimeKey: true,
       leaderboard_opt_in: (res1.data as any).leaderboard_opt_in ?? false,
       pinned_repos: (res1.data as any).pinned_repos || [],
+      wakatime_api_key_encrypted: (res1.data as any).wakatime_api_key_encrypted || null,
+      wakatime_api_key_iv: (res1.data as any).wakatime_api_key_iv || null,
     };
   }
 
@@ -31,8 +35,11 @@ async function fetchUserSettings(userId: string) {
       error: res1.error,
       hasLeaderboardOptIn: false,
       hasPinnedRepos: false,
+      hasWakatimeKey: false,
       leaderboard_opt_in: false,
       pinned_repos: [] as string[],
+      wakatime_api_key_encrypted: null,
+      wakatime_api_key_iv: null,
     };
   }
 
@@ -49,8 +56,11 @@ async function fetchUserSettings(userId: string) {
       error: null,
       hasLeaderboardOptIn: true,
       hasPinnedRepos: false,
+      hasWakatimeKey: false,
       leaderboard_opt_in: (res2.data as any).leaderboard_opt_in ?? false,
       pinned_repos: [] as string[],
+      wakatime_api_key_encrypted: null,
+      wakatime_api_key_iv: null,
     };
   }
 
@@ -60,8 +70,11 @@ async function fetchUserSettings(userId: string) {
       error: res2.error,
       hasLeaderboardOptIn: false,
       hasPinnedRepos: false,
+      hasWakatimeKey: false,
       leaderboard_opt_in: false,
       pinned_repos: [] as string[],
+      wakatime_api_key_encrypted: null,
+      wakatime_api_key_iv: null,
     };
   }
 
@@ -78,8 +91,11 @@ async function fetchUserSettings(userId: string) {
       error: null,
       hasLeaderboardOptIn: false,
       hasPinnedRepos: false,
+      hasWakatimeKey: false,
       leaderboard_opt_in: false,
       pinned_repos: [] as string[],
+      wakatime_api_key_encrypted: null,
+      wakatime_api_key_iv: null,
     };
   }
 
@@ -88,8 +104,11 @@ async function fetchUserSettings(userId: string) {
     error: res3.error,
     hasLeaderboardOptIn: false,
     hasPinnedRepos: false,
+    hasWakatimeKey: false,
     leaderboard_opt_in: false,
     pinned_repos: [] as string[],
+    wakatime_api_key_encrypted: null,
+    wakatime_api_key_iv: null,
   };
 }
 
