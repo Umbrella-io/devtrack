@@ -35,11 +35,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Failed to decrypt API key", not_configured: true }, { status: 500 });
     }
 
-    const authHeader = `Basic ${Buffer.from(apiKey).toString("base64")}`;
+    const authHeader = `Basic ${Buffer.from(apiKey + ":").toString("base64")}`;
 
     const res = await fetch("https://wakatime.com/api/v1/users/current/summaries?range=Last%207%20Days", {
       headers: { Authorization: authHeader },
-      next: { revalidate: 3600 },
+      cache: "no-store",
     });
 
     if (!res.ok) {

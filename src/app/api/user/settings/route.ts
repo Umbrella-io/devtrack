@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { encryptToken } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -143,8 +144,6 @@ export async function GET(req: NextRequest) {
   });
 }
 
-import { encryptToken } from "@/lib/crypto";
-
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
@@ -210,7 +209,7 @@ export async function PATCH(req: NextRequest) {
     } else if (typeof wakatime_api_key === "string") {
       try {
         const testRes = await fetch("https://wakatime.com/api/v1/users/current/summaries?range=Today", {
-          headers: { Authorization: `Basic ${Buffer.from(wakatime_api_key).toString("base64")}` },
+          headers: { Authorization: `Basic ${Buffer.from(wakatime_api_key + ":").toString("base64")}` },
         });
         if (!testRes.ok) {
           return NextResponse.json({ error: "Invalid Wakatime API key" }, { status: 400 });

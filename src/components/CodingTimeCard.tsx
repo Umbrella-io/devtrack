@@ -36,13 +36,8 @@ export default function CodingTimeCard() {
     async function loadStats() {
       try {
         const res = await fetch("/api/metrics/coding-time");
-        if (res.ok) {
-          const json = await res.json();
-          setData(json);
-        } else {
-          const json = await res.json();
-          setData(json);
-        }
+        const json = await res.json();
+        setData(json);
       } catch {
         setData(null);
       } finally {

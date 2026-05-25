@@ -602,6 +602,7 @@ function SettingsPageContent() {
                   value={wakatimeKey}
                   onChange={(e) => setWakatimeKey(e.target.value)}
                   placeholder={settings.has_wakatime_key ? "•••••••••••••••• (Configured)" : "Enter your Wakatime API key"}
+                  autoComplete="new-password"
                   className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 />
                 <button
