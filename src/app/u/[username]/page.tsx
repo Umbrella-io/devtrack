@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { permanentRedirect } from "next/navigation";
 import BadgeSection from "@/components/BadgeSection";
 import StatsCard from "@/components/StatsCard";
 import CopyLinkButton from "@/components/CopyLinkButton";
@@ -75,6 +76,10 @@ export default async function PublicProfilePage({
 }) {
   const { username } = params;
   const profile = await fetchPublicProfile(username);
+
+  if (profile && username !== profile.username) {
+    permanentRedirect(`/u/${profile.username}`);
+  }
 
   if (!profile) {
     return (
