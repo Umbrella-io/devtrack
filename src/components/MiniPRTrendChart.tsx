@@ -21,7 +21,15 @@ function formatDays(value: number | null | undefined) {
   return `${value.toFixed(2)}d`;
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+}) {
   if (!active || !payload?.length) return null;
 
   const point = payload[0]?.payload as PRReviewTrendPoint;
