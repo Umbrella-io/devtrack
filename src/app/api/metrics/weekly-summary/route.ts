@@ -41,13 +41,26 @@ function calculateCurrentStreak(activeDates: Set<string>): number {
 async function fetchActiveDates(githubLogin: string, token: string): Promise<Set<string>> {
   const since = new Date();
   since.setDate(since.getDate() - 90);
-  const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${since.toISOString().slice(0, 10)}&per_page=100&sort=author-date&order=desc`,
-    { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }, cache: "no-store" }
-  );
-  if (!searchRes.ok) throw new Error("GitHub API error");
-  const data = (await searchRes.json()) as { items: Array<{ commit: { author: { date: string } } }> };
-  return new Set(data.items.map(item => item.commit.author.date.slice(0, 10)));
+  const sinceStr = since.toISOString().slice(0, 10);
+
+  const activeDates = new Set<string>();
+  let page = 1;
+
+  while (true) {
+    const searchRes = await fetch(
+      `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
+      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }, cache: "no-store" }
+    );
+    if (!searchRes.ok) throw new Error("GitHub API error");
+    const data = (await searchRes.json()) as { items: Array<{ commit: { author: { date: string } } }> };
+    for (const item of data.items) {
+      activeDates.add(item.commit.author.date.slice(0, 10));
+    }
+    if (data.items.length < 100 || page >= 10) break;
+    page++;
+  }
+
+  return activeDates;
 }
 
 export async function GET(req: NextRequest) {
@@ -78,6 +91,7 @@ const commitsData = (await commitsRes.json()) as {
       let commitsThisWeek = 0;
       let commitsPrevWeek = 0;
       const activeDaysThisWeek = new Set<string>();
+      const activeDaysLastWeek = new Set<string>();
       const repoCounts = new Map<string, number>();
 
       for (const item of commitsData.items) {
@@ -91,6 +105,7 @@ const commitsData = (await commitsRes.json()) as {
           repoCounts.set(repoName, (repoCounts.get(repoName) ?? 0) + 1);
         } else if (commitDate >= prevWeekStart && commitDate <= prevWeekEnd) {
           commitsPrevWeek++;
+          activeDaysLastWeek.add(item.commit.author.date.slice(0, 10));
         }
       }
 
@@ -128,6 +143,8 @@ const commitsData = (await commitsRes.json()) as {
 
       let prsOpenedThisWeek = 0;
       let prsMergedThisWeek = 0;
+      let prsOpenedLastWeek = 0;
+      let prsMergedLastWeek = 0;
 
       for (const item of prsData.items) {
         const createdAt = new Date(item.created_at);
@@ -136,6 +153,11 @@ const commitsData = (await commitsRes.json()) as {
           prsOpenedThisWeek++;
           if (item.pull_request?.merged_at != null) {
             prsMergedThisWeek++;
+          }
+        } else if (createdAt >= prevWeekStart && createdAt <= prevWeekEnd) {
+          prsOpenedLastWeek++;
+          if (item.pull_request?.merged_at != null) {
+            prsMergedLastWeek++;
           }
         }
       }
@@ -150,8 +172,14 @@ const commitsData = (await commitsRes.json()) as {
           delta: commitDelta,
           trend: commitDelta > 0 ? "up" : commitDelta < 0 ? "down" : "same",
         },
-        prs: { opened: prsOpenedThisWeek, merged: prsMergedThisWeek },
-        activeDays: activeDaysThisWeek.size,
+        prs: {
+          thisWeek: { opened: prsOpenedThisWeek, merged: prsMergedThisWeek },
+          lastWeek: { opened: prsOpenedLastWeek, merged: prsMergedLastWeek },
+        },
+        activeDays: {
+          thisWeek: activeDaysThisWeek.size,
+          lastWeek: activeDaysLastWeek.size,
+        },
         streak: calculateCurrentStreak(streakDates),
         topRepo,
       };

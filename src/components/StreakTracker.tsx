@@ -1,9 +1,11 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { useCountUp } from "@/hooks/useCountUp";
 import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
+import { toast } from "sonner";
+import { toPng } from "html-to-image";
 
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
@@ -43,10 +45,32 @@ export default function StreakTracker() {
   const [freezeLoading, setFreezeLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const animatedCurrent = useCountUp(data?.current ?? 0);
   const animatedLongest = useCountUp(data?.longest ?? 0);
   const animatedActiveDays = useCountUp(data?.totalActiveDays ?? 0);
+
+  const handleDownload = useCallback(async () => {
+    if (!containerRef.current) return;
+    try {
+      setIsDownloading(true);
+      const dataUrl = await toPng(containerRef.current, {
+        cacheBust: true,
+        style: { margin: "0" },
+      });
+      const link = document.createElement("a");
+      link.download = "devtrack-streak.png";
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to generate image", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  }, []);
 
   const fetchStreak = useCallback(async () => {
     setLoading(true);
@@ -284,23 +308,32 @@ export default function StreakTracker() {
       ]
     : [];
 
-  const handleCopy = () => {
+    const handleCopy = async () => {
     if (!data) return;
+
     const textToCopy = [
       "🔥 DevTrack Stats",
       `Current streak: ${data.current} days`,
       `Longest streak: ${data.longest} days`,
-      `Active days: ${data.totalActiveDays}`
-    ].join('\n');
+      `Active days: ${data.totalActiveDays}`,
+    ].join("\n");
 
     if (!navigator.clipboard) {
+      toast.error("Clipboard is not supported in this browser.");
       return;
     }
 
-    navigator.clipboard.writeText(textToCopy).then(() => {
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+
       setCopied(true);
+
+      toast.success("Streak stats copied to clipboard!");
+
       setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {});
+    } catch {
+      toast.error("Failed to copy streak stats.");
+    }
   };
 
   const currentMilestone = 
@@ -346,27 +379,46 @@ export default function StreakTracker() {
           onDismiss={handleDismissBanner}
         />
       )}
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-          Commit Streaks
-        </h2>
+      <div className="relative">
         {data && (
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
-            aria-label="Copy streak stats to clipboard"
-          >
-            {copied ? (
-              <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
-            ) : (
-              <span className="text-base opacity-80 hover:opacity-100">📋</span>
-            )}
-          </button>
+          <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
+              aria-label="Copy streak stats to clipboard"
+            >
+              {copied ? (
+                <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
+              ) : (
+                <span className="text-base opacity-80 hover:opacity-100">📋</span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="cursor-pointer flex h-8 items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-70 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors gap-1.5 shadow-sm"
+              aria-label="Download streak stats as image"
+            >
+              {isDownloading ? (
+                <span className="w-4 h-4 rounded-full border-2 border-[var(--accent-foreground)]/30 border-t-[var(--accent-foreground)] animate-spin" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              )}
+              <span>SHARE</span>
+            </button>
+          </div>
         )}
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+        <div ref={containerRef} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+              Commit Streaks
+            </h2>
+            {data && <div className="h-8 w-24" />}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
         {stats.map((stat) => (
           <div
             key={stat.label}
@@ -543,6 +595,7 @@ export default function StreakTracker() {
           />
         </>
       ) : null}
+      </div>
     </div>
     </>
   );

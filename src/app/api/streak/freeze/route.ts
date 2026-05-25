@@ -72,17 +72,11 @@ export async function POST() {
 
   const { data: freeze, error } = await supabaseAdmin
     .from("streak_freezes")
-    .insert({ user_id: user.id, freeze_date: today })
+    .upsert({ user_id: user.id, freeze_date: today }, { onConflict: "user_id,freeze_date" })
     .select()
     .single();
 
   if (error) {
-    if (error.code === "23505") {
-      return Response.json(
-        { error: "You already have an unused streak freeze." },
-        { status: 409 }
-      );
-    }
     return Response.json({ error: "Failed to apply freeze." }, { status: 500 });
   }
 

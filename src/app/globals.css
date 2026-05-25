@@ -21,6 +21,10 @@
   --control-hover: #cbd5e1;
   --tooltip: #ffffff;
   --tooltip-foreground: #0f172a;
+  --destructive: #ef4444;
+  --destructive-muted: rgba(239, 68, 68, 0.1);
+  --destructive-muted-border: rgba(239, 68, 68, 0.3);
+  --destructive-foreground: #ffffff;
 }
 
 .dark {
@@ -42,6 +46,10 @@
   --control-hover: #475569;
   --tooltip: #1e293b;
   --tooltip-foreground: #f8fafc;
+  --destructive: #f87171;
+  --destructive-muted: rgba(248, 113, 113, 0.1);
+  --destructive-muted-border: rgba(248, 113, 113, 0.3);
+  --destructive-foreground: #ffffff;
 }
 
 body {
@@ -60,3 +68,19 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
 .dark .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--muted-foreground); }
 .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeUp 0.7s ease-out;
+}
