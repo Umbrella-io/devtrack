@@ -4,11 +4,16 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
+import PrivacySettings from "@/components/PrivacySettings";
+import { toast } from "sonner";
+import Link from "next/link";
 
 interface UserSettings {
   id: string;
   github_login: string;
   is_public: boolean;
+  leaderboard_opt_in: boolean;
+  has_wakatime_key?: boolean;
 }
 
 interface LinkedAccount {
@@ -112,19 +117,18 @@ function SettingsPageContent() {
   const [removingAccountId, setRemovingAccountId] = useState<string | null>(
     null
   );
+  const [wakatimeKey, setWakatimeKey] = useState("");
+  const [savingWakatime, setSavingWakatime] = useState(false);
 
   const statusMessage = useMemo(
     () =>
-      getStatusMessage(
-        searchParams.get("success"),
-        searchParams.get("error")
-      ),
+      getStatusMessage(searchParams.get("success"), searchParams.get("error")),
     [searchParams]
   );
 
   const { theme, setTheme } = useHeatmapTheme();
 
-  // Redirect to signin if not authenticated
+ // Redirect to signin if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
       redirect("/");
@@ -204,13 +208,69 @@ function SettingsPageContent() {
     }
   };
 
+  const handleToggleLeaderboard = async (value: boolean) => {
+    if (!settings) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leaderboard_opt_in: value }),
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+      } else {
+        console.error("Failed to update leaderboard setting");
+      }
+    } catch (error) {
+      console.error("Error updating leaderboard setting:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveWakatime = async () => {
+    if (!settings) return;
+    setSavingWakatime(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wakatime_api_key: wakatimeKey }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setWakatimeKey("");
+        toast.success(wakatimeKey === "" ? "Wakatime key removed" : "Wakatime key saved successfully!");
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to update Wakatime key");
+      }
+    } catch (error) {
+      console.error("Error updating Wakatime key:", error);
+      toast.error("Failed to update Wakatime key");
+    } finally {
+      setSavingWakatime(false);
+    }
+  };
+
   const copyShareLink = () => {
     if (!settings) return;
     const link = `${window.location.origin}/u/${settings.github_login}`;
-    navigator.clipboard.writeText(link).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => { });
+    navigator.clipboard
+      .writeText(link)
+      .then(() => {
+        setCopied(true);
+        toast.success("Link copied successfully!");
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        toast.error("Failed to copy link");
+      });
   };
 
   const handleRemoveAccount = async (githubId: string) => {
@@ -273,13 +333,25 @@ function SettingsPageContent() {
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">
-            Settings
-          </h1>
-          <p className="mt-2 text-[var(--muted-foreground)]">
-            Manage your profile and preferences
-          </p>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <Link href="/dashboard">
+            <button className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--accent)] md:bg-[var(--accent)] md:text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 md:h-auto md:w-auto md:rounded-lg md:px-4 md:py-2">
+              <span className="text-lg items-center transition-transform duration-200 group-hover:-translate-x-1.5">
+                ←
+              </span>
+              <span className="ml-2 hidden text-sm font-medium md:inline">
+                Back to Dashboard
+              </span>
+            </button>
+          </Link>
+          <div className="sm:text-left mr-2">
+            <h1 className="text-3xl pl-2 text-center font-bold text-[var(--foreground)]">
+              Settings
+            </h1>
+            <p className="md:text-right text-center mt-2 text-[var(--muted-foreground)]">
+              Manage your profile and preferences
+            </p>
+          </div>
         </div>
 
         {statusMessage && (
@@ -287,7 +359,7 @@ function SettingsPageContent() {
             className={`mb-6 rounded-xl border p-4 text-sm ${
               statusMessage.kind === "success"
                 ? "border-green-500/30 bg-green-500/10 text-green-400"
-                : "border-red-500/30 bg-red-500/10 text-red-400"
+                : "border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] text-[var(--destructive)]"
             }`}
           >
             {statusMessage.message}
@@ -324,7 +396,7 @@ function SettingsPageContent() {
                   }`}
                 />
                 <div
-                  className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
                     settings.is_public ? "translate-x-4" : ""
                   }`}
                 />
@@ -401,6 +473,51 @@ function SettingsPageContent() {
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                Public Leaderboard
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                Appear on the public leaderboard for streaks, commits, and pull
+                requests.
+              </p>
+            </div>
+
+            <label className="flex items-center cursor-pointer select-none">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={settings.leaderboard_opt_in}
+                  onChange={(e) => handleToggleLeaderboard(e.target.checked)}
+                  disabled={saving}
+                  className="sr-only"
+                />
+                <div
+                  className={`block h-6 w-10 rounded-full transition-colors ${
+                    settings.leaderboard_opt_in
+                      ? "bg-[var(--accent)]"
+                      : "bg-[var(--control)]"
+                  }`}
+                />
+                <div
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
+                    settings.leaderboard_opt_in ? "translate-x-4" : ""
+                  }`}
+                />
+              </div>
+            </label>
+          </div>
+
+          <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--control)] p-3">
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Turning this on also enables your public profile so leaderboard
+              rows can link to your DevTrack stats.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
@@ -421,7 +538,7 @@ function SettingsPageContent() {
           </div>
 
           {removeError && (
-            <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+            <div className="mt-4 rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-3 text-sm text-[var(--destructive)]">
               {removeError}
             </div>
           )}
@@ -461,7 +578,7 @@ function SettingsPageContent() {
                       onClick={() => handleRemoveAccount(account.githubId)}
                       aria-label={`Remove ${account.githubLogin}`}
                       disabled={removingAccountId === account.githubId}
-                      className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-60"
+                      className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--destructive-muted)] hover:text-[var(--destructive)] disabled:opacity-60"
                     >
                       {removingAccountId === account.githubId
                         ? "Removing..."
@@ -472,6 +589,61 @@ function SettingsPageContent() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                Wakatime Integration
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                Connect your Wakatime account to display accurate coding time and language usage.
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="wakatime-key" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
+                API Key
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="wakatime-key"
+                  type="password"
+                  value={wakatimeKey}
+                  onChange={(e) => setWakatimeKey(e.target.value)}
+                  placeholder={settings.has_wakatime_key ? "•••••••••••••••• (Configured)" : "Enter your Wakatime API key"}
+                  autoComplete="new-password"
+                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveWakatime}
+                  disabled={savingWakatime}
+                  className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60 min-w-[80px]"
+                >
+                  {savingWakatime ? "Saving..." : "Save"}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+                {settings.has_wakatime_key ? "Leave blank and click Save to remove your key." : "You can find your API key in your Wakatime Settings."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <PrivacySettings />
+        <div className="mt-4 flex justify-center items-center pt-6">
+          <Link href="/dashboard">
+            <button className="group inline-flex items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95">
+              <span className="mr-2 transition-transform duration-200 group-hover:-translate-x-1.5">
+                ←
+              </span>
+              Back to Dashboard
+            </button>
+          </Link>
         </div>
       </div>
     </div>

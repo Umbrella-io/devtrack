@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import CommitSearchPanel from "@/components/CommitSearchPanel";
+import type { CommitItem } from "@/lib/github";
 import {
   BarChart,
   Bar,
@@ -9,6 +11,7 @@ import {
   Line,
   AreaChart,
   Area,
+
   XAxis,
   YAxis,
   CartesianGrid,
@@ -26,6 +29,17 @@ interface GraphPoint {
   date: string;
   you: number;
   friend: number;
+}
+
+interface ContributionSources {
+  github?: Record<string, number>;
+  gitlab?: Record<string, number>;
+}
+
+interface ContributionResponse {
+  data: Record<string, number>;
+  commits?: CommitItem[];
+  sources?: ContributionSources;
 }
 
 type ViewMode = "bar" | "line" | "area";
@@ -73,6 +87,23 @@ function mergeContributionData(
   );
 }
 
+function mergeContributionSources(
+  sources: ContributionSources | undefined,
+  fallback: Record<string, number>
+): Record<string, number> {
+  if (!sources) return fallback;
+
+  const github = sources.github ?? fallback;
+  const gitlab = sources.gitlab ?? {};
+  const merged = { ...github };
+
+  for (const [day, commits] of Object.entries(gitlab)) {
+    merged[day] = (merged[day] ?? 0) + commits;
+  }
+
+  return merged;
+}
+
 export default function ContributionGraph() {
   const { selectedAccount } = useAccount();
   const [data, setData] = useState<DayData[]>([]);
@@ -82,6 +113,7 @@ export default function ContributionGraph() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [commits, setCommits] = useState<CommitItem[]>([]);
   const [usesTouchTooltip, setUsesTouchTooltip] = useState(false);
   
   // Compare mode state
@@ -91,6 +123,14 @@ export default function ContributionGraph() {
   const [compareError, setCompareError] = useState<string | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareRequestId, setCompareRequestId] = useState(0);
+
+  // Custom range state
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [showPopover, setShowPopover] = useState(false);
+  const [customLabel, setCustomLabel] = useState<string | null>(null);
+  const [customError, setCustomError] = useState<string | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   // Fetch my data
   useEffect(() => {
@@ -123,6 +163,9 @@ export default function ContributionGraph() {
 
   const handleRangeChange = (newDays: number) => {
     setDays(newDays);
+    setCustomLabel(null);
+    setCustomFrom("");
+    setCustomTo("");
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem("devtrack:contribution-range", String(newDays));
@@ -133,20 +176,31 @@ export default function ContributionGraph() {
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setCommits([]);
     const accountParam =
       selectedAccount !== null
         ? `&accountId=${encodeURIComponent(selectedAccount)}`
         : "";
-    fetch(`/api/metrics/contributions?days=${days}${accountParam}`)
+    const url =
+      customLabel && customFrom && customTo
+        ? `/api/metrics/contributions?from=${customFrom}&to=${customTo}${accountParam}`
+        : `/api/metrics/contributions?days=${days}${accountParam}`;
+
+    fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error("API error");
         return r.json();
       })
-      .then((res: { data: Record<string, number> }) => {
-        const sorted = Object.entries(res.data ?? {})
+      .then((res: ContributionResponse) => {
+        const merged = mergeContributionSources(
+          res.sources,
+          res.data ?? {}
+        );
+        const sorted = Object.entries(merged)
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([day, commits]) => ({ day, commits }));
         setData(sorted);
+        setCommits(res.commits ?? []);
       })
       .catch(() => {
         setError("Failed to load contribution data.");
@@ -156,7 +210,7 @@ export default function ContributionGraph() {
         setLastUpdated(new Date());
         setMinutesAgo(0);
       });
-  }, [days, selectedAccount]);
+    }, [days, selectedAccount, customFrom, customTo, customLabel]);
 
   // Fetch friend data when compare mode is on and compareUser changes
   useEffect(() => {
@@ -218,7 +272,11 @@ export default function ContributionGraph() {
 
   useEffect(() => {
     const handleToggleChart = () => {
-      setChartType((prev) => (prev === "bar" ? "line" : "bar"));
+      setChartType((prev) => {
+        if (prev === "bar") return "line";
+        if (prev === "line") return "area";
+        return "bar";
+      });
     };
     window.addEventListener("toggleChart", handleToggleChart);
     return () => window.removeEventListener("toggleChart", handleToggleChart);
@@ -233,12 +291,65 @@ export default function ContributionGraph() {
     return () => clearInterval(interval);
   }, [lastUpdated]);
 
+  useEffect(() => {
+    if (!showPopover) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowPopover(false);
+    };
+    const handleClick = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setShowPopover(false);
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    document.addEventListener("mousedown", handleClick);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, [showPopover]);
+
   const handleClearCompare = () => {
     window.dispatchEvent(new Event("devtrack:clear-compare-user"));
     setCompareMode(false);
     setCompareUser(null);
     setFriendData([]);
     setCompareError(null);
+  };
+
+  const handleCustomApply = () => {
+    setCustomError(null);
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (!customFrom || !customTo) {
+      setCustomError("Please select both dates.");
+      return;
+    }
+    if (customFrom > customTo) {
+      setCustomError("Start date must be before end date.");
+      return;
+    }
+    if (customTo > today) {
+      setCustomError("End date can't be in the future.");
+      return;
+    }
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const diff =
+      (new Date(customTo).getTime() - new Date(customFrom).getTime()) / msPerDay;
+    if (diff > 365 * 2) {
+      setCustomError("Max range is 2 years.");
+      return;
+    }
+
+    const fmt = (d: string) => {
+      const [year, month, day] = d.split("-").map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      };
+    setCustomLabel(`${fmt(customFrom)} – ${fmt(customTo)}`);
+    setShowPopover(false);
   };
 
   const mergedData =
@@ -276,9 +387,9 @@ export default function ContributionGraph() {
                 key={r.days}
                 onClick={() => handleRangeChange(r.days)}
                 aria-label={`Show ${r.days}-day range`}
-                aria-pressed={days === r.days}
+                aria-pressed={days === r.days && !customLabel}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  days === r.days
+                  days === r.days && !customLabel
                     ? "bg-[var(--accent)] text-[var(--background)]"
                     : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                 }`}
@@ -286,6 +397,78 @@ export default function ContributionGraph() {
                 {r.label}
               </button>
             ))}
+          </div>
+
+          {/* Custom date range */}
+          <div className="relative" ref={popoverRef}>
+            <button
+              onClick={() => setShowPopover((v) => !v)}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors border border-[var(--border)] ${
+                customLabel
+                  ? "bg-[var(--accent)] text-[var(--background)]"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              {customLabel ?? "Custom…"}
+            </button>
+
+            {showPopover && (
+              <div className="absolute right-0 top-10 z-50 w-72 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-lg">
+                <p className="text-sm font-medium text-[var(--foreground)] mb-3">
+                  Custom range
+                </p>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs text-[var(--muted-foreground)]">
+                    Start date
+                    <input
+                      type="date"
+                      value={customFrom}
+                      max={new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => {
+                        setCustomFrom(e.target.value);
+                        if (!customTo) {
+                          setCustomTo(new Date().toISOString().slice(0, 10));
+                        }
+                      }}
+                      className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-sm text-[var(--foreground)]"
+                    />
+                  </label>
+                  <label className="text-xs text-[var(--muted-foreground)]">
+                    End date
+                    <input
+                      type="date"
+                      value={customTo}
+                      max={new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-sm text-[var(--foreground)]"
+                    />
+                  </label>
+                  {customError && (
+                    <p className="text-xs text-[var(--destructive)]">{customError}</p>
+                  )}
+                  {customLabel && (
+                    <button
+                      onClick={() => {
+                        setCustomLabel(null);
+                        setCustomFrom("");
+                        setCustomTo("");
+                        setCustomError(null);
+                        setShowPopover(false);
+                      }}
+                      className="w-full rounded-md border border-[var(--border)] py-1.5 text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  <button
+                    onClick={handleCustomApply}
+                    className="mt-1 w-full rounded-md bg-[var(--accent)] py-1.5 text-sm font-medium text-[var(--background)] hover:opacity-90 transition-opacity"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Chart Toggle Buttons */}
@@ -301,7 +484,7 @@ export default function ContributionGraph() {
                   type="button"
                   onClick={() => setChartType(chart.key)}
                   aria-pressed={chartType === chart.key}
-                  className={`px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none ${
+                  className={`px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                     chartType === chart.key
                       ? "bg-[var(--accent)] text-[var(--background)]"
                       : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
@@ -326,7 +509,17 @@ export default function ContributionGraph() {
       </div>
 
       {loading ? (
-        <div className="h-[220px] rounded border border-[var(--border)] bg-[var(--background)] animate-pulse" />
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <span className="sr-only">Loading contribution graph</span>
+          <div
+            aria-hidden="true"
+            className="h-[220px] rounded border border-[var(--border)] bg-[var(--background)] animate-pulse"
+          />
+        </div>
       ) : error ? (
         <div className="flex h-[220px] items-center rounded-lg border border-[var(--border)] bg-[var(--background)] px-4">
           <p className="text-sm text-[var(--muted-foreground)]">
@@ -360,7 +553,7 @@ export default function ContributionGraph() {
                   color: "var(--foreground)",
                   fontSize: "12px",
                 }}
-                cursor={{ fill: "var(--background)" }}
+                cursor={false}
               />
               {hasFriendData && (
                 <Legend wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }} />
@@ -408,7 +601,7 @@ export default function ContributionGraph() {
                   color: "var(--foreground)",
                   fontSize: "12px",
                 }}
-                cursor={{ fill: "var(--background)" }}
+                cursor={false}
               />
               {hasFriendData && (
                 <Legend wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }} />
@@ -462,7 +655,7 @@ export default function ContributionGraph() {
                   color: "var(--foreground)",
                   fontSize: "12px",
                 }}
-                cursor={{ fill: "var(--background)" }}
+                cursor={false}
               />
               {hasFriendData && (
                 <Legend wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }} />
@@ -513,6 +706,10 @@ export default function ContributionGraph() {
         <p className="mt-2 text-right text-xs text-[var(--muted-foreground)]">
           Comparing with {compareUser}
         </p>
+      )}
+
+      {!compareMode && (
+        <CommitSearchPanel commits={commits} loading={loading} />
       )}
     </div>
   );

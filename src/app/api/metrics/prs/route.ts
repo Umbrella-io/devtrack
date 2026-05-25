@@ -1,83 +1,89 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { withMetricsCache } from "@/lib/cache";
+import {
+  isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
+  metricsCacheKey,
+  withMetricsCache,
+} from "@/lib/metrics-cache";
 
-async function fetchPRMetrics(token: string, githubLogin: string) {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const dateString = thirtyDaysAgo.toISOString().split('T')[0];
+export const dynamic = "force-dynamic";
 
-  // Scoped to last 30 days for accurate semantics as requested
-  const query = `search(type: ISSUE, query: "is:pr reviewed-by:${githubLogin} created:>=${dateString}", first: 100) {
-    issueCount
-  }`;
-
-  const response = await fetch("https://api.github.com/graphql", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ query: `query { ${query} }` }),
-  });
-
-  const json = await response.json();
-  const reviewsGiven = json.data?.search?.issueCount || 0;
-
-  // Fetch total PRs authored by user to compute ratio cleanly
-  const prQuery = `search(type: ISSUE, query: "is:pr author:${githubLogin} created:>=${dateString}", first: 1) {
-    issueCount
-  }`;
-  
-  const prResponse = await fetch("https://api.github.com/graphql", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ query: `query { ${prQuery} }` }),
-  });
-  
-  const prJson = await prResponse.json();
-  const prsAuthored = prJson.data?.search?.issueCount || 0;
-  
-  const reviewRatio = prsAuthored > 0 ? parseFloat((reviewsGiven / prsAuthored).toFixed(2)) : 0;
-
-  return {
-    reviewsGiven,
-    reviewRatio,
-  };
-}
-
-export const GET = withMetricsCache(async (req: Request) => {
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
-
-  if (!session?.accessToken || !session?.githubLogin) {
-    return new NextResponse("Unauthorized", { status: 401 });
+  
+  if (!session?.accessToken || !session.githubLogin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const username = session.githubLogin;
+
+  // 1. Check if the user is forcing a refresh
+  const bypass = isMetricsCacheBypassed(request);
+  
+  // 2. Generate a unique cache key for this user's PRs
+  const key = metricsCacheKey(session.githubId ?? session.githubLogin, "prs");
 
   try {
-    // Completely removed the insecure query parameter setup
-    const primaryMetrics = await fetchPRMetrics(session.accessToken, session.githubLogin);
-    
-    // Multi-account handler passing independent account contexts correctly
-    const accounts = session.accounts || [];
-    const auxiliaryMetrics = await Promise.all(
-      accounts.map((account) => fetchPRMetrics(account.token, account.githubLogin))
+    // 3. Wrap your custom PR processing logic inside the bulletproof cache function!
+    const metrics = await withMetricsCache(
+      { bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.prs },
+      async () => {
+        const { searchParams } = new URL(request.url);
+        const range = searchParams.get("range") || "30";
+
+        const daysLimit = parseInt(range, 10);
+        const sinceDate = new Date();
+        sinceDate.setDate(sinceDate.getDate() - daysLimit);
+        const sinceIso = sinceDate.toISOString().split("T")[0];
+
+        // This queries the Pull Requests authored by the user
+        const githubUrl = `https://api.github.com/search/issues?q=author:${username}+type:pr+created:>=${sinceIso}&per_page=100`;
+
+        const res = await fetch(githubUrl, {
+          headers: { Authorization: `Bearer ${session.accessToken}` },
+        });
+        
+        if (!res.ok) throw new Error("GitHub API error");
+        const data = await res.json();
+        const prs = data.items || [];
+
+        let totalOpen = 0;
+        let totalClosed = 0;
+        let mergedThisWeek = 0;
+
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        prs.forEach((pr: { state: string; closed_at: string | null; pull_request?: { merged_at?: string | null } }) => {
+          if (pr.state === "open") {
+            totalOpen++;
+          } else if (pr.state === "closed") {
+            totalClosed++;
+            // Check if it was explicitly merged this week
+            const closedAt = pr.closed_at ? new Date(pr.closed_at) : null;
+            if (closedAt && closedAt.getTime() >= oneWeekAgo.getTime()) {
+              mergedThisWeek++;
+            }
+          }
+        });
+
+        return {
+          stats: {
+            totalOpen,
+            totalClosed,
+            mergedThisWeek,
+          },
+        };
+      }
     );
-
-    const totalReviewsGiven = primaryMetrics.reviewsGiven + auxiliaryMetrics.reduce((acc, curr) => acc + curr.reviewsGiven, 0);
-    const avgReviewRatio = auxiliaryMetrics.length > 0 
-      ? parseFloat(((primaryMetrics.reviewRatio + auxiliaryMetrics.reduce((acc, curr) => acc + curr.reviewRatio, 0)) / (auxiliaryMetrics.length + 1)).toFixed(2))
-      : primaryMetrics.reviewRatio;
-
-    return NextResponse.json({
-      reviewsGiven: totalReviewsGiven,
-      reviewRatio: avgReviewRatio,
-    });
+    
+    return NextResponse.json(metrics);
   } catch (error) {
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to load PR metrics" },
+      { status: 502 }
+    );
   }
-});
-
+}

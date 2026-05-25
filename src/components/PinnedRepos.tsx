@@ -44,18 +44,28 @@ export default function PinnedRepos() {
         Pinned Repositories
       </h2>
       {loading ? (
-        <div className="space-y-3">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="space-y-3"
+        >
+          <span className="sr-only">Loading pinned repositories</span>
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-24 rounded-lg bg-[var(--card-muted)] animate-pulse" />
+            <div
+              key={i}
+              aria-hidden="true"
+              className="h-24 rounded-lg bg-[var(--card-muted)] animate-pulse"
+            />
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+        <div className="rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
             type="button"
             onClick={fetchPinnedRepos}
-            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+            className="mt-3 rounded-md border border-[var(--destructive-muted-border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive-muted)]"
           >
             Try again
           </button>

@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 export function useCountUp(target: number, duration?: number): number {
   const [count, setCount] = useState(0);
   const hasAnimated = useRef(false);
+  const prevTargetRef = useRef(target);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -13,7 +14,17 @@ export function useCountUp(target: number, duration?: number): number {
       return;
     }
 
+    if (prevTargetRef.current !== target) {
+      hasAnimated.current = false;
+      prevTargetRef.current = target;
+    }
+
     if (target === 0) {
+      setCount(0);
+      return;
+    }
+
+    if (target < 0) {
       setCount(0);
       return;
     }
