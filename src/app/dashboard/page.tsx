@@ -304,6 +304,9 @@ export default async function DashboardPage() {
       </div>
 
       {/* Row 6: Top repos + Language breakdown + Goal tracker */}
+      <div className="mt-6">
+        <h2 className="text-2xl font-semibold text-[var(--foreground)]">Goals</h2>
+      </div>
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <TopRepos />
         <LanguageBreakdown />
