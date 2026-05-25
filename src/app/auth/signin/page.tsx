@@ -18,7 +18,7 @@ export default function SignInPage() {
           onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
           className="w-full rounded-xl bg-[var(--foreground)] px-4 py-3 text-[var(--background)] font-semibold hover:opacity-90 transition"
         >
-          Sign in with GitHub
+          Login with GitHub
         </button>
       </div>
     </main>
