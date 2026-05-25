@@ -5,6 +5,7 @@ import {
   fetchPublicContributions,
   fetchPublicStreak,
 } from "@/lib/public-profile-data";
+import { getUpstashConfig, upstashRateLimitFixedWindow } from "@/lib/upstash-rest";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +65,13 @@ export async function GET(
 
   // Rate limiting
   const ip = getRateLimitKey(req);
-  const rateLimit = checkRateLimit(ip);
+  const rateLimit = getUpstashConfig()
+    ? await upstashRateLimitFixedWindow({
+        key: `public-profile-rate-limit:${ip}`,
+        limit: RATE_LIMIT_REQUESTS,
+        windowSeconds: Math.ceil(RATE_LIMIT_WINDOW_MS / 1000),
+      })
+    : checkRateLimit(ip);
 
   if (!rateLimit.allowed) {
     return NextResponse.json(
