@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import PRStatusDonutChart from "./PRStatusDonutChart";
+
 interface ReviewMetrics {
   totalReviews: number;
   approvalRate: string;
   avgFirstReviewHours: number | null;
   topRepos: { repo: string; count: number }[];
 }
+
 interface PRMetricsSummary {
   open: number;
   merged: number;
@@ -16,6 +18,17 @@ interface PRMetricsSummary {
   avgReviewHours: number;
   avgFirstReviewHours: number | null;
   mergeRate: string;
+  staleCount: number;
+  staleThresholdDays: number;
+  staleSearchUrl: string | null;
+}
+
+interface PRStat {
+  label: string;
+  value: string | number;
+  href?: string | null;
+  title?: string;
+  warning?: boolean;
 }
 
 interface PRData extends PRMetricsSummary {
@@ -25,7 +38,7 @@ interface PRData extends PRMetricsSummary {
 
 function formatReviewCycle(hours: number | null): string {
   if (hours === null) {
-    return "—";
+    return "--";
   }
 
   if (hours < 24) {
@@ -38,6 +51,7 @@ function formatReviewCycle(hours: number | null): string {
 export default function PRMetrics() {
   const { selectedAccount } = useAccount();
   const [metrics, setMetrics] = useState<PRData | null>(null);
+  const [staleThresholdDays, setStaleThresholdDays] = useState(7);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
@@ -48,12 +62,15 @@ export default function PRMetrics() {
     setLoading(true);
     setError(null);
 
-    const url =
-      selectedAccount !== null
-        ? `/api/metrics/prs?accountId=${encodeURIComponent(selectedAccount)}`
-        : "/api/metrics/prs";
+    const params = new URLSearchParams({
+      staleThresholdDays: String(staleThresholdDays),
+    });
 
-    fetch(url)
+    if (selectedAccount !== null) {
+      params.set("accountId", selectedAccount);
+    }
+
+    fetch(`/api/metrics/prs?${params.toString()}`)
       .then((r) => {
         if (!r.ok) throw new Error("API error");
         return r.json();
@@ -65,7 +82,7 @@ export default function PRMetrics() {
       })
       .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
       .finally(() => setLoading(false));
-  }, [selectedAccount]);
+  }, [selectedAccount, staleThresholdDays]);
 
   useEffect(() => {
     fetchMetrics();
@@ -92,9 +109,22 @@ export default function PRMetrics() {
       avgReview: string;
       avgFirstReview: string;
       mergeRate: string;
-    }
-  ) => [
+      stale?: string;
+    },
+    options: { includeStale?: boolean } = {}
+  ): PRStat[] => [
     { label: labels.open, value: source.open },
+    ...(options.includeStale
+      ? [
+          {
+            label: labels.stale ?? `Stale > ${source.staleThresholdDays}d`,
+            value: source.staleCount,
+            href: source.staleSearchUrl,
+            title: `${source.staleCount} open PRs are older than ${source.staleThresholdDays} days`,
+            warning: source.staleCount > 0,
+          },
+        ]
+      : []),
     { label: labels.merged, value: source.merged },
     { label: labels.avgReview, value: `${source.avgReviewHours}h` },
     {
@@ -106,13 +136,17 @@ export default function PRMetrics() {
   ];
 
   const githubStats = metrics
-    ? buildStats(metrics, {
-        open: "Open PRs",
-        merged: "Merged (30d)",
-        avgReview: "Avg Review Time",
-        avgFirstReview: "Avg First Review",
-        mergeRate: "Merge Rate",
-      })
+    ? buildStats(
+        metrics,
+        {
+          open: "Open PRs",
+          merged: "Merged (30d)",
+          avgReview: "Avg Review Time",
+          avgFirstReview: "Avg First Review",
+          mergeRate: "Merge Rate",
+        },
+        { includeStale: true }
+      )
     : [];
 
   const gitlabStats = metrics?.gitlab
@@ -125,33 +159,86 @@ export default function PRMetrics() {
       })
     : [];
 
+  const renderStat = (stat: PRStat) => {
+    const content = (
+      <>
+        <div
+          className={`truncate text-2xl font-bold ${
+            stat.warning ? "text-orange-300" : "text-[var(--accent)]"
+          }`}
+        >
+          {stat.value}
+        </div>
+        <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
+      </>
+    );
+    const className = `rounded-lg p-4 text-center min-w-0 transition-colors ${
+      stat.warning
+        ? "border border-orange-400/30 bg-orange-500/10 hover:bg-orange-500/15"
+        : "bg-[var(--control)]"
+    }`;
+
+    return stat.href ? (
+      <a
+        key={stat.label}
+        href={stat.href}
+        target="_blank"
+        rel="noreferrer"
+        className={className}
+        title={stat.title}
+      >
+        {content}
+      </a>
+    ) : (
+      <div key={stat.label} className={className} title={stat.title}>
+        {content}
+      </div>
+    );
+  };
+
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab("authored")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              activeTab === "authored"
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
-            }`}
-          >
-            PRs Authored
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("reviews")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              activeTab === "reviews"
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
-            }`}
-          >
-            Reviews Given
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("authored")}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                activeTab === "authored"
+                  ? "bg-[var(--accent)] text-white"
+                  : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
+              }`}
+            >
+              PRs Authored
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("reviews")}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                activeTab === "reviews"
+                  ? "bg-[var(--accent)] text-white"
+                  : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
+              }`}
+            >
+              Reviews Given
+            </button>
+          </div>
+          <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted-foreground)]">
+            Stale after
+            <select
+              value={staleThresholdDays}
+              onChange={(event) => setStaleThresholdDays(Number(event.target.value))}
+              className="rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--accent)]"
+            >
+              {[7, 14, 30].map((days) => (
+                <option key={days} value={days}>
+                  {days} days
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </div>
       {loading ? (
@@ -162,8 +249,8 @@ export default function PRMetrics() {
           className="space-y-4"
         >
           <span className="sr-only">Loading PR analytics</span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {[1, 2, 3, 4, 5].map((i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
                 aria-hidden="true"
@@ -186,26 +273,13 @@ export default function PRMetrics() {
         </div>
       ) : activeTab === "authored" ? (
         <div className="space-y-6">
-          {/* Stat grid */}
           <div>
             <p className="text-sm font-medium text-[var(--muted-foreground)]">GitHub PRs</p>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {githubStats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-lg bg-[var(--control)] p-4 text-center min-w-0"
-                  title={stat.title}
-                >
-                  <div className="truncate text-2xl font-bold text-[var(--accent)]">
-                    {stat.value}
-                  </div>
-                  <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
-                </div>
-              ))}
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+              {githubStats.map(renderStat)}
             </div>
           </div>
 
-          {/* PR status donut chart */}
           {metrics && (
             <div>
               <p className="mb-2 text-sm font-medium text-[var(--muted-foreground)]">
@@ -223,18 +297,7 @@ export default function PRMetrics() {
             <div className="space-y-4 border-t border-[var(--border)] pt-4">
               <p className="text-sm font-medium text-[var(--muted-foreground)]">GitLab MRs</p>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {gitlabStats.map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="rounded-lg bg-[var(--control)] p-4 text-center min-w-0"
-                    title={stat.title}
-                  >
-                    <div className="truncate text-2xl font-bold text-[var(--accent)]">
-                      {stat.value}
-                    </div>
-                    <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
-                  </div>
-                ))}
+                {gitlabStats.map(renderStat)}
               </div>
               <div>
                 <p className="mb-2 text-sm font-medium text-[var(--muted-foreground)]">
