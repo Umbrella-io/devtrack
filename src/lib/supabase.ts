@@ -13,16 +13,14 @@ if (!serviceRoleKey) {
 
 // Server-side only — use in API routes, never import in client components.
 // Service role bypasses RLS; auth is enforced by getServerSession checks.
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  serviceRoleKey
-);
+export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
 interface User {
   id: string;
   github_id: string;
   github_login: string;
   is_public: boolean;
+  leaderboard_opt_in?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -46,7 +44,6 @@ export async function getUserByUsername(
 
     if (error) {
       if (error.code === "PGRST116") {
-        // No rows found
         return null;
       }
       console.error("Error fetching user:", error);
