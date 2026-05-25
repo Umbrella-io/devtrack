@@ -13,23 +13,39 @@ import {
 async function fetchPublicProfile(
   username: string
 ): Promise<PublicProfileData | null> {
-  const user = await getUserByUsername(username);
-  if (!user) return null;
+  if (
+  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+) {
+  return null;
+}
+  try {
+    const user = await getUserByUsername(username);
 
-  const githubToken = process.env.GITHUB_TOKEN;
-  const [repos, contributions, streak] = await Promise.all([
-    fetchPublicTopRepos(user.github_login, githubToken, 30),
-    fetchPublicContributions(user.github_login, githubToken, 30),
-    fetchPublicStreak(user.github_login, githubToken),
-  ]);
+    if (!user) {
+      return null;
+    }
 
-  return {
-    username: user.github_login,
-    userId: user.id,
-    repos,
-    contributions,
-    streak,
-  };
+    const githubToken = process.env.GITHUB_TOKEN;
+
+    const [repos, contributions, streak] = await Promise.all([
+      fetchPublicTopRepos(user.github_login, githubToken, 30),
+      fetchPublicContributions(user.github_login, githubToken, 30),
+      fetchPublicStreak(user.github_login, githubToken),
+    ]);
+
+    return {
+      username: user.github_login,
+      userId: user.id,
+      repos,
+      contributions,
+      streak,
+    };
+  } catch (error) {
+    console.error("Failed to fetch public profile:", error);
+
+    return null;
+  }
 }
 
 export async function generateMetadata({
