@@ -29,24 +29,23 @@
 
 .dark {
   color-scheme: dark;
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --muted-foreground: #94a3b8;
-  --card: #1e293b;
-  --card-foreground: #f8fafc;
-  --card-muted: #334155;
-  --border: #334155;
+  --background: #080808;
+  --foreground: #e8e8e8;
+  --muted-foreground: #666666;
+  --card: #0e0e0e;
+  --card-foreground: #e8e8e8;
+  --card-muted: #161616;
+  --border: #222222;
   --accent: #818cf8;
   --success: #10b981;
   --warning: #fbbf24;
   --destructive: #f87171;
-  --accent-soft: rgba(99, 102, 241, 0.2);
-  --accent-foreground: #ffffff;
-  --control: #334155;
-  --control-hover: #475569;
-  --tooltip: #1e293b;
-  --tooltip-foreground: #f8fafc;
-  --destructive: #f87171;
+  --accent-soft: rgba(129, 140, 248, 0.12);
+  --accent-foreground: #000000;
+  --control: #161616;
+  --control-hover: #252525;
+  --tooltip: #0e0e0e;
+  --tooltip-foreground: #e8e8e8;
   --destructive-muted: rgba(248, 113, 113, 0.1);
   --destructive-muted-border: rgba(248, 113, 113, 0.3);
   --destructive-foreground: #ffffff;
@@ -83,4 +82,121 @@ body {
 
 .fade-up {
   animation: fadeUp 0.7s ease-out;
+}
+
+/* ─────────────────────────────────────────
+   DARK MODE GLOBAL TYPOGRAPHY
+   ───────────────────────────────────────── */
+.dark h1 {
+  font-family: var(--font-syne, system-ui, sans-serif);
+  letter-spacing: -0.03em;
+}
+
+/* Slim dark scrollbar matching theme */
+.dark {
+  scrollbar-width: thin;
+  scrollbar-color: #222 transparent;
+}
+.dark::-webkit-scrollbar       { width: 6px; height: 6px; }
+.dark::-webkit-scrollbar-track { background: transparent; }
+.dark::-webkit-scrollbar-thumb { background: #222; border-radius: 6px; }
+.dark::-webkit-scrollbar-thumb:hover { background: #333; }
+
+/* ─────────────────────────────────────────
+   LANDING PAGE
+   ───────────────────────────────────────── */
+@keyframes lndHeroIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lndTicker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.lnd-ticker {
+  animation: lndTicker 40s linear infinite;
+}
+
+.lnd-root ::selection {
+  background: rgba(129, 140, 248, 0.2);
+  color: #fff;
+}
+
+.lnd-nav-link {
+  font-family: var(--font-jetbrains, ui-monospace, monospace);
+  font-size: 12px;
+  font-weight: 500;
+  color: #888;
+  text-decoration: none;
+  padding: 6px 14px;
+  border: 1px solid #222;
+  border-radius: 5px;
+  transition: all 0.2s;
+}
+.lnd-nav-link:hover { color: #e0e0e0; border-color: #444; }
+
+.lnd-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-jetbrains, ui-monospace, monospace);
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  background: #818cf8;
+  padding: 12px 24px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.1s;
+}
+.lnd-cta-primary:hover  { background: #fff; }
+.lnd-cta-primary:active { transform: scale(0.97); }
+
+.lnd-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-jetbrains, ui-monospace, monospace);
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  background: transparent;
+  padding: 11px 22px;
+  border-radius: 6px;
+  border: 1px solid #222;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.lnd-cta-secondary:hover { color: #e0e0e0; border-color: #444; }
+
+.lnd-cell {
+  background: #0e0e0e;
+  border: 1px solid #1a1a1a;
+  border-radius: 8px;
+  padding: 14px 16px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.lnd-cell:hover { background: #141414; border-color: #2a2a2a; }
+
+.lnd-heatmap-cell { cursor: crosshair; }
+.lnd-heatmap-cell:hover {
+  transform: scale(1.6) !important;
+  box-shadow: 0 0 8px #818cf8;
+  z-index: 2;
+  position: relative;
+}
+
+.lnd-footer-link {
+  font-family: var(--font-jetbrains, ui-monospace, monospace);
+  font-size: 11px;
+  color: #333;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.lnd-footer-link:hover { color: #818cf8; }
+
+@media (max-width: 640px) {
+  .lnd-ticker { animation-duration: 20s !important; }
 }
