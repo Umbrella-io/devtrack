@@ -15,6 +15,7 @@ test.beforeEach(async ({ page }) => {
       accessToken: "test-token",
     },
     maxAge: 60 * 60,
+    cookieName: "next-auth.session-token",
   });
 
   await page.context().addCookies([

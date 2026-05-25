@@ -19,3 +19,9 @@ test("dashboard stays protected for unauthenticated users", async ({ page }) => 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("link", { name: "Sign in with GitHub" }).first()).toBeVisible();
 });
+
+test("landing has dashboard link", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.getByRole("link", { name: "Dashboard" })).toBeVisible();
+});
