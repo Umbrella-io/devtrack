@@ -852,14 +852,6 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
   );
 }
 
-/* ═══════════════════════════════════════════
-   LANDING FOOTER  (above global Footer)
-   ═══════════════════════════════════════════ */
-function LandingFooter() {
-  return (
-    
-  );
-}
 
 /* ═══════════════════════════════════════════
    MAIN EXPORT
@@ -879,7 +871,6 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <FeaturesSection />
       <ContributeSection stats={repoStats} />
       <SetupSection />
-      <LandingFooter />
     </div>
   );
 }
