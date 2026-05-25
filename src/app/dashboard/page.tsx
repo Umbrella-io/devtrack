@@ -1,6 +1,9 @@
+import DiscussionsWidget from "@/components/DiscussionsWidget";
+import ActivityRingChart from "@/components/ActivityRingChart";
 import ContributionGraph from "@/components/ContributionGraph";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
+import CommunityMetrics from "@/components/CommunityMetrics";
 import PRBreakdownChart from "@/components/PRBreakdownChart";
 import GoalTracker from "@/components/GoalTracker";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -17,10 +20,12 @@ import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import FriendComparison from "@/components/FriendComparison";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
+import { AIMentorWidget } from "@/components/AIMentorWidget";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
+import CodingTimeCard from "@/components/CodingTimeCard";
 import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
@@ -29,6 +34,9 @@ import { redirect } from "next/navigation";
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/");
+  // If the JWT callback detected that the GitHub token has been revoked,
+  // redirect to the landing page so the user must re-authenticate.
+  if (session.error === "TokenRevoked") redirect("/");
 
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
@@ -46,6 +54,10 @@ export default async function DashboardPage() {
 
       <div className="mb-6">
         <WeeklySummaryCard />
+      </div>
+
+      <div className="mb-6">
+        <AIMentorWidget />
       </div>
 
       <div className="mb-6">
@@ -67,14 +79,22 @@ export default async function DashboardPage() {
         <div>
           <StreakTracker />
           <LocalCodingTime />
+          <div className="mt-6">
+            <CodingTimeCard />
+          </div>
         </div>
       </div>
 
-      {/* Row 2: PR metrics, PR breakdown & Time Chart */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Row 2: PR metrics, community metrics, PR breakdown & Time Chart */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <PRMetrics />
+        <CommunityMetrics />
         <PRBreakdownChart />
         <CommitTimeChart />
+      </div>
+      {/* Row 2b: Activity Ring Chart */}
+      <div className="mt-6">
+        <ActivityRingChart />
       </div>
 
       <div className="mt-6">
@@ -91,6 +111,10 @@ export default async function DashboardPage() {
           <IssueMetrics />
         </div>
         <CIAnalytics />
+      </div>
+      {/* Row 3b: Discussion activity */}
+      <div className="mt-6">
+        <DiscussionsWidget />
       </div>
 
       {/* Row 4: Pinned repositories */}

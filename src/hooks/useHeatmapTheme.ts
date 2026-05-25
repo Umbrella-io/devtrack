@@ -119,9 +119,10 @@ export function getCalendarCellStyle(count: number, config: HeatmapThemeConfig):
 
 export function useHeatmapTheme() {
   const [theme, _setTheme] = useState<HeatmapTheme>("default");
+  const [mounted, setMounted] = useState(false);
 
-  // Initialize from localStorage on mount
   useEffect(() => {
+    setMounted(true);
     if (typeof window === "undefined") return;
 
     const saved = window.localStorage.getItem(STORAGE_KEY) as HeatmapTheme | null;
@@ -133,20 +134,17 @@ export function useHeatmapTheme() {
     _setTheme(saved ?? "default");
   }, []);
 
-  // Broadcast and persist theme changes
   const setTheme = (t: HeatmapTheme) => {
     if (typeof window !== "undefined") {
       try {
         window.localStorage.setItem(STORAGE_KEY, t);
       } catch {}
-      // notify other listeners in this window
       window.dispatchEvent(new CustomEvent("heatmap-theme-changed", { detail: t }));
     }
 
     _setTheme(t);
   };
 
-  // Listen for theme changes from other components/tabs
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -183,7 +181,7 @@ export function useHeatmapTheme() {
   );
 
   return {
-    theme,
+    theme: mounted ? theme : "default",
     setTheme,
     themeConfig,
     getHeatmapStyle,

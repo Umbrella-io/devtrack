@@ -4,11 +4,12 @@ import {
   checkBadgeRateLimit,
   getBadgeClientIp,
 } from "@/lib/badge-rate-limit";
+import { logError } from "@/lib/error-handler";
+import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
 export const dynamic = "force-dynamic";
 
 const GITHUB_API = "https://api.github.com";
-const GITHUB_USERNAME_RE = /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i;
 
 async function fetchGitHubWithToken(
   url: string,
@@ -33,14 +34,16 @@ async function fetchCommitsThisMonth(
   since.setDate(1);
   const sinceStr = since.toISOString().slice(0, 10);
 
-  const url = `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=1`;
-  const searchRes = await fetchGitHubWithToken(url, token);
+  const url = new URL(`${GITHUB_API}/search/commits`);
+  url.searchParams.set("q", `author:${username} author-date:>=${sinceStr}`);
+  url.searchParams.set("per_page", "1");
+  const searchRes = await fetchGitHubWithToken(url.toString(), token);
 
   if (!searchRes.ok) {
     const errorBody = await searchRes.text();
     console.error(`GitHub API error fetching commits for ${username}:`, {
       status: searchRes.status,
-      url,
+      url: url.toString(),
       body: errorBody,
     });
     return 0;
@@ -72,11 +75,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const username = req.nextUrl.searchParams.get("user");
+    const username = normalizeGitHubUsername(req.nextUrl.searchParams.get("user"));
 
-    if (!username || !GITHUB_USERNAME_RE.test(username)) {
+    if (!username) {
       return NextResponse.json(
-        { error: "Invalid username" },
+        { error: "Invalid GitHub username" },
         { status: 400 }
       );
     }
@@ -102,7 +105,13 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error generating commits badge:", error);
+    logError(error, {
+      endpoint: "/api/badge/commits",
+      operation: "generate_badge",
+      additionalContext: {
+        username: req.nextUrl.searchParams.get("user"),
+      },
+    });
 
     const svg = generateBadgeSVG({
       label: "Commits",

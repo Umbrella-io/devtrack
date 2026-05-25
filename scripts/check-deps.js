@@ -63,7 +63,37 @@ function extractImports(src) {
 
   return imports;
 }
+function loadInternalAliases(rootDir) {
+  const aliases = ["@/", "~/", "src/"];
 
+  const configFiles = ["tsconfig.json", "jsconfig.json"];
+
+  for (const file of configFiles) {
+    const configPath = path.join(rootDir, file);
+
+    if (!fs.existsSync(configPath)) continue;
+
+    try {
+      const config = JSON.parse(
+        fs.readFileSync(configPath, "utf8")
+      );
+
+      const paths = config.compilerOptions?.paths || {};
+
+      for (const key of Object.keys(paths)) {
+        aliases.push(
+          key.replace(/\*.*$/, "")
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `Warning: Failed to parse ${file}`
+      );
+    }
+  }
+
+  return aliases;
+}
 function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
   const missing = new Map(); // pkgName → Set of files
 
@@ -73,7 +103,7 @@ function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
 
     for (const mod of extractImports(src)) {
       // Skip relative imports, path aliases (@/ is the src alias — not a pkg)
-      const INTERNAL_ALIASES = ["@/", "~/", "src/"];
+      const INTERNAL_ALIASES = loadInternalAliases(cwd);
       if (
         mod.startsWith(".") || 
         mod.startsWith("/") || 
@@ -82,7 +112,17 @@ function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
         continue;
       }
       const pkgName = extractPackageName(mod);
-      if (BUILTINS.has(pkgName) || FRAMEWORK_ALIASES.has(pkgName)) continue;
+
+      const normalizedPkg = pkgName.startsWith("node:")
+        ? pkgName.slice(5)
+        : pkgName;
+
+      if (
+        BUILTINS.has(normalizedPkg) ||
+        FRAMEWORK_ALIASES.has(normalizedPkg)
+      ) {
+        continue;
+      }
       if (allDeps.has(pkgName)) continue;
 
       if (!missing.has(pkgName)) missing.set(pkgName, new Set());
