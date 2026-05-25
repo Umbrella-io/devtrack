@@ -1,60 +1,98 @@
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock Supabase admin client
-const mockSingle = vi.fn();
-const mockEq = vi.fn(() => ({ single: mockSingle }));
-const mockSelect = vi.fn(() => ({
-  eq: mockEq,
-  single: mockSingle,
-}));
-const mockUpsert = vi.fn(() => ({ select: mockSelect }));
+const fromMock = vi.fn();
+const supabaseAdmin = {
+  from: fromMock,
+};
 
-vi.mock("@/lib/supabase", () => ({
-  supabaseAdmin: {
-    from: vi.fn((table) => {
-      if (table === "users") {
-        return {
-          select: mockSelect,
-          upsert: mockUpsert,
-        };
-      }
-    }),
-  },
+vi.mock("../src/lib/supabase", () => ({
+  supabaseAdmin,
 }));
 
-import { resolveAppUser } from "@/lib/resolve-user";
+const { resolveAppUser } = await import("../src/lib/resolve-user");
 
-describe("resolveAppUser function", () => {
+function createExistingChain(result: unknown) {
+  const single = vi.fn(async () => result);
+  const eq = vi.fn(() => ({ single }));
+  const select = vi.fn(() => ({ eq }));
+  return { select, eq, single };
+}
+
+function createUpsertChain(result: unknown) {
+  const single = vi.fn(async () => result);
+  const select = vi.fn(() => ({ single }));
+  const upsert = vi.fn(() => ({ select }));
+  return { upsert, select, single };
+}
+
+describe("resolveAppUser", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    fromMock.mockReset();
   });
 
-  it("returns existing user when found", async () => {
-    mockSingle.mockResolvedValueOnce({ data: { id: "user-123" } });
+  it("returns null when user not found and githubLogin is null", async () => {
+    const existingChain = createExistingChain({ data: null });
+    const upsertChain = createUpsertChain({ data: null });
 
-    const result = await resolveAppUser("github-id-1");
+    fromMock
+      .mockImplementationOnce(() => existingChain)
+      .mockImplementationOnce(() => upsertChain);
 
-    expect(result).toEqual({ id: "user-123" });
-    expect(mockSelect).toHaveBeenCalledWith("id");
-    expect(mockEq).toHaveBeenCalledWith("github_id", "github-id-1");
-    expect(mockUpsert).not.toHaveBeenCalled();
+    const result = await resolveAppUser("github-id", null as unknown as string);
+
+    expect(result).toBeNull();
+    expect(fromMock).toHaveBeenCalledTimes(2);
+    expect(existingChain.select).toHaveBeenCalledWith("id");
+    expect(upsertChain.upsert).toHaveBeenCalledTimes(1);
   });
 
-  it("upserts and returns user when existing is not found", async () => {
-    // First call (find existing) returns null data
-    mockSingle.mockResolvedValueOnce({ data: null });
-    // Second call (select after upsert) returns upserted user
-    mockSingle.mockResolvedValueOnce({ data: { id: "user-new" } });
+  it("upserts new user when githubLogin is provided", async () => {
+    const existingChain = createExistingChain({ data: null });
+    const upsertChain = createUpsertChain({ data: { id: "new-user-id" } });
 
-    const result = await resolveAppUser("github-id-2", "octocat");
+    fromMock
+      .mockImplementationOnce(() => existingChain)
+      .mockImplementationOnce(() => upsertChain);
 
-    expect(result).toEqual({ id: "user-new" });
-    expect(mockUpsert).toHaveBeenCalledWith(
+    const result = await resolveAppUser("github-id", "github-login");
+
+    expect(result).toEqual({ id: "new-user-id" });
+    expect(fromMock).toHaveBeenCalledTimes(2);
+    expect(existingChain.select).toHaveBeenCalledWith("id");
+    expect(upsertChain.upsert).toHaveBeenCalledTimes(1);
+
+    const upsertPayload = upsertChain.upsert.mock.calls[0][0];
+    expect(upsertPayload).toEqual(
       expect.objectContaining({
-        github_id: "github-id-2",
-        github_login: "octocat",
-      }),
-      { onConflict: "github_id" }
+        github_id: "github-id",
+        github_login: "github-login",
+      })
     );
+    expect(typeof upsertPayload.updated_at).toBe("string");
+  });
+
+  it("returns existing user data when found", async () => {
+    const existingChain = createExistingChain({ data: { id: "existing-id" } });
+
+    fromMock.mockImplementationOnce(() => existingChain);
+
+    const result = await resolveAppUser("github-id", "ignored-login");
+
+    expect(result).toEqual({ id: "existing-id" });
+    expect(fromMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("handles database errors gracefully", async () => {
+    const existingChain = createExistingChain({ data: null, error: new Error("database failure") });
+    const upsertChain = createUpsertChain({ data: null, error: new Error("insert failure") });
+
+    fromMock
+      .mockImplementationOnce(() => existingChain)
+      .mockImplementationOnce(() => upsertChain);
+
+    const result = await resolveAppUser("github-id", "github-login");
+
+    expect(result).toBeNull();
+    expect(fromMock).toHaveBeenCalledTimes(2);
   });
 });
