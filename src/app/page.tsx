@@ -1,3 +1,4 @@
+
 import { Syne, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -46,23 +47,26 @@ const jetbrains = JetBrains_Mono({
         "Share your developer stats and achievements with the world.",
     },
   ];
+"use client";
 
+import { signIn } from "next-auth/react";
+
+export default function SignInPage() {
   return (
-    <main className="min-h-screen flex flex-col items-center px-4 py-24 bg-[var(--background)]">
-      {/* Hero Section */}
-      <div className="max-w-2xl text-center px-2">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6 text-[var(--foreground)] tracking-tight drop-shadow-sm">
+    <main className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
+      <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] p-8 shadow-lg">
+        <h1 className="text-2xl sm:text-4xl font-bold text-[var(--foreground)] mb-3">
           DevTrack
         </h1>
 
-        <p className="text-base sm:text-xl text-[var(--muted-foreground)] leading-relaxed mb-10">
-          Open-source developer productivity dashboard. Track coding habits,
-          visualize GitHub contributions, and hit your goals.
+        <p className="text-sm sm:text-base text-[var(--muted-foreground)] mb-6">
+          Sign in with GitHub to continue.
         </p>
 async function fetchRepoStats(): Promise<RepoStats> {
   const GH_HEADERS = { Accept: 'application/vnd.github.v3+json' };
   const OPTS = (ttl: number) => ({ next: { revalidate: ttl }, headers: GH_HEADERS });
 
+<<<<<<< HEAD
   try {
     const [repoRes, contribRes, gfiRes] = await Promise.all([
       fetch('https://api.github.com/repos/Priyanshu-byte-coder/devtrack', OPTS(3600)),
@@ -130,5 +134,15 @@ export default async function HomePage() {
     <div className={`${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
       <LandingPage repoStats={repoStats} />
     </div>
+=======
+        <button
+          onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+          className="w-full rounded-xl bg-[var(--foreground)] px-4 py-3 text-[var(--background)] font-semibold hover:opacity-90 transition"
+        >
+          Sign in with GitHub
+        </button>
+      </div>
+    </main>
+>>>>>>> 9e6ffbc (fix jsx closing errors)
   );
 }
