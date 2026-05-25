@@ -63,7 +63,10 @@ export function formatHourRange(hour: number): string {
   return `${formatClockHour(hour)} – ${formatClockHour(hour + 1)}`;
 }
 
-function getHourInTimeZone(date: Date, timeZone: string): number {
+export function getHourInTimeZone(date: Date, timeZone: string): number {
+  if (Number.isNaN(date.getTime())) {
+    return 0;
+  }
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     hour: "2-digit",
