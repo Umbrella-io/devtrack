@@ -31,4 +31,9 @@ Thumbs.db
 .idea/
 *.swp
 
+# Claude Code local settings
+.claude/
+
 desktop.ini
+
+test-results/
