@@ -51,7 +51,12 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const dailyData = sessions.map((s) => ({
+  const dailyData = (sessions as {
+    date: string;
+    total_seconds: number;
+    file_count: number;
+    project_count: number;
+  }[]).map((s) => ({
     date: s.date,
     totalSeconds: s.total_seconds,
     fileCount: s.file_count,
