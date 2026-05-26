@@ -51,7 +51,7 @@ function extractImports(src) {
   // Strip single-line and multi-line comments to prevent quotes inside comments from throwing off the regex
   const cleanSrc = src
     .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/\/\/.*/g, "");
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
 
   for (const re of [IMPORT_RE, SIDE_EFFECT_IMPORT_RE, DYNAMIC_RE]) {
     re.lastIndex = 0;

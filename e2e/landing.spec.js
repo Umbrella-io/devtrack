@@ -45,6 +45,7 @@ test("landing shows footer", async ({ page }) => {
   await page.goto("/");
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   await expect(
     page.getByRole("contentinfo").first(),
   ).toBeVisible();
@@ -61,3 +62,10 @@ test("landing page dashboard navigation works", async ({ page }) => {
   await expect(page.getByRole("contentinfo").first()).toBeVisible();
 });
 >>>>>>> a3017bd (fix(e2e): use case-insensitive heading match for DASHBOARD h1 (#1083))
+=======
+
+  await expect(page.getByRole("contentinfo").first()).toBeVisible();
+});
+
+
+>>>>>>> c4663c2 ("Fix comment stripping regex removing URL content inside strings" (#1112))
