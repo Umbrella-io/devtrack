@@ -38,25 +38,20 @@ async function fetchPublicProfile(
       : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
   ]);
 
-  return {
-    username: user.github_login,
-    userId: user.id,
-    repos,
-    contributions,
-    streak,
-    achievements: achievementsCache.achievements,
-    achievementsError: achievementsCache.error,
-  };
-}
+    return {
+      username: user.github_login,
+      userId: user.id,
+      repos,
+      contributions,
+      streak,
+      achievements: achievementsCache.achievements,
+      achievementsError: achievementsCache.error,
+    };
+  } catch (error) {
+    console.error("Failed to fetch public profile:", error);
 
-function getProfileUrl(username: string) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXTAUTH_URL ||
-    "http://localhost:3000";
-
-  return `${baseUrl}/u/${username}`;
-}
+    return null;
+  }
 
 export async function generateMetadata({
   params,
