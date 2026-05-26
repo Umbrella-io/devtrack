@@ -33,7 +33,7 @@ test("dashboard stays protected for unauthenticated users", async ({ page }) => 
   ).toBeVisible();
 });
 
-test("landing has dashboard link", async ({ page }) => {
+test("landing page shows dashboard link", async ({ page }) => {
   await page.goto("/");
 
   await expect(
