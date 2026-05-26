@@ -39,13 +39,19 @@ jobs:
             // Skip bots
             if (context.payload.comment.user.type === 'Bot') return;
 
-            // Skip if the issue is closed
-            if (context.payload.issue.state !== 'open') return;
-
             const { owner, repo } = context.repo;
             const issueNumber = context.payload.issue.number;
             const commenter = context.payload.comment.user.login;
-            const issue = context.payload.issue;
+
+            // Fetch live issue state — do NOT use context.payload.issue which
+            // is a stale webhook snapshot and causes a race condition where
+            // concurrent comments both see 0 assignees and both get assigned.
+            const { data: issue } = await github.rest.issues.get({
+              owner, repo, issue_number: issueNumber,
+            });
+
+            // Re-check: skip if issue is now closed (may have changed since comment)
+            if (issue.state !== 'open') return;
 
             // Check if issue is already assigned
             if (issue.assignees && issue.assignees.length > 0) {
