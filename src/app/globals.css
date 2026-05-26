@@ -4,59 +4,99 @@
 
 :root {
   color-scheme: light;
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --muted-foreground: #475569;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --card-muted: #e2e8f0;
-  --border: #cbd5e1;
-  --accent: #6366f1;
+  --background: #ffffff;
+  --foreground: #111827;
+  --muted-foreground: #4b5563;
+  --card: #f8fafc;
+  --card-foreground: #111827;
+  --card-muted: #eff6ff;
+  --border: #e5e7eb;
+  --accent: #3b82f6;
+  --accent-secondary: #60a5fa;
   --focus-ring: #4338ca;
   --success: #10b981;
   --warning: #f59e0b;
   --destructive: #ef4444;
-  --accent-soft: rgba(99, 102, 241, 0.15);
+  --accent-soft: rgba(59, 130, 246, 0.14);
   --accent-foreground: #ffffff;
-  --control: #e2e8f0;
-  --control-hover: #cbd5e1;
+  --control: #f1f5f9;
+  --control-hover: #e2e8f0;
   --tooltip: #ffffff;
   --tooltip-foreground: #0f172a;
-  --destructive: #ef4444;
   --destructive-muted: rgba(239, 68, 68, 0.1);
   --destructive-muted-border: rgba(239, 68, 68, 0.3);
   --destructive-foreground: #ffffff;
+  --shadow-soft: 0 12px 30px -20px rgba(37, 99, 235, 0.35);
+  --shadow-medium: 0 18px 35px -24px rgba(37, 99, 235, 0.4);
 }
 
 .dark {
   color-scheme: dark;
-  --background: #080808;
-  --foreground: #e8e8e8;
-  --muted-foreground: #666666;
-  --card: #0e0e0e;
-  --card-foreground: #e8e8e8;
-  --card-muted: #161616;
-  --border: #222222;
-  --accent: #818cf8;
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --muted-foreground: #94a3b8;
+  --card: #1a2538;
+  --card-foreground: #f8fafc;
+  --card-muted: #223248;
+  --border: #334155;
+  --accent: #60a5fa;
+  --accent-secondary: #3b82f6;
   --focus-ring: #a5b4fc;
   --success: #10b981;
   --warning: #fbbf24;
   --destructive: #f87171;
-  --accent-soft: rgba(129, 140, 248, 0.12);
-  --accent-foreground: #000000;
-  --control: #161616;
-  --control-hover: #252525;
-  --tooltip: #0e0e0e;
-  --tooltip-foreground: #e8e8e8;
+  --accent-soft: rgba(96, 165, 250, 0.2);
+  --accent-foreground: #ffffff;
+  --control: #2a3b53;
+  --control-hover: #344a67;
+  --tooltip: #1a2538;
+  --tooltip-foreground: #f8fafc;
   --destructive-muted: rgba(248, 113, 113, 0.1);
   --destructive-muted-border: rgba(248, 113, 113, 0.3);
   --destructive-foreground: #ffffff;
+  --shadow-soft: 0 16px 34px -24px rgba(2, 6, 23, 0.8);
+  --shadow-medium: 0 24px 45px -28px rgba(2, 6, 23, 0.85);
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(96, 165, 250, 0.16), transparent 36%),
+    radial-gradient(circle at 100% 18%, rgba(59, 130, 246, 0.1), transparent 32%),
+    var(--background);
   color: var(--foreground);
   transition: background-color 200ms ease, color 200ms ease;
+}
+
+.surface-card {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, #ffffff 8%), var(--card));
+  box-shadow: var(--shadow-soft);
+}
+
+.primary-button {
+  border: 1px solid color-mix(in srgb, var(--accent) 86%, white 14%);
+  background: linear-gradient(140deg, var(--accent), var(--accent-secondary));
+  color: var(--accent-foreground);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.primary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+  filter: saturate(1.05);
+}
+
+.secondary-button {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 88%, white 12%);
+  color: var(--card-foreground);
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.secondary-button:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border) 50%);
+  background: color-mix(in srgb, var(--control) 90%, white 10%);
 }
 
 :focus-visible {
