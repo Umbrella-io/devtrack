@@ -431,8 +431,8 @@ function SettingsPageContent() {
           <div
             className={`mb-6 rounded-xl border p-4 text-sm ${
               statusMessage.kind === "success"
-                ? "border-green-500/30 bg-green-500/10 text-green-400"
-                : "border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] text-[var(--destructive)]"
+                ? "border-[var(--success)]/30 bg-[var(--success)]/10 text-[var(--success)]"
+                : "border-[var(--error)]/30 bg-[var(--error)]/10 text-[var(--error)]"
             }`}
           >
             {statusMessage.message}
@@ -636,7 +636,7 @@ function SettingsPageContent() {
           </div>
 
           {removeError && (
-            <div className="mt-4 rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-3 text-sm text-[var(--destructive)]">
+            <div className="mt-4 rounded-lg border border-[var(--error)]/30 bg-[var(--error)]/10 p-3 text-sm text-[var(--error)]">
               {removeError}
             </div>
           )}
@@ -676,7 +676,7 @@ function SettingsPageContent() {
                       onClick={() => handleRemoveAccount(account.githubId)}
                       aria-label={`Remove ${account.githubLogin}`}
                       disabled={removingAccountId === account.githubId}
-                      className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--destructive-muted)] hover:text-[var(--destructive)] disabled:opacity-60"
+                      className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--error)]/10 hover:text-[var(--error)] disabled:opacity-60"
                     >
                       {removingAccountId === account.githubId
                         ? "Removing..."
