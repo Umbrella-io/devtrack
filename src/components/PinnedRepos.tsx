@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Star, GitFork } from "lucide-react";
 
 interface PinnedRepo {
   name: string;
@@ -113,8 +114,14 @@ export default function PinnedRepos() {
                     {repo.primaryLanguage.name}
                   </span>
                 )}
-                <span>⭐ {repo.stargazerCount}</span>
-                <span>🍴 {repo.forkCount}</span>
+                <span className="flex items-center gap-1">
+                  <Star size={14} className="fill-yellow-400 text-yellow-400" aria-hidden="true" />
+                  {repo.stargazerCount}
+                </span>
+                <span className="flex items-center gap-1">
+                  <GitFork size={14} aria-hidden="true" />
+                  {repo.forkCount}
+                </span>
               </div>
             </a>
           ))}
