@@ -12,6 +12,7 @@
   --card-muted: #e2e8f0;
   --border: #cbd5e1;
   --accent: #6366f1;
+  --focus-ring: #4338ca;
   --success: #10b981;
   --warning: #f59e0b;
   --destructive: #ef4444;
@@ -37,6 +38,7 @@
   --card-muted: #161616;
   --border: #222222;
   --accent: #818cf8;
+  --focus-ring: #a5b4fc;
   --success: #10b981;
   --warning: #fbbf24;
   --destructive: #f87171;
@@ -56,6 +58,19 @@ body {
   color: var(--foreground);
   transition: background-color 200ms ease, color 200ms ease;
 }
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+  border-radius: 0.375rem;
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+  }
+}
+
 /* Custom slim scrollbar for dashboard widgets */
 .scrollbar-thin {
   scrollbar-width: thin;

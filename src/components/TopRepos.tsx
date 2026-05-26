@@ -212,7 +212,10 @@ export default function TopRepos() {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <SectionHeader title="Top Repositories" />
+          <SectionHeader
+    title={`Top Repositories${!loading && repos.length > 0 ? ` (${repos.length})` : ""}`}
+  />
+
           {pinError && (
             <p className="text-xs text-[var(--destructive)]">{pinError}</p>
           )}
