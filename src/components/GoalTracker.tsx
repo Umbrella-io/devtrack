@@ -11,6 +11,7 @@ interface Goal {
   current: number;
   unit: string;
   recurrence: Recurrence;
+  deadline: string | null;
   period_start: string;
   last_synced_at: string | null;
 }
@@ -32,6 +33,7 @@ export default function GoalTracker() {
   const [target, setTarget] = useState(7);
   const [unit, setUnit] = useState("commits");
   const [recurrence, setRecurrence] = useState<Recurrence>("none");
+  const [deadline, setDeadline] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -113,7 +115,7 @@ export default function GoalTracker() {
       const response = await fetch("/api/goals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, target, unit, recurrence }),
+        body: JSON.stringify({ title, target, unit, recurrence, deadline: deadline || null }),
       });
 
       if (!response.ok) {
@@ -129,9 +131,10 @@ export default function GoalTracker() {
     setTarget(7);
     setUnit("commits");
     setRecurrence("none");
+    setDeadline("");
 
-    // Immediately sync if it was a commit-based goal
-    if (unit === "commits") {
+    // Immediately sync if it was a commit-based goal or prs
+    if (unit === "commits" || unit === "prs") {
       await handleSync();
     } else {
       await loadGoals().catch(() => {});
@@ -166,6 +169,15 @@ export default function GoalTracker() {
       if (goal.recurrence === "monthly") return "Completed this month ✓";
       return "Completed ✓";
     }
+    
+    if (goal.deadline) {
+      const msLeft = new Date(goal.deadline).getTime() - Date.now();
+      const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+      if (daysLeft < 0) return "Overdue ⚠️";
+      if (daysLeft === 0) return "Due today ⏳";
+      return `${daysLeft}d left`;
+    }
+    
     return "";
   }
 
@@ -292,7 +304,7 @@ export default function GoalTracker() {
             const isDeleting = deletingId === goal.id;
             const completed = goal.current >= goal.target;
             const completionLabel = getCompletionLabel(goal);
-            const isAutoSynced = goal.unit === "commits";
+            const isAutoSynced = goal.unit === "commits" || goal.unit === "prs";
 
             return (
               <li key={goal.id} className="relative">
@@ -332,11 +344,15 @@ export default function GoalTracker() {
                         </span>
                       )}
                     </div>
-                    {completed && (
+                    {completed ? (
                       <span className="text-xs font-medium text-emerald-500">
                         {completionLabel}
                       </span>
-                    )}
+                    ) : completionLabel ? (
+                      <span className={`text-xs font-medium ${completionLabel.includes('Overdue') ? 'text-red-500' : 'text-orange-500'}`}>
+                        {completionLabel}
+                      </span>
+                    ) : null}
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -470,11 +486,31 @@ export default function GoalTracker() {
               className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
             >
               <option value="commits">Commits ⚡</option>
-              <option value="prs">PRs</option>
+              <option value="prs">PRs ⚡</option>
               <option value="hours">Hours</option>
+              <option value="streak">Streak (days)</option>
+              <option value="language">Lines of Code</option>
             </select>
           </div>
         </div>
+
+        {/* Deadline Picker for one-time goals */}
+        {recurrence === "none" && (
+          <div>
+            <label htmlFor="goal-deadline" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+              Deadline (Optional)
+            </label>
+            <input
+              id="goal-deadline"
+              type="date"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+              disabled={creating}
+              min={new Date().toISOString().split("T")[0]}
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+            />
+          </div>
+        )}
 
         {/* Recurrence Picker */}
         <div>
@@ -505,9 +541,9 @@ export default function GoalTracker() {
           )}
         </div>
 
-        {unit === "commits" && (
+        {(unit === "commits" || unit === "prs") && (
           <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--accent)]/10 px-3 py-2">
-            ⚡ This goal will auto-update from your GitHub commit count each period.
+            ⚡ This goal will auto-update from your GitHub activity.
           </p>
         )}
 
@@ -538,7 +574,7 @@ function ConfettiBurst() {
 
   useEffect(() => {
     const colors = ["var(--accent)", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
-    const newParticles = [];
+    const newParticles: Array<{ id: number; x: number; y: number; color: string; rot: number; scale: number; speed: number }> = [];
     for (let i = 0; i < 35; i++) {
       const angle = Math.random() * Math.PI * 2;
       const distance = 30 + Math.random() * 140;
