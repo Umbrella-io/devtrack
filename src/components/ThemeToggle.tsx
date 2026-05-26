@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "./ThemeContext";
+import { Sun, Moon } from "lucide-react";
 
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
@@ -27,7 +28,7 @@ export default function ThemeToggle() {
       aria-label="Toggle theme"
       aria-pressed={isDark}
     >
-      <span aria-hidden="true">{isDark ? "☀️" : "🌙"}</span>
+      {isDark ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
       <span>{isDark ? "Light" : "Dark"}</span>
     </button>
   );

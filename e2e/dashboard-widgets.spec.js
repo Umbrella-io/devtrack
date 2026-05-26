@@ -1,44 +1,61 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
-const authSecret = "playwright-placeholder-secret-that-is-long-enough";
-
 test.beforeEach(async ({ page }) => {
-  const sessionToken = await encode({
-    secret: authSecret,
+  // Create a valid NextAuth JWT and set it as the session cookie so
+  // dashboard pages render as an authenticated user in Playwright.
+  const token = await encode({
+    secret: process.env.NEXTAUTH_SECRET ?? "playwright-placeholder-secret-that-is-long-enough",
     token: {
       name: "Playwright User",
       email: "playwright@example.com",
-      sub: "12345",
       githubLogin: "playwright-user",
       githubId: "12345",
       accessToken: "test-token",
+      expires: "2099-01-01T00:00:00.000Z",
     },
-    maxAge: 60 * 60,
   });
 
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: sessionToken,
+      value: String(token ?? ""),
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
       sameSite: "Lax",
       secure: false,
-      expires: Math.floor(Date.now() / 1000) + 60 * 60,
     },
   ]);
 
-  await page.route("**/api/auth/session", async (route) => {
+  await page.route("**/api/ai-insights**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
-        user: { name: "Playwright User", email: "playwright@example.com" },
-        githubLogin: "playwright-user",
-        githubId: "12345",
-        accessToken: "test-token",
-        expires: "2099-01-01T00:00:00.000Z",
+        data: {
+          insights: [
+            {
+              id: "insight-1",
+              type: "productivity",
+              title: "High Consistency",
+              description: "You have coded 5 days this week!",
+              severity: "positive",
+            },
+          ],
+          trend: { direction: "up", percentage: 15 },
+          aiSummary: "Great job shipping features this week. Keep up the high standard!",
+          generatedAt: "2026-05-18T12:00:00.000Z",
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/notifications**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        notifications: [],
+        unreadCount: 0,
       }),
     });
   });
@@ -100,6 +117,49 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ ok: true }),
+            last_synced_at: new Date().toISOString(),
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/goals/sync", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ updated: 1, commitCount: 4 }),
+    });
+  });
+
+  await page.route("**/api/ai-insights**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: {
+          insights: [
+            {
+              id: "insight-1",
+              type: "productivity",
+              title: "High Consistency",
+              description: "You have coded 5 days this week!",
+              severity: "positive",
+            },
+          ],
+          trend: { direction: "up", percentage: 15 },
+          aiSummary: "Great job shipping features this week. Keep up the high standard!",
+          generatedAt: "2026-05-18T12:00:00.000Z",
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/notifications**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        notifications: [],
+        unreadCount: 0,
+      }),
     });
   });
 
@@ -118,21 +178,28 @@ test.beforeEach(async ({ page }) => {
     "**/api/streak/freeze**",
     "**/api/user/github-accounts**",
     "**/api/integrations/jira**",
+    "**/api/metrics/activity**",
+    "**/api/metrics/commit-time**",
+    "**/api/metrics/personal-records**",
+    "**/api/metrics/discussions**",
+    "**/api/metrics/pr-review-trend**",
+    "**/api/metrics/inactive-repos**",
+    "**/api/notifications**",
   ];
 
-  for (const pattern of metricRoutes) {
-    await page.route(pattern, async (route) => {
-      await route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify(mockMetricResponse(route.request().url())),
-      });
+for (const pattern of metricRoutes) {
+  await page.route(pattern, async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(mockMetricResponse(route.request().url())),
     });
-  }
-});
+  });
+}
 
+});
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible({ timeout: 10000 });
@@ -148,7 +215,7 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
   });
 
   await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await page.getByRole("button", { name: "Show 90-day range" }).click();
 
   await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
@@ -163,7 +230,7 @@ test("goal form posts a new goal", async ({ page }) => {
   });
 
   await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
   await page.getByLabel("Unit").selectOption("prs");

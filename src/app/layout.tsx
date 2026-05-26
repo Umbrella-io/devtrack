@@ -1,14 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Syne, JetBrains_Mono } from "next/font/google";
 import Footer from "@/components/Footer";
 import Providers from "./providers";
 import PWARegister from "@/components/pwa-register";
 import "./globals.css";
 import { Toaster } from "sonner";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+// Load Vercel integrations dynamically so build doesn't fail when packages
+// aren't installed in CI/environments where they're optional.
 
 const inter = Inter({ subsets: ["latin"] });
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
+  weight: ["700", "800"],
+  display: "swap",
+});
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "DevTrack — Developer Productivity Dashboard",
@@ -37,11 +49,23 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let Analytics: any = null;
+  let SpeedInsights: any = null;
+
+  try {
+    const a = await import("@vercel/analytics/next");
+    Analytics = a?.Analytics ?? a?.default ?? null;
+  } catch (e) {}
+
+  try {
+    const s = await import("@vercel/speed-insights/next");
+    SpeedInsights = s?.SpeedInsights ?? s?.default ?? null;
+  } catch (e) {}
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -51,10 +75,13 @@ export default function RootLayout({
               (function() {
                 try {
                   const stored = localStorage.getItem('theme');
-                  const supportDarkMode =
-                    window.matchMedia('(prefers-color-scheme: dark)').matches === true;
-
-                  if (stored === 'dark' || (!stored && supportDarkMode)) {
+                  if (stored === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.style.colorScheme = 'dark';
+                  } else if (stored === 'light') {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.style.colorScheme = 'light';
+                  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                     document.documentElement.classList.add('dark');
                     document.documentElement.style.colorScheme = 'dark';
                   } else {
@@ -69,7 +96,7 @@ export default function RootLayout({
       </head>
 
       <body
-        className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
+        className={`${inter.className} ${syne.variable} ${jetbrains.variable} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
         <PWARegister />
 
@@ -82,8 +109,8 @@ export default function RootLayout({
 
           <Toaster richColors position="top-right" />
         </div>
-        <Analytics />
-        <SpeedInsights />
+        {Analytics ? <Analytics /> : null}
+        {SpeedInsights ? <SpeedInsights /> : null}
       </body>
     </html>
   );
