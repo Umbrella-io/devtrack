@@ -7,6 +7,7 @@ import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
 
+const DATA_WINDOW_DAYS = 90;
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
 interface StreakData {
@@ -285,12 +286,12 @@ export default function StreakTracker() {
           tooltip: "Your longest streak ever",
         },
         {
-          label: "Active Days (90d)",
+          label: `Active Days (${DATA_WINDOW_DAYS}d)`,
           value: animatedActiveDays,
           unit: "days",
           highlight: false,
           icon: "📅",
-          tooltip: "Days you made commits in the last 90 days",
+          tooltip: `Days you made commits in the last ${DATA_WINDOW_DAYS} days`,
         },
         {
           label: "Last Commit",

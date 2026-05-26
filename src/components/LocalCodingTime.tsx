@@ -39,6 +39,7 @@ export default function LocalCodingTime() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
+  const WINDOW_OPTIONS = [7, 30, 90];
 
   useEffect(() => {
     async function loadStats() {
@@ -82,9 +83,9 @@ export default function LocalCodingTime() {
             onChange={(e) => setDays(Number(e.target.value))}
             className="bg-[var(--control)] border border-[var(--border)] rounded px-2 py-1 text-sm text-[var(--foreground)]"
           >
-            <option value={7}>Last 7 days</option>
-            <option value={30}>Last 30 days</option>
-            <option value={90}>Last 90 days</option>
+            {WINDOW_OPTIONS.map((n) => (
+              <option key={n} value={n}>{`Last ${n} days`}</option>
+            ))}
           </select>
         </div>
         <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -125,9 +126,9 @@ export default function LocalCodingTime() {
           onChange={(e) => setDays(Number(e.target.value))}
           className="bg-[var(--control)] border border-[var(--border)] rounded px-2 py-1 text-sm text-[var(--foreground)]"
         >
-          <option value={7}>Last 7 days</option>
-          <option value={30}>Last 30 days</option>
-          <option value={90}>Last 90 days</option>
+          {WINDOW_OPTIONS.map((n) => (
+            <option key={n} value={n}>{`Last ${n} days`}</option>
+          ))}
         </select>
       </div>
 

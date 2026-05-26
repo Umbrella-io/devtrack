@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import type { RepoHealthScore } from "@/types/repo-health";
+const DATA_WINDOW_DAYS = 30;
 interface Props {
   health: RepoHealthScore;
   isOpen: boolean;
@@ -92,7 +93,7 @@ export default function RepoHealthPanel({ health, isOpen, onClose }: Props) {
           ))}
         </div>
         <p className="mt-5 text-xs text-[var(--muted-foreground)] border-t border-[var(--border)] pt-4">
-          Score based on activity in the last 30 days. Updates on page refresh.
+          {`Score based on activity in the last ${DATA_WINDOW_DAYS} days. Updates on page refresh.`}
         </p>
       </div>
     </div>

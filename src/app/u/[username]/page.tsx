@@ -10,6 +10,8 @@ import {
   type PublicProfileData,
 } from "@/lib/public-profile-data";
 
+const DATA_WINDOW_DAYS = 90;
+
 async function fetchPublicProfile(
   username: string
 ): Promise<PublicProfileData | null> {
@@ -242,7 +244,7 @@ function PublicStreakTracker({ streak }: { streak: any }) {
       icon: "🏆",
     },
     {
-      label: "Active Days (90d)",
+      label: `Active Days (${DATA_WINDOW_DAYS}d)`,
       value: streak.totalActiveDays,
       unit: "days",
       highlight: false,

@@ -19,6 +19,7 @@ export default function ActivityRingChart() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
+  const WINDOW_OPTIONS = [7, 30, 90];
   const [hoveredHour, setHoveredHour] = useState<HourData | null>(null);
   const [animated, setAnimated] = useState(false);
   const prefersReduced = useRef(
@@ -91,9 +92,9 @@ export default function ActivityRingChart() {
           onChange={(e) => setDays(Number(e.target.value))}
           className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-1 text-sm text-[var(--card-foreground)] focus:outline-none focus:border-[var(--accent)]"
         >
-          <option value={7}>Last 7d</option>
-          <option value={30}>Last 30d</option>
-          <option value={90}>Last 90d</option>
+          {WINDOW_OPTIONS.map((n) => (
+            <option key={n} value={n}>{`Last ${n}d`}</option>
+          ))}
         </select>
       </div>
 
