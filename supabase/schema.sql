@@ -18,6 +18,7 @@ create table if not exists goals (
   target       integer not null,
   current      integer not null default 0,
   unit         text not null default 'commits',
+  deadline     timestamptz,
   recurrence   text not null default 'none' check (recurrence in ('none', 'weekly', 'monthly')),
   period_start timestamptz default now(),
   created_at   timestamptz default now(),

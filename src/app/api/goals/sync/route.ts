@@ -50,11 +50,11 @@ export async function POST() {
   const weekEnd = currentWeekEnd();
 
   // ── 2. Fetch all commit-based goals for this week ─────────────────────────
-  const { data: commitGoals, error: goalsError } = await supabaseAdmin
+  const { data: activityGoals, error: goalsError } = await supabaseAdmin
     .from("goals")
-    .select("id, repo, repository, repo_name")
+    .select("id, unit, repo, repository, repo_name")
     .eq("user_id", user.id)
-    .eq("unit", "commits")
+    .in("unit", ["commits", "prs"])
     .gte("period_start", weekStart)
     .lte("period_start", weekEnd);
 
@@ -62,12 +62,17 @@ export async function POST() {
     return Response.json({ error: "Failed to fetch goals" }, { status: 500 });
   }
 
-  if (!commitGoals || commitGoals.length === 0) {
+  if (!activityGoals || activityGoals.length === 0) {
     return Response.json({ updated: 0, commitCount: 0 });
   }
 
   // ── 3. Sync each goal separately with paginated commit counting ───────────
   const now = new Date().toISOString();
+
+  const commitGoals = activityGoals.filter(g => g.unit === "commits");
+  const prGoalsToUpdate = activityGoals.filter(g => g.unit === "prs");
+
+  let totalUpdated = 0;
 
   for (const goal of commitGoals) {
     let page = 1;
@@ -131,9 +136,42 @@ export async function POST() {
         { status: 500 }
       );
     }
+    
+    totalUpdated++;
   }
 
-  return Response.json({
-    updated: commitGoals.length,
-  });
+  // Count PRs for the current week
+  if (prGoalsToUpdate.length > 0) {
+    const prRes = await fetch(
+      `${GITHUB_API}/search/issues?q=author:${session.githubLogin}+type:pr+is:merged+merged:${weekStart}..${weekEnd}&per_page=100`,
+      {
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+          Accept: "application/vnd.github+json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (prRes.ok) {
+      const prData = await prRes.json() as { total_count: number };
+      const prCount = prData.total_count || 0;
+      const prIds = prGoalsToUpdate.map(g => g.id);
+      
+      const { error: prUpdateError } = await supabaseAdmin
+        .from("goals")
+        .update({ current: prCount, last_synced_at: now })
+        .in("id", prIds);
+        
+      if (prUpdateError) {
+        return Response.json({ error: "Failed to update PR goals" }, { status: 500 });
+      }
+      
+      totalUpdated += prIds.length;
+    } else {
+      return Response.json({ error: "GitHub API error fetching PRs" }, { status: 502 });
+    }
+  }
+
+  return Response.json({ updated: totalUpdated });
 }
