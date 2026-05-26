@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useState } from "react";
 
 function getInitial(name?: string | null) {
-  return name?.trim().charAt(0).toUpperCase() || "?";
+  return name ? Array.from(name)[0]?.toUpperCase() ?? '?' : '?';;
 }
 
 export default function UserAvatar() {

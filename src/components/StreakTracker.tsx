@@ -1,4 +1,6 @@
 "use client";
+
+import SectionHeader from "./SectionHeader";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { useCountUp } from "@/hooks/useCountUp";
@@ -6,6 +8,7 @@ import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
+import { Flame, Trophy, Calendar, Zap, Copy, CheckCircle, Medal, Star, Sparkles } from "lucide-react";
 
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
@@ -124,6 +127,14 @@ export default function StreakTracker() {
   }, [fetchStreak]);
 
   useEffect(() => {
+    const handleSync = () => {
+      fetchStreak();
+    };
+    window.addEventListener("devtrack:sync", handleSync);
+    return () => window.removeEventListener("devtrack:sync", handleSync);
+  }, [fetchStreak]);
+
+  useEffect(() => {
     const stored = localStorage.getItem(
       "devtrack:dismissed-milestones"
     );
@@ -154,6 +165,35 @@ export default function StreakTracker() {
     }, 60000);
     return () => clearInterval(interval);
   }, [lastUpdated]);
+
+  async function handleApplyFreeze() {
+    setFreezeLoading(true);
+    try {
+      const res = await fetch("/api/streak/freeze", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to apply freeze");
+
+      const streakUrl =
+        selectedAccount !== null
+          ? `/api/metrics/streak?accountId=${encodeURIComponent(selectedAccount)}`
+          : "/api/metrics/streak";
+      const [streakRes, freezeRes] = await Promise.all([
+        fetch(streakUrl),
+        fetch("/api/streak/freeze"),
+      ]);
+      const [streakData, freezeData] = await Promise.all([
+        streakRes.json() as Promise<StreakData>,
+        freezeRes.json() as Promise<FreezeData>,
+      ]);
+      setData(streakData);
+      setFreeze(freezeData);
+      toast.success("Streak freeze activated for today!");
+    } catch {
+      toast.error("Failed to activate streak freeze.");
+      fetchFreeze();
+    } finally {
+      setFreezeLoading(false);
+    }
+  }
 
   async function handleCancelFreeze() {
     if (!confirmCancel) {
@@ -211,7 +251,7 @@ export default function StreakTracker() {
   if (error) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
+        <SectionHeader title="Commit Streaks" />
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
@@ -235,9 +275,9 @@ export default function StreakTracker() {
         <div className="flex h-full flex-col items-center justify-center text-center">
           <div className="mb-4 text-4xl">📉</div>
 
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-            No contribution data found
-          </h2>
+          <SectionHeader title="No contribution data found" />
+            
+          
 
           <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
             Start committing to build your streak and track your coding activity.
@@ -256,10 +296,10 @@ export default function StreakTracker() {
     );
   }
   const MILESTONES = [
-    { days: 30, label: "30-day streak!", emoji: "🏅" },
-    { days: 14, label: "2-week streak!", emoji: "⭐" },
-    { days: 7, label: "7-day streak!", emoji: "🔥" },
-    { days: 3, label: "3-day streak!", emoji: "✨" },
+    { days: 30, label: "30-day streak!", icon: Medal },
+    { days: 14, label: "2-week streak!", icon: Star },
+    { days: 7, label: "7-day streak!", icon: Flame },
+    { days: 3, label: "3-day streak!", icon: Sparkles },
   ];
 
   const badge = MILESTONES.find((m) => (data?.current ?? 0) >= m.days);
@@ -273,7 +313,7 @@ export default function StreakTracker() {
           value: animatedCurrent,
           unit: "days",
           highlight: data.current > 0,
-          icon: "🔥",
+          icon: Flame,
           tooltip: "Current consecutive coding days",
         },
         {
@@ -281,7 +321,7 @@ export default function StreakTracker() {
           value: animatedLongest,
           unit: "days",
           highlight: false,
-          icon: "🏆",
+          icon: Trophy,
           tooltip: "Your longest streak ever",
         },
         {
@@ -289,7 +329,7 @@ export default function StreakTracker() {
           value: animatedActiveDays,
           unit: "days",
           highlight: false,
-          icon: "📅",
+          icon: Calendar,
           tooltip: "Days you made commits in the last 90 days",
         },
         {
@@ -302,7 +342,7 @@ export default function StreakTracker() {
             : "—",
           unit: "",
           highlight: false,
-          icon: "⚡",
+          icon: Zap,
           tooltip: "Your most recent commit",
         },
       ]
@@ -391,7 +431,7 @@ export default function StreakTracker() {
               {copied ? (
                 <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
               ) : (
-                <span className="text-base opacity-80 hover:opacity-100">📋</span>
+                <Copy size={16} className="opacity-80 hover:opacity-100" />
               )}
             </button>
             <button
@@ -410,12 +450,9 @@ export default function StreakTracker() {
             </button>
           </div>
         )}
-
         <div ref={containerRef} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-              Commit Streaks
-            </h2>
+            <SectionHeader title="Commit Streaks" />
             {data && <div className="h-8 w-24" />}
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -427,8 +464,11 @@ export default function StreakTracker() {
                 ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
                 : "bg-[var(--control)]"
             }`}
+            aria-label={stat.tooltip}
           >
-          <div className="text-xl mb-1" title={stat.tooltip} aria-label={stat.tooltip} role="img">{stat.icon}</div>
+            <div className="flex justify-center mb-1">
+              <stat.icon size={24} className="text-[var(--accent)]" aria-hidden="true" />
+            </div>
             <div
               className={`text-2xl font-bold ${
                 stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
@@ -446,7 +486,6 @@ export default function StreakTracker() {
 
               <button
                 type="button"
-                title={stat.tooltip}
                 aria-label={stat.tooltip}
                 className="text-[var(--muted-foreground)] hover:text-[var(--accent)] focus:outline-none"
               >
@@ -483,7 +522,7 @@ export default function StreakTracker() {
       )}
       {badge && (
         <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
-          <span>{badge.emoji}</span>
+          <badge.icon size={18} className="text-[var(--accent)]" aria-hidden="true" />
           <span className="text-sm font-medium text-[var(--accent)]">{badge.label}</span>
         </div>
       )}
@@ -541,7 +580,10 @@ export default function StreakTracker() {
 
       {!freezeLoading && freeze?.hasFreeze && (
         <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-4 py-3">
-          <span className="text-sm font-medium text-[var(--accent)]">✓ Freeze active today</span>
+          <div className="flex items-center gap-2">
+            <CheckCircle size={18} className="text-[var(--accent)]" aria-hidden="true" />
+            <span className="text-sm font-medium text-[var(--accent)]">Freeze active today</span>
+          </div>
           {confirmCancel ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--muted-foreground)]">Remove freeze?</span>
@@ -571,6 +613,34 @@ export default function StreakTracker() {
               Cancel freeze
             </button>
           )}
+        </div>
+      )}
+
+      {!freezeLoading && !freeze?.hasFreeze && (
+        <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-[var(--foreground)]">Streak Freeze</span>
+            <div className="group relative cursor-help">
+              <span 
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--card-muted)] text-[10px] font-bold text-[var(--muted-foreground)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] transition-colors"
+                role="img"
+                aria-label="A streak freeze protects your streak for one missed day. You can only use one freeze at a time."
+              >
+                ?
+              </span>
+              <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 w-64 rounded-lg bg-[var(--foreground)] px-3 py-2 text-xs font-medium leading-relaxed text-[var(--background)] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20 shadow-lg text-center">
+                A streak freeze protects your streak for one missed day. You can only use one freeze at a time.
+                <div className="absolute top-full left-1/2 h-1 w-1 -translate-x-1/2 border-4 border-t-[var(--foreground)] border-transparent" />
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleApplyFreeze}
+            className="rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-[var(--accent-foreground)] hover:opacity-90 transition"
+          >
+            Freeze Streak
+          </button>
         </div>
       )}
 
