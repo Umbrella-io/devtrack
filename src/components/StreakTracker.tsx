@@ -1,3 +1,4 @@
+import SectionHeader from "./SectionHeader";
 "use client";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
@@ -240,7 +241,7 @@ export default function StreakTracker() {
   if (error) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
+        <SectionHeader title="Commit Streaks" />
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
@@ -264,9 +265,9 @@ export default function StreakTracker() {
         <div className="flex h-full flex-col items-center justify-center text-center">
           <div className="mb-4 text-4xl">📉</div>
 
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-            No contribution data found
-          </h2>
+          <SectionHeader title="No contribution data found" />
+            
+          
 
           <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
             Start committing to build your streak and track your coding activity.
@@ -442,9 +443,7 @@ export default function StreakTracker() {
 
         <div ref={containerRef} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-              Commit Streaks
-            </h2>
+            <SectionHeader title="Commit Streaks" />
             {data && <div className="h-8 w-24" />}
           </div>
           <div className="grid grid-cols-2 gap-3">

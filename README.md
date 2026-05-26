@@ -116,7 +116,8 @@ devtrack/
 
 ## 🚀 Getting Started
 
-Full setup guide with troubleshooting: **[DEVELOPMENT.md](./DEVELOPMENT.md)**
+For local development and contributing, see the **[DEVELOPMENT.md](./DEVELOPMENT.md)** guide.
+To deploy your own production instance, see the **[Self-Hosting Guide](./docs/self-hosting.md)**.
 
 ### Quick Start (< 10 minutes)
 

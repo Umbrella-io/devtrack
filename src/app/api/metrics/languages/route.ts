@@ -11,14 +11,22 @@ export async function GET(req: NextRequest) {
   if (!session?.accessToken || !session.githubLogin) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const bypass = isMetricsCacheBypassed(req);
-  const key = metricsCacheKey(session.githubId ?? session.githubLogin, "languages" as any);
 
+  const accountId = req.nextUrl.searchParams.get("accountId");
+
+  const key = metricsCacheKey(
+    session.githubId ?? session.githubLogin,
+    "languages" as any,
+    {
+      accountId: accountId || undefined,
+    }
+  );
   try {
     const data = await withMetricsCache({ bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.languages }, async () => {
       const headers = { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" };
       const since = new Date();
       since.setDate(since.getDate() - 90);
-      
+
       const searchRes = await fetch(
         `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${since.toISOString().slice(0, 10)}&per_page=100&sort=author-date&order=desc`,
         { headers, cache: "no-store" }
@@ -58,7 +66,7 @@ export async function GET(req: NextRequest) {
             for (const [lang, bytes] of Object.entries(langs)) {
               langTotals[lang] = (langTotals[lang] ?? 0) + (bytes as number);
             }
-          } catch {}
+          } catch { }
         })
       );
 

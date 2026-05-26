@@ -1,5 +1,9 @@
--- Run this in Supabase SQL Editor (Dashboard → SQL Editor → New Query)
+-- Enable UUID generation (required for gen_random_uuid)
+create extension if not exists pgcrypto;
 
+-- -------------------------------------------------------
+-- USERS
+-- -------------------------------------------------------
 create table if not exists users (
   id           text primary key default gen_random_uuid()::text,
   github_id    text unique not null,
@@ -11,6 +15,9 @@ create table if not exists users (
   wakatime_api_key_iv text
 );
 
+-- -------------------------------------------------------
+-- GOALS
+-- -------------------------------------------------------
 create table if not exists goals (
   id           text primary key default gen_random_uuid()::text,
   user_id      text not null references users(id) on delete cascade,
@@ -19,14 +26,19 @@ create table if not exists goals (
   current      integer not null default 0,
   unit         text not null default 'commits',
   deadline     timestamptz,
-  recurrence   text not null default 'none' check (recurrence in ('none', 'weekly', 'monthly')),
+  recurrence   text not null default 'none'
+    check (recurrence in ('none', 'weekly', 'monthly')),
   period_start timestamptz default now(),
   created_at   timestamptz default now(),
   updated_at   timestamptz default now()
 );
 
-create index if not exists goals_user_period on goals(user_id, period_start);
+create index if not exists goals_user_period
+  on goals(user_id, period_start);
 
+-- -------------------------------------------------------
+-- METRIC SNAPSHOTS
+-- -------------------------------------------------------
 create table if not exists metric_snapshots (
   id            text primary key default gen_random_uuid()::text,
   user_id       text not null references users(id) on delete cascade,
@@ -37,7 +49,12 @@ create table if not exists metric_snapshots (
   issues_closed integer not null default 0
 );
 
-create index if not exists snapshots_user_time on metric_snapshots(user_id, snapshot_at);
+create index if not exists snapshots_user_time
+  on metric_snapshots(user_id, snapshot_at);
+
+-- -------------------------------------------------------
+-- CHATBOT MESSAGES
+-- -------------------------------------------------------
 create table if not exists chatbot_messages (
   id         text primary key default gen_random_uuid()::text,
   user_id    text not null,
@@ -45,11 +62,12 @@ create table if not exists chatbot_messages (
   message    text not null,
   created_at timestamptz default now()
 );
+
 create index if not exists chatbot_messages_user_time
   on chatbot_messages(user_id, created_at);
 
 -- -------------------------------------------------------
--- AI Mentor: cached insights & Claude-generated summaries
+-- AI INSIGHTS (cached AI mentor outputs)
 -- -------------------------------------------------------
 create table if not exists ai_insights (
   id           text primary key default gen_random_uuid()::text,
@@ -75,4 +93,28 @@ create index if not exists idx_ai_insights_type
 create unique index if not exists idx_ai_insights_user_type
   on ai_insights(user_id, insight_type);
 
-  
+-- -------------------------------------------------------
+-- GITHUB ACHIEVEMENTS (from main branch)
+-- -------------------------------------------------------
+create table if not exists user_github_achievements (
+  user_id      text primary key references users(id) on delete cascade,
+  github_login text not null,
+  achievements jsonb not null default '[]'::jsonb,
+  synced_at    timestamptz,
+  fetch_error  text,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+
+create index if not exists idx_user_github_achievements_login
+  on user_github_achievements(github_login);
+
+-- -------------------------------------------------------
+-- RLS (Row Level Security)
+-- -------------------------------------------------------
+alter table user_github_achievements enable row level security;
+
+create policy "user_github_achievements_select_own"
+  on user_github_achievements
+  for select
+  using (user_id = auth.uid()::text);
