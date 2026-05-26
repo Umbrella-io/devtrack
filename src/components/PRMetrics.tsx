@@ -1,3 +1,4 @@
+import SectionHeader from "./SectionHeader";
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -199,7 +200,7 @@ export default function PRMetrics() {
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
+        <SectionHeader title="PR Analytics" />
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex gap-2">
             <button
