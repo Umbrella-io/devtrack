@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import PRStatusDonutChart from "./PRStatusDonutChart";
-
+import MiniPRTrendChart from "./MiniPRTrendChart";
 interface ReviewMetrics {
   totalReviews: number;
   approvalRate: string;
@@ -278,6 +278,7 @@ export default function PRMetrics() {
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
               {githubStats.map(renderStat)}
             </div>
+            <MiniPRTrendChart />
           </div>
 
           {metrics && (
