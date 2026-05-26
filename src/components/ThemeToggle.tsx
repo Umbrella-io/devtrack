@@ -23,12 +23,16 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-    className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]"
+      className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-sm font-medium text-[var(--card-foreground)] transition-all duration-300 hover:bg-[var(--control)] active:scale-95"
       aria-label="Toggle theme"
       aria-pressed={isDark}
     >
-      <span aria-hidden="true">{isDark ? "☀️" : "🌙"}</span>
-      <span>{isDark ? "Light" : "Dark"}</span>
+      <span aria-hidden="true" className="transition-transform duration-300">
+        {isDark ? "🌙" : "☀️"}
+      </span>
+      <span className="transition-colors duration-300">
+        {isDark ? "Dark" : "Light"}
+      </span>
     </button>
   );
 }

@@ -72,7 +72,7 @@ export default function DashboardHeader() {
               href={`/u/${session.githubLogin}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium transition-opacity hover:opacity-90"
+              className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium transition-opacity hover:opacity-90 w-full sm:w-auto text-center"
               style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", fontSize: 12 }}
               title="View your public profile"
             >
@@ -80,8 +80,7 @@ export default function DashboardHeader() {
             </a>
           )}
 
-          <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-muted)] px-3 py-2">
-
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-muted)] px-2 py-1.5 sm:px-3 sm:py-2 max-w-full justify-center sm:justify-start">
             <div>
               <KeyboardShortcuts />
             </div>
