@@ -1,5 +1,33 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
+
+test.beforeEach(async ({ page }) => {
+  // Create a valid NextAuth JWT and set it as the session cookie so
+  // dashboard pages render as an authenticated user in Playwright.
+  const token = await encode({
+    secret: process.env.NEXTAUTH_SECRET ?? "playwright-placeholder-secret-that-is-long-enough",
+    token: {
+      name: "Playwright User",
+      email: "playwright@example.com",
+      githubLogin: "playwright-user",
+      githubId: "12345",
+      accessToken: "test-token",
+      expires: "2099-01-01T00:00:00.000Z",
+    },
+  });
+
+  await page.context().addCookies([
+    {
+      name: "next-auth.session-token",
+      value: String(token ?? ""),
+      domain: "127.0.0.1",
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax",
+      secure: false,
+    },
+  ]);
+
   await page.route("**/api/ai-insights**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
@@ -28,13 +56,6 @@ import { encode } from "next-auth/jwt";
       body: JSON.stringify({
         notifications: [],
         unreadCount: 0,
-      }),
-    });
-  });
-        githubLogin: "playwright-user",
-        githubId: "12345",
-        accessToken: "test-token",
-        expires: "2099-01-01T00:00:00.000Z",
       }),
     });
   });
