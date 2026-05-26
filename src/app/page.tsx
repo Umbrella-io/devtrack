@@ -1,3 +1,4 @@
+import CustomCursor from "@/components/CustomCursor";
 import { Syne, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -79,6 +80,7 @@ export default async function HomePage() {
   return (
     <div className={`${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
       <LandingPage repoStats={repoStats} />
+      <CustomCursor />  
     </div>
   );
 }
