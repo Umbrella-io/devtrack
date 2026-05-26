@@ -538,7 +538,7 @@ function ConfettiBurst() {
 
   useEffect(() => {
     const colors = ["var(--accent)", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
-    const newParticles = [];
+    const newParticles: Array<{ id: number; x: number; y: number; color: string; rot: number; scale: number; speed: number }> = [];
     for (let i = 0; i < 35; i++) {
       const angle = Math.random() * Math.PI * 2;
       const distance = 30 + Math.random() * 140;

@@ -50,12 +50,13 @@ export default function SignInPage() {
       }}
     >
       <MouseSpotlight />
-
-      {/* Subtle grid */}
       <div
         aria-hidden
         style={{
-          position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
           backgroundImage:
             "linear-gradient(rgba(129,140,248,0.03) 1px, transparent 1px)," +
             "linear-gradient(90deg, rgba(129,140,248,0.03) 1px, transparent 1px)",
@@ -63,10 +64,10 @@ export default function SignInPage() {
         }}
       />
 
-      {/* Card */}
       <div
         style={{
-          width: "100%", maxWidth: 420,
+          width: "100%",
+          maxWidth: 420,
           border: "1px solid #1a1a1a",
           borderRadius: 12,
           padding: "clamp(28px,5vw,48px) clamp(24px,5vw,40px)",
@@ -76,25 +77,29 @@ export default function SignInPage() {
           zIndex: 1,
         }}
       >
-        {/* Logo */}
         <div style={{ marginBottom: 36 }}>
           <span
             style={{
-              fontFamily: MONO, fontWeight: 700, fontSize: 13,
-              color: "#e8e8e8", letterSpacing: "-0.02em",
+              fontFamily: MONO,
+              fontWeight: 700,
+              fontSize: 13,
+              color: "#e8e8e8",
+              letterSpacing: "-0.02em",
             }}
           >
             <span style={{ color: A }}>▲</span> DEVTRACK
           </span>
         </div>
 
-        {/* Heading */}
         <h1
           style={{
-            fontFamily: DISP, fontWeight: 800,
+            fontFamily: DISP,
+            fontWeight: 800,
             fontSize: "clamp(34px,6vw,52px)",
-            letterSpacing: "-0.04em", lineHeight: 0.95,
-            color: "#e8e8e8", margin: "0 0 16px",
+            letterSpacing: "-0.04em",
+            lineHeight: 0.95,
+            color: "#e8e8e8",
+            margin: "0 0 16px",
           }}
         >
           WELCOME<br />
@@ -103,39 +108,47 @@ export default function SignInPage() {
 
         <p
           style={{
-            fontSize: 14, color: "#555",
-            lineHeight: 1.65, margin: "0 0 36px",
+            fontSize: 14,
+            color: "#555",
+            lineHeight: 1.65,
+            margin: "0 0 36px",
             fontFamily: MONO,
           }}
         >
           Track streaks, PR velocity &amp; coding growth.
         </p>
 
-        {/* GitHub button */}
         <button
           onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
           style={{
             width: "100%",
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
             gap: 10,
-            background: A, color: "#000",
-            fontFamily: MONO, fontWeight: 600, fontSize: 14,
-            padding: "14px 24px", borderRadius: 6,
-            border: "none", cursor: "pointer",
+            background: A,
+            color: "#000",
+            fontFamily: MONO,
+            fontWeight: 600,
+            fontSize: 14,
+            padding: "14px 24px",
+            borderRadius: 6,
+            border: "none",
+            cursor: "pointer",
             transition: "background 0.2s, transform 0.1s",
             marginBottom: 20,
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "#fff";
+            e.currentTarget.style.background = "#fff";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = A;
+            e.currentTarget.style.background = A;
           }}
           onMouseDown={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.97)";
+            e.currentTarget.style.transform = "scale(0.97)";
           }}
           onMouseUp={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+            e.currentTarget.style.transform = "scale(1)";
           }}
         >
           <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
@@ -146,8 +159,11 @@ export default function SignInPage() {
 
         <div
           style={{
-            fontFamily: MONO, fontSize: 11, color: "#333",
-            letterSpacing: "0.06em", lineHeight: 1.8,
+            fontFamily: MONO,
+            fontSize: 11,
+            color: "#333",
+            letterSpacing: "0.06em",
+            lineHeight: 1.8,
           }}
         >
           MIT License · Self-hostable · Free forever
