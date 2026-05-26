@@ -23,11 +23,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     if (storedTheme) {
       setTheme(storedTheme);
     } else {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-      setTheme(systemTheme);
+      setTheme("light");
     }
   }, []);
 
