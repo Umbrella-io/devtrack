@@ -422,22 +422,8 @@ function SettingsPageContent() {
               Manage your profile and preferences
             </p>
           </div>
-        <div className="mb-8">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] mb-4 transition-colors"
-          >
-            ← Back to Dashboard
-          </Link>
-
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">
-            Settings
-          </h1>
-
-          <p className="mt-2 text-[var(--muted-foreground)]">
-            Manage your profile and preferences
-          </p>
         </div>
+
         {statusMessage && (
           <div
             className={`mb-6 rounded-xl border p-4 text-sm ${
@@ -449,7 +435,6 @@ function SettingsPageContent() {
             {statusMessage.message}
           </div>
         )}
-
         {/* Public Profile Section */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="flex items-start justify-between mb-6 gap-4">
@@ -474,8 +459,8 @@ function SettingsPageContent() {
                 />
                 <div
                   className={`block w-10 h-6 rounded-full transition-colors ${settings.is_public
-                      ? "bg-[var(--accent)]"
-                      : "bg-[var(--control)]"
+                    ? "bg-[var(--accent)]"
+                    : "bg-[var(--control)]"
                     }`}
                 />
                 <div
@@ -602,8 +587,8 @@ function SettingsPageContent() {
                 />
                 <div
                   className={`block h-6 w-10 rounded-full transition-colors ${settings.leaderboard_opt_in
-                      ? "bg-[var(--accent)]"
-                      : "bg-[var(--control)]"
+                    ? "bg-[var(--accent)]"
+                    : "bg-[var(--control)]"
                     }`}
                 />
                 <div
@@ -707,7 +692,7 @@ function SettingsPageContent() {
               </p>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <label htmlFor="wakatime-key" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
