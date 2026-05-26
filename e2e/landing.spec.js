@@ -44,6 +44,7 @@ test("landing has dashboard link", async ({ page }) => {
 test("landing shows footer", async ({ page }) => {
   await page.goto("/");
 
+<<<<<<< HEAD
   await expect(
     page.getByRole("contentinfo").first(),
   ).toBeVisible();
@@ -56,3 +57,7 @@ test("landing page dashboard navigation works", async ({ page }) => {
     page.getByRole("link", { name: "Dashboard" }),
   ).toBeVisible();
 });
+=======
+  await expect(page.getByRole("contentinfo").first()).toBeVisible();
+});
+>>>>>>> a3017bd (fix(e2e): use case-insensitive heading match for DASHBOARD h1 (#1083))

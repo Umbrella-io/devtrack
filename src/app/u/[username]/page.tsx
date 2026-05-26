@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import BadgeSection from "@/components/BadgeSection";
 import StatsCard from "@/components/StatsCard";
-import CopyLinkButton from "@/components/CopyLinkButton";
+import ShareProfileSection from "@/components/ShareProfileSection";
 import { getUserByUsername } from "@/lib/supabase";
 import {
   fetchPublicTopRepos,
@@ -13,39 +13,32 @@ import {
 async function fetchPublicProfile(
   username: string
 ): Promise<PublicProfileData | null> {
-  if (
-  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
-) {
-  return null;
+  const user = await getUserByUsername(username);
+  if (!user) return null;
+
+  const githubToken = process.env.GITHUB_TOKEN;
+  const [repos, contributions, streak] = await Promise.all([
+    fetchPublicTopRepos(user.github_login, githubToken, 30),
+    fetchPublicContributions(user.github_login, githubToken, 30),
+    fetchPublicStreak(user.github_login, githubToken),
+  ]);
+
+  return {
+    username: user.github_login,
+    userId: user.id,
+    repos,
+    contributions,
+    streak,
+  };
 }
-  try {
-    const user = await getUserByUsername(username);
 
-    if (!user) {
-      return null;
-    }
+function getProfileUrl(username: string) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
 
-    const githubToken = process.env.GITHUB_TOKEN;
-
-    const [repos, contributions, streak] = await Promise.all([
-      fetchPublicTopRepos(user.github_login, githubToken, 30),
-      fetchPublicContributions(user.github_login, githubToken, 30),
-      fetchPublicStreak(user.github_login, githubToken),
-    ]);
-
-    return {
-      username: user.github_login,
-      userId: user.id,
-      repos,
-      contributions,
-      streak,
-    };
-  } catch (error) {
-    console.error("Failed to fetch public profile:", error);
-
-    return null;
-  }
+  return `${baseUrl}/u/${username}`;
 }
 
 export async function generateMetadata({
@@ -55,9 +48,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { username } = params;
   const profile = await fetchPublicProfile(username);
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
-  const profileUrl = `${baseUrl}/u/${username}`;
+  const profileUrl = getProfileUrl(username);
 
   if (!profile) {
     return {
@@ -91,6 +82,7 @@ export default async function PublicProfilePage({
 }) {
   const { username } = params;
   const profile = await fetchPublicProfile(username);
+  const profileUrl = getProfileUrl(username);
 
   if (!profile) {
     return (
@@ -130,12 +122,9 @@ export default async function PublicProfilePage({
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
-              @{profile.username}&apos;s Profile
-            </h1>
-            <CopyLinkButton />
-          </div>
+          <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
+            @{profile.username}&apos;s Profile
+          </h1>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
           </p>
@@ -148,6 +137,14 @@ export default async function PublicProfilePage({
           longestStreak={profile.streak.longest}
           totalCommits={profile.contributions.total}
           topRepo={topRepo}
+        />
+      </div>
+
+      <div className="mb-8">
+        <ShareProfileSection
+          username={profile.username}
+          streak={profile.streak.current}
+          profileUrl={profileUrl}
         />
       </div>
 
