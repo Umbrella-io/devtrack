@@ -1,3 +1,4 @@
+import SectionHeader from "./SectionHeader";
 "use client";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
@@ -163,6 +164,35 @@ export default function StreakTracker() {
     return () => clearInterval(interval);
   }, [lastUpdated]);
 
+  async function handleApplyFreeze() {
+    setFreezeLoading(true);
+    try {
+      const res = await fetch("/api/streak/freeze", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to apply freeze");
+
+      const streakUrl =
+        selectedAccount !== null
+          ? `/api/metrics/streak?accountId=${encodeURIComponent(selectedAccount)}`
+          : "/api/metrics/streak";
+      const [streakRes, freezeRes] = await Promise.all([
+        fetch(streakUrl),
+        fetch("/api/streak/freeze"),
+      ]);
+      const [streakData, freezeData] = await Promise.all([
+        streakRes.json() as Promise<StreakData>,
+        freezeRes.json() as Promise<FreezeData>,
+      ]);
+      setData(streakData);
+      setFreeze(freezeData);
+      toast.success("Streak freeze activated for today!");
+    } catch {
+      toast.error("Failed to activate streak freeze.");
+      fetchFreeze();
+    } finally {
+      setFreezeLoading(false);
+    }
+  }
+
   async function handleCancelFreeze() {
     if (!confirmCancel) {
       setConfirmCancel(true);
@@ -219,7 +249,7 @@ export default function StreakTracker() {
   if (error) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
+        <SectionHeader title="Commit Streaks" />
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
@@ -243,9 +273,9 @@ export default function StreakTracker() {
         <div className="flex h-full flex-col items-center justify-center text-center">
           <div className="mb-4 text-4xl">📉</div>
 
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-            No contribution data found
-          </h2>
+          <SectionHeader title="No contribution data found" />
+            
+          
 
           <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
             Start committing to build your streak and track your coding activity.
@@ -421,9 +451,7 @@ export default function StreakTracker() {
 
         <div ref={containerRef} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-              Commit Streaks
-            </h2>
+            <SectionHeader title="Commit Streaks" />
             {data && <div className="h-8 w-24" />}
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -579,6 +607,34 @@ export default function StreakTracker() {
               Cancel freeze
             </button>
           )}
+        </div>
+      )}
+
+      {!freezeLoading && !freeze?.hasFreeze && (
+        <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-[var(--foreground)]">Streak Freeze</span>
+            <div className="group relative cursor-help">
+              <span 
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--card-muted)] text-[10px] font-bold text-[var(--muted-foreground)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] transition-colors"
+                role="img"
+                aria-label="A streak freeze protects your streak for one missed day. You can only use one freeze at a time."
+              >
+                ?
+              </span>
+              <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 w-64 rounded-lg bg-[var(--foreground)] px-3 py-2 text-xs font-medium leading-relaxed text-[var(--background)] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20 shadow-lg text-center">
+                A streak freeze protects your streak for one missed day. You can only use one freeze at a time.
+                <div className="absolute top-full left-1/2 h-1 w-1 -translate-x-1/2 border-4 border-t-[var(--foreground)] border-transparent" />
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleApplyFreeze}
+            className="rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-[var(--accent-foreground)] hover:opacity-90 transition"
+          >
+            Freeze Streak
+          </button>
         </div>
       )}
 
