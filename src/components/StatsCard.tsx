@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
+import type { LucideIcon } from "lucide-react";
+import { Flame, Trophy, Zap, Package, Download } from "lucide-react";
 
 interface StatsCardProps {
   username: string;
@@ -67,17 +69,7 @@ export default function StatsCard({
           </>
         ) : (
           <>
-            {/* Download icon */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="w-4 h-4"
-              aria-hidden="true"
-            >
-              <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
-              <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
-            </svg>
+            <Download size={16} />
             Download stats card
           </>
         )}
@@ -212,7 +204,7 @@ export default function StatsCard({
           >
             {/* Current Streak */}
             <StatBox
-              icon="🔥"
+              icon={Flame}
               label="Current Streak"
               value={String(currentStreak)}
               unit="days"
@@ -220,21 +212,21 @@ export default function StatsCard({
             />
             {/* Longest Streak */}
             <StatBox
-              icon="🏆"
+              icon={Trophy}
               label="Longest Streak"
               value={String(longestStreak)}
               unit="days"
             />
             {/* Total Commits */}
             <StatBox
-              icon="⚡"
+              icon={Zap}
               label="Total Commits"
               value={totalCommits >= 1000 ? `${(totalCommits / 1000).toFixed(1)}k` : String(totalCommits)}
               unit="commits"
             />
             {/* Top Repo */}
             <StatBox
-              icon="📦"
+              icon={Package}
               label="Top Repository"
               value={topRepo.split("/")[1] ?? topRepo}
               unit=""
@@ -277,14 +269,14 @@ export default function StatsCard({
 
 /** Individual stat box inside the card */
 function StatBox({
-  icon,
+  icon: Icon,
   label,
   value,
   unit,
   accent = false,
   small = false,
 }: {
-  icon: string;
+  icon: LucideIcon;
   label: string;
   value: string;
   unit: string;
@@ -308,7 +300,9 @@ function StatBox({
         backdropFilter: "blur(8px)",
       }}
     >
-      <div style={{ fontSize: 28, lineHeight: 1 }}>{icon}</div>
+      <div style={{ lineHeight: 1 }}>
+        <Icon size={28} strokeWidth={1.5} className={accent ? "text-[var(--accent)]" : "text-[var(--muted-foreground)]"} />
+      </div>
       <div>
         <div
           style={{

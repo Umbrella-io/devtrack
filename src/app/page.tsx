@@ -1,5 +1,4 @@
 import ParticleBackground from "@/components/ParticleBackground";
-import { Syne, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
