@@ -211,7 +211,9 @@ export default function TopRepos() {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Top Repositories</h2>
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+            Top Repositories{!loading && repos.length > 0 && ` (${repos.length})`}
+          </h2>
           {pinError && (
             <p className="text-xs text-[var(--destructive)]">{pinError}</p>
           )}

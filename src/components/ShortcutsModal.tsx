@@ -26,45 +26,57 @@ export default function ShortcutsModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
+   useEffect(() => {
     if (!isOpen) return;
 
-    closeBtnRef.current?.focus();
+     closeBtnRef.current?.focus();
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+       if (
+        modalRef.current &&
+        !modalRef.current.contains(e.target as Node)
+       ) {
+         onClose();
+       }
+    };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
+       if (e.key === "Escape") {
+         onClose();
+         return;
+     }
 
-      if (e.key === "Tab") {
+     if (e.key === "Tab") {
         if (!modalRef.current) return;
 
-        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+         const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
 
-        if (focusableElements.length === 0) return;
+     if (focusableElements.length === 0) return;
 
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
+       const firstElement = focusableElements[0];
+         const lastElement = focusableElements[focusableElements.length - 1];
 
         if (e.shiftKey && document.activeElement === firstElement) {
-          lastElement.focus();
-          e.preventDefault();
+         lastElement.focus();
+         e.preventDefault();
         } else if (!e.shiftKey && document.activeElement === lastElement) {
           firstElement.focus();
-          e.preventDefault();
-        }
-      }
-    };
+           e.preventDefault();
+         }
+       }
+     };
 
-    document.addEventListener("keydown", handleKeyDown);
+     document.addEventListener("keydown", handleKeyDown);
+     document.addEventListener("mousedown", handleClickOutside);
+     document.addEventListener("touchstart", handleClickOutside);
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+       document.removeEventListener("keydown", handleKeyDown);
+       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [isOpen, onClose]);
-
+   }, [isOpen, onClose]);
   if (!isOpen) return null;
 
   return (

@@ -3,84 +3,138 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
+function getParam(req: NextRequest, key: string, fallback: string) {
+  const value = req.nextUrl.searchParams.get(key);
+  return value && value.trim().length > 0 ? value.slice(0, 80) : fallback;
+}
+
 export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const login = searchParams.get("login") || "Developer";
-    const year = searchParams.get("year") || new Date().getFullYear().toString();
-    const commits = searchParams.get("commits") || "0";
-    const prs = searchParams.get("prs") || "0";
-    const language = searchParams.get("language") || "Code";
-    const streak = searchParams.get("streak") || "0";
+  const username = getParam(req, "username", "developer");
+  const year = getParam(req, "year", String(new Date().getFullYear()));
+  const commits = getParam(req, "commits", "0");
+  const streak = getParam(req, "streak", "0");
+  const language = getParam(req, "language", "Code");
+  const repo = getParam(req, "repo", "DevTrack");
 
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            height: "100%",
-            width: "100%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#09090b",
-            fontFamily: "sans-serif",
-            color: "white",
-            padding: "40px",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "40px" }}>
-            <h1 style={{ fontSize: "60px", fontWeight: "bold", margin: 0, color: "#a855f7" }}>
-              {year} Year in Code
-            </h1>
-            <p style={{ fontSize: "30px", color: "#a1a1aa", marginTop: "10px" }}>
-              {`@${login}'s DevTrack Recap`}
-            </p>
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          background: "#0b1020",
+          color: "#f8fafc",
+          padding: "58px 64px",
+          fontFamily: "Inter, Arial, sans-serif",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div
+              style={{
+                color: "#67e8f9",
+                fontSize: 24,
+                fontWeight: 800,
+                letterSpacing: 3,
+                textTransform: "uppercase",
+              }}
+            >
+              DevTrack Wrapped
+            </div>
+            <div style={{ fontSize: 72, fontWeight: 900, lineHeight: 0.95 }}>
+              {`@${username}`}
+            </div>
           </div>
-
           <div
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "20px",
-              width: "100%",
-              justifyContent: "center",
+              border: "2px solid rgba(248,250,252,0.2)",
+              borderRadius: 18,
+              padding: "18px 24px",
+              fontSize: 32,
+              fontWeight: 800,
+              color: "#fde68a",
+              height: 72,
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#18181b", padding: "24px", borderRadius: "16px", minWidth: "250px" }}>
-              <span style={{ fontSize: "20px", color: "#a1a1aa" }}>Total Commits</span>
-              <span style={{ fontSize: "48px", fontWeight: "bold", color: "#e879f9" }}>{commits}</span>
-            </div>
-            
-            <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#18181b", padding: "24px", borderRadius: "16px", minWidth: "250px" }}>
-              <span style={{ fontSize: "20px", color: "#a1a1aa" }}>PRs Merged</span>
-              <span style={{ fontSize: "48px", fontWeight: "bold", color: "#38bdf8" }}>{prs}</span>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#18181b", padding: "24px", borderRadius: "16px", minWidth: "250px" }}>
-              <span style={{ fontSize: "20px", color: "#a1a1aa" }}>Top Language</span>
-              <span style={{ fontSize: "48px", fontWeight: "bold", color: "#4ade80" }}>{language}</span>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#18181b", padding: "24px", borderRadius: "16px", minWidth: "250px" }}>
-              <span style={{ fontSize: "20px", color: "#a1a1aa" }}>Longest Streak</span>
-              <span style={{ fontSize: "48px", fontWeight: "bold", color: "#facc15" }}>{streak} days</span>
-            </div>
-          </div>
-          
-          <div style={{ position: "absolute", bottom: "30px", right: "40px", fontSize: "24px", color: "#52525b" }}>
-            devtrack.com/wrapped
+            {year}
           </div>
         </div>
-      ),
-      {
-        width: 1200,
-        height: 630,
-      }
-    );
-  } catch (e: any) {
-    return new Response(`Failed to generate image`, {
-      status: 500,
-    });
-  }
+
+        <div
+          style={{
+            display: "flex",
+            gap: 22,
+            width: "100%",
+          }}
+        >
+          <Stat label="Commits" value={commits} color="#67e8f9" />
+          <Stat label="Longest streak" value={`${streak}d`} color="#a7f3d0" />
+          <Stat label="Top language" value={language} color="#fde68a" />
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderTop: "1px solid rgba(248,250,252,0.16)",
+            paddingTop: 24,
+          }}
+        >
+          <div style={{ fontSize: 28, color: "#cbd5e1" }}>
+            {`Most contributed repo: ${repo}`}
+          </div>
+          <div style={{ fontSize: 24, color: "#94a3b8" }}>devtrack.app</div>
+        </div>
+      </div>
+    ),
+    {
+      width: 1200,
+      height: 630,
+    }
+  );
+}
+
+function Stat({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string;
+  color: string;
+}) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        gap: 14,
+        border: "1px solid rgba(248,250,252,0.16)",
+        borderRadius: 20,
+        background: "rgba(255,255,255,0.06)",
+        padding: 28,
+        minHeight: 168,
+      }}
+    >
+      <div style={{ color, fontSize: 54, fontWeight: 900, lineHeight: 1 }}>
+        {value}
+      </div>
+      <div
+        style={{
+          color: "#cbd5e1",
+          fontSize: 22,
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: 2,
+        }}
+      >
+        {label}
+      </div>
+    </div>
+  );
 }
