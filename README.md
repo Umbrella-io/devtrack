@@ -142,21 +142,34 @@ npm install
 
 **4. Configure environment**
 
+Copy the `.env.example` file to `.env.local`:
+
 ```bash
 cp .env.example .env.local
 ```
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+Fill in the environment variables. Below is a detailed description of each variable supported by DevTrack:
 
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=        # run: openssl rand -base64 32
+### 🔑 Environment Variables Reference
 
-GITHUB_ID=your_client_id
-GITHUB_SECRET=your_client_secret
-```
+> [!WARNING]
+> Never commit `.env` or `.env.local` files to Git. They contain sensitive security credentials. The `.gitignore` file is pre-configured to ignore these files.
+
+| Variable | Required | Description | Example / Recommendation |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | **Yes** | Your Supabase project URL | `https://your-project.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Yes** | Supabase public API anonymous key | `eyJhbGciOiJIUzI1NiIsInR...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Supabase service role key (Never expose client-side) | `eyJhbGciOiJIUzI1NiIsInR...` |
+| `NEXTAUTH_URL` | **Yes** | Fully qualified base URL of the app | `http://localhost:3000` (Local) |
+| `NEXTAUTH_SECRET` | **Yes** | NextAuth session encryption key | Generate with `openssl rand -base64 32` |
+| `GITHUB_ID` | **Yes** | GitHub OAuth Application Client ID | Obtain from GitHub Developer Settings |
+| `GITHUB_SECRET` | **Yes** | GitHub OAuth Application Client Secret | Obtain from GitHub Developer Settings |
+| `ENCRYPTION_KEY` | **Yes** | 32-byte hex key for encrypting OAuth tokens | Generate with `openssl rand -hex 32` |
+| `GITHUB_WEBHOOK_SECRET` | No | Real-time metric refresh signature validation key | Generate with `openssl rand -hex 32` |
+| `GITHUB_TOKEN` | No | Personal Access Token to avoid GitHub API rate limits | Classic or fine-grained GitHub PAT |
+| `UPSTASH_REDIS_REST_URL` | No | Upstash Redis REST endpoint for caching | `https://your-db.upstash.io` |
+| `UPSTASH_REDIS_REST_TOKEN` | No | Upstash Redis REST access token | Caching credentials from Upstash |
+| `GROQ_API_KEY` | No | Groq API Key to enable AI-powered weekly insights | `gsk_...` (From console.groq.com) |
 
 **5. Run locally**
 
