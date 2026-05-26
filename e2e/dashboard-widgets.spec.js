@@ -173,25 +173,16 @@ test.beforeEach(async ({ page }) => {
     "**/api/notifications**",
   ];
 
-  for (const pattern of metricRoutes) {
-    await page.route(pattern, async (route) => {
-      await route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify(mockMetricResponse(route.request().url())),
-      });
-    });
-  }
-
-  // Mock goals/sync so GoalTracker doesn't hang waiting for Supabase
-  await page.route("**/api/goals/sync**", async (route) => {
+for (const pattern of metricRoutes) {
+  await page.route(pattern, async (route) => {
     await route.fulfill({
       contentType: "application/json",
-      status: 200,
-      body: JSON.stringify({ ok: true }),
+      body: JSON.stringify(mockMetricResponse(route.request().url())),
     });
   });
-});
+}
 
+});
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
   await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
