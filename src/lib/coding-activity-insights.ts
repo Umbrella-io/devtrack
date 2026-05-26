@@ -63,16 +63,18 @@ export function formatHourRange(hour: number): string {
   return `${formatClockHour(hour)} – ${formatClockHour(hour + 1)}`;
 }
 
-function getHourInTimeZone(date: Date, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hour: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
+export function getHourInTimeZone(date: Date, timeZone: string): number {
+  if (isNaN(date.getTime())) {
+    return 0;
+  }
 
-  const hourPart = parts.find((part) => part.type === "hour")?.value ?? "0";
-  const parsedHour = Number(hourPart);
-  return Number.isFinite(parsedHour) ? parsedHour : 0;
+  return Number(
+    new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      hour12: false,
+      timeZone,
+    }).format(date)
+  );
 }
 
 function getDayNameInTimeZone(date: Date, timeZone: string): string {

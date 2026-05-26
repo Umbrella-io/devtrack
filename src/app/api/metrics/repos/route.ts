@@ -18,10 +18,18 @@ import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
+interface RepoLanguage {
+  name: string;
+  bytes: number;
+  percentage: number;
+}
+
 interface RepoSummary {
   name: string;
   commits: number;
   description: string | null;
+  url?: string;
+  languages?: RepoLanguage[];
 }
 
 interface RepoResponse {
@@ -30,20 +38,87 @@ interface RepoResponse {
 }
 
 function mergeRepoCommits(
-  a: Array<{ name: string; commits: number; description: string | null }>,
-  b: Array<{ name: string; commits: number; description: string | null }>
-): Array<{ name: string; commits: number; description: string | null }> {
-  const map = new Map<string, { commits: number; description: string | null }>();
+  a: Array<RepoSummary>,
+  b: Array<RepoSummary>
+): Array<RepoSummary> {
+  // Merge repo commit counts across multiple GitHub accounts.
+  // If multiple accounts committed to the same repo, counts are summed.
+  const map = new Map<
+    string,
+    {
+      commits: number;
+      description: string | null;
+      url?: string;
+      languages?: RepoLanguage[];
+    }
+  >();
+
   for (const repo of [...a, ...b]) {
     const existing = map.get(repo.name);
+
     map.set(repo.name, {
       commits: (existing?.commits ?? 0) + repo.commits,
       description: existing?.description ?? repo.description,
+      url: existing?.url ?? repo.url,
+      languages: existing?.languages ?? repo.languages,
     });
   }
+
   return Array.from(map.entries())
-    .map(([name, { commits, description }]) => ({ name, commits, description }))
+    .map(
+      ([name, { commits, description, url, languages }]) => ({
+        name,
+        commits,
+        description,
+        url,
+        languages,
+      })
+    )
     .sort((x, y) => y.commits - x.commits);
+}
+
+async function fetchRepoLanguages(
+  token: string,
+  repoName: string
+): Promise<RepoLanguage[]> {
+  // GitHub REST API:
+  // Authenticated requests get 5,000 req/hr.
+  const res = await fetch(
+    `${GITHUB_API}/repos/${repoName}/languages`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  // Language data is non-critical.
+  // Fail silently if rate-limited or inaccessible.
+  if (!res.ok) {
+    return [];
+  }
+
+  const langs = (await res.json()) as Record<string, number>;
+
+  const totalBytes = Object.values(langs).reduce(
+    (sum, bytes) => sum + bytes,
+    0
+  );
+
+  if (totalBytes <= 0) {
+    return [];
+  }
+
+  return Object.entries(langs)
+    .map(([name, bytes]) => ({
+      name,
+      bytes,
+      percentage: Math.round((bytes / totalBytes) * 1000) / 10,
+    }))
+    .sort((a, b) => b.percentage - a.percentage)
+    .slice(0, 6);
 }
 
 async function fetchReposForAccount(
@@ -52,6 +127,7 @@ async function fetchReposForAccount(
   days: number,
   cacheContext: { bypass: boolean; userId: string }
 ): Promise<RepoResponse> {
+  // Cache key scoped per user + account + day range.
   const key = metricsCacheKey(cacheContext.userId, "repos", {
     days,
     githubLogin,
@@ -66,8 +142,10 @@ async function fetchReposForAccount(
     async () => {
       const since = new Date();
       since.setDate(since.getDate() - days);
+
       const sinceStr = since.toISOString().slice(0, 10);
 
+      // GitHub Commit Search API.
       const searchRes = await fetch(
         `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
         {
@@ -85,64 +163,141 @@ async function fetchReposForAccount(
 
       const data = (await searchRes.json()) as {
         items: Array<{
-          repository: { full_name: string; html_url: string; description: string | null };
-          commit: { author: { date: string } };
+          repository: {
+            full_name: string;
+            html_url: string;
+            description: string | null;
+          };
+          commit: {
+            author: {
+              date: string;
+            };
+          };
         }>;
       };
 
-      const repoMap: Record<string, { commits: number; description: string | null }> = {};
+      // Group commits by repository.
+      const repoMap: Record<
+        string,
+        {
+          commits: number;
+          description: string | null;
+          url: string;
+        }
+      > = {};
+
       for (const item of data.items) {
         const name = item.repository.full_name;
+
         repoMap[name] = {
           commits: (repoMap[name]?.commits ?? 0) + 1,
           description: item.repository.description,
+          url: item.repository.html_url,
         };
       }
 
+      // Top repos by commit count.
       const repos = Object.entries(repoMap)
-        .map(([name, { commits, description }]) => ({ name, commits, description }))
+        .map(([name, { commits, description, url }]) => ({
+          name,
+          commits,
+          description,
+          url,
+        }))
         .sort((a, b) => b.commits - a.commits)
         .slice(0, 6);
 
-      return { repos, days };
+      // Fetch language breakdowns.
+      const reposWithLanguages = await Promise.all(
+        repos.map(async (repo) => {
+          const languages = await fetchRepoLanguages(
+            token,
+            repo.name
+          );
+
+          return languages.length > 0
+            ? { ...repo, languages }
+            : repo;
+        })
+      );
+
+      return {
+        repos: reposWithLanguages,
+        days,
+      };
     }
   );
 }
 
 export async function GET(req: NextRequest) {
+  // Session contains GitHub OAuth token + identity.
   const session = await getServerSession(authOptions);
+
   if (!session?.accessToken || !session.githubLogin) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
   }
 
-  const days = Number(req.nextUrl.searchParams.get("days")) || 30;
-  const accountId = req.nextUrl.searchParams.get("accountId");
+  const daysParam = req.nextUrl.searchParams.get("days");
+  const parsedDays = daysParam
+    ? parseInt(daysParam, 10)
+    : NaN;
+
+  // Clamp between 1 and 365 days.
+  const days = isNaN(parsedDays)
+    ? 30
+    : Math.max(1, Math.min(365, parsedDays));
+
+  const accountId =
+    req.nextUrl.searchParams.get("accountId");
+
   const bypass = isMetricsCacheBypassed(req);
 
+  // Primary account only.
   if (!accountId) {
     try {
       const result = await fetchReposForAccount(
         session.accessToken,
         session.githubLogin,
         days,
-        { bypass, userId: session.githubId ?? session.githubLogin }
+        {
+          bypass,
+          userId:
+            session.githubId ?? session.githubLogin,
+        }
       );
+
       return Response.json(result);
     } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+      return Response.json(
+        { error: "GitHub API error" },
+        { status: 502 }
+      );
     }
   }
 
   if (!session.githubId) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
   }
 
-  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
+  const userRow = await resolveAppUser(
+    session.githubId,
+    session.githubLogin
+  );
 
   if (!userRow) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
   }
 
+  // Combined multi-account mode.
   if (accountId === "combined") {
     const accounts = await getAllAccounts(
       {
@@ -155,10 +310,15 @@ export async function GET(req: NextRequest) {
 
     const results = await Promise.allSettled(
       accounts.map((account) =>
-        fetchReposForAccount(account.token, account.githubLogin, days, {
-          bypass,
-          userId: account.githubId,
-        })
+        fetchReposForAccount(
+          account.token,
+          account.githubLogin,
+          days,
+          {
+            bypass,
+            userId: account.githubId,
+          }
+        )
       )
     );
 
@@ -168,30 +328,48 @@ export async function GET(req: NextRequest) {
     }));
 
     if (!merged) {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+      return Response.json(
+        { error: "GitHub API error" },
+        { status: 502 }
+      );
     }
 
     return Response.json(merged);
   }
 
+  // Session account explicitly selected.
   if (accountId === session.githubId) {
     try {
       const result = await fetchReposForAccount(
         session.accessToken,
         session.githubLogin,
         days,
-        { bypass, userId: session.githubId }
+        {
+          bypass,
+          userId: session.githubId,
+        }
       );
+
       return Response.json(result);
     } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+      return Response.json(
+        { error: "GitHub API error" },
+        { status: 502 }
+      );
     }
   }
 
-  const accountToken = await getAccountToken(userRow.id, accountId);
+  // Linked secondary account.
+  const accountToken = await getAccountToken(
+    userRow.id,
+    accountId
+  );
 
   if (!accountToken) {
-    return Response.json({ error: "Account not found" }, { status: 404 });
+    return Response.json(
+      { error: "Account not found" },
+      { status: 404 }
+    );
   }
 
   const { data: accountRow } = await supabaseAdmin
@@ -202,7 +380,10 @@ export async function GET(req: NextRequest) {
     .single();
 
   if (!accountRow?.github_login) {
-    return Response.json({ error: "Account not found" }, { status: 404 });
+    return Response.json(
+      { error: "Account not found" },
+      { status: 404 }
+    );
   }
 
   try {
@@ -210,10 +391,17 @@ export async function GET(req: NextRequest) {
       accountToken,
       accountRow.github_login,
       days,
-      { bypass, userId: accountId }
+      {
+        bypass,
+        userId: accountId,
+      }
     );
+
     return Response.json(result);
   } catch {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+    return Response.json(
+      { error: "GitHub API error" },
+      { status: 502 }
+    );
   }
 }
