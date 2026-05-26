@@ -51,7 +51,7 @@ function extractImports(src) {
   // Strip single-line and multi-line comments to prevent quotes inside comments from throwing off the regex
   const cleanSrc = src
     .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/\/\/.*/g, "");
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
 
   for (const re of [IMPORT_RE, SIDE_EFFECT_IMPORT_RE, DYNAMIC_RE]) {
     re.lastIndex = 0;
@@ -96,14 +96,14 @@ function loadInternalAliases(rootDir) {
 }
 function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
   const missing = new Map(); // pkgName → Set of files
+  // Load Aliases 
+  const INTERNAL_ALIASES = loadInternalAliases(cwd);
 
   for (const file of files) {
     const src = fs.readFileSync(file, "utf8");
     const rel = path.relative(cwd, file).replace(/\\/g, "/");
 
     for (const mod of extractImports(src)) {
-      // Skip relative imports, path aliases (@/ is the src alias — not a pkg)
-      const INTERNAL_ALIASES = loadInternalAliases(cwd);
       if (
         mod.startsWith(".") || 
         mod.startsWith("/") || 

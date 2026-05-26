@@ -126,4 +126,91 @@ Before submitting your PR to the upstream repository, verify the following:
 
 ---
 
+---
+
+## 7. GSSoC 2026 Contribution Guidelines
+
+We warmly welcome contributors participating in GSSoC 2026 🎉
+
+### Contribution Levels
+
+* **Level 1 (Beginner):** 20 points
+* **Level 2 (Intermediate):** 35 points
+* **Level 3 (Advanced):** 55 points
+
+### Common Labels
+
+* `gssoc26` → Issue is part of GSSoC 2026
+* `gssoc:assigned` → Issue already assigned
+* `needs-triage` → Maintainers are reviewing the issue
+
+### Important Notes
+
+* Work only on issues assigned to you.
+* Stay active after assignment to avoid unassignment.
+* Always link your PR to the issue number.
+* Follow the repository guidelines carefully before submitting PRs.
+
+---
+
+## 8. Troubleshooting Common Issues
+
+### Supabase Connection Errors
+
+* Verify all Supabase keys inside `.env.local`
+* Restart the development server after updating environment variables
+* Ensure your Supabase project is active and accessible
+
+### GitHub OAuth Callback Errors
+
+* Ensure callback URLs match exactly in GitHub OAuth settings
+* Verify `NEXTAUTH_URL` is configured correctly
+* Check GitHub Client ID and Secret values
+
+### Environment Variable Issues
+
+* Ensure `.env.local` exists in the project root
+* Avoid extra spaces or quotes in environment values
+* Restart the server after modifying environment variables
+
+---
+
+## 9. Testing Guidelines
+
+Before submitting your Pull Request, run the following commands:
+
+```bash
+npm run lint
+npm run build
+npx vitest run
+```
+
+### Verify the Following
+
+* Application runs without crashes
+* No console warnings or runtime errors
+* UI works correctly on mobile and desktop
+* Existing functionality remains unaffected
+
+---
+
+## 10. Adding Screenshots or GIFs to PRs
+
+If your PR introduces UI or styling changes, please include screenshots or demo GIFs.
+
+### Recommended Tools
+
+* **Windows:** Snipping Tool, ShareX
+* **macOS:** Built-in Screenshot Tool
+* **GIF Recording:** ScreenToGif, LiceCap
+
+### Suggested PR Attachments
+
+* Before vs After screenshots
+* Mobile responsiveness preview
+* Short demo GIF for interactive features
+
+---
+
+
 Thank you for contributing to DevTrack! 🚀

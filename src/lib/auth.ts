@@ -1,5 +1,6 @@
 import { type NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
+import { syncGitHubAchievementsForUser } from "./github-achievements";
 import { supabaseAdmin } from "./supabase";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
@@ -37,14 +38,27 @@ export const authOptions: NextAuthOptions = {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {
         const p = profile as { id: number; login: string };
-        await supabaseAdmin.from("users").upsert(
+        const { data: user } = await supabaseAdmin.from("users").upsert(
           {
             github_id: String(p.id),
             github_login: p.login,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "github_id" }
-        );
+        ).select("id").single();
+
+        if (user?.id && account.access_token) {
+          try {
+            await syncGitHubAchievementsForUser({
+              userId: user.id,
+              githubLogin: p.login,
+              token: account.access_token,
+              force: true,
+            });
+          } catch (error) {
+            console.error("GitHub achievements sync failed:", error);
+          }
+        }
       }
       return true;
     },
