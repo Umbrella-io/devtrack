@@ -25,7 +25,7 @@ import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
-import CodingTimeCard from "@/components/CodingTimeCard";
+import CodingTimeWidget from "@/components/CodingTimeWidget";
 import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
@@ -80,7 +80,7 @@ export default async function DashboardPage() {
           <StreakTracker />
           <LocalCodingTime />
           <div className="mt-6">
-            <CodingTimeCard />
+            <CodingTimeWidget />
           </div>
         </div>
       </div>
