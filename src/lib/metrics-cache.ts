@@ -8,10 +8,12 @@ export const METRICS_CACHE_TTL_SECONDS = {
   "inactive-repos": 10 * 60,
   prs: 10 * 60,
   "pr-review-time": 10 * 60,
+  insights: 10 * 60,
   streak: 2 * 60,
   streak_freeze: 2 * 60,
   activity: 5 * 60,
   issues: 10 * 60,
+  languages: 21600,
   "coding-activity-insights": 5 * 60,
 } as const;
 
