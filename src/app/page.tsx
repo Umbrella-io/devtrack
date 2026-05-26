@@ -1,3 +1,4 @@
+import ParticleBackground from "@/components/ParticleBackground";
 import CustomCursor from "@/components/CustomCursor";
 import { Syne, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import { getServerSession } from "next-auth";
@@ -79,6 +80,7 @@ export default async function HomePage() {
 
   return (
   <div className={`relative ${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
+    <ParticleBackground />
     <CustomCursor />
     <LandingPage repoStats={repoStats} />
   </div>
