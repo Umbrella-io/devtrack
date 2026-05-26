@@ -74,9 +74,9 @@ function formatWeekLabel(start: Date): string {
 
 function buildTrendWeeks(): TrendWeek[] {
   const currentWeekStart = getUtcWeekStart(new Date());
-  const oldestWeekStart = addDaysUtc(currentWeekStart, -21);
+  const oldestWeekStart = addDaysUtc(currentWeekStart, -11 * 7);
 
-  return Array.from({ length: 4 }, (_, index) => {
+  return Array.from({ length: 12 }, (_, index) => {
     const weekStart = addDaysUtc(oldestWeekStart, index * 7);
 
     return {
@@ -98,7 +98,7 @@ async function fetchPRReviewTrendForAccount(
   cacheContext: { bypass: boolean; userId: string }
 ): Promise<TrendWeek[]> {
   const key = metricsCacheKey(cacheContext.userId, "pr-review-time", {
-    weeks: 4,
+    weeks: 12,
   });
 
   return withMetricsCache(
