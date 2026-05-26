@@ -1,10 +1,5 @@
 import DiscussionsWidget from "@/components/DiscussionsWidget";
-import ActivityRingChart from "@/components/ActivityRingChart";
-import ContributionGraph from "@/components/ContributionGraph";
-import ContributionHeatmap from "@/components/ContributionHeatmap";
-import PRMetrics from "@/components/PRMetrics";
 import CommunityMetrics from "@/components/CommunityMetrics";
-import PRBreakdownChart from "@/components/PRBreakdownChart";
 import GoalTracker from "@/components/GoalTracker";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
@@ -12,20 +7,87 @@ import TopRepos from "@/components/TopRepos";
 import PinnedRepos from "@/components/PinnedRepos";
 import InactiveRepositoriesCard from "@/components/InactiveRepositoriesCard";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
-import CommitTimeChart from "@/components/CommitTimeChart";
-import CodingActivityInsightsCard from "@/components/CodingActivityInsightsCard";
-import PRReviewTrendChart from "@/components/PRReviewTrendChart";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
-import FriendComparison from "@/components/FriendComparison";
+import dynamic from "next/dynamic";
+
+const SkeletonCard = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-live="polite"
+    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+  >
+    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-4 animate-pulse" />
+    <div className="h-40 bg-[var(--card-muted)] rounded animate-pulse" />
+  </div>
+);
+
+const ContributionGraphSkeleton = () => (
+  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <h2 className="text-lg font-semibold text-[var(--foreground)]">Your Commits</h2>
+    <div className="mt-3 h-40 rounded bg-[var(--card-muted)] animate-pulse" />
+  </div>
+);
+
+const PRMetricsSkeleton = () => (
+  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <h2 className="text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
+    <div className="mt-3 h-40 rounded bg-[var(--card-muted)] animate-pulse" />
+  </div>
+);
+
+const CodingActivityInsightsCard = dynamic(
+  () => import("@/components/CodingActivityInsightsCard"),
+  { ssr: false, loading: () => <SkeletonCard /> }
+);
+
+const FriendComparison = dynamic(() => import("@/components/FriendComparison"), {
+  ssr: false,
+  loading: () => <SkeletonCard />,
+});
+
+const ActivityRingChart = dynamic(() => import("@/components/ActivityRingChart"), {
+  ssr: false,
+  loading: () => <SkeletonCard />,
+});
+
+const ContributionGraph = dynamic(() => import("@/components/ContributionGraph"), {
+  ssr: false,
+  loading: () => <ContributionGraphSkeleton />,
+});
+
+const ContributionHeatmap = dynamic(() => import("@/components/ContributionHeatmap"), {
+  ssr: false,
+  loading: () => <SkeletonCard />,
+});
+
+const PRMetrics = dynamic(() => import("@/components/PRMetrics"), {
+  ssr: false,
+  loading: () => <PRMetricsSkeleton />,
+});
+
+const PRBreakdownChart = dynamic(() => import("@/components/PRBreakdownChart"), {
+  ssr: false,
+  loading: () => <SkeletonCard />,
+});
+
+const CommitTimeChart = dynamic(() => import("@/components/CommitTimeChart"), {
+  ssr: false,
+  loading: () => <SkeletonCard />,
+});
+
+const PRReviewTrendChart = dynamic(() => import("@/components/PRReviewTrendChart"), {
+  ssr: false,
+  loading: () => <SkeletonCard />,
+});
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import { AIMentorWidget } from "@/components/AIMentorWidget";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
-import CodingTimeCard from "@/components/CodingTimeCard";
 import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
@@ -34,9 +96,6 @@ import { redirect } from "next/navigation";
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/");
-  // If the JWT callback detected that the GitHub token has been revoked,
-  // redirect to the landing page so the user must re-authenticate.
-  if (session.error === "TokenRevoked") redirect("/");
 
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
@@ -79,9 +138,6 @@ export default async function DashboardPage() {
         <div>
           <StreakTracker />
           <LocalCodingTime />
-          <div className="mt-6">
-            <CodingTimeCard />
-          </div>
         </div>
       </div>
 

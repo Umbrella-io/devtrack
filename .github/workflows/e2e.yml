@@ -23,6 +23,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
       SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+      PLAYWRIGHT_SERVER_MODE: start
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +34,9 @@ jobs:
 
       - name: Install app dependencies
         run: npm ci
+
+      - name: Build app
+        run: npm run build
 
       - name: Install Playwright browsers
         run: npx -y @playwright/test@1.49.1 install --with-deps chromium

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import NotificationBell from "@/components/NotificationBell";
 import { useEffect, useState } from "react";
@@ -47,11 +47,9 @@ export default function DashboardHeader() {
           <h1 className="bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-3xl font-extrabold text-transparent md:text-4xl">
             Dashboard
           </h1>
-          <p
-            className="mt-2 text-xs text-[var(--muted-foreground)]"
-            style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", letterSpacing: "0.06em" }}
-          >
-            coding activity at a glance
+
+          <p className="mt-2 text-sm md:text-base text-[var(--muted-foreground)]">
+            Your coding activity at a glance 🚀
           </p>
         </div>
 
@@ -70,10 +68,9 @@ export default function DashboardHeader() {
             </a>
           )}
 
-<<<<<<< HEAD
           <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] px-3 py-2 shadow-sm">
 
-            <div>
+            <div className="hover:scale-110 transition-transform duration-200">
               <KeyboardShortcuts />
             </div>
 

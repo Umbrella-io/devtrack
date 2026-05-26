@@ -1,23 +1,47 @@
-import { Syne, DM_Sans, JetBrains_Mono } from 'next/font/google';
+import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import LandingPage, { type RepoStats } from "@/components/landing/LandingPage";
+
+export default async function HomePage() {
+  const session = await getServerSession(authOptions);
+
+  if (session) {
+    redirect("/dashboard");
+  }
+
+  const features = [
+    {
+      icon: "🔥",
+      title: "Streak Tracking",
+      description: "Never lose your streak and stay consistent every day.",
+    },
+    {
+      icon: "📊",
+      title: "PR Analytics",
+      description: "Understand your pull request activity and review velocity.",
+    },
+    {
+      icon: "🏆",
+      title: "Goals",
+      description: "Set coding goals and automatically track your progress.",
+    },
+    {
+      icon: "🌐",
+      title: "Public Profile",
+      description:
+        "Share your developer stats and achievements with the world.",
+    },
+  ];
+
   return (
-    <div className={`${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
-      <LandingPage repoStats={repoStats} />
-    </div>
-  );
-      <LandingPage repoStats={repoStats} />
-    </div>
-=======
     <main className="relative min-h-screen overflow-hidden px-4 py-16 md:py-20">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-8%] top-[-10%] h-72 w-72 rounded-full bg-[var(--accent)]/20 blur-3xl" />
         <div className="absolute right-[-10%] top-[15%] h-80 w-80 rounded-full bg-[var(--accent-secondary)]/25 blur-3xl" />
       </div>
 
-  <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center">
         <div className="w-full max-w-3xl rounded-3xl border border-[var(--border)] bg-[var(--card)]/85 p-10 text-center shadow-[var(--shadow-soft)] backdrop-blur-sm fade-up">
           <span className="inline-flex items-center rounded-full border border-[var(--accent)]/25 bg-[var(--accent-soft)] px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
             Open-source dev productivity
@@ -47,7 +71,6 @@ import LandingPage, { type RepoStats } from "@/components/landing/LandingPage";
           </div>
         </div>
 
-        {/* Features Section */}
         <section className="w-full max-w-6xl mt-20 fade-up">
           <h2 className="text-3xl font-bold text-center text-[var(--foreground)] mb-12">
             Everything you need to track your coding growth
@@ -70,16 +93,11 @@ import LandingPage, { type RepoStats } from "@/components/landing/LandingPage";
                 <p className="text-[var(--muted-foreground)] text-sm leading-relaxed">
                   {feature.description}
                 </p>
-
-                <p className="mt-3 text-xs text-[var(--muted-foreground)] opacity-70">
-                  Sign in to explore this feature
-                </p>
               </div>
             ))}
           </div>
         </section>
       </div>
     </main>
->>>>>>> 97ef779 (chore: remove leftover merge marker from src/app/page.tsx)
   );
 }

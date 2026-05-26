@@ -94,7 +94,7 @@ export async function POST() {
 
   // ── 4. Update all commit-based goals with the real commit count ───────────
   const now = new Date().toISOString();
-  const ids = commitGoals.map((g) => g.id);
+  const ids = (commitGoals as { id: string }[]).map((g) => g.id);
 
   const { error: updateError } = await supabaseAdmin
     .from("goals")

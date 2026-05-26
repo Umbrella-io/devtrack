@@ -3,17 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl) {
-  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
-}
-
-if (!serviceRoleKey) {
-  throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
-}
-
-// Server-side only — use in API routes, never import in client components.
-// Service role bypasses RLS; auth is enforced by getServerSession checks.
-export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+// Do not throw here — during static builds the environment variables
+// may not be set. Create the client lazily and guard usages so the
+// build step doesn't execute runtime-only code.
+export const supabaseAdmin: any =
+  supabaseUrl && serviceRoleKey
+    ? createClient(supabaseUrl, serviceRoleKey)
+    : null;
 
 interface User {
   id: string;
@@ -31,6 +27,8 @@ interface User {
 export async function getUserByUsername(
   username: string
 ): Promise<User | null> {
+  if (!supabaseAdmin) return null;
+
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
@@ -61,6 +59,8 @@ export async function updateUserPublicFlag(
   userId: string,
   isPublic: boolean
 ): Promise<User | null> {
+  if (!supabaseAdmin) return null;
+
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
