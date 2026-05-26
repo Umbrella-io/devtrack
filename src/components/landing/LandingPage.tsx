@@ -502,9 +502,9 @@ function HeatmapSection() {
    ═══════════════════════════════════════════ */
 const STATS = [
   { value: 847, label: 'COMMITS TRACKED' },
-  { value: 43,  label: 'PRS MERGED' },
-  { value: 89,  label: 'DAY BEST STREAK' },
-  { value: 67,  label: 'REVIEWS GIVEN' },
+  { value: 43, label: 'PRS MERGED' },
+  { value: 89, label: 'DAY BEST STREAK' },
+  { value: 67, label: 'REVIEWS GIVEN' },
 ];
 
 function StatItem({ value, label, delay }: { value: number; label: string; delay: number }) {
@@ -694,10 +694,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
   const [ref, vis] = useScrollReveal(0.08);
 
   const statTiles = [
-    { icon: '★', value: stats.stars,          suffix: '',  label: 'GITHUB STARS' },
-    { icon: '⑂', value: stats.forks,          suffix: '',  label: 'FORKS' },
+    { icon: '★', value: stats.stars, suffix: '', label: 'GITHUB STARS' },
+    { icon: '⑂', value: stats.forks, suffix: '', label: 'FORKS' },
     { icon: '◎', value: stats.contributorCount, suffix: '+', label: 'CONTRIBUTORS' },
-    { icon: '◈', value: stats.goodFirstIssues, suffix: '',  label: 'GOOD FIRST ISSUES' },
+    { icon: '◈', value: stats.goodFirstIssues, suffix: '', label: 'GOOD FIRST ISSUES' },
   ];
 
   return (
@@ -854,12 +854,14 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
    ═══════════════════════════════════════════ */
 function LandingFooter() {
   return (
-    <footer style={{
-      borderTop: `1px solid #111`,
-      padding: '24px clamp(20px,4vw,48px)',
-      display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
-      justifyContent: 'space-between', alignItems: 'center',
-    }}>
+    <footer
+      data-testid="landing-footer"
+      style={{
+        borderTop: `1px solid #111`,
+        padding: '24px clamp(20px,4vw,48px)',
+        display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
+        justifyContent: 'space-between', alignItems: 'center',
+      }}>
       <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
         © {new Date().getFullYear()} DEVTRACK
       </span>
