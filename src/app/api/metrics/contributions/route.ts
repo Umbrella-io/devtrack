@@ -61,13 +61,17 @@ async function fetchContributionsForAccount(
   githubLogin: string,
   days: number,
   cacheContext: { bypass: boolean; userId: string },
-  fromDate?: string
+  fromDate?: string,
+  repo?: string | null
 
 ): Promise<ContributionResponse> {
-  const key = metricsCacheKey(cacheContext.userId, "contributions", {
-    days,
-    githubLogin,
-    from: fromDate ?? undefined,
+const repoFilter = repo ? ` repo:${repo}` : "";
+
+    const key = metricsCacheKey(cacheContext.userId, "contributions", {
+      days,
+      githubLogin,
+      from: fromDate ?? undefined,
+      repo,
   });
 
   return withMetricsCache(
@@ -93,7 +97,7 @@ async function fetchContributionsForAccount(
         const searchUrl = new URL(`${GITHUB_API}/search/commits`);
         searchUrl.searchParams.set(
           "q",
-          `author:${githubLogin} author-date:>=${sinceStr}`
+          `author:${githubLogin} author-date:>=${sinceStr}${repoFilter}`
         );
         searchUrl.searchParams.set("per_page", "100");
         searchUrl.searchParams.set("page", String(page));
@@ -282,6 +286,7 @@ export async function GET(req: NextRequest) {
 
   const fromParam = req.nextUrl.searchParams.get("from");
   const toParam = req.nextUrl.searchParams.get("to");
+  const repoParam = req.nextUrl.searchParams.get("repo");
 
   let days: number;
   let fromDate: string | undefined;
@@ -317,7 +322,8 @@ export async function GET(req: NextRequest) {
         username,
         days,
         { bypass, userId: session.githubId ?? session.githubLogin },
-        fromDate
+        fromDate,
+        repoParam
       );
       return Response.json(result);
     } catch {
@@ -332,7 +338,8 @@ export async function GET(req: NextRequest) {
         session.githubLogin,
         days,
         { bypass, userId: session.githubId ?? session.githubLogin },
-        fromDate
+        fromDate,
+        repoParam
       );
 
       if (!gitlabToken) {
@@ -376,7 +383,7 @@ export async function GET(req: NextRequest) {
           bypass,
           userId: account.githubId,
 
-        }, fromDate)
+        }, fromDate, repoParam)
       )
     );
 
