@@ -78,9 +78,9 @@ export default async function HomePage() {
   const repoStats = await fetchRepoStats();
 
   return (
-    <div className={`${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
-      <LandingPage repoStats={repoStats} />
-      <CustomCursor />  
-    </div>
-  );
+  <div className={`relative ${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
+    <CustomCursor />
+    <LandingPage repoStats={repoStats} />
+  </div>
+);
 }
