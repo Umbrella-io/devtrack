@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
+import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache, METRICS_CACHE_TTL_SECONDS} from "@/lib/metrics-cache";
 
 export const dynamic = "force-dynamic";
 const GITHUB_API = "https://api.github.com";
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const key = metricsCacheKey(session.githubId ?? session.githubLogin, "languages" as any);
 
   try {
-    const data = await withMetricsCache({ bypass, key, ttlSeconds: 10 * 60 }, async () => {
+    const data = await withMetricsCache({ bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.languages }, async () => {
       const headers = { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" };
       const since = new Date();
       since.setDate(since.getDate() - 90);
@@ -32,9 +32,29 @@ export async function GET(req: NextRequest) {
       await Promise.all(
         repoNames.map(async (repoName) => {
           try {
-            const res = await fetch(`${GITHUB_API}/repos/${repoName}/languages`, { headers, cache: "no-store" });
-            if (!res.ok) return;
-            const langs = await res.json();
+              const repoCacheKey = metricsCacheKey(
+                session.githubId || session.githubLogin || "unknown",
+                "repo_languages" as any,
+                { repoName }
+                );
+
+              const langs = await withMetricsCache(
+                {
+                  bypass,
+                  key: repoCacheKey,
+                  ttlSeconds: METRICS_CACHE_TTL_SECONDS.languages,
+                },
+                async () => {
+                  const res = await fetch(
+                    `${GITHUB_API}/repos/${repoName}/languages`,
+                    { headers, cache: "no-store" },
+                  );
+
+                  if (!res.ok) return {};
+
+                  return await res.json();
+                },
+              );
             for (const [lang, bytes] of Object.entries(langs)) {
               langTotals[lang] = (langTotals[lang] ?? 0) + (bytes as number);
             }
