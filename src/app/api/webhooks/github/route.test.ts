@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from "vitest";
-import { safeCompare } from "./route";
+import { safeCompare } from "./safe-compare";
 
 describe("safeCompare", () => {
   let timingSafeEqualSpy: MockInstance;
