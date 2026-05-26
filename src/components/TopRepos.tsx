@@ -342,7 +342,15 @@ export default function TopRepos() {
                     title={repo.description || undefined}
                   >
                     <span className="mr-1 text-[var(--muted-foreground)]">#{idx + 1}</span>
-                    {shortName}
+                    <span className="inline-flex items-center gap-1">
+                      {shortName}
+                      <span
+                        aria-hidden="true"
+                        className="text-xs text-[var(--muted-foreground)]"
+                      >
+                        ↗
+                      </span>
+                    </span>
                     {isPinned && (
                       <span className="ml-2 inline-flex items-center rounded-md bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--accent)_20%,transparent)] align-middle">
                         Pinned
