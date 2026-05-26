@@ -108,6 +108,7 @@ export default function PRStatusDonutChart({
   closed,
 }: PRStatusDonutChartProps) {
   const total = open + merged + closed;
+  const hasNoActivity = total === 0;
 
   const data: ChartEntry[] = [
     { name: "Open", value: open },
@@ -122,6 +123,11 @@ export default function PRStatusDonutChart({
 
   return (
     <div className="flex flex-col items-center w-full">
+      {hasNoActivity && (
+      <p className="mb-4 text-sm text-[var(--muted-foreground)] text-center">
+        No pull request activity yet. Start contributing on GitHub to see your analytics here.
+      </p>
+        )}
       <ResponsiveContainer width="100%" height={220}>
         <PieChart>
           <Pie
