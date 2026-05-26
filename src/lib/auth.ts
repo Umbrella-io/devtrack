@@ -36,11 +36,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {
-        const p = profile as { id: number; login: string };
+        const p = profile as { id: number; login: string; email?: string };
         await supabaseAdmin.from("users").upsert(
           {
             github_id: String(p.id),
             github_login: p.login,
+            email: p.email || null,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "github_id" }

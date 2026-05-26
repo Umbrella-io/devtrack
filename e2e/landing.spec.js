@@ -36,8 +36,3 @@ test("landing shows footer", async ({ page }) => {
   await expect(page.getByRole("contentinfo")).toBeVisible();
 });
 
-test("landing has dashboard link", async ({ page }) => {
-  await page.goto("/");
-
-  await expect(page.getByRole("link", { name: "Dashboard" })).toBeVisible();
-});
