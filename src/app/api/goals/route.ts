@@ -13,6 +13,7 @@ interface Goal {
   current: number;
   unit: string;
   recurrence: string;
+  deadline: string | null;
   period_start: string | null;
   created_at: string;
 }
@@ -26,7 +27,7 @@ const MIN_TARGET = 1;
 const MAX_TARGET = 10_000;
 
 // Hard cap to prevent storage exhaustion and catastrophic Promise.all execution
-const MAX_GOALS_PER_USER = 20;
+const MAX_GOALS_PER_USER = 5;
 
 function getPeriodStart(recurrence: Recurrence): string {
   const now = new Date();
@@ -117,7 +118,7 @@ try {
     return Response.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { title, target, unit, recurrence } = body as Record<string, unknown>;
+  const { title, target, unit, recurrence, deadline } = body as Record<string, unknown>;
 
   if (typeof title !== "string" || title.trim().length === 0) {
     return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
@@ -141,6 +142,15 @@ try {
   const safeRecurrence: Recurrence = VALID_RECURRENCES.includes(recurrence as Recurrence)
     ? (recurrence as Recurrence)
     : "none";
+
+  let safeDeadline: string | null = null;
+  if (typeof deadline === "string") {
+    const d = new Date(deadline);
+    if (!isNaN(d.getTime())) {
+      d.setUTCHours(23, 59, 59, 999);
+      safeDeadline = d.toISOString();
+    }
+  }
 
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
@@ -171,6 +181,7 @@ try {
       unit: safeUnit,
       recurrence: safeRecurrence,
       period_start: getPeriodStart(safeRecurrence),
+      deadline: safeDeadline,
       current: 0,
     })
     .select()

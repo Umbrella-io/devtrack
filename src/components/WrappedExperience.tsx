@@ -22,7 +22,7 @@ function formatNumber(value: number) {
 
 function buildYearOptions() {
   const currentYear = new Date().getFullYear();
-  const years = [];
+  const years: number[] = [];
   for (let year = currentYear; year >= Math.max(2008, currentYear - 8); year -= 1) {
     years.push(year);
   }
@@ -52,7 +52,7 @@ function getOgImageUrl(stats: WrappedStats) {
 
 export default function WrappedExperience() {
   const years = useMemo(buildYearOptions, []);
-  const [selectedYear, setSelectedYear] = useState(years[0]);
+  const [selectedYear, setSelectedYear] = useState<number>(years[0] ?? new Date().getFullYear());
   const [stats, setStats] = useState<WrappedStats | null>(null);
   const [slide, setSlide] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -63,7 +63,7 @@ export default function WrappedExperience() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const requestedYear = Number(params.get("year"));
-    if (years.includes(requestedYear)) {
+    if (!Number.isNaN(requestedYear) && years.includes(requestedYear)) {
       setSelectedYear(requestedYear);
     }
     setOrigin(window.location.origin);

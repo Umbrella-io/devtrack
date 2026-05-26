@@ -4,11 +4,11 @@ const year = new Date().getFullYear();
 
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-[var(--border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
+    <footer className="mt-auto border-t border-[var(--border)] bg-[linear-gradient(180deg,rgba(59,130,246,0.08),transparent)]">
       <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr]">
           <div>
-            <div className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+            <div className="inline-flex items-center rounded-full border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
               Open source developer dashboard
             </div>
             <h2 className="mt-4 text-2xl font-semibold text-[var(--card-foreground)] sm:text-3xl">

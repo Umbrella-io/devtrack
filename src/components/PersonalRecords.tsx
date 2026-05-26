@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { Trophy, Zap, Flame, Calendar, Star } from "lucide-react";
+
 interface StreakData {
   current: number;
   longest: number;
@@ -175,7 +177,7 @@ export default function PersonalRecords() {
       value: streak?.longest ?? 0,
       unit: "days",
       subtext: "All time",
-      icon: "🏆",
+      icon: Trophy,
       isRepo: false,
       repoUrl: null,
     },
@@ -184,7 +186,7 @@ export default function PersonalRecords() {
       value: bestDay.count,
       unit: "commits",
       subtext: bestDay.dateLabel ?? "—",
-      icon: "⚡",
+      icon: Zap,
       isRepo: false,
       repoUrl: null,
     },
@@ -193,7 +195,7 @@ export default function PersonalRecords() {
       value: bestWeek.count,
       unit: "commits",
       subtext: bestWeek.weekLabel ?? "—",
-      icon: "🔥",
+      icon: Flame,
       isRepo: false,
       repoUrl: null,
     },
@@ -202,7 +204,7 @@ export default function PersonalRecords() {
       value: bestMonth.count,
       unit: "commits",
       subtext: bestMonth.monthLabel ?? "—",
-      icon: "📅",
+      icon: Calendar,
       isRepo: false,
       repoUrl: null,
     },
@@ -211,7 +213,7 @@ export default function PersonalRecords() {
       value: busiestRepo.count,
       unit: "commits",
       subtext: busiestRepo.repoLabel ?? "—",
-      icon: "⭐",
+      icon: Star,
       isRepo: true,
       repoUrl: busiestRepo.repoUrl ?? null,
     },
@@ -257,8 +259,8 @@ export default function PersonalRecords() {
               className="h-full rounded-lg bg-[var(--control)] p-4 text-center flex flex-col justify-between border border-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[var(--accent)]/30"
             >
               <div>
-                <div className="text-xl mb-2" role="img" aria-label={rec.label}>
-                  {rec.icon}
+                <div className="text-xl mb-2 flex justify-center">
+                  <rec.icon size={28} className="text-[var(--accent)]" aria-hidden="true" />
                 </div>
                 <div className="text-3xl font-extrabold text-[var(--accent)] tracking-tight mb-1">
                   {rec.value}
