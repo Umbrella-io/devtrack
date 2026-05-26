@@ -103,8 +103,42 @@ export default async function DashboardPage() {
 
   return (
     <DashboardSSEProvider>
-      <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
+      <div className="min-h-screen overflow-x-hidden bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
+      <div className="mb-6 rounded-2xl border border-[var(--border)] bg-[var(--card)]/80 p-3 shadow-sm backdrop-blur-sm sm:p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p
+              className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-foreground)]"
+              style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)" }}
+            >
+              Quick actions
+            </p>
+            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+              Common dashboard tasks and exports
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Link
+            href="/wrapped"
+            className="flex min-h-11 items-center justify-center rounded-xl border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90"
+          >
+            Year in Code
+          </Link>
+          <Link
+            href="/dashboard/settings"
+            className="secondary-button flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-medium"
+          >
+            Settings
+          </Link>
+          <div className="col-span-2">
+            <ExportButton />
+          </div>
+        </div>
+      </div>
+      <StreakAtRiskBanner />
 
         {/* Action bar */}
         <div className="mb-6 flex flex-wrap items-stretch justify-center gap-2 sm:justify-end">
