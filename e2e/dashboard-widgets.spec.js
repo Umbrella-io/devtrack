@@ -118,38 +118,6 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
-  await page.route("**/api/ai-insights**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        data: {
-          insights: [
-            {
-              id: "insight-1",
-              type: "productivity",
-              title: "High Consistency",
-              description: "You have coded 5 days this week!",
-              severity: "positive",
-            },
-          ],
-          trend: { direction: "up", percentage: 15 },
-          aiSummary: "Great job shipping features this week. Keep up the high standard!",
-          generatedAt: "2026-05-18T12:00:00.000Z",
-        },
-      }),
-    });
-  });
-
-  await page.route("**/api/notifications**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        notifications: [],
-        unreadCount: 0,
-      }),
-    });
-  });
-
   const metricRoutes = [
     "**/api/metrics/prs**",
     "**/api/metrics/pr-breakdown**",
@@ -170,19 +138,18 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/discussions**",
     "**/api/metrics/pr-review-trend**",
     "**/api/metrics/inactive-repos**",
-    "**/api/notifications**",
   ];
 
-for (const pattern of metricRoutes) {
-  await page.route(pattern, async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify(mockMetricResponse(route.request().url())),
+  for (const pattern of metricRoutes) {
+    await page.route(pattern, async (route) => {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(mockMetricResponse(route.request().url())),
+      });
     });
-  });
-}
-
+  }
 });
+
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
   await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
