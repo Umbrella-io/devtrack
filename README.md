@@ -21,28 +21,28 @@ Developer metrics are scattered across GitHub, Jira, Notion, and half a dozen ot
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| **GitHub OAuth** | Sign in with GitHub — no extra account needed |
+| Feature                   | Description                                                              |
+| ------------------------- | ------------------------------------------------------------------------ |
+| **GitHub OAuth**          | Sign in with GitHub — no extra account needed                            |
 | **Commit Activity Chart** | Visualize daily commit activity with 7d / 14d / 30d / 90d range selector |
-| **Commit Streak Tracker** | Current streak, longest streak, active days — stay consistent |
-| **PR Analytics** | Average review time, merge rate, open/closed PR count |
-| **Top Repositories** | Ranked list of your most active repos over any time range |
-| **Weekly Goal Tracker** | Set coding goals and track progress with a progress bar UI |
-| **No separate backend** | Next.js API routes + Supabase, deploy to Vercel for free |
+| **Commit Streak Tracker** | Current streak, longest streak, active days — stay consistent            |
+| **PR Analytics**          | Average review time, merge rate, open/closed PR count                    |
+| **Top Repositories**      | Ranked list of your most active repos over any time range                |
+| **Weekly Goal Tracker**   | Set coding goals and track progress with a progress bar UI               |
+| **No separate backend**   | Next.js API routes + Supabase, deploy to Vercel for free                 |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
-| Auth | GitHub OAuth via NextAuth.js |
-| Database | Supabase (PostgreSQL) |
-| API | Next.js Route Handlers (`/app/api/`) |
-| Charts | Recharts |
-| Deployment | Vercel (free, auto-deploys from GitHub) |
+| Layer      | Technology                                        |
+| ---------- | ------------------------------------------------- |
+| Frontend   | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Auth       | GitHub OAuth via NextAuth.js                      |
+| Database   | Supabase (PostgreSQL)                             |
+| API        | Next.js Route Handlers (`/app/api/`)              |
+| Charts     | Recharts                                          |
+| Deployment | Vercel (free, auto-deploys from GitHub)           |
 
 ---
 
@@ -147,6 +147,12 @@ Webhook requests are verified with GitHub's `X-Hub-Signature-256` HMAC header be
 
 ---
 
+## Documentation
+
+- [Architecture Overview](./docs/architecture.md)
+
+---
+
 ## Contributing
 
 DevTrack actively welcomes contributors of all skill levels, including GSSoC 2025 participants.
@@ -167,6 +173,7 @@ See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for full guidelines, commit style, 
 ## Roadmap
 
 ### Done
+
 - [x] GitHub OAuth sign-in
 - [x] Contribution bar chart
 - [x] PR analytics widget
@@ -178,6 +185,7 @@ See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for full guidelines, commit style, 
 - [x] Time range selector on contribution chart
 
 ### Open for contribution
+
 - [ ] Dark mode toggle ([#1](../../issues/1))
 - [ ] Responsive mobile layout ([#14](../../issues/14))
 - [ ] Create Goal form UI ([#13](../../issues/13))
