@@ -1,5 +1,9 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
+import { useTheme } from "@/components/ThemeContext";
+import ShortcutsModal from "@/components/ShortcutsModal";
+
 export default function KeyboardShortcuts() {
   const [isOpen, setIsOpen] = useState(false);
 
