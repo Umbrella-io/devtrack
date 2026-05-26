@@ -6,7 +6,7 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // Do not throw here — build-time rendering can touch this module before
 // runtime environment variables are present. Guard call sites instead.
 export const supabaseAdmin: any =
-  supabaseUrl && serviceRoleKey
+  supabaseUrl && serviceRoleKey && !supabaseUrl.includes("placeholder")
     ? createClient(supabaseUrl, serviceRoleKey)
     : null;
 
