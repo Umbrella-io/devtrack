@@ -377,7 +377,11 @@ export default function TopRepos() {
                       type="button"
                       onClick={() => togglePin(repo.name)}
                       className="ml-1 p-1 hover:bg-[var(--card-muted)] rounded-md transition-colors"
-                      title={isPinned ? "Unpin repository" : "Pin repository"}
+                      title={
+                        isPinned
+                          ? `Unpin ${shortName} repository`
+                          : `Pin ${shortName} repository`
+                      }
                       aria-label={isPinned ? `Unpin ${repo.name}` : `Pin ${repo.name}`}
                     >
                       <svg
