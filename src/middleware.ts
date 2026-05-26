@@ -1,9 +1,24 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
+const isDev = process.env.NODE_ENV === "development";
 const WINDOW_SECONDS = 60;
-const AUTHENTICATED_LIMIT = 60;
-const ANONYMOUS_LIMIT = 10;
+
+/* ============================================================
+   SECURITY NOTICE: DEVELOPMENT MODE RATE-LIMIT SCALING
+   These high thresholds are configured STRICTLY for local mock
+   testing pipelines to handle high concurrent local dashboard refreshes.
+
+   NOTE: In Next.js, process.env.NODE_ENV is a compile-time constant.
+   It is baked into the bundle at build time and cannot change at runtime.
+   Therefore, in production builds, isDev is always false and the
+   AUTHENTICATED_LIMIT/ANONYMOUS_LIMIT will always be 60/10 respectively.
+   In development (next dev), NODE_ENV is 'development' so the higher
+   limits apply during local testing only.
+   ============================================================ */
+const AUTHENTICATED_LIMIT = isDev ? 5000 : 60;
+const ANONYMOUS_LIMIT = isDev ? 1000 : 10;
+
 const memoryBuckets = new Map<string, number[]>();
 
 type RateLimitResult = {
