@@ -1,4 +1,5 @@
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import type { GitHubAchievement } from "@/lib/github-achievements";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -27,6 +28,8 @@ export interface PublicProfileData {
   repos: TopRepo[];
   contributions: ContributionData;
   streak: StreakData;
+  achievements: GitHubAchievement[];
+  achievementsError?: string | null;
 }
 
 async function ghFetch(url: string, token?: string): Promise<Response> {
@@ -157,4 +160,40 @@ export async function fetchPublicStreak(
     lastCommitDate: lastDay,
     totalActiveDays: commitDays.length,
   };
+}
+
+/**
+ * Calculates the top language by sampling the user's 30 most recently updated
+ * repositories and counting which primary language appears most frequently.
+ */
+export async function fetchTopLanguage(
+  username: string,
+  token?: string
+): Promise<string | null> {
+  const res = await ghFetch(
+    `${GITHUB_API}/users/${username}/repos?sort=updated&per_page=30`,
+    token
+  );
+  
+  if (!res.ok) return null;
+  
+  const repos = (await res.json()) as Array<{ language: string | null }>;
+  
+  const counts: Record<string, number> = {};
+  for (const r of repos) {
+    if (r.language) {
+      counts[r.language] = (counts[r.language] || 0) + 1;
+    }
+  }
+  
+  let topLang: string | null = null;
+  let maxCount = 0;
+  for (const [lang, count] of Object.entries(counts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      topLang = lang;
+    }
+  }
+  
+  return topLang;
 }

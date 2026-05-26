@@ -3,10 +3,12 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import PrivacySettings from "@/components/PrivacySettings";
+import ConfirmModal from "@/components/ConfirmModal";
 import { toast } from "sonner";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface UserSettings {
   id: string;
@@ -107,6 +109,7 @@ function SettingsPageFallback() {
 function SettingsPageContent() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,6 +122,9 @@ function SettingsPageContent() {
   );
   const [wakatimeKey, setWakatimeKey] = useState("");
   const [savingWakatime, setSavingWakatime] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
 
   const statusMessage = useMemo(
     () =>
@@ -128,7 +134,73 @@ function SettingsPageContent() {
 
   const { theme, setTheme } = useHeatmapTheme();
 
- // Redirect to signin if not authenticated
+  // Handle beforeunload to warn about unsaved changes (Browser Default)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  // Intercept in-app navigation
+  useEffect(() => {
+    const handleAnchorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const anchor = target.closest("a");
+
+      if (anchor && isDirty) {
+        const href = anchor.getAttribute("href");
+        // Only intercept internal links
+        if (href && !href.startsWith("#") && !anchor.hasAttribute("download") && !href.startsWith("http")) {
+          e.preventDefault();
+          e.stopPropagation();
+          setPendingPath(href);
+          setShowConfirmModal(true);
+        }
+      }
+    };
+
+    const handlePopState = () => {
+      if (isDirty) {
+        // We can't easily prevent popstate without a prompt
+        // but we can alert the user.
+        setPendingPath("BACK");
+        setShowConfirmModal(true);
+        // Push state back to prevent the URL from changing immediately
+        window.history.pushState(null, "", window.location.href);
+      }
+    };
+
+    window.addEventListener("click", handleAnchorClick, true);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("click", handleAnchorClick, true);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isDirty]);
+
+  const handleConfirmLeave = () => {
+    setIsDirty(false); // Clear dirty state so we can navigate
+    setShowConfirmModal(false);
+    if (pendingPath === "BACK") {
+      window.history.back();
+    } else if (pendingPath) {
+      router.push(pendingPath);
+    }
+  };
+
+  const handleCancelLeave = () => {
+    setShowConfirmModal(false);
+    setPendingPath(null);
+  };
+
+  // Redirect to signin if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
       redirect("/");
@@ -245,6 +317,7 @@ function SettingsPageContent() {
         const updated = await res.json();
         setSettings(updated);
         setWakatimeKey("");
+        setIsDirty(false);
         toast.success(wakatimeKey === "" ? "Wakatime key removed" : "Wakatime key saved successfully!");
       } else {
         const errorData = await res.json();
@@ -444,7 +517,10 @@ function SettingsPageContent() {
                   name="heatmap-theme"
                   value="default"
                   checked={theme === "default"}
-                  onChange={() => setTheme("default")}
+                  onChange={() => {
+                    setTheme("default");
+                    setIsDirty(true);
+                  }}
                   className="accent-[var(--accent)] focus:ring-[var(--accent)]"
                 />
               </label>
@@ -455,7 +531,10 @@ function SettingsPageContent() {
                   name="heatmap-theme"
                   value="colour-blind-friendly"
                   checked={theme === "colour-blind-friendly"}
-                  onChange={() => setTheme("colour-blind-friendly")}
+                  onChange={() => {
+                    setTheme("colour-blind-friendly");
+                    setIsDirty(true);
+                  }}
                   className="accent-[var(--accent)] focus:ring-[var(--accent)]"
                 />
               </label>
@@ -468,6 +547,25 @@ function SettingsPageContent() {
                 Turn on public profile to generate a shareable link to your
                 GitHub stats.
               </p>
+            </div>
+          )}
+
+          {isDirty && (
+            <div className="mt-6 pt-6 border-t border-[var(--border)] flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  // The toggles themselves already call the API,
+                  // but for the heatmap theme which is local only, 
+                  // or to clear the dirty state after a manual change,
+                  // we provide this clear feedback.
+                  setIsDirty(false);
+                  toast.success("Settings saved successfully!");
+                }}
+                className="px-6 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Save Changes
+              </button>
             </div>
           )}
         </div>
@@ -613,7 +711,10 @@ function SettingsPageContent() {
                   id="wakatime-key"
                   type="password"
                   value={wakatimeKey}
-                  onChange={(e) => setWakatimeKey(e.target.value)}
+                  onChange={(e) => {
+                    setWakatimeKey(e.target.value);
+                    setIsDirty(true);
+                  }}
                   placeholder={settings.has_wakatime_key ? "•••••••••••••••• (Configured)" : "Enter your Wakatime API key"}
                   autoComplete="new-password"
                   className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
@@ -645,6 +746,16 @@ function SettingsPageContent() {
             </button>
           </Link>
         </div>
+
+        <ConfirmModal
+          isOpen={showConfirmModal}
+          title="Unsaved Changes"
+          message="You have unsaved changes in your settings. If you leave now, your progress will be lost."
+          confirmLabel="Leave Anyway"
+          cancelLabel="Stay and Save"
+          onConfirm={handleConfirmLeave}
+          onCancel={handleCancelLeave}
+        />
       </div>
     </div>
   );

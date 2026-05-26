@@ -18,7 +18,7 @@ export type RepoStats = {
    CONSTANTS
    ═══════════════════════════════════════════ */
 const A = '#818cf8';                  // accent — indigo
-const BG = '#080808';
+const BG = 'transparent'
 const SURF = '#0e0e0e';
 const BORDER = '#1a1a1a';
 const TEXT = '#e0e0e0';
