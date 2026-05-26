@@ -35,4 +35,3 @@ test("landing shows footer", async ({ page }) => {
 
   await expect(page.getByRole("contentinfo").first()).toBeVisible();
 });
-
