@@ -93,6 +93,7 @@ import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -102,8 +103,9 @@ export default async function DashboardPage() {
   if (session.error === "TokenRevoked") redirect("/");
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
-      <DashboardHeader />
+    <DashboardSSEProvider>
+      <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
+        <DashboardHeader />
       <div className="mb-6 flex justify-end items-center gap-2">
         <Link
           href="/wrapped"
@@ -226,5 +228,6 @@ export default async function DashboardPage() {
         <RecentActivity />
       </div>
     </div>
+    </DashboardSSEProvider>
   );
 }

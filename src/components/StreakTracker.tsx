@@ -125,6 +125,14 @@ export default function StreakTracker() {
   }, [fetchStreak]);
 
   useEffect(() => {
+    const handleSync = () => {
+      fetchStreak();
+    };
+    window.addEventListener("devtrack:sync", handleSync);
+    return () => window.removeEventListener("devtrack:sync", handleSync);
+  }, [fetchStreak]);
+
+  useEffect(() => {
     const stored = localStorage.getItem(
       "devtrack:dismissed-milestones"
     );

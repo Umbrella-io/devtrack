@@ -106,6 +106,19 @@ export default function GoalTracker() {
       });
   }, [loadGoals, handleSync]);
 
+  useEffect(() => {
+    const handleSyncEvent = () => {
+      loadGoals()
+        .then(() => {
+          setLastUpdated(new Date());
+          setMinutesAgo(0);
+        })
+        .catch(() => {});
+    };
+    window.addEventListener("devtrack:sync", handleSyncEvent);
+    return () => window.removeEventListener("devtrack:sync", handleSyncEvent);
+  }, [loadGoals]);
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);

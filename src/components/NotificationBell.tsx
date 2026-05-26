@@ -32,8 +32,13 @@ export default function NotificationBell() {
   useEffect(() => {
     fetchNotifications();
 
-    const interval = setInterval(fetchNotifications, 60_000);
-    return () => clearInterval(interval);
+    const handleNotifications = () => {
+      fetchNotifications();
+    };
+
+    window.addEventListener("devtrack:notifications", handleNotifications);
+    return () =>
+      window.removeEventListener("devtrack:notifications", handleNotifications);
   }, [fetchNotifications]);
 
   useEffect(() => {
