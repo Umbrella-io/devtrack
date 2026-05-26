@@ -16,6 +16,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (!params.githubId || typeof params.githubId !== "string" || !/^\d+$/.test(params.githubId)) {
+    return NextResponse.json({ error: "Invalid githubId parameter" }, { status: 400 });
+  }
+
   const userRow = await resolveAppUser(session.githubId, session.githubLogin);
 
   if (!userRow) {

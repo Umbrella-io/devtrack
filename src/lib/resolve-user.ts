@@ -8,26 +8,48 @@ export async function resolveAppUser(
   githubId: string,
   githubLogin?: string
 ): Promise<AppUser | null> {
-  const { data: existing } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", githubId)
-    .single();
+  try {
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("github_id", githubId)
+      .single();
 
-  if (existing) return existing;
+    if (existingError && existingError.code !== "PGRST116") {
+      console.error("Error fetching existing user:", existingError);
+      return null;
+    }
 
-  const { data: upserted } = await supabaseAdmin
-    .from("users")
-    .upsert(
-      {
-        github_id: githubId,
-        github_login: githubLogin,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: "github_id" }
-    )
-    .select("id")
-    .single();
+    if (existing) {
+      return existing;
+    }
 
-  return upserted ?? null;
+    if (!githubLogin) {
+      console.error("Missing githubLogin");
+      return null;
+    }
+
+    const { data: upserted, error: upsertError } = await supabaseAdmin
+      .from("users")
+      .upsert(
+        {
+          github_id: githubId,
+          github_login: githubLogin,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "github_id" }
+      )
+      .select("id")
+      .single();
+
+    if (upsertError) {
+      console.error("Error upserting user:", upsertError);
+      return null;
+    }
+
+    return upserted ?? null;
+  } catch (error) {
+    console.error("resolveAppUser failed:", error);
+    return null;
+  }
 }
