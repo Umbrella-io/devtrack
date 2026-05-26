@@ -1,5 +1,5 @@
-import SectionHeader from "./SectionHeader";
 "use client";
+import SectionHeader from "./SectionHeader";
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
