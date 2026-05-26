@@ -146,6 +146,8 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
 
   await page.goto("/dashboard", { waitUntil: "load" });
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
+  // Wait for the initial contribution fetch so we know the graph is hydrated
+  await expect.poll(() => contributionRequests.length > 0, { timeout: 15000 }).toBe(true);
   await page.getByRole("button", { name: "Show 90-day range" }).click();
 
   await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);

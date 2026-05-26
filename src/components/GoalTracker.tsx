@@ -208,26 +208,6 @@ export default function GoalTracker() {
     return () => clearInterval(interval);
   }, [lastUpdated]);
 
-  if (loading) {
-    return (
-      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <div role="status" aria-live="polite" aria-busy="true">
-          <span className="sr-only">Loading weekly goals</span>
-          <div
-            aria-hidden="true"
-            className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse"
-          />
-          {[1, 2, 3].map((i) => (
-            <div key={i} aria-hidden="true" className="mb-4">
-              <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
-              <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       {/* ── Header ── */}
@@ -280,7 +260,17 @@ export default function GoalTracker() {
         </div>
       )}
 
-      {goals.length === 0 ? (
+      {loading ? (
+        <div role="status" aria-live="polite" aria-busy="true">
+          <span className="sr-only">Loading goals</span>
+          {[1, 2, 3].map((i) => (
+            <div key={i} aria-hidden="true" className="mb-4">
+              <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
+              <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      ) : goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No goals yet. Create one below.
         </p>
