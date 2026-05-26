@@ -19,8 +19,4 @@ CREATE POLICY "Users can view their own wakatime stats"
     ON wakatime_stats FOR SELECT
     USING (auth.uid() = user_id);
 
--- Allow service role to manage stats
-CREATE POLICY "Service role can manage wakatime stats"
-    ON wakatime_stats FOR ALL
-    USING (true)
-    WITH CHECK (true);
+
