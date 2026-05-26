@@ -1,3 +1,5 @@
+import ParticleBackground from "@/components/ParticleBackground";
+import { Syne, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -76,8 +78,9 @@ export default async function HomePage() {
   const repoStats = await fetchRepoStats();
 
   return (
-    <div className={`${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
-      <LandingPage repoStats={repoStats} />
-    </div>
-  );
+  <div className={`relative ${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
+    <ParticleBackground />
+    <LandingPage repoStats={repoStats} />
+  </div>
+);
 }
