@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
+import { supabaseAdmin } from "@/lib/supabase";
 
 import {
   isMetricsCacheBypassed,
@@ -40,6 +41,20 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Invalid GitHub username" }, { status: 400 });
   }
 
+  // Check Supabase cache first (keyed by username + UTC date)
+  const today = toDateStr(new Date());
+  const cacheKey = `${normalizedUsername}::${today}`;
+
+  const { data: cached } = await supabaseAdmin
+    .from("comparison_cache")
+    .select("payload")
+    .eq("cache_key", cacheKey)
+    .maybeSingle();
+
+  if (cached?.payload) {
+    return Response.json({ ...cached.payload, fromCache: true });
+  }
+
   const encodedUsername = encodeURIComponent(normalizedUsername);
   const bypass = isMetricsCacheBypassed(req);
   const cacheKey = metricsCacheKey(
@@ -67,8 +82,17 @@ try {
   });
 
   if (!userRes.ok) {
+<<<<<<< HEAD
   if (userRes.status === 404) {
     throw new Error("User not found");
+=======
+    if (userRes.status === 404)
+      return Response.json({ error: "User not found" }, { status: 404 });
+    return Response.json(
+      { error: "GitHub API error or User is private" },
+      { status: 502 }
+    );
+>>>>>>> 0028454 (feat: add ComparisonPanel with chart overlay, skeleton loader, localStorage persistence, and Supabase cache)
   }
 
   throw new Error("GitHub API error or User is private");
@@ -78,7 +102,7 @@ try {
   const since90 = new Date();
   since90.setDate(since90.getDate() - 90);
   const since90Str = since90.toISOString().slice(0, 10);
-  
+
   const since30 = new Date();
   since30.setDate(since30.getDate() - 30);
   const since30Str = since30.toISOString().slice(0, 10);
@@ -103,11 +127,13 @@ try {
   let streak = 0;
   let commits30d = 0;
   let topLanguage = "Unknown";
-  
+  const weeklyMap: Record<string, number> = {};
+
   if (commitsRes.ok) {
     const commitsData = await commitsRes.json();
-    const items = commitsData.items || [];
-    
+    const items: Array<{ commit: { author: { date: string } } }> =
+      commitsData.items || [];
+
     const daySet: Record<string, true> = {};
     for (const item of items) {
       const dateStr = item.commit.author.date.slice(0, 10);
@@ -115,29 +141,50 @@ try {
       if (dateStr >= since30Str) {
         commits30d++;
       }
+
+      // Bucket into Mon-anchored week for chart
+      const d = new Date(dateStr);
+      const day = d.getUTCDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setUTCDate(d.getUTCDate() + diff);
+      const weekKey = toDateStr(d);
+      weeklyMap[weekKey] = (weeklyMap[weekKey] ?? 0) + 1;
     }
+
     const commitDays = Object.keys(daySet).sort();
-    
+
     if (commitDays.length > 0) {
       let currentRun = 1;
-      let runs: { end: string; length: number }[] = [];
-      let runStart = commitDays[0];
+      const runs: { end: string; length: number }[] = [];
       for (let i = 1; i < commitDays.length; i++) {
         if (dateDiffDays(commitDays[i - 1], commitDays[i]) === 1) {
           currentRun++;
         } else {
           runs.push({ end: commitDays[i - 1], length: currentRun });
-          runStart = commitDays[i];
           currentRun = 1;
         }
       }
       runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
-      
-      const today = toDateStr(new Date());
-      const yesterday = toDateStr(new Date(Date.now() - 86400000));
+
+      const todayStr = toDateStr(new Date());
+      const yesterdayStr = toDateStr(new Date(Date.now() - 86400000));
       const lastRun = runs[runs.length - 1];
-      streak = (lastRun.end === today || lastRun.end === yesterday) ? lastRun.length : 0;
+      streak =
+        lastRun.end === todayStr || lastRun.end === yesterdayStr
+          ? lastRun.length
+          : 0;
     }
+  }
+
+  // Build ordered weekly array (last 8 weeks) for the chart
+  const weeklyCommits: Array<{ week: string; commits: number }> = [];
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date();
+    const day = d.getUTCDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setUTCDate(d.getUTCDate() + diff - i * 7);
+    const weekKey = toDateStr(d);
+    weeklyCommits.push({ week: weekKey, commits: weeklyMap[weekKey] ?? 0 });
   }
 
   // 3. Top Language from repos
@@ -149,12 +196,13 @@ try {
     headers: { Authorization: `Bearer ${session.accessToken}` },
     cache: "no-store",
   });
-  
+
   if (reposRes.ok) {
-    const reposData = await reposRes.json();
+    const reposData: Array<{ language: string | null; fork: boolean }> =
+      await reposRes.json();
     const langCounts: Record<string, number> = {};
     for (const repo of reposData) {
-      if (repo.language) {
+      if (!repo.fork && repo.language) {
         langCounts[repo.language] = (langCounts[repo.language] || 0) + 1;
       }
     }
@@ -177,6 +225,7 @@ try {
     prs = prsData.total_count || 0;
   }
 
+<<<<<<< HEAD
  return {
   username: normalizedUsername,
   streak,
@@ -201,4 +250,25 @@ return Response.json(data);
     { status: 502 }
   );
 }
+=======
+  const payload = {
+    username: normalizedUsername,
+    streak,
+    commits30d,
+    topLanguage,
+    prs,
+    weeklyCommits,
+  };
+
+  // Store in cache — best-effort, never fail the request over this
+  void supabaseAdmin
+    .from("comparison_cache")
+    .upsert({
+      cache_key: cacheKey,
+      target_username: normalizedUsername,
+      payload,
+    });
+
+  return Response.json({ ...payload, fromCache: false });
+>>>>>>> 0028454 (feat: add ComparisonPanel with chart overlay, skeleton loader, localStorage persistence, and Supabase cache)
 }
