@@ -1,101 +1,140 @@
-import { describe, it, expect } from 'vitest';
-import { toDateStr, dateDiffDays, getThisWeekRange, getLastWeekRange } from '../src/lib/dateUtils';
+import { describe, it, expect, vi, afterEach } from "vitest";
+import {
+  toDateStr,
+  dateDiffDays,
+  getThisWeekRange,
+  getLastWeekRange,
+} from "../src/lib/dateUtils";
 
-describe('toDateStr', () => {
-  it('returns ISO date string without time', () => {
-    const date = new Date('2024-06-15T12:30:00Z');
-    expect(toDateStr(date)).toBe('2024-06-15');
+// 每个测试后恢复真实时间
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("toDateStr", () => {
+  it("should convert a Date to ISO date string (YYYY-MM-DD)", () => {
+    const date = new Date("2024-03-15T12:30:00Z");
+    expect(toDateStr(date)).toBe("2024-03-15");
   });
 
-  it('handles date with midnight time', () => {
-    const date = new Date('2024-01-01T00:00:00Z');
-    expect(toDateStr(date)).toBe('2024-01-01');
+  it("should handle end-of-year boundary", () => {
+    const newYear = new Date("2023-12-31T23:59:59Z");
+    expect(toDateStr(newYear)).toBe("2023-12-31");
   });
 
-  it('handles end of day time', () => {
-    const date = new Date('2024-12-31T23:59:59.999Z');
-    expect(toDateStr(date)).toBe('2024-12-31');
+  it("should produce UTC date (not locale)", () => {
+    const date = new Date(Date.UTC(2024, 0, 1, 1, 0, 0));
+    expect(toDateStr(date)).toBe("2024-01-01");
   });
 });
 
-describe('dateDiffDays', () => {
-  it('returns positive difference when b is after a', () => {
-    expect(dateDiffDays('2026-05-01', '2026-05-10')).toBe(9);
+describe("dateDiffDays", () => {
+  it("should return correct day difference between two date strings", () => {
+    expect(dateDiffDays("2024-01-01", "2024-01-10")).toBe(9);
   });
 
-  it('returns negative difference when b is before a', () => {
-    expect(dateDiffDays('2026-05-10', '2026-05-01')).toBe(-9);
+  it("should handle same-day difference", () => {
+    expect(dateDiffDays("2024-06-15", "2024-06-15")).toBe(0);
   });
 
-  it('returns 0 for same day', () => {
-    expect(dateDiffDays('2026-05-24', '2026-05-24')).toBe(0);
-  });
-
-  it('handles year boundary crossing', () => {
-    expect(dateDiffDays('2025-12-31', '2026-01-01')).toBe(1);
+  it("should handle leap year dates", () => {
+    // 2024 is a leap year, so Feb 28 -> Mar 1 = 2 days
+    expect(dateDiffDays("2024-02-28", "2024-03-01")).toBe(2);
   });
 });
 
-describe('getThisWeekRange', () => {
-  it('returns object with start and end properties', () => {
+describe("getThisWeekRange", () => {
+  it("should return start as Monday 00:00 UTC and end as current day 23:59:59 UTC", () => {
+    // Mock "now" to a Wednesday in UTC
+    const mockNow = new Date("2024-04-17T10:00:00Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(mockNow);
+
     const range = getThisWeekRange();
-    expect(range).toHaveProperty('start');
-    expect(range).toHaveProperty('end');
+
+    // Monday of that week (2024-04-15)
+    const expectedStart = new Date(Date.UTC(2024, 3, 15, 0, 0, 0, 0)).toISOString();
+    // Wednesday end (2024-04-17, 23:59:59.000Z)
+    const expectedEnd = new Date(Date.UTC(2024, 3, 17, 23, 59, 59, 0)).toISOString();
+
+    expect(range.start).toBe(expectedStart);
+    expect(range.end).toBe(expectedEnd);
   });
 
-  it('start is before end', () => {
+  it("should handle Sunday (end equals start when today is Monday)", () => {
+    const mockMonday = new Date("2024-04-22T08:00:00Z"); // Monday
+    vi.useFakeTimers();
+    vi.setSystemTime(mockMonday);
+
     const range = getThisWeekRange();
-    expect(new Date(range.start).getTime()).toBeLessThan(new Date(range.end).getTime());
+
+    const expectedStart = new Date(Date.UTC(2024, 3, 22, 0, 0, 0, 0)).toISOString();
+    const expectedEnd = new Date(Date.UTC(2024, 3, 22, 23, 59, 59, 0)).toISOString();
+
+    expect(range.start).toBe(expectedStart);
+    expect(range.end).toBe(expectedEnd);
   });
 
-  it('start is at midnight UTC', () => {
-    const range = getThisWeekRange();
-    const start = new Date(range.start);
-    expect(start.getUTCHours()).toBe(0);
-    expect(start.getUTCMinutes()).toBe(0);
-    expect(start.getUTCSeconds()).toBe(0);
-  });
+  it("should handle month/year transition", () => {
+    // 2024-01-01 is a Monday
+    const mockNewYear = new Date("2024-01-01T12:00:00Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(mockNewYear);
 
-  it('end is at end of day UTC', () => {
     const range = getThisWeekRange();
-    const end = new Date(range.end);
-    expect(end.getUTCHours()).toBe(23);
-    expect(end.getUTCMinutes()).toBe(59);
-    expect(end.getUTCSeconds()).toBe(59);
+
+    const expectedStart = new Date(Date.UTC(2024, 0, 1, 0, 0, 0, 0)).toISOString();
+    const expectedEnd = new Date(Date.UTC(2024, 0, 1, 23, 59, 59, 0)).toISOString();
+
+    expect(range.start).toBe(expectedStart);
+    expect(range.end).toBe(expectedEnd);
   });
 });
 
-describe('getLastWeekRange', () => {
-  it('returns object with start and end properties', () => {
+describe("getLastWeekRange", () => {
+  it("should return previous Monday-Sunday range", () => {
+    const mockNow = new Date("2024-04-17T10:00:00Z"); // Wednesday
+    vi.useFakeTimers();
+    vi.setSystemTime(mockNow);
+
     const range = getLastWeekRange();
-    expect(range).toHaveProperty('start');
-    expect(range).toHaveProperty('end');
+
+    // Previous Monday = 2024-04-08, Sunday = 2024-04-14
+    const expectedStart = new Date(Date.UTC(2024, 3, 8, 0, 0, 0, 0)).toISOString();
+    const expectedEnd = new Date(Date.UTC(2024, 3, 14, 23, 59, 59, 0)).toISOString();
+
+    expect(range.start).toBe(expectedStart);
+    expect(range.end).toBe(expectedEnd);
   });
 
-  it('start is before end', () => {
+  it("should handle year transition (first week of January)", () => {
+    const mockNewYear = new Date("2024-01-03T10:00:00Z"); // Wednesday
+    vi.useFakeTimers();
+    vi.setSystemTime(mockNewYear);
+
     const range = getLastWeekRange();
-    expect(new Date(range.start).getTime()).toBeLessThan(new Date(range.end).getTime());
+
+    // Previous week: Monday 2023-12-25, Sunday 2023-12-31
+    const expectedStart = new Date(Date.UTC(2023, 11, 25, 0, 0, 0, 0)).toISOString();
+    const expectedEnd = new Date(Date.UTC(2023, 11, 31, 23, 59, 59, 0)).toISOString();
+
+    expect(range.start).toBe(expectedStart);
+    expect(range.end).toBe(expectedEnd);
   });
 
-  it('start is at midnight UTC', () => {
-    const range = getLastWeekRange();
-    const start = new Date(range.start);
-    expect(start.getUTCHours()).toBe(0);
-    expect(start.getUTCMinutes()).toBe(0);
-    expect(start.getUTCSeconds()).toBe(0);
-  });
+  it("should handle leap year dates (Feb 29)", () => {
+    // 2024-03-04 is a Monday
+    const mockLeapWeek = new Date("2024-03-04T12:00:00Z"); // Monday
+    vi.useFakeTimers();
+    vi.setSystemTime(mockLeapWeek);
 
-  it('end is at end of day UTC', () => {
     const range = getLastWeekRange();
-    const end = new Date(range.end);
-    expect(end.getUTCHours()).toBe(23);
-    expect(end.getUTCMinutes()).toBe(59);
-    expect(end.getUTCSeconds()).toBe(59);
-  });
 
-  it('is before this week range', () => {
-    const thisWeek = getThisWeekRange();
-    const lastWeek = getLastWeekRange();
-    expect(new Date(lastWeek.end).getTime()).toBeLessThan(new Date(thisWeek.start).getTime());
+    // Previous week: Monday 2024-02-26, Sunday 2024-03-03 (includes Feb 29)
+    const expectedStart = new Date(Date.UTC(2024, 1, 26, 0, 0, 0, 0)).toISOString();
+    const expectedEnd = new Date(Date.UTC(2024, 2, 3, 23, 59, 59, 0)).toISOString();
+
+    expect(range.start).toBe(expectedStart);
+    expect(range.end).toBe(expectedEnd);
   });
 });
