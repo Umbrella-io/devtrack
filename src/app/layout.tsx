@@ -5,8 +5,8 @@ import Providers from "./providers";
 import PWARegister from "@/components/pwa-register";
 import "./globals.css";
 import { Toaster } from "sonner";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+// Load Vercel integrations dynamically so build doesn't fail when packages
+// aren't installed in CI/environments where they're optional.
 
 const inter = Inter({ subsets: ["latin"] });
 const syne = Syne({
@@ -49,11 +49,23 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let Analytics: any = null;
+  let SpeedInsights: any = null;
+
+  try {
+    const a = await import("@vercel/analytics/next");
+    Analytics = a?.Analytics ?? a?.default ?? null;
+  } catch (e) {}
+
+  try {
+    const s = await import("@vercel/speed-insights/next");
+    SpeedInsights = s?.SpeedInsights ?? s?.default ?? null;
+  } catch (e) {}
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -63,12 +75,18 @@ export default function RootLayout({
               (function() {
                 try {
                   const stored = localStorage.getItem('theme');
-                  if (stored === 'light') {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.style.colorScheme = 'light';
-                  } else {
+                  if (stored === 'dark') {
                     document.documentElement.classList.add('dark');
                     document.documentElement.style.colorScheme = 'dark';
+                  } else if (stored === 'light') {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.style.colorScheme = 'light';
+                  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.style.colorScheme = 'dark';
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.style.colorScheme = 'light';
                   }
                 } catch (e) {}
               })();
@@ -91,8 +109,8 @@ export default function RootLayout({
 
           <Toaster richColors position="top-right" />
         </div>
-        <Analytics />
-        <SpeedInsights />
+        {Analytics ? <Analytics /> : null}
+        {SpeedInsights ? <SpeedInsights /> : null}
       </body>
     </html>
   );

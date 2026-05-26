@@ -107,7 +107,6 @@ export default function PRMetrics() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Stat grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {stats.map((stat) => (
               <div
@@ -123,7 +122,6 @@ export default function PRMetrics() {
             ))}
           </div>
 
-          {/* Review Participation Metrics Section */}
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="bg-[var(--control)] border-[var(--border)] text-[var(--card-foreground)]">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -148,7 +146,6 @@ export default function PRMetrics() {
             </Card>
           </div>
 
-          {/* PR status donut chart */}
           {metrics && (
             <div>
               <p className="mb-2 text-sm font-medium text-[var(--muted-foreground)]">
