@@ -5,29 +5,24 @@ import { supabaseAdmin } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 
 /**
- * Returns Monday 00:00:00 local time of the current week as a full ISO string.
- *
- * Fix for Bug 2 (Sunday + timezone):
- * - Uses `const diff = day === 0 ? -6 : 1 - day` so Sunday correctly resolves
- *   to the *previous* Monday, not the *next* one.
- * - Returns a full ISO timestamp instead of `.slice(0, 10)` to avoid the UTC
- *   date-shift bug (matching the approach already used in `getPeriodStart()`).
+ * Returns Monday 00:00:00 UTC of the current week as a full ISO string.
+ * Sunday correctly resolves to the *previous* Monday.
  */
 function currentWeekStart(): string {
   const now = new Date();
   const day = now.getUTCDay();
-  const diff = day === 0 ? -6 : 1 - day; // Monday = 0 offset; Sunday = -6
+  const diff = day === 0 ? -6 : 1 - day;
   const monday = new Date(now);
   monday.setUTCDate(now.getUTCDate() + diff);
   monday.setUTCHours(0, 0, 0, 0);
   return monday.toISOString();
 }
 
-/** Returns Sunday 23:59:59.999 of the current week as a full ISO string. */
+/** Returns Sunday 23:59:59.999 UTC of the current week as a full ISO string. */
 function currentWeekEnd(): string {
   const now = new Date();
   const day = now.getUTCDay();
-  const diff = day === 0 ? 0 : 7 - day; // Sunday of this week
+  const diff = day === 0 ? 0 : 7 - day;
   const sunday = new Date(now);
   sunday.setUTCDate(now.getUTCDate() + diff);
   sunday.setUTCHours(23, 59, 59, 999);
@@ -55,13 +50,11 @@ export async function POST() {
   const weekEnd = currentWeekEnd();
 
   // ── 2. Fetch all commit-based goals for this week ─────────────────────────
-  // Fix for Bug 1: column is `period_start` (full ISO timestamp), not `week_start`.
-  // Use a range filter (.gte / .lte) instead of string equality.
-  const { data: commitGoals, error: goalsError } = await supabaseAdmin
+  const { data: activityGoals, error: goalsError } = await supabaseAdmin
     .from("goals")
-    .select("id")
+    .select("id, unit, repo, repository, repo_name")
     .eq("user_id", user.id)
-    .eq("unit", "commits")
+    .in("unit", ["commits", "prs"])
     .gte("period_start", weekStart)
     .lte("period_start", weekEnd);
 
@@ -69,41 +62,116 @@ export async function POST() {
     return Response.json({ error: "Failed to fetch goals" }, { status: 500 });
   }
 
-  if (!commitGoals || commitGoals.length === 0) {
+  if (!activityGoals || activityGoals.length === 0) {
     return Response.json({ updated: 0, commitCount: 0 });
   }
 
-  // ── 3. Count commits for the current week from GitHub ────────────────────
-  const ghRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:${weekStart}..${weekEnd}&per_page=100`,
-    {
-      headers: {
-        Authorization: `Bearer ${session.accessToken}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    }
-  );
-
-  if (!ghRes.ok) {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
-  }
-
-  const ghData = (await ghRes.json()) as { total_count: number };
-  const commitCount = ghData.total_count;
-
-  // ── 4. Update all commit-based goals with the real commit count ───────────
+  // ── 3. Sync each goal separately with paginated commit counting ───────────
   const now = new Date().toISOString();
-  const ids = commitGoals.map((g) => g.id);
 
-  const { error: updateError } = await supabaseAdmin
-    .from("goals")
-    .update({ current: commitCount, last_synced_at: now })
-    .in("id", ids);
+  const commitGoals = activityGoals.filter(g => g.unit === "commits");
+  const prGoalsToUpdate = activityGoals.filter(g => g.unit === "prs");
 
-  if (updateError) {
-    return Response.json({ error: "Failed to update goals" }, { status: 500 });
+  let totalUpdated = 0;
+
+  for (const goal of commitGoals) {
+    let page = 1;
+    let commitCount = 0;
+    let hasMore = true;
+
+    // Optional repository field (if present in DB)
+    const repo =
+      (goal as any).repo ||
+      (goal as any).repository ||
+      (goal as any).repo_name ||
+      null;
+
+    while (hasMore) {
+      const repoQualifier = repo ? `+repo:${repo}` : "";
+
+      const ghRes = await fetch(
+        `${GITHUB_API}/search/commits?q=author:${session.githubLogin}${repoQualifier}+author-date:${weekStart}..${weekEnd}&per_page=100&page=${page}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.accessToken}`,
+            Accept: "application/vnd.github+json",
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (!ghRes.ok) {
+        return Response.json(
+          { error: "GitHub API error" },
+          { status: 502 }
+        );
+      }
+
+      const ghData = (await ghRes.json()) as {
+        items?: unknown[];
+      };
+
+      const items = ghData.items || [];
+
+      commitCount += items.length;
+
+      if (items.length < 100) {
+        hasMore = false;
+      } else {
+        page++;
+      }
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from("goals")
+      .update({
+        current: commitCount,
+        last_synced_at: now,
+      })
+      .eq("id", goal.id);
+
+    if (updateError) {
+      return Response.json(
+        { error: "Failed to update goals" },
+        { status: 500 }
+      );
+    }
+    
+    totalUpdated++;
   }
 
-  return Response.json({ updated: ids.length, commitCount });
+  // Count PRs for the current week
+  if (prGoalsToUpdate.length > 0) {
+    const prRes = await fetch(
+      `${GITHUB_API}/search/issues?q=author:${session.githubLogin}+type:pr+is:merged+merged:${weekStart}..${weekEnd}&per_page=100`,
+      {
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+          Accept: "application/vnd.github+json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (prRes.ok) {
+      const prData = await prRes.json() as { total_count: number };
+      const prCount = prData.total_count || 0;
+      const prIds = prGoalsToUpdate.map(g => g.id);
+      
+      const { error: prUpdateError } = await supabaseAdmin
+        .from("goals")
+        .update({ current: prCount, last_synced_at: now })
+        .in("id", prIds);
+        
+      if (prUpdateError) {
+        return Response.json({ error: "Failed to update PR goals" }, { status: 500 });
+      }
+      
+      totalUpdated += prIds.length;
+    } else {
+      return Response.json({ error: "GitHub API error fetching PRs" }, { status: 502 });
+    }
+  }
+
+  return Response.json({ updated: totalUpdated });
 }

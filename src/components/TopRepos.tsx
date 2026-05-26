@@ -1,5 +1,7 @@
 "use client";
 
+import SectionHeader from "./SectionHeader";
+
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
@@ -211,7 +213,10 @@ export default function TopRepos() {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Top Repositories</h2>
+          <SectionHeader
+    title={`Top Repositories${!loading && repos.length > 0 ? ` (${repos.length})` : ""}`}
+  />
+
           {pinError && (
             <p className="text-xs text-[var(--destructive)]">{pinError}</p>
           )}
