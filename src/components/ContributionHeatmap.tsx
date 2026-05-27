@@ -276,6 +276,7 @@ export default function ContributionHeatmap({
                   const dayIndex = index % 7;
                   const isFuture = cell.date > today;
                   const showTooltipBelow = dayIndex < 2;
+                  const isNearRightEdge = weekIndex >= weekCount - 3;
                   const tooltip = `${cell.date.toLocaleDateString("en-US", {
                     weekday: "short",
                     month: "short",
@@ -313,8 +314,12 @@ export default function ContributionHeatmap({
                     >
                       {!isFuture && (
                         <span
-                          className={`pointer-events-none absolute left-1/2 z-50 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--foreground)] px-2 py-1 text-[11px] text-[var(--background)] shadow-lg group-hover:block group-focus:block ${
+                          className={`pointer-events-none absolute z-50 hidden whitespace-nowrap rounded-md bg-[var(--foreground)] px-2 py-1 text-[11px] text-[var(--background)] shadow-lg group-hover:block group-focus:block ${
                             showTooltipBelow ? "top-full mt-2" : "bottom-full mb-2"
+                          } ${
+                            isNearRightEdge
+                              ? "right-0 translate-x-0"
+                              : "left-1/2 -translate-x-1/2"
                           }`}
                         >
                           {tooltip}
