@@ -14,14 +14,13 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-
-export const dynamic = "force-dynamic";
-
 import {
   type ActivityItem,
   type RawEvent,
   formatActivity,
 } from "@/lib/activity-formatter";
+
+export const dynamic = "force-dynamic";
 
 
 async function fetchFormattedActivity(token: string): Promise<ActivityItem[]> {

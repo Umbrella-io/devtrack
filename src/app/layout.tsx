@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Syne, JetBrains_Mono } from "next/font/google";
 import Footer from "@/components/Footer";
+import DeferredVercelMetrics from "@/components/DeferredVercelMetrics";
 import Providers from "./providers";
 import PWARegister from "@/components/pwa-register";
 import "./globals.css";
 import { Toaster } from "sonner";
-// Load Vercel integrations dynamically so build doesn't fail when packages
-// aren't installed in CI/environments where they're optional.
 
 const inter = Inter({ subsets: ["latin"] });
 const syne = Syne({
@@ -54,18 +53,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let Analytics: any = null;
-  let SpeedInsights: any = null;
-
-  try {
-    const a = await import("@vercel/analytics/next");
-    Analytics = a?.Analytics ?? a?.default ?? null;
-  } catch (e) {}
-
-  try {
-    const s = await import("@vercel/speed-insights/next");
-    SpeedInsights = s?.SpeedInsights ?? s?.default ?? null;
-  } catch (e) {}
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -109,8 +96,7 @@ export default async function RootLayout({
 
           <Toaster richColors position="top-right" />
         </div>
-        {Analytics ? <Analytics /> : null}
-        {SpeedInsights ? <SpeedInsights /> : null}
+        <DeferredVercelMetrics />
       </body>
     </html>
   );

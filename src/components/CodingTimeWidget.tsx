@@ -28,14 +28,14 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString("en-US", { weekday: "short" });
 }
 
-export default function CodingTimeCard() {
+export default function CodingTimeWidget() {
   const [data, setData] = useState<CodingTimeData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadStats() {
       try {
-        const res = await fetch("/api/metrics/coding-time");
+        const res = await fetch("/api/wakatime");
         const json = await res.json();
         setData(json);
       } catch {
