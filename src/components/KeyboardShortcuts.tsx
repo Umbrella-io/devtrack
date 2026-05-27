@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+
 import { useTheme } from "@/components/ThemeContext";
 import ShortcutsModal from "@/components/ShortcutsModal";
 
