@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { Link, CheckCircle } from "lucide-react";
 
 export default function CopyLinkButton() {
   const [copied, setCopied] = useState(false);
@@ -29,12 +30,12 @@ export default function CopyLinkButton() {
     >
       {copied ? (
         <>
-          <span className="text-[var(--success)] font-semibold">✓</span>
+          <CheckCircle size={16} className="text-[var(--success)]" aria-hidden="true" />
           <span>Copied!</span>
         </>
       ) : (
         <>
-          <span>🔗</span>
+          <Link size={16} aria-hidden="true" />
           <span>Copy link</span>
         </>
       )}

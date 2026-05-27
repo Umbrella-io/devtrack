@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ShortcutsModalProps {
   isOpen: boolean;
@@ -25,46 +25,65 @@ export default function ShortcutsModal({
 }: ShortcutsModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && typeof navigator !== "undefined") {
+      setIsMac(/Mac|iPod|iPhone|iPad/.test(navigator.userAgent));
+    }
+  }, []);
+
+   useEffect(() => {
     if (!isOpen) return;
 
-    closeBtnRef.current?.focus();
+     closeBtnRef.current?.focus();
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+       if (
+        modalRef.current &&
+        !modalRef.current.contains(e.target as Node)
+       ) {
+         onClose();
+       }
+    };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
+       if (e.key === "Escape") {
+         onClose();
+         return;
+     }
 
-      if (e.key === "Tab") {
+     if (e.key === "Tab") {
         if (!modalRef.current) return;
 
-        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+         const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
 
-        if (focusableElements.length === 0) return;
+     if (focusableElements.length === 0) return;
 
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
+       const firstElement = focusableElements[0];
+         const lastElement = focusableElements[focusableElements.length - 1];
 
         if (e.shiftKey && document.activeElement === firstElement) {
-          lastElement.focus();
-          e.preventDefault();
+         lastElement.focus();
+         e.preventDefault();
         } else if (!e.shiftKey && document.activeElement === lastElement) {
           firstElement.focus();
-          e.preventDefault();
-        }
-      }
-    };
+           e.preventDefault();
+         }
+       }
+     };
 
-    document.addEventListener("keydown", handleKeyDown);
+     document.addEventListener("keydown", handleKeyDown);
+     document.addEventListener("mousedown", handleClickOutside);
+     document.addEventListener("touchstart", handleClickOutside);
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+       document.removeEventListener("keydown", handleKeyDown);
+       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [isOpen, onClose]);
-
+   }, [isOpen, onClose]);
   if (!isOpen) return null;
 
   return (
@@ -102,7 +121,7 @@ export default function ShortcutsModal({
               {item.action}
             </span>
             <kbd className="min-w-[28px] rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-center text-xs font-semibold text-[var(--card-foreground)] shadow-sm">
-              {item.key}
+              {item.key === "T" ? (isMac ? "Option + T" : "Alt + T") : item.key}
             </kbd>
           </div>
         ))}
