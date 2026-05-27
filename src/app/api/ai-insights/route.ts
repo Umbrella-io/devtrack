@@ -8,7 +8,10 @@ import {
   computeTrends,
   DeveloperMetrics,
 } from "@/lib/ai-mentor";
-
+const aiInsightsRateLimit = new Map<
+  string,
+  { count: number; resetTime: number }
+>();
 export const dynamic = "force-dynamic";
 
 interface ContributionsApiResponse {
@@ -46,6 +49,30 @@ export async function GET(request: Request) {
   }
 
   const userId = session.githubId;
+  const currentTime = Date.now();
+  const WINDOW_MS = 60 * 60 * 1000;
+  const MAX_REQUESTS = 5;
+
+  let existing = aiInsightsRateLimit.get(userId);
+  if (!existing || currentTime > existing.resetTime) {
+    existing = { count: 0, resetTime: currentTime + WINDOW_MS };
+    aiInsightsRateLimit.set(userId, existing);
+  }
+
+  if (existing.count >= MAX_REQUESTS) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(
+            Math.ceil((existing.resetTime - currentTime) / 1000)
+          ),
+        },
+      }
+    );
+  }
+  existing.count += 1;
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") ?? "weekly_summary";
 
