@@ -1,11 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Do not throw here — build-time rendering can touch this module before
 // runtime environment variables are present. Guard call sites instead.
-export const supabaseAdmin: any =
+export const supabaseAdmin: SupabaseClient | null =
   supabaseUrl && serviceRoleKey && !supabaseUrl.includes("placeholder")
     ? createClient(supabaseUrl, serviceRoleKey)
     : null;
