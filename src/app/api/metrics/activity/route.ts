@@ -1,4 +1,3 @@
-import { formatActivity } from "@/lib/activity-formatter";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";

@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { formatActivity } from "@/lib/activity-formatter";
 describe("formatActivity", () => {
   it("formats PushEvent with 1 commit", () => {
