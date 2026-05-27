@@ -3,17 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl) {
-  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
-}
-
-if (!serviceRoleKey) {
-  throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
-}
-
-// Server-side only — use in API routes, never import in client components.
-// Service role bypasses RLS; auth is enforced by getServerSession checks.
-export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+// Do not throw here — build-time rendering can touch this module before
+// runtime environment variables are present. Guard call sites instead.
+export const supabaseAdmin: any =
+  supabaseUrl && serviceRoleKey && !supabaseUrl.includes("placeholder")
+    ? createClient(supabaseUrl, serviceRoleKey)
+    : null;
 
 interface User {
   id: string;
@@ -31,11 +26,13 @@ interface User {
 export async function getUserByUsername(
   username: string
 ): Promise<User | null> {
+  if (!supabaseAdmin) return null;
+
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
       .select("id,github_id,github_login,is_public,created_at,updated_at")
-      .eq("github_login", username)
+      .ilike("github_login", username)
       .eq("is_public", true)
       .single();
 
@@ -61,6 +58,8 @@ export async function updateUserPublicFlag(
   userId: string,
   isPublic: boolean
 ): Promise<User | null> {
+  if (!supabaseAdmin) return null;
+
   try {
     const { data, error } = await supabaseAdmin
       .from("users")

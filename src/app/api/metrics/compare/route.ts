@@ -4,6 +4,13 @@ import { authOptions } from "@/lib/auth";
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
+import {
+  isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
+  metricsCacheKey,
+  withMetricsCache,
+} from "@/lib/metrics-cache";
+
 export const dynamic = "force-dynamic";
 
 const GITHUB_API = "https://api.github.com";
@@ -34,6 +41,24 @@ export async function GET(req: NextRequest) {
   }
 
   const encodedUsername = encodeURIComponent(normalizedUsername);
+  const bypass = isMetricsCacheBypassed(req);
+  const cacheKey = metricsCacheKey(
+  session.githubId ?? session.githubLogin,
+  "compare",
+  {
+    username: normalizedUsername,
+  }
+);
+
+try {
+  const data = await withMetricsCache(
+    {
+      bypass,
+      key: cacheKey,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.compare,
+    },
+    async () => {
+
 
   // 1. Verify user exists
   const userRes = await fetch(`${GITHUB_API}/users/${encodedUsername}`, {
@@ -42,9 +67,12 @@ export async function GET(req: NextRequest) {
   });
 
   if (!userRes.ok) {
-    if (userRes.status === 404) return Response.json({ error: "User not found" }, { status: 404 });
-    return Response.json({ error: "GitHub API error or User is private" }, { status: 502 });
+  if (userRes.status === 404) {
+    throw new Error("User not found");
   }
+
+  throw new Error("GitHub API error or User is private");
+}
 
   // 2. Commits & Streak (fetch 90 days)
   const since90 = new Date();
@@ -149,11 +177,28 @@ export async function GET(req: NextRequest) {
     prs = prsData.total_count || 0;
   }
 
-  return Response.json({
-    username: normalizedUsername,
-    streak,
-    commits30d,
-    topLanguage,
-    prs
-  });
+ return {
+  username: normalizedUsername,
+  streak,
+  commits30d,
+  topLanguage,
+  prs,
+};
+  }
+);
+
+return Response.json(data);
+} catch (error) {
+  if (error instanceof Error && error.message === "User not found") {
+    return Response.json(
+      { error: "User not found" },
+      { status: 404 }
+    );
+  }
+
+  return Response.json(
+    { error: "GitHub API error or User is private" },
+    { status: 502 }
+  );
+}
 }
