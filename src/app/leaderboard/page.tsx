@@ -115,14 +115,6 @@ export default async function LeaderboardPage({
         </div>
 
         <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-soft)]">
-          <div className="grid grid-cols-[72px_1fr_110px_110px] border-b border-[var(--border)] bg-[var(--control)] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)] md:grid-cols-[80px_1fr_140px_140px_120px]">
-            <div>Rank</div>
-            <div>Contributor</div>
-            <div>{activeMeta.label}</div>
-            <div className="hidden md:block">Score</div>
-            <div>Profile</div>
-          </div>
-
           {!leaderboard ? (
             <div className="px-4 py-12 text-center text-sm text-[var(--muted-foreground)]">
               Leaderboard data is temporarily unavailable.
@@ -131,61 +123,71 @@ export default async function LeaderboardPage({
             <EmptyState
               icon="🏆"
               title="No public profiles yet"
-              description="No public profiles yet — be the first to enable yours in Settings!"
+              description="No public profiles yet - be the first to enable yours in Settings!"
               actionLabel="Go to Settings"
               actionHref="/dashboard/settings"
             />
           ) : (
-            rows.map((entry) => (
-              <div
-                key={`${activeTab}-${entry.username}`}
-                className="grid grid-cols-[72px_1fr_110px_110px] items-center border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[80px_1fr_140px_140px_120px]"
-              >
-                <div className="text-lg font-bold text-[var(--card-foreground)]">
-                  #{entry.rank}
-                </div>
-                <div className="flex min-w-0 items-center gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={entry.avatarUrl}
-                    alt=""
-                    className="h-10 w-10 rounded-full border border-[var(--border)]"
-                  />
-                  <div className="min-w-0">
-                    <div
-                      title={entry.username}
-                      className="flex items-center gap-2 max-w-[120px] truncate font-semibold text-[var(--card-foreground)] sm:max-w-[180px] md:max-w-none"
-                    >
-                      @{entry.username}
-                      {entry.isSponsor && <SponsorBadge />}
+            <>
+              <div className="grid grid-cols-[72px_1fr_110px_110px] border-b border-[var(--border)] bg-[var(--control)] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)] md:grid-cols-[80px_1fr_140px_140px_120px]">
+                <div>Rank</div>
+                <div>Contributor</div>
+                <div>{activeMeta.label}</div>
+                <div className="hidden md:block">Score</div>
+                <div>Profile</div>
+              </div>
+
+              {rows.map((entry) => (
+                <div
+                  key={`${activeTab}-${entry.username}`}
+                  className="grid grid-cols-[72px_1fr_110px_110px] items-center border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[80px_1fr_140px_140px_120px]"
+                >
+                  <div className="text-lg font-bold text-[var(--card-foreground)]">
+                    #{entry.rank}
+                  </div>
+                  <div className="flex min-w-0 items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={entry.avatarUrl}
+                      alt=""
+                      className="h-10 w-10 rounded-full border border-[var(--border)]"
+                    />
+                    <div className="min-w-0">
+                      <div
+                        title={entry.username}
+                        className="flex max-w-[120px] items-center gap-2 truncate font-semibold text-[var(--card-foreground)] sm:max-w-[180px] md:max-w-none"
+                      >
+                        @{entry.username}
+                        {entry.isSponsor && <SponsorBadge />}
+                      </div>
+                      <div className="text-xs text-[var(--muted-foreground)]">
+                        {entry.commits} commits, {entry.prs} PRs, {entry.streak}
+                        d streak
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-[var(--card-foreground)]">
+                      {getMetricValue(entry, activeTab)}
                     </div>
                     <div className="text-xs text-[var(--muted-foreground)]">
-                      {entry.commits} commits · {entry.prs} PRs · {entry.streak}d
-                      streak
+                      {activeMeta.metric}
                     </div>
                   </div>
-                </div>
-                <div>
-                  <div className="text-lg font-semibold text-[var(--card-foreground)]">
-                    {getMetricValue(entry, activeTab)}
+                  <div className="hidden text-sm font-medium text-[var(--card-foreground)] md:block">
+                    {entry.score}
                   </div>
-                  <div className="text-xs text-[var(--muted-foreground)]">
-                    {activeMeta.metric}
+                  <div>
+                    <Link
+                      href={entry.profileUrl}
+                      className="secondary-button inline-flex rounded-lg px-3 py-2 text-sm font-medium"
+                    >
+                      View
+                    </Link>
                   </div>
                 </div>
-                <div className="hidden text-sm font-medium text-[var(--card-foreground)] md:block">
-                  {entry.score}
-                </div>
-                <div>
-                  <Link
-                    href={entry.profileUrl}
-                    className="secondary-button inline-flex rounded-lg px-3 py-2 text-sm font-medium"
-                  >
-                    View
-                  </Link>
-                </div>
-              </div>
-            ))
+              ))}
+            </>
           )}
         </section>
       </div>
