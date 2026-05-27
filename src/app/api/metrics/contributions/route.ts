@@ -188,9 +188,10 @@ async function fetchGitLabContributions(
       since.setHours(0, 0, 0, 0);
 
       let page = 1;
+      const MAX_PAGES = 10;
       const commitsByDay: Record<string, number> = {};
 
-      while (page > 0) {
+      while (page > 0 && page <= MAX_PAGES) {
         const url = new URL("https://gitlab.com/api/v4/events");
         url.searchParams.set("action", "pushed");
         url.searchParams.set("per_page", "100");
