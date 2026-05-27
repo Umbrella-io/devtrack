@@ -2,13 +2,14 @@
 
 import { signIn } from "next-auth/react";
 import { useEffect, useRef } from "react";
+import { useTheme } from "@/components/ThemeContext";
 
-const A = "#818cf8";
 const MONO = "var(--font-jetbrains, ui-monospace, monospace)";
 const DISP = "var(--font-syne, system-ui, sans-serif)";
 
 function MouseSpotlight() {
   const ref = useRef<HTMLDivElement>(null);
+  
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (ref.current) {
@@ -19,23 +20,29 @@ function MouseSpotlight() {
     window.addEventListener("mousemove", fn, { passive: true });
     return () => window.removeEventListener("mousemove", fn);
   }, []);
+  
   return (
     <div
       ref={ref}
       aria-hidden
       style={{
-        position: "fixed", pointerEvents: "none", zIndex: 0,
-        width: 600, height: 600,
-        background:
-          "radial-gradient(circle, rgba(129,140,248,0.06) 0%, transparent 70%)",
-        transform: "translate(-50%,-50%)",
+        position: "fixed",
+        pointerEvents: "none",
+        width: "60%",
+        height: "60%",
+        background: "radial-gradient(circle, rgba(129,140,248,0.08) 0%, transparent 70%)",
+        transform: "translate(-50%, -50%)",
         transition: "left 0.15s ease-out, top 0.15s ease-out",
+        zIndex: 0,
       }}
     />
   );
 }
 
 export default function SignInPage() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  
   return (
     <main
       style={{
@@ -43,134 +50,86 @@ export default function SignInPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#080808",
-        padding: "0 20px",
+        background: isDark ? "#0a0a0a" : "#fafafa",
+        padding: "20px",
         position: "relative",
         overflow: "hidden",
       }}
     >
       <MouseSpotlight />
-      <div
-        aria-hidden
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: "none",
-          backgroundImage:
-            "linear-gradient(rgba(129,140,248,0.03) 1px, transparent 1px)," +
-            "linear-gradient(90deg, rgba(129,140,248,0.03) 1px, transparent 1px)",
-          backgroundSize: "64px 64px",
-        }}
-      />
-
+      
       <div
         style={{
+          maxWidth: "440px",
           width: "100%",
-          maxWidth: 420,
-          border: "1px solid #1a1a1a",
-          borderRadius: 12,
-          padding: "clamp(28px,5vw,48px) clamp(24px,5vw,40px)",
-          background: "#0e0e0e",
-          textAlign: "center",
+          background: isDark ? "#1a1a1a" : "#ffffff",
+          borderRadius: "24px",
+          padding: "48px 40px",
+          boxShadow: isDark 
+            ? "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
+            : "0 20px 40px -12px rgba(0, 0, 0, 0.1)",
+          border: isDark ? "1px solid #2a2a2a" : "1px solid #eaeaea",
           position: "relative",
           zIndex: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
         }}
       >
-        <div style={{ marginBottom: 36 }}>
-          <span
+        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+          <h1
             style={{
-              fontFamily: MONO,
-              fontWeight: 700,
-              fontSize: 13,
-              color: "#e8e8e8",
-              letterSpacing: "-0.02em",
+              fontSize: "48px",
+              fontWeight: "bold",
+              fontFamily: DISP,
+              marginBottom: "12px",
+              color: isDark ? "#ffffff" : "#000000",
             }}
           >
-            <span style={{ color: A }}>▲</span> DEVTRACK
-          </span>
+            devtrack
+          </h1>
+          <p
+            style={{
+              color: isDark ? "#a0a0a0" : "#666666",
+              fontFamily: MONO,
+              fontSize: "14px",
+              marginTop: "8px",
+            }}
+          >
+            Sign in to continue
+          </p>
         </div>
-
-        <h1
-          style={{
-            fontFamily: DISP,
-            fontWeight: 800,
-            fontSize: "clamp(34px,6vw,52px)",
-            letterSpacing: "-0.04em",
-            lineHeight: 0.95,
-            color: "#e8e8e8",
-            margin: "0 0 16px",
-          }}
-        >
-          WELCOME<br />
-          <span style={{ color: A }}>BACK.</span>
-        </h1>
-
-        <p
-          style={{
-            fontSize: 14,
-            color: "#555",
-            lineHeight: 1.65,
-            margin: "0 0 36px",
-            fontFamily: MONO,
-          }}
-        >
-          Track streaks, PR velocity &amp; coding growth.
-        </p>
 
         <button
           onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
           style={{
             width: "100%",
-            display: "inline-flex",
+            display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: 10,
-            background: A,
-            color: "#000",
-            fontFamily: MONO,
-            fontWeight: 600,
-            fontSize: 14,
+            gap: "12px",
             padding: "14px 24px",
-            borderRadius: 6,
+            backgroundColor: isDark ? "#2a2a2a" : "#000000",
+            color: "#ffffff",
             border: "none",
+            borderRadius: "12px",
+            fontSize: "16px",
+            fontWeight: "500",
+            fontFamily: MONO,
             cursor: "pointer",
-            transition: "background 0.2s, transform 0.1s",
-            marginBottom: 20,
+            transition: "all 0.2s ease",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#fff";
+            e.currentTarget.style.backgroundColor = isDark ? "#3a3a3a" : "#1a1a1a";
+            e.currentTarget.style.transform = "translateY(-2px)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = A;
-          }}
-          onMouseDown={(e) => {
-            e.currentTarget.style.transform = "scale(0.97)";
-          }}
-          onMouseUp={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.backgroundColor = isDark ? "#2a2a2a" : "#000000";
+            e.currentTarget.style.transform = "translateY(0)";
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
           </svg>
           Sign in with GitHub
         </button>
-
-        <div
-          style={{
-            fontFamily: MONO,
-            fontSize: 11,
-            color: "#333",
-            letterSpacing: "0.06em",
-            lineHeight: 1.8,
-          }}
-        >
-          MIT License · Self-hostable · Free forever
-        </div>
       </div>
     </main>
   );
