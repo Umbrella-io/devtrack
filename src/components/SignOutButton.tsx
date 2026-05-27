@@ -46,11 +46,11 @@ export default function SignOutButton() {
             type="button"
             disabled={signingOut}
             onClick={() => setConfirming(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--destructive)]/50 bg-[var(--destructive)]/80 px-4 text-sm font-semibold text-[var(--accent-foreground)] transition-colors hover:bg-[var(--destructive)] disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-[#ef4444] bg-[#ef4444] px-4 text-sm font-semibold text-[var(--destructive-foreground)] transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#ef4444] focus:ring-offset-2 focus:ring-offset-[var(--background)] disabled:cursor-not-allowed disabled:opacity-70"
         >
             {signingOut && (
                 <svg
-                    className="h-4 w-4 animate-spin text-[var(--accent-foreground)]"
+                    className="h-4 w-4 animate-spin text-[var(--destructive-foreground)]"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
