@@ -28,6 +28,7 @@ interface User {
   id: string;
   github_id: string;
   github_login: string;
+  bio: string | null;
   is_public: boolean;
   pinned_repos?: string[];
   created_at: string;
@@ -45,7 +46,7 @@ export async function getUserByUsername(
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
-      .select("id,github_id,github_login,is_public,pinned_repos,created_at,updated_at,is_sponsor")
+      .select("id,github_id,github_login,bio,is_public,pinned_repos,created_at,updated_at,is_sponsor")
       .ilike("github_login", username)
       .eq("is_public", true)
       .single();
@@ -69,7 +70,7 @@ export async function getUserByUsername(
           return null;
         }
 
-        return minimal as User;
+        return { ...(minimal as User), bio: null };
       }
       console.error("Error fetching user:", error);
       return null;
@@ -94,7 +95,7 @@ export async function updateUserPublicFlag(
       .from("users")
       .update({ is_public: isPublic })
       .eq("id", userId)
-      .select("id,github_id,github_login,is_public,created_at,updated_at")
+      .select("id,github_id,github_login,bio,is_public,created_at,updated_at")
       .single();
 
     if (error) {

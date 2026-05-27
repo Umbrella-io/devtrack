@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import BadgeSection from "@/components/BadgeSection";
 import GitHubAchievements from "@/components/GitHubAchievements";
+import MarkdownBio from "@/components/MarkdownBio";
 import StatsCard from "@/components/StatsCard";
 import ShareProfileSection from "@/components/ShareProfileSection";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -56,6 +57,7 @@ async function fetchPublicProfile(
   return {
     username: user.github_login,
     userId: user.id,
+    bio: user.bio ?? null,
     isSponsor: user.is_sponsor ?? false,
     repos,
     contributions,
@@ -166,6 +168,14 @@ export default async function PublicProfilePage({
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
           </p>
+          {profile.bio && (
+            <div className="mt-4 max-w-2xl rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 text-[var(--card-foreground)] shadow-[var(--shadow-soft)]">
+              <MarkdownBio
+                bio={profile.bio}
+                className="text-[var(--muted-foreground)]"
+              />
+            </div>
+          )}
         </div>
         {/* Download stats card button — client component */}
         <div className="flex items-center gap-3">

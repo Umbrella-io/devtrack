@@ -115,6 +115,7 @@ export async function GET(
   return NextResponse.json({
     username: user.github_login,
     userId: user.id,
+    bio: user.bio ?? "",
     repos,
     contributions,
     streak,
