@@ -210,6 +210,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+
         {/* Row 2: PR metrics, community metrics, PR breakdown & Time Chart */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           <PRMetrics />
@@ -220,6 +221,7 @@ export default async function DashboardPage() {
         {/* Row 2b: Activity Ring Chart */}
         <div className="mt-6">
           <ActivityRingChart />
+
         </div>
 
         <div className="mt-6">

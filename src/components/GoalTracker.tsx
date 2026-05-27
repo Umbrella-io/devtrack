@@ -438,7 +438,8 @@ export default function GoalTracker() {
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
                     className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
-                    style={{ width: `${pct}%` }}
+                    style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
+                    
                   />
                 </div>
               </li>

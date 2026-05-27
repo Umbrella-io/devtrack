@@ -32,7 +32,7 @@ export async function getUserByUsername(
     const { data, error } = await supabaseAdmin
       .from("users")
       .select("id,github_id,github_login,is_public,created_at,updated_at")
-      .eq("github_login", username)
+      .ilike("github_login", username)
       .eq("is_public", true)
       .single();
 
