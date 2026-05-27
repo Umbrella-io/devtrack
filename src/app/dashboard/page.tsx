@@ -10,6 +10,7 @@ import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
+import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
 import dynamic from "next/dynamic";
 
 const SkeletonCard = () => (
@@ -88,7 +89,7 @@ import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
-import CodingTimeCard from "@/components/CodingTimeCard";
+import CodingTimeWidget from "@/components/CodingTimeWidget";
 import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
@@ -161,13 +162,16 @@ export default async function DashboardPage() {
           <div className="mt-6">
             <FriendComparison />
           </div>
+          <div className="mt-6">
+            <RepoAnalyticsExplorer />
+          </div>
         </div>
 
         <div>
           <StreakTracker />
           <LocalCodingTime />
           <div className="mt-6">
-            <CodingTimeCard />
+            <CodingTimeWidget />
           </div>
         </div>
       </div>
