@@ -11,6 +11,7 @@ import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
+import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
 import dynamic from "next/dynamic";
 
 const SkeletonCard = () => (
@@ -203,6 +204,9 @@ export default async function DashboardPage() {
             <div className="mt-6">
               <CodingTimeCard />
             </div>
+          </div>
+          <div className="mt-6">
+            <RepoAnalyticsExplorer />
           </div>
         </div>
 

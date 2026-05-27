@@ -24,7 +24,11 @@
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
+<<<<<<< HEAD
     "lucide-react": "^0.475.0",
+=======
+    "lucide-react": "^1.16.0",
+>>>>>>> 4fbb342 (fix: add loading spinner and disable refresh button)
     "next": "^14.2.35",
     "next-auth": "^4.24.14",
     "react": "^18",
