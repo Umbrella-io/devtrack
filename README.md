@@ -15,8 +15,9 @@
 [![Contributors](https://img.shields.io/github/contributors/Priyanshu-byte-coder/devtrack?color=brightgreen)](https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors)
 [![Last Commit](https://img.shields.io/github/last-commit/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/commits/main)
 [![Open Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/issues)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/Priyanshu-byte-coder?label=sponsors&color=ea4aaa)](https://github.com/sponsors/Priyanshu-byte-coder)
 
-**[🌐 Live Demo](https://devtrack-delta.vercel.app)** · **[📖 Dev Guide](./DEVELOPMENT.md)** · **[🐛 Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[✨ Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)**
+**[🌐 Live Demo](https://devtrack-delta.vercel.app)** · **[📖 Dev Guide](./DEVELOPMENT.md)** · **[🐛 Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[✨ Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[💖 Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
 
 </div>
 
@@ -33,6 +34,7 @@
 - [Getting Started](#-getting-started)
 - [Roadmap](#-roadmap)
 - [Contributing](#-contributing)
+- [Sponsors](#-sponsors)
 - [License](#-license)
 
 ---
@@ -237,6 +239,21 @@ DevTrack actively welcomes contributors of all skill levels, including **GSSoC 2
 See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for full guidelines, commit style, and the review process.
 
 > 💬 Questions? Open a [Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions) — we're happy to help!
+
+---
+
+## 💖 Sponsors
+
+DevTrack is free and open source. Sponsoring helps cover infrastructure costs (Supabase, Vercel, API usage) and lets me dedicate more time to new features.
+
+| Tier | Amount | Perks |
+|------|--------|-------|
+| ☕ Coffee | $5 / mo | Your name in this README |
+| 🎯 Backer | $15 / mo | Name + priority response on issues |
+| 🏆 Champion | $50 / mo | Name + logo in README + feature request priority |
+| 💝 One-time | $10+ | One-time thanks, no recurring commitment |
+
+**[→ Sponsor DevTrack on GitHub](https://github.com/sponsors/Priyanshu-byte-coder)**
 
 ---
 
