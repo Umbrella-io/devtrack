@@ -19,7 +19,7 @@ function scorePrMergeRate(rate: number): number {
   return clamp(rate, 0, 1) * 25;
 }
 
-function scoreAvgPrOpenTimeHours(avgHours: number): number {
+export function scoreAvgPrOpenTimeHours(avgHours: number): number {
   // <24h => full 20; 24-168h scales down linearly; >168h => 0
   if (avgHours <= 24) return 20;
   if (avgHours >= 168) return 0;
