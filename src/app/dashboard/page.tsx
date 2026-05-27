@@ -30,6 +30,7 @@ import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import DailyNoteWidget from "@/components/DailyNoteWidget";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -77,6 +78,7 @@ export default async function DashboardPage() {
         </div>
 
         <div>
+          <DailyNoteWidget/>
           <StreakTracker />
           <LocalCodingTime />
           <div className="mt-6">
