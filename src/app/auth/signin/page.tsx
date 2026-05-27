@@ -1,11 +1,79 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
+
 
 const A = "#818cf8";
+const ERR = "#f87171";
 const MONO = "var(--font-jetbrains, ui-monospace, monospace)";
 const DISP = "var(--font-syne, system-ui, sans-serif)";
+
+/** Maps NextAuth error codes → user-facing messages. */
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  github:
+    "GitHub sign-in failed. This is usually caused by incorrect OAuth credentials or a mismatched callback URL. Check your GitHub OAuth App settings and try again.",
+  OAuthCallback:
+    "The OAuth callback could not be completed. Please try signing in again.",
+  OAuthSignin:
+    "Could not start the GitHub sign-in flow. Please try again.",
+  Configuration:
+    "There is a server configuration error. Please contact the site administrator.",
+  AccessDenied:
+    "Access was denied. You may have cancelled the GitHub authorization.",
+  Verification:
+    "The sign-in link has expired or has already been used.",
+  Default:
+    "An unexpected authentication error occurred. Please try again.",
+};
+
+function getErrorMessage(error: string): string {
+  return AUTH_ERROR_MESSAGES[error] ?? AUTH_ERROR_MESSAGES.Default;
+}
+
+function AuthErrorBanner({ error }: { error: string }) {
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      style={{
+        width: "100%",
+        marginBottom: 24,
+        padding: "12px 16px",
+        borderRadius: 8,
+        background: "rgba(248,113,113,0.08)",
+        border: `1px solid rgba(248,113,113,0.25)`,
+        textAlign: "left",
+      }}
+    >
+      <p
+        style={{
+          fontFamily: MONO,
+          fontSize: 12,
+          fontWeight: 700,
+          color: ERR,
+          margin: "0 0 4px",
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+        }}
+      >
+        ⚠ Sign-in failed
+      </p>
+      <p
+        style={{
+          fontFamily: MONO,
+          fontSize: 12,
+          color: "#e87a7a",
+          margin: 0,
+          lineHeight: 1.65,
+        }}
+      >
+        {getErrorMessage(error)}
+      </p>
+    </div>
+  );
+}
 
 function MouseSpotlight() {
   const ref = useRef<HTMLDivElement>(null);
@@ -35,7 +103,25 @@ function MouseSpotlight() {
   );
 }
 
-export default function SignInPage() {
+/**
+ * Inner component that reads search params — must live inside a Suspense
+ * boundary because useSearchParams() opts the subtree out of static rendering.
+ */
+function SignInContent() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+
+  // Clear the ?error= param from the URL immediately after reading it so
+  // that refreshing the page or navigating back doesn't show a stale error
+  // from a previous sign-in attempt.
+  useEffect(() => {
+    if (error && typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("error");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [error]);
+
   return (
     <main
       style={{
@@ -121,6 +207,8 @@ export default function SignInPage() {
           Track streaks, PR velocity &amp; coding growth.
         </p>
 
+        {error && <AuthErrorBanner error={error} />}
+
         <button
           onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
           style={{
@@ -173,5 +261,13 @@ export default function SignInPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense>
+      <SignInContent />
+    </Suspense>
   );
 }
