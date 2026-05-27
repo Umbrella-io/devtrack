@@ -1,6 +1,7 @@
 "use client";
 
-import { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
+// import { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
 
 export type HeatmapTheme = "default" | "colour-blind-friendly";
 
@@ -17,6 +18,12 @@ export interface HeatmapThemeConfig {
 }
 
 const STORAGE_KEY = "heatmap-theme";
+const getThemeFromCookie = (): HeatmapTheme | null => {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^| )theme=([^;]+)'));
+  return match ? (match[2] as HeatmapTheme) : null;
+};
+
 
 const themeConfigs: Record<HeatmapTheme, HeatmapThemeConfig> = {
   default: {
@@ -119,9 +126,10 @@ export function getCalendarCellStyle(count: number, config: HeatmapThemeConfig):
 
 export function useHeatmapTheme() {
   const [theme, _setTheme] = useState<HeatmapTheme>("default");
+  const [mounted, setMounted] = useState(false);
 
-  // Initialize from localStorage on mount
   useEffect(() => {
+    setMounted(true);
     if (typeof window === "undefined") return;
 
     const saved = window.localStorage.getItem(STORAGE_KEY) as HeatmapTheme | null;
@@ -133,20 +141,17 @@ export function useHeatmapTheme() {
     _setTheme(saved ?? "default");
   }, []);
 
-  // Broadcast and persist theme changes
   const setTheme = (t: HeatmapTheme) => {
     if (typeof window !== "undefined") {
       try {
         window.localStorage.setItem(STORAGE_KEY, t);
       } catch {}
-      // notify other listeners in this window
       window.dispatchEvent(new CustomEvent("heatmap-theme-changed", { detail: t }));
     }
 
     _setTheme(t);
   };
 
-  // Listen for theme changes from other components/tabs
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -170,7 +175,10 @@ export function useHeatmapTheme() {
     };
   }, []);
 
-  const themeConfig = useMemo(() => getHeatmapThemeConfig(theme), [theme]);
+  const themeConfig = useMemo(() => {
+    const activeTheme = mounted ? theme : "default";
+    return getHeatmapThemeConfig(activeTheme);
+  }, [theme, mounted]);
 
   const getHeatmapStyle = useCallback(
     (count: number) => getHeatmapCellStyle(count, themeConfig),
@@ -183,7 +191,7 @@ export function useHeatmapTheme() {
   );
 
   return {
-    theme,
+    theme: mounted ? theme : "default",
     setTheme,
     themeConfig,
     getHeatmapStyle,

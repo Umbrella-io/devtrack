@@ -1,18 +1,19 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { normalizeGitHubUsername } from "@/lib/validate-github-username";
+
+import {
+  isMetricsCacheBypassed,
+  METRICS_CACHE_TTL_SECONDS,
+  metricsCacheKey,
+  withMetricsCache,
+} from "@/lib/metrics-cache";
 
 export const dynamic = "force-dynamic";
 
 const GITHUB_API = "https://api.github.com";
-
-function dateDiffDays(a: string, b: string): number {
-  return (new Date(b).getTime() - new Date(a).getTime()) / (1000 * 60 * 60 * 24);
-}
-
-function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -20,8 +21,13 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let username = req.nextUrl.searchParams.get("username");
-  if (!username) {
+  const usernameParam = req.nextUrl.searchParams.get("username");
+  if (!usernameParam) {
+    return Response.json({ error: "Username required" }, { status: 400 });
+  }
+
+  let username = usernameParam.trim();
+  if (username.length === 0) {
     return Response.json({ error: "Username required" }, { status: 400 });
   }
 
@@ -29,16 +35,44 @@ export async function GET(req: NextRequest) {
     username = session.githubLogin as string;
   }
 
+  const normalizedUsername = normalizeGitHubUsername(username);
+  if (!normalizedUsername) {
+    return Response.json({ error: "Invalid GitHub username" }, { status: 400 });
+  }
+
+  const encodedUsername = encodeURIComponent(normalizedUsername);
+  const bypass = isMetricsCacheBypassed(req);
+  const cacheKey = metricsCacheKey(
+  session.githubId ?? session.githubLogin,
+  "compare",
+  {
+    username: normalizedUsername,
+  }
+);
+
+try {
+  const data = await withMetricsCache(
+    {
+      bypass,
+      key: cacheKey,
+      ttlSeconds: METRICS_CACHE_TTL_SECONDS.compare,
+    },
+    async () => {
+
+
   // 1. Verify user exists
-  const userRes = await fetch(`${GITHUB_API}/users/${username}`, {
+  const userRes = await fetch(`${GITHUB_API}/users/${encodedUsername}`, {
     headers: { Authorization: `Bearer ${session.accessToken}` },
-    next: { revalidate: 3600 },
+    cache: "no-store",
   });
 
   if (!userRes.ok) {
-    if (userRes.status === 404) return Response.json({ error: "User not found" }, { status: 404 });
-    return Response.json({ error: "GitHub API error or User is private" }, { status: 502 });
+  if (userRes.status === 404) {
+    throw new Error("User not found");
   }
+
+  throw new Error("GitHub API error or User is private");
+}
 
   // 2. Commits & Streak (fetch 90 days)
   const since90 = new Date();
@@ -49,16 +83,22 @@ export async function GET(req: NextRequest) {
   since30.setDate(since30.getDate() - 30);
   const since30Str = since30.toISOString().slice(0, 10);
 
-  const commitsRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${since90Str}&per_page=100&sort=author-date&order=desc`,
-    {
-      headers: {
-        Authorization: `Bearer ${session.accessToken}`,
-        Accept: "application/vnd.github+json",
-      },
-      next: { revalidate: 3600 },
-    }
+  const commitsUrl = new URL(`${GITHUB_API}/search/commits`);
+  commitsUrl.searchParams.set(
+    "q",
+    `author:${normalizedUsername} author-date:>=${since90Str}`
   );
+  commitsUrl.searchParams.set("per_page", "100");
+  commitsUrl.searchParams.set("sort", "author-date");
+  commitsUrl.searchParams.set("order", "desc");
+
+  const commitsRes = await fetch(commitsUrl.toString(), {
+    headers: {
+      Authorization: `Bearer ${session.accessToken}`,
+      Accept: "application/vnd.github+json",
+    },
+    cache: "no-store",
+  });
 
   let streak = 0;
   let commits30d = 0;
@@ -101,9 +141,13 @@ export async function GET(req: NextRequest) {
   }
 
   // 3. Top Language from repos
-  const reposRes = await fetch(`${GITHUB_API}/users/${username}/repos?per_page=100&sort=pushed`, {
+  const reposUrl = new URL(`${GITHUB_API}/users/${encodedUsername}/repos`);
+  reposUrl.searchParams.set("per_page", "100");
+  reposUrl.searchParams.set("sort", "pushed");
+
+  const reposRes = await fetch(reposUrl.toString(), {
     headers: { Authorization: `Bearer ${session.accessToken}` },
-    next: { revalidate: 3600 },
+    cache: "no-store",
   });
   
   if (reposRes.ok) {
@@ -119,24 +163,42 @@ export async function GET(req: NextRequest) {
   }
 
   // 4. PRs
-  const prsRes = await fetch(
-    `${GITHUB_API}/search/issues?q=type:pr+author:${username}&per_page=1`,
-    {
-      headers: { Authorization: `Bearer ${session.accessToken}` },
-      next: { revalidate: 3600 },
-    }
-  );
+  const prsUrl = new URL(`${GITHUB_API}/search/issues`);
+  prsUrl.searchParams.set("q", `type:pr author:${normalizedUsername}`);
+  prsUrl.searchParams.set("per_page", "1");
+
+  const prsRes = await fetch(prsUrl.toString(), {
+    headers: { Authorization: `Bearer ${session.accessToken}` },
+    cache: "no-store",
+  });
   let prs = 0;
   if (prsRes.ok) {
     const prsData = await prsRes.json();
     prs = prsData.total_count || 0;
   }
 
-  return Response.json({
-    username,
-    streak,
-    commits30d,
-    topLanguage,
-    prs
-  });
+ return {
+  username: normalizedUsername,
+  streak,
+  commits30d,
+  topLanguage,
+  prs,
+};
+  }
+);
+
+return Response.json(data);
+} catch (error) {
+  if (error instanceof Error && error.message === "User not found") {
+    return Response.json(
+      { error: "User not found" },
+      { status: 404 }
+    );
+  }
+
+  return Response.json(
+    { error: "GitHub API error or User is private" },
+    { status: 502 }
+  );
+}
 }

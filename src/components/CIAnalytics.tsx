@@ -16,8 +16,27 @@ export default function CIAnalytics() {
   const [data, setData] = useState<CIAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rateLimitResetTime, setRateLimitResetTime] = useState<Date | null>(null);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+
+  useEffect(() => {
+    if (!rateLimitResetTime) return;
+    const msUntilReset = rateLimitResetTime.getTime() - Date.now();
+    if (msUntilReset <= 0) {
+      setIsRateLimited(false);
+      setRateLimitResetTime(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setIsRateLimited(false);
+      setRateLimitResetTime(null);
+      setError(null);
+    }, msUntilReset);
+    return () => clearTimeout(timer);
+  }, [rateLimitResetTime]);
 
   const fetchCIAnalytics = useCallback(() => {
+    if (isRateLimited) return;
     setLoading(true);
     setError(null);
 
@@ -28,17 +47,39 @@ export default function CIAnalytics() {
 
     fetch(`/api/metrics/ci${accountParam}`)
       .then((res) => {
-        if (!res.ok) {
-          throw new Error("API error");
+        if (res.status === 403) {
+          const resetHeader = res.headers.get("X-RateLimit-Reset");
+          if (resetHeader) {
+            const resetDate = new Date(parseInt(resetHeader, 10) * 1000);
+            const resetTimeStr = resetDate.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            setRateLimitResetTime(resetDate);
+            setIsRateLimited(true);
+            throw new Error(
+              `GitHub API rate limit reached. Resets at ${resetTimeStr}. Try again later.`
+            );
+          }
+          throw new Error("GitHub API rate limit reached. Please try again later.");
         }
+        if (!res.ok) throw new Error("API error");
         return res.json();
       })
-      .then((payload: CIAnalyticsData) => setData(payload))
-      .catch(() =>
-        setError("CI data unavailable - ensure Actions are enabled on your repos")
-      )
+      .then((payload: CIAnalyticsData) => {
+        setData(payload);
+        setIsRateLimited(false);
+        setRateLimitResetTime(null);
+      })
+      .catch((err: Error) => {
+        setError(
+          err.message.includes("rate limit")
+            ? err.message
+            : "CI data unavailable - ensure Actions are enabled on your repos"
+        );
+      })
       .finally(() => setLoading(false));
-  }, [selectedAccount]);
+  }, [selectedAccount, isRateLimited]);
 
   useEffect(() => {
     fetchCIAnalytics();
@@ -52,6 +93,15 @@ export default function CIAnalytics() {
         { label: "Repos Checked", value: data.reposChecked },
       ]
     : [];
+
+  const refreshLabel = isRateLimited
+    ? rateLimitResetTime
+      ? `Retry at ${rateLimitResetTime.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`
+      : "Rate limited"
+    : "Refresh";
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -67,9 +117,14 @@ export default function CIAnalytics() {
         <button
           type="button"
           onClick={fetchCIAnalytics}
-          className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)]"
+          disabled={isRateLimited || loading}
+          title={isRateLimited ? "GitHub API rate limit reached" : "Refresh CI data"}
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Refresh
+          {loading ? (
+            <svg className="animate-spin h-3 w-3 text-[var(--muted-foreground)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          ) : null}
+          <span>{refreshLabel}</span>
         </button>
       </div>
 
@@ -78,7 +133,7 @@ export default function CIAnalytics() {
           role="status"
           aria-live="polite"
           aria-busy="true"
-          className="grid grid-cols-2 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
         >
           <span className="sr-only">Loading CI analytics</span>
           {[1, 2, 3, 4].map((item) => (
@@ -90,19 +145,27 @@ export default function CIAnalytics() {
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+        <div
+          className={`rounded-lg border p-4 text-sm ${
+            isRateLimited
+              ? "border-[var(--border)] bg-[var(--control)] text-[var(--warning)]"
+              : "border-[var(--destructive)]/20 bg-[var(--destructive)]/10 text-[var(--destructive)]"
+          }`}
+        >
           <p>{error}</p>
-          <button
-            type="button"
-            onClick={fetchCIAnalytics}
-            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
-          >
-            Try again
-          </button>
+          {!isRateLimited && (
+            <button
+              type="button"
+              onClick={fetchCIAnalytics}
+              className="mt-3 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
+            >
+              Try again
+            </button>
+          )}
         </div>
       ) : data ? (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {stats.map((stat) => (
               <div
                 key={stat.label}

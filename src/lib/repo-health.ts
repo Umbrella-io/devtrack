@@ -1,6 +1,10 @@
 import type { RepoHealthScore, RepoHealthSignals } from "@/types/repo-health";
 
 function clamp(n: number, min: number, max: number): number {
+  if (!Number.isFinite(n)) {
+    return min;
+  }
+
   return Math.min(max, Math.max(min, n));
 }
 
@@ -15,7 +19,7 @@ function scorePrMergeRate(rate: number): number {
   return clamp(rate, 0, 1) * 25;
 }
 
-function scoreAvgPrOpenTimeHours(avgHours: number): number {
+export function scoreAvgPrOpenTimeHours(avgHours: number): number {
   // <24h => full 20; 24-168h scales down linearly; >168h => 0
   if (avgHours <= 24) return 20;
   if (avgHours >= 168) return 0;
@@ -57,12 +61,12 @@ export function computeHealthScore(
     scoreDaysSinceLastCommit(signals.daysSinceLastCommit);
 
   const rounded = Math.round(score);
+  const clampedScore = clamp(rounded, 0, 100);
 
   return {
     repo,
-    score: clamp(rounded, 0, 100),
+    score: clampedScore,
     signals,
-    grade: gradeForScore(rounded),
+    grade: gradeForScore(clampedScore),
   };
 }
-

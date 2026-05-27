@@ -1,0 +1,103 @@
+import { getServerSession } from "next-auth";
+import { NextRequest } from "next/server";
+import { authOptions } from "@/lib/auth";
+import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
+import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
+
+export const dynamic = "force-dynamic";
+const GITHUB_API = "https://api.github.com";
+
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.accessToken || !session.githubLogin) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const bypass = isMetricsCacheBypassed(req);
+  const key = metricsCacheKey(session.githubId ?? session.githubLogin, "repo-explorer-v2" as any, { days: 7 });
+
+  try {
+    const data = await withMetricsCache({ bypass, key, ttlSeconds: 30 * 60 }, async () => {
+      // 1. Fetch user repos (up to 100 to show more repos)
+      const reposRes = await fetch(`${GITHUB_API}/user/repos?sort=pushed&per_page=100`, {
+        headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      });
+      
+      if (!reposRes.ok) throw new Error("API error fetching repos");
+      const repos = await reposRes.json();
+
+      // 2. Fetch last 30 days of commits across all repos for the user
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+      const sinceStr = since.toISOString().slice(0, 10);
+      
+      const searchRes = await fetch(`${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`, {
+        headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      });
+
+      const repoCommits: Record<string, any[]> = {};
+      
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        const items = searchData.items || [];
+        for (const item of items) {
+          const repoName = item.repository.full_name;
+          if (!repoCommits[repoName]) {
+            repoCommits[repoName] = [];
+          }
+          repoCommits[repoName].push(item.commit.author.date);
+        }
+      }
+
+      const result: ExplorerRepoCardData[] = [];
+      
+      for (const repo of repos) {
+        const commitDates = repoCommits[repo.full_name] || [];
+        const commitCount = commitDates.length;
+
+        const dayMap: Record<string, number> = {};
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          dayMap[d.toISOString().slice(0, 10)] = 0;
+        }
+
+        for (const dateStr of commitDates) {
+          const dStr = dateStr.slice(0, 10);
+          if (dayMap[dStr] !== undefined) {
+            dayMap[dStr]++;
+          }
+        }
+
+        const activity7d = Object.entries(dayMap).map(([date, count]) => {
+          const d = new Date(date);
+          const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+          return { day: dayName, commits: count };
+        });
+
+        result.push({
+          id: String(repo.id),
+          name: repo.name,
+          fullName: repo.full_name,
+          commitCount, // 30-day commit count
+          createdAt: repo.created_at,
+          updatedAt: repo.updated_at,
+          primaryLanguage: repo.language,
+          htmlUrl: repo.html_url,
+          activity7d,
+        });
+      }
+
+      // Sort result by activity and recency
+      result.sort((a, b) => b.commitCount - a.commitCount || new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+      return { repos: result };
+    });
+    return Response.json(data);
+  } catch (error) {
+    console.error(error);
+    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  }
+}

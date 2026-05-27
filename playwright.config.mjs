@@ -33,7 +33,6 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-anon-key",
       SUPABASE_SERVICE_ROLE_KEY: "placeholder-service-role-key",
-      PLAYWRIGHT_AUTH_BYPASS: "1",
     },
   },
   projects: [
