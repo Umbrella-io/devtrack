@@ -40,3 +40,5 @@ test-results/
 
 .vercel
 .env*
+
+package-lock.json
