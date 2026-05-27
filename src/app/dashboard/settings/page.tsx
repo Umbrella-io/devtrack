@@ -17,6 +17,8 @@ interface UserSettings {
   leaderboard_opt_in: boolean;
   weekly_digest_opt_in: boolean;
   has_wakatime_key?: boolean;
+  discord_webhook_url?: string;
+  timezone?: string;
 }
 
 interface LinkedAccount {
@@ -123,6 +125,10 @@ function SettingsPageContent() {
   );
   const [wakatimeKey, setWakatimeKey] = useState("");
   const [savingWakatime, setSavingWakatime] = useState(false);
+  const [discordWebhook, setDiscordWebhook] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [savingDiscord, setSavingDiscord] = useState(false);
+  const [testingDiscord, setTestingDiscord] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
@@ -220,6 +226,8 @@ function SettingsPageContent() {
         if (res.ok) {
           const data = await res.json();
           setSettings(data);
+          setDiscordWebhook(data.discord_webhook_url || "");
+          setTimezone(data.timezone || "UTC");
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -355,6 +363,58 @@ function SettingsPageContent() {
       toast.error("Failed to update Wakatime key");
     } finally {
       setSavingWakatime(false);
+    }
+  };
+
+  const handleSaveDiscord = async () => {
+    if (!settings) return;
+    setSavingDiscord(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ discord_webhook_url: discordWebhook, timezone }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setIsDirty(false);
+        toast.success(discordWebhook === "" ? "Discord Webhook removed" : "Discord settings saved successfully!");
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to update Discord settings");
+      }
+    } catch (error) {
+      console.error("Error updating Discord settings:", error);
+      toast.error("Failed to update Discord settings");
+    } finally {
+      setSavingDiscord(false);
+    }
+  };
+
+  const handleTestDiscord = async () => {
+    if (!discordWebhook) {
+      toast.error("Please enter a Webhook URL first");
+      return;
+    }
+    setTestingDiscord(true);
+    try {
+      const res = await fetch("/api/user/settings/discord-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhookUrl: discordWebhook }),
+      });
+      if (res.ok) {
+        toast.success("Test notification sent! Check your Discord server.");
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to send test notification");
+      }
+    } catch (error) {
+      console.error("Error sending test notification:", error);
+      toast.error("Failed to send test notification");
+    } finally {
+      setTestingDiscord(false);
     }
   };
 
@@ -791,6 +851,92 @@ function SettingsPageContent() {
                 {settings.has_wakatime_key ? "Leave blank and click Save to remove your key." : "You can find your API key in your Wakatime Settings."}
               </p>
             </div>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                Discord Integration
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                Receive streak reminders and milestone alerts in your Discord server.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="discord-webhook" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
+                Webhook URL
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="discord-webhook"
+                  type="text"
+                  value={discordWebhook}
+                  onChange={(e) => {
+                    setDiscordWebhook(e.target.value);
+                    setIsDirty(true);
+                  }}
+                  placeholder="https://discord.com/api/webhooks/..."
+                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="timezone-select" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
+                Timezone (For 8 PM reminders)
+              </label>
+              <select
+                id="timezone-select"
+                value={timezone}
+                onChange={(e) => {
+                  setTimezone(e.target.value);
+                  setIsDirty(true);
+                }}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              >
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">Eastern Time (ET)</option>
+                <option value="America/Chicago">Central Time (CT)</option>
+                <option value="America/Denver">Mountain Time (MT)</option>
+                <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                <option value="Europe/London">London (GMT/BST)</option>
+                <option value="Europe/Paris">Central European Time (CET)</option>
+                <option value="Asia/Kolkata">India Standard Time (IST)</option>
+                <option value="Asia/Tokyo">Japan Standard Time (JST)</option>
+                <option value="Australia/Sydney">Australian Eastern Time (AET)</option>
+                {/* Additional common timezones */}
+                <option value="America/Sao_Paulo">Brasilia Time (BRT)</option>
+                <option value="Asia/Dubai">Gulf Standard Time (GST)</option>
+                <option value="Asia/Singapore">Singapore Standard Time (SGT)</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={handleSaveDiscord}
+                disabled={savingDiscord}
+                className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {savingDiscord ? "Saving..." : "Save Discord Settings"}
+              </button>
+              <button
+                type="button"
+                onClick={handleTestDiscord}
+                disabled={testingDiscord || !discordWebhook}
+                className="px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--card-muted)] transition-colors disabled:opacity-60"
+              >
+                {testingDiscord ? "Testing..." : "Test Notification"}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+              Leave Webhook URL blank and click Save to unlink Discord.
+            </p>
           </div>
         </div>
 
