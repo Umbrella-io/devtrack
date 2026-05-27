@@ -5,7 +5,7 @@ export default function SponsorBadge({ className = "" }: { className?: string })
       title="GitHub Sponsor — thank you for supporting DevTrack!"
       aria-label="GitHub Sponsor"
     >
-      💎 Sponsor
+      <span aria-hidden="true">💎</span> Sponsor
     </span>
   );
 }

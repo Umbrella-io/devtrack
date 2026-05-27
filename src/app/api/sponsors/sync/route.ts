@@ -5,7 +5,13 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV !== "development") {
+  const cronSecret = process.env.CRON_SECRET;
+  
+  if (!cronSecret) {
+    return NextResponse.json({ error: "CRON_SECRET is not configured" }, { status: 500 });
+  }
+
+  if (authHeader !== `Bearer ${cronSecret}` && process.env.NODE_ENV !== "development") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -51,11 +57,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "GitHub API error" }, { status: 502 });
     }
 
-    const { data } = await res.json();
+    const { data, errors } = await res.json();
+    
+    if (errors && errors.length > 0) {
+      console.error("GraphQL errors:", errors);
+      return NextResponse.json({ error: "GraphQL query failed" }, { status: 502 });
+    }
+
+    if (!data || !data.user) {
+      console.error("GraphQL returned empty data or null user");
+      return NextResponse.json({ error: "GraphQL query returned no user data" }, { status: 502 });
+    }
     
     const sponsorLogins: string[] = [];
     
-    if (data?.user?.sponsorshipsAsMaintainer?.nodes) {
+    if (data.user.sponsorshipsAsMaintainer?.nodes) {
       const nodes = data.user.sponsorshipsAsMaintainer.nodes;
       for (const node of nodes) {
         if (node.sponsorEntity?.login) {
@@ -64,18 +80,46 @@ export async function GET(req: Request) {
       }
     }
 
-    // Reset all is_sponsor to false
-    await supabaseAdmin
+    const { data: currentSponsors, error: fetchErr } = await supabaseAdmin
       .from("users")
-      .update({ is_sponsor: false })
-      .neq("is_sponsor", false);
+      .select("github_login")
+      .eq("is_sponsor", true);
 
-    // Set is_sponsor = true for active sponsors
-    if (sponsorLogins.length > 0) {
-      await supabaseAdmin
+    if (fetchErr) {
+      console.error("Failed to fetch current sponsors:", fetchErr);
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
+    }
+
+    const currentLogins = new Set<string>(
+      (currentSponsors || []).map((u: any) => String(u.github_login))
+    );
+    const newLogins = new Set<string>(sponsorLogins);
+
+    const toRemove = [...currentLogins].filter((login: string) => !newLogins.has(login));
+    const toAdd = [...newLogins].filter((login: string) => !currentLogins.has(login));
+
+    if (toRemove.length > 0) {
+      const { error } = await supabaseAdmin
+        .from("users")
+        .update({ is_sponsor: false })
+        .in("github_login", toRemove);
+      
+      if (error) {
+        console.error("Failed to remove sponsors:", error);
+        return NextResponse.json({ error: "Database error" }, { status: 500 });
+      }
+    }
+
+    if (toAdd.length > 0) {
+      const { error } = await supabaseAdmin
         .from("users")
         .update({ is_sponsor: true })
-        .in("github_login", sponsorLogins);
+        .in("github_login", toAdd);
+      
+      if (error) {
+        console.error("Failed to add sponsors:", error);
+        return NextResponse.json({ error: "Database error" }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ 
