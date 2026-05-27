@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface Notification {
   id: string;
@@ -12,9 +12,12 @@ interface Notification {
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -40,6 +43,12 @@ export default function NotificationBell() {
     return () =>
       window.removeEventListener("devtrack:notifications", handleNotifications);
   }, [fetchNotifications]);
+
+  // debounce searchQuery -> debouncedQuery
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 150);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -71,6 +80,26 @@ export default function NotificationBell() {
       return next;
     });
   }, [unreadCount]);
+
+  // autofocus input when drawer opens
+  useEffect(() => {
+    if (open) {
+      // focus after open render
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [open]);
+
+  // memoize filtered notifications to avoid unnecessary work
+  const filtered = useMemo(() => {
+    if (!debouncedQuery) return notifications;
+
+    const q = debouncedQuery.toLowerCase();
+
+    return notifications.filter((n) => {
+      const fields = [n.type, n.message, (n as any).title, (n as any).content, (n as any).repo];
+      return fields.some((f) => typeof f === "string" && f.toLowerCase().includes(q));
+    });
+  }, [notifications, debouncedQuery]);
 
   function timeAgo(iso: string): string {
     const mins = Math.floor(
@@ -121,7 +150,8 @@ export default function NotificationBell() {
       {/* dropdown */}
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl z-50">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+          <div className="flex flex-col gap-2 px-4 py-3 border-b border-[var(--border)]">
+            <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
               Notifications
             </h3>
@@ -152,15 +182,50 @@ export default function NotificationBell() {
                 </svg>
               </button>
             </div>
+            </div>
+
+            {/* Search input */}
+            <div className="relative">
+              <label htmlFor="notification-search" className="sr-only">
+                Search notifications
+              </label>
+              <input
+                id="notification-search"
+                ref={inputRef}
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search notifications"
+                aria-label="Search notifications"
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-sm text-[var(--card-foreground)] focus:outline-none"
+              />
+
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  aria-label="Clear search"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)]"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           </div>
 
           <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--border)]  scrollbar-thin">
-            {notifications.length === 0 ? (
+            {filtered.length === 0 ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
-                No notifications yet
+                {notifications.length === 0 && !debouncedQuery ? (
+                  "No notifications yet"
+                ) : (
+                  <span>
+                    No results for &quot;{debouncedQuery}&quot;
+                  </span>
+                )}
               </li>
             ) : (
-              notifications.map((n) => (
+              filtered.map((n) => (
                 <li
                   key={n.id}
                   className={`px-4 py-3 ${
@@ -176,7 +241,7 @@ export default function NotificationBell() {
                 </li>
               ))
             )}
-          </ul>          
+          </ul>
         </div>
       )}
     </div>

@@ -19,7 +19,8 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GITHUB_ID ?? "",
       clientSecret: process.env.GITHUB_SECRET ?? "",
       authorization: {
-        params: { scope: "read:user user:email read:discussion" },
+        // include `repo` so our tests and features that need repo scope work
+        params: { scope: "read:user user:email repo read:discussion" },
       },
     }),
   ],
@@ -38,14 +39,21 @@ export const authOptions: NextAuthOptions = {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {
         const p = profile as { id: number; login: string };
-        const { data: user } = await supabaseAdmin.from("users").upsert(
+        // Await the upsert result directly (don't chain .select() on the returned
+        // value) - some test mocks return a Promise from upsert which makes
+        // chaining fail. Extract the id from the returned data shape.
+        const upsertRes = await supabaseAdmin.from("users").upsert(
           {
             github_id: String(p.id),
             github_login: p.login,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "github_id" }
-        ).select("id").single();
+        );
+
+        const user = Array.isArray(upsertRes?.data)
+          ? upsertRes.data[0]
+          : upsertRes?.data;
 
         if (user?.id && account.access_token) {
           try {
