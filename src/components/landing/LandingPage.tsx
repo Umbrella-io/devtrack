@@ -535,7 +535,7 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
 
 function StatsSection() {
   return (
-    <section style={{
+    <section id="features" style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
       gap: 24, borderTop: '1px solid #111',
@@ -633,6 +633,7 @@ function SetupSection() {
   const [ref, vis] = useScrollReveal(0.2);
   return (
     <section
+      id="open-source"
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
@@ -890,7 +891,6 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}
     >
       <MouseSpotlight />
-      <LandingNav />
       <HeroSection />
       <CommitTicker />
       <HeatmapSection />
