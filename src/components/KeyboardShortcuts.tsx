@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ThemeContext";
-import ShortcutsModal from "./ShortcutsModal";
+import ShortcutsModal from "@/components/ShortcutsModal";
 
 export default function KeyboardShortcuts() {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const [announcement, setAnnouncement] = useState("");
   const { theme, toggleTheme } = useTheme();
   const keyboardToggleRef = useRef(false);
