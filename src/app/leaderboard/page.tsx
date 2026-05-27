@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SponsorBadge from "@/components/SponsorBadge";
 
 type LeaderboardTab = "streak" | "commits" | "prs";
 
@@ -11,6 +12,7 @@ interface LeaderboardEntry {
   commits: number;
   prs: number;
   score: number;
+  is_sponsor?: boolean;
 }
 
 interface LeaderboardPayload {
@@ -63,7 +65,11 @@ export default async function LeaderboardPage({
     : "streak";
   const leaderboard = await fetchLeaderboard();
   const activeMeta = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
-  const rows = leaderboard?.leaders[activeTab] ?? [];
+  const rows =
+    leaderboard?.leaders[activeTab].map((entry) => ({
+      ...entry,
+      is_sponsor: entry.username === "Priyanshu-byte-coder",
+    })) ?? [];
 
   return (
     <main className="min-h-screen bg-[var(--background)] px-4 py-6 text-[var(--foreground)] md:px-8">
@@ -145,8 +151,9 @@ export default async function LeaderboardPage({
                     className="h-10 w-10 rounded-full border border-[var(--border)]"
                   />
                   <div className="min-w-0">
-                    <div className="truncate font-semibold text-[var(--card-foreground)]">
+                    <div className="flex items-center truncate font-semibold text-[var(--card-foreground)]">
                       @{entry.username}
+                      {entry.is_sponsor && <SponsorBadge />}
                     </div>
                     <div className="text-xs text-[var(--muted-foreground)]">
                       {entry.commits} commits · {entry.prs} PRs · {entry.streak}d

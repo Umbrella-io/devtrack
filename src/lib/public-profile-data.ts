@@ -30,6 +30,7 @@ export interface PublicProfileData {
   streak: StreakData;
   achievements: GitHubAchievement[];
   achievementsError?: string | null;
+  is_sponsor?: boolean;
 }
 
 async function ghFetch(url: string, token?: string): Promise<Response> {
@@ -174,18 +175,18 @@ export async function fetchTopLanguage(
     `${GITHUB_API}/users/${username}/repos?sort=updated&per_page=30`,
     token
   );
-  
+
   if (!res.ok) return null;
-  
+
   const repos = (await res.json()) as Array<{ language: string | null }>;
-  
+
   const counts: Record<string, number> = {};
   for (const r of repos) {
     if (r.language) {
       counts[r.language] = (counts[r.language] || 0) + 1;
     }
   }
-  
+
   let topLang: string | null = null;
   let maxCount = 0;
   for (const [lang, count] of Object.entries(counts)) {
@@ -194,6 +195,6 @@ export async function fetchTopLanguage(
       topLang = lang;
     }
   }
-  
+
   return topLang;
 }
