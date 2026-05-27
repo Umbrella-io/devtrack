@@ -37,3 +37,6 @@ Thumbs.db
 desktop.ini
 
 test-results/
+
+.vercel
+.env*
