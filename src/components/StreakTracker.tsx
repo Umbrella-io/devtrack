@@ -1,5 +1,4 @@
 "use client";
-
 import SectionHeader from "./SectionHeader";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
@@ -637,11 +636,16 @@ export default function StreakTracker() {
           <button
             type="button"
             onClick={handleApplyFreeze}
-            className="rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-[var(--accent-foreground)] hover:opacity-90 transition"
+            disabled={freezeLoading || freeze?.hasFreeze}
+            className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+              freezeLoading || freeze?.hasFreeze
+                ? "cursor-not-allowed opacity-50 bg-[var(--accent)]"
+                : "bg-[var(--accent)] hover:opacity-90"
+            } text-[var(--accent-foreground)]`}
           >
-            Freeze Streak
+            {freeze?.hasFreeze ? "Freeze Active" : "Freeze Streak"}
           </button>
-        </div>
+        </div>    
       )}
 
       {/* Streak Calendar Section */}
