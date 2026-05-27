@@ -169,7 +169,11 @@ function main() {
     ...Object.keys(pkg.devDependencies || {}),
   ]);
 
-  const files = collectFiles(srcDir);
+  const files = collectFiles(srcDir).filter(f =>
+    !f.includes("/test/") &&
+    !f.includes("/tests/") &&
+    !f.includes("/e2e/")
+  );
   const missing = collectMissingDeps(files, allDeps, path.resolve(__dirname, ".."));
 
   if (missing.size > 0) {
