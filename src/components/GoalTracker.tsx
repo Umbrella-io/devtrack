@@ -134,25 +134,24 @@ export default function GoalTracker() {
       if (!response.ok) {
         throw new Error("Failed to create goal");
       }
+
+      setTitle("");
+      setTarget(7);
+      setUnit("commits");
+      setRecurrence("none");
+      setDeadline("");
+
+      // Immediately sync if it was a commit-based goal or prs
+      if (unit === "commits" || unit === "prs") {
+        await handleSync();
+      } else {
+        await loadGoals().catch(() => { });
+      }
     } catch {
       setCreateError("Failed to create goal. Please try again.");
-      setCreating(false);
-      return;
+    } finally {
+      setCreating(false);  
     }
-
-    setTitle("");
-    setTarget(7);
-    setUnit("commits");
-    setRecurrence("none");
-    setDeadline("");
-
-    // Immediately sync if it was a commit-based goal or prs
-    if (unit === "commits" || unit === "prs") {
-      await handleSync();
-    } else {
-      await loadGoals().catch(() => {});
-    }
-    setCreating(false);
   }
 
   async function handleDelete(id: string) {
