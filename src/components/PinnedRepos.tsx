@@ -100,7 +100,7 @@ export default function PinnedRepos() {
                           repo.primaryLanguage.color ?? "#8b949e",
                       }}
                     />
-                    {repo.primaryLanguage.name}
+                    {repo.primaryLanguage?.name}
                   </span>
                 )}
                 <span>⭐ {repo.stargazerCount}</span>
