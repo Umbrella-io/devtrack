@@ -75,6 +75,9 @@ export default function SignInPage() {
           textAlign: "center",
           position: "relative",
           zIndex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
         <div style={{ marginBottom: 36 }}>
