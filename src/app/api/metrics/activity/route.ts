@@ -7,6 +7,12 @@ import {
 } from "@/lib/github-accounts";
 import { GITHUB_API, fetchUserEvents } from "@/lib/github";
 import {
+  findGitHubRateLimitError,
+  githubApiErrorResponse,
+  isGitHubRateLimitError,
+  throwIfGitHubRateLimited,
+} from "@/lib/github-rate-limit";
+import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
   metricsCacheKey,
@@ -52,6 +58,7 @@ async function fetchPublicEvents(
   );
 
   if (!response.ok) {
+    throwIfGitHubRateLimited(response);
     throw new Error("GitHub API error");
   }
 
@@ -64,7 +71,10 @@ async function fetchFormattedActivityWithFallback(
 ): Promise<ActivityItem[]> {
   try {
     return await fetchFormattedActivity(token);
-  } catch {
+  } catch (error) {
+    if (isGitHubRateLimitError(error)) {
+      throw error;
+    }
     if (!githubLogin) {
       throw new Error("GitHub API error");
     }
@@ -157,6 +167,14 @@ export async function GET(req: NextRequest) {
               (result) => result.status === "rejected"
             );
             if (allFailed) {
+              const rateLimit = findGitHubRateLimitError(
+                results
+                  .filter((result) => result.status === "rejected")
+                  .map((result) => result.reason)
+              );
+              if (rateLimit) {
+                throw rateLimit;
+              }
               throw new Error("GitHub API error");
             }
           }
@@ -207,6 +225,6 @@ export async function GET(req: NextRequest) {
         return Response.json({ error: "Account not found" }, { status: 404 });
       }
     }
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+    return githubApiErrorResponse(error);
   }
 }

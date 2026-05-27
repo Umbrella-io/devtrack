@@ -3,6 +3,12 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { getAccountToken, getAllAccounts, mergeMetrics } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
+import {
+  findGitHubRateLimitError,
+  githubApiErrorResponse,
+  isGitHubRateLimitError,
+  throwIfGitHubRateLimited,
+} from "@/lib/github-rate-limit";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
@@ -25,7 +31,10 @@ function mergeCIAnalytics(a: CIAnalyticsResponse, b: CIAnalyticsResponse): CIAna
 
 async function fetchCIAnalyticsForAccount(token: string, githubLogin: string): Promise<CIAnalyticsResponse> {
   const searchRes = await fetch(`${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${toIsoDate(30)}&per_page=100&sort=author-date&order=desc`, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }, cache: "no-store" });
-  if (!searchRes.ok) throw new Error("API error");
+  if (!searchRes.ok) {
+    throwIfGitHubRateLimited(searchRes);
+    throw new Error("API error");
+  }
   const data = await searchRes.json();
   
   const repoMap = new Map<string, number>();
@@ -35,10 +44,14 @@ async function fetchCIAnalyticsForAccount(token: string, githubLogin: string): P
   const runsByRepo = await Promise.all(repos.map(async (repo) => {
     try {
       const res = await fetch(`${GITHUB_API}/repos/${repo.name}/actions/runs?per_page=100&created=>=${toIsoDate(30)}`, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }, cache: "no-store" });
+      throwIfGitHubRateLimited(res);
       if (res.status === 404 || res.status === 403) return [];
       if (!res.ok) throw new Error("API error");
       const d = await res.json(); return d.workflow_runs ?? [];
     } catch (err) {
+      if (isGitHubRateLimitError(err)) {
+        throw err;
+      }
       console.error(`Failed to fetch signals for repo ${repo.name}:`, err);
       return [];
     }
@@ -80,7 +93,15 @@ export async function GET(req: NextRequest) {
         const accounts = await getAllAccounts({ token: session.accessToken!, githubId: session.githubId!, githubLogin: session.githubLogin! }, userRow.id);
         const results = await Promise.allSettled(accounts.map((a) => fetchCIAnalyticsForAccount(a.token, a.githubLogin)));
         const merged = mergeMetrics(results, mergeCIAnalytics);
-        if (!merged) throw new Error("Merge failed");
+        if (!merged) {
+          const rateLimit = findGitHubRateLimitError(
+            results
+              .filter((result) => result.status === "rejected")
+              .map((result) => result.reason)
+          );
+          if (rateLimit) throw rateLimit;
+          throw new Error("Merge failed");
+        }
         return merged;
       }
 
@@ -96,7 +117,7 @@ export async function GET(req: NextRequest) {
     });
 
     return Response.json(data);
-  } catch {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  } catch (error) {
+    return githubApiErrorResponse(error);
   }
 }

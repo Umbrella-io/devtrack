@@ -1,3 +1,5 @@
+import { throwIfGitHubRateLimited } from "@/lib/github-rate-limit";
+
 export const GITHUB_API = "https://api.github.com";
 
 /**
@@ -26,7 +28,10 @@ export async function fetchUserEvents(token: string): Promise<GitHubEvent[]> {
       Accept: "application/vnd.github+json",
     },
   });
-  if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+  if (!res.ok) {
+    throwIfGitHubRateLimited(res);
+    throw new Error(`GitHub API error: ${res.status}`);
+  }
   return res.json();
 }
 
@@ -54,7 +59,10 @@ export async function fetchUserRepos(
       }
     );
 
-    if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+    if (!res.ok) {
+      throwIfGitHubRateLimited(res);
+      throw new Error(`GitHub API error: ${res.status}`);
+    }
 
     const pageRepos = (await res.json()) as GitHubRepo[];
     repos.push(...pageRepos);
@@ -140,7 +148,10 @@ export async function fetchIssuesMetrics(
     `https://api.github.com/search/issues?q=type:issue+author:@me+created:>=${since30d.toISOString().slice(0, 10)}&per_page=100`,
     { headers, cache: "no-store" }
   );
-  if (!searchRes.ok) throw new Error(`GitHub API error: ${searchRes.status}`);
+  if (!searchRes.ok) {
+    throwIfGitHubRateLimited(searchRes);
+    throw new Error(`GitHub API error: ${searchRes.status}`);
+  }
 
   const searchData = (await searchRes.json()) as { items: GitHubIssueItem[] };
   const items = searchData.items;

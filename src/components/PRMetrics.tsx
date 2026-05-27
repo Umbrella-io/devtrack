@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import PRStatusDonutChart from "./PRStatusDonutChart";
 import MiniPRTrendChart from "./MiniPRTrendChart";
+import { readGitHubRateLimitDetails } from "@/lib/github-rate-limit";
 interface ReviewMetrics {
   totalReviews: number;
   approvalRate: string;
@@ -73,8 +74,14 @@ export default function PRMetrics() {
     }
 
     fetch(`/api/metrics/prs?${params.toString()}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("API error");
+      .then(async (r) => {
+        if (!r.ok) {
+          const rateLimit = await readGitHubRateLimitDetails(r);
+          throw new Error(
+            rateLimit?.message ??
+              "We couldn't load your PR analytics right now. Please try again in a moment."
+          );
+        }
         return r.json();
       })
       .then((data: PRData) => {
@@ -82,7 +89,7 @@ export default function PRMetrics() {
         setLastUpdated(new Date());
         setMinutesAgo(0);
       })
-      .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
+      .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, [selectedAccount, staleThresholdDays]);
 

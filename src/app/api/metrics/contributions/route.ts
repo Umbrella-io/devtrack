@@ -8,6 +8,11 @@ import {
 } from "@/lib/github-accounts";
 import { GITHUB_API, GitHubCommitSearchItem, CommitItem } from "@/lib/github";
 import {
+  findGitHubRateLimitError,
+  githubApiErrorResponse,
+  throwIfGitHubRateLimited,
+} from "@/lib/github-rate-limit";
+import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
   metricsCacheKey,
@@ -115,6 +120,7 @@ async function fetchContributionsForAccount(
           // If we're being rate limited or hit a secondary rate limit/permission error,
           // return partial results collected so far instead of failing the whole request.
           if (searchRes.status === 429 || searchRes.status === 403) {
+            throwIfGitHubRateLimited(searchRes);
             if (allItems.length === 0) {
               // If no items were retrieved at all, surface the error so callers know
               // the request could not be fulfilled.
@@ -320,8 +326,8 @@ export async function GET(req: NextRequest) {
         fromDate
       );
       return Response.json(result);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return githubApiErrorResponse(error);
     }
   }
 
@@ -345,8 +351,8 @@ export async function GET(req: NextRequest) {
       });
 
       return Response.json(merged);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return githubApiErrorResponse(error);
     }
   }
 
@@ -390,7 +396,12 @@ export async function GET(req: NextRequest) {
     }));
 
     if (!merged) {
-      return Response.json({ error: "All accounts failed" }, { status: 502 });
+      const rateLimit = findGitHubRateLimitError(
+        results
+          .filter((result) => result.status === "rejected")
+          .map((result) => result.reason)
+      );
+      return githubApiErrorResponse(rateLimit ?? new Error("All accounts failed"));
     }
 
     if (!gitlabToken) {
@@ -425,8 +436,8 @@ export async function GET(req: NextRequest) {
       });
 
       return Response.json(merged);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return githubApiErrorResponse(error);
     }
   }
 
@@ -456,7 +467,7 @@ export async function GET(req: NextRequest) {
       fromDate
     );
     return Response.json(result);
-  } catch {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  } catch (error) {
+    return githubApiErrorResponse(error);
   }
 }

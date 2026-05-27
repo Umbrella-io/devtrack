@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
 import RepoHealthPanel from "@/components/RepoHealthPanel";
+import { readGitHubRateLimitDetails } from "@/lib/github-rate-limit";
 
 interface RepoLanguage {
   name: string;
@@ -136,13 +137,25 @@ export default function TopRepos() {
       ? `&accountId=${encodeURIComponent(selectedAccount)}`
       : "";
     fetch(`/api/metrics/repos?days=${days}${accountParam}`)
-      .then((r) => r.json())
-      .then((d: { repos: Repo[] }) => setRepos(d.repos ?? []))
-      .catch(() => setError("We couldn't load your top repositories right now. Please try again in a moment."))
-      .finally(() => {
-        setLoading(false);
+      .then(async (r) => {
+        if (!r.ok) {
+          const rateLimit = await readGitHubRateLimitDetails(r);
+          throw new Error(
+            rateLimit?.message ??
+              "We couldn't load your top repositories right now. Please try again in a moment."
+          );
+        }
+
+        return (await r.json()) as { repos: Repo[] };
+      })
+      .then((d) => {
+        setRepos(d.repos ?? []);
         setLastUpdated(new Date());
         setMinutesAgo(0);
+      })
+      .catch((err: Error) => setError(err.message))
+      .finally(() => {
+        setLoading(false);
       });
   }, [days, selectedAccount]);
 
@@ -152,7 +165,10 @@ export default function TopRepos() {
       ? `?accountId=${encodeURIComponent(selectedAccount)}`
       : "";
     fetch(`/api/metrics/repo-health${accountParam}${accountParam ? "&" : "?"}days=${days}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Repo health unavailable");
+        return r.json();
+      })
       .then((d: { repos: RepoHealthScore[] }) => {
         const map: Record<string, RepoHealthScore> = {};
         for (const item of d.repos ?? []) {

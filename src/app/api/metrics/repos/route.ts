@@ -8,6 +8,11 @@ import {
 } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
 import {
+  findGitHubRateLimitError,
+  githubApiErrorResponse,
+  throwIfGitHubRateLimited,
+} from "@/lib/github-rate-limit";
+import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
   metricsCacheKey,
@@ -89,6 +94,7 @@ async function fetchRepoLanguages(
   // denied, network error) — language data is decorative and should not prevent
   // the repos widget from rendering if this secondary call fails.
   if (!res.ok) {
+    throwIfGitHubRateLimited(res);
     return [];
   }
 
@@ -166,6 +172,7 @@ async function fetchReposForAccount(
       // Both throw here so the GET handler returns HTTP 502, and the client
       // falls back to showing an error state rather than an empty repos list.
       if (!searchRes.ok) {
+        throwIfGitHubRateLimited(searchRes);
         throw new Error("GitHub API error");
       }
 
@@ -236,10 +243,10 @@ export async function GET(req: NextRequest) {
         { bypass, userId: session.githubId ?? session.githubLogin }
       );
       return Response.json(result);
-    } catch {
+    } catch (error) {
       // fetchReposForAccount throws on GitHub API errors (rate limit, network failure).
       // Return 502 so the client shows an error state rather than an empty repos widget.
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+      return githubApiErrorResponse(error);
     }
   }
 
@@ -283,7 +290,12 @@ export async function GET(req: NextRequest) {
     }));
 
     if (!merged) {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+      const rateLimit = findGitHubRateLimitError(
+        results
+          .filter((result) => result.status === "rejected")
+          .map((result) => result.reason)
+      );
+      return githubApiErrorResponse(rateLimit ?? new Error("GitHub API error"));
     }
 
     return Response.json(merged);
@@ -299,8 +311,8 @@ export async function GET(req: NextRequest) {
         { bypass, userId: session.githubId }
       );
       return Response.json(result);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return githubApiErrorResponse(error);
     }
   }
 
@@ -330,7 +342,7 @@ export async function GET(req: NextRequest) {
       { bypass, userId: accountId }
     );
     return Response.json(result);
-  } catch {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  } catch (error) {
+    return githubApiErrorResponse(error);
   }
 }

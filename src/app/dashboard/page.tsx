@@ -2,6 +2,7 @@ import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
 import GoalTracker from "@/components/GoalTracker";
 import DashboardHeader from "@/components/DashboardHeader";
+import DashboardRateLimitNotice from "@/components/DashboardRateLimitNotice";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
 import PinnedRepos from "@/components/PinnedRepos";
@@ -106,6 +107,7 @@ export default async function DashboardPage() {
     <DashboardSSEProvider>
       <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
+        <DashboardRateLimitNotice />
       <div className="mb-6 flex justify-end items-center gap-2">
         <Link
           href="/wrapped"

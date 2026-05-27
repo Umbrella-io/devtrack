@@ -7,6 +7,11 @@ import {
 } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
 import {
+  findGitHubRateLimitError,
+  githubApiErrorResponse,
+  throwIfGitHubRateLimited,
+} from "@/lib/github-rate-limit";
+import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
   metricsCacheKey,
@@ -145,6 +150,8 @@ async function fetchFirstReviewTimestamp(
   // rather than throwing — first-review time is a supplementary metric and should
   // not break the entire PR widget if these secondary calls fail.
   if (!reviewsRes.ok || !commentsRes.ok) {
+    throwIfGitHubRateLimited(reviewsRes);
+    throwIfGitHubRateLimited(commentsRes);
     return null;
   }
 
@@ -224,6 +231,7 @@ async function fetchPRMetrics(
   // Both are thrown here and caught by the GET handler, which returns HTTP 502
   // so the client can display an error state rather than stale/empty data.
   if (!searchRes.ok) {
+    throwIfGitHubRateLimited(searchRes);
     throw new Error("GitHub API error");
   }
 
@@ -550,7 +558,10 @@ async function fetchReviewMetrics(token: string): Promise<ReviewMetrics> {
   // Note: GraphQL can also return HTTP 200 with an "errors" array for partial
   // failures — not checked here since missing review data is non-critical and
   // the .catch(() => null) in the GET handler silently swallows this error.
-  if (!res.ok) throw new Error("GitHub GraphQL error");
+  if (!res.ok) {
+    throwIfGitHubRateLimited(res);
+    throw new Error("GitHub GraphQL error");
+  }
 
   const json = await res.json();
   const nodes =
@@ -620,10 +631,10 @@ export async function GET(req: NextRequest) {
         fetchReviewMetrics(session.accessToken).catch(() => null),
       ]);
       return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
-    } catch {
+    } catch (error) {
       // Catches errors from fetchCachedPRMetrics (GitHub Search API failures).
       // Returns 502 so the client knows the data is unavailable, not just empty.
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+      return githubApiErrorResponse(error);
     }
   }
 
@@ -698,7 +709,12 @@ export async function GET(req: NextRequest) {
     });
 
     if (!merged) {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+      const rateLimit = findGitHubRateLimitError(
+        results
+          .filter((result) => result.status === "rejected")
+          .map((result) => result.reason)
+      );
+      return githubApiErrorResponse(rateLimit ?? new Error("GitHub API error"));
     }
     const [gitlab, reviews] = await Promise.all([
       getGitLabMetrics(gitlabToken, gitlabCacheContext),
@@ -735,7 +751,7 @@ export async function GET(req: NextRequest) {
       fetchReviewMetrics(selectedAccount.token).catch(() => null),
     ]);
     return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
-  } catch {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  } catch (error) {
+    return githubApiErrorResponse(error);
   }
 }

@@ -4,6 +4,11 @@ import { authOptions } from "@/lib/auth";
 import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
 import {
+  findGitHubRateLimitError,
+  githubApiErrorResponse,
+  throwIfGitHubRateLimited,
+} from "@/lib/github-rate-limit";
+import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
   metricsCacheKey,
@@ -73,6 +78,7 @@ async function fetchActiveDates(
         // Both are thrown here so the outer GET handler returns HTTP 502 to the client,
         // which shows an error state rather than a misleading 0-day streak.
         if (!searchRes.ok) {
+          throwIfGitHubRateLimited(searchRes);
           throw new Error("GitHub API error");
         }
 
@@ -234,10 +240,10 @@ export async function GET(req: NextRequest) {
       return Response.json(
         calculateStreakFromDates(activeDates, freezeDates)
       );
-    } catch {
+    } catch (error) {
       // fetchActiveDates throws on GitHub API errors (rate limit, network failure).
       // Return 502 so the client shows an error state rather than a false 0-day streak.
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+      return githubApiErrorResponse(error);
     }
   }
 
@@ -276,6 +282,20 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    if (unifiedDates.size === 0 && dateResults.length > 0) {
+      const allFailed = dateResults.every((result) => result.status === "rejected");
+      if (allFailed) {
+        const rateLimit = findGitHubRateLimitError(
+          dateResults
+            .filter((result) => result.status === "rejected")
+            .map((result) => result.reason)
+        );
+        if (rateLimit) {
+          return githubApiErrorResponse(rateLimit);
+        }
+      }
+    }
+
     return Response.json(calculateStreakFromDates(unifiedDates, freezeDates));
   }
 
@@ -311,7 +331,7 @@ export async function GET(req: NextRequest) {
       userId: accountId,
     });
     return Response.json(calculateStreakFromDates(activeDates, freezeDates));
-  } catch {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  } catch (error) {
+    return githubApiErrorResponse(error);
   }
 }

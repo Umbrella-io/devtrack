@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import CommitSearchPanel from "@/components/CommitSearchPanel";
 import type { CommitItem } from "@/lib/github";
+import { readGitHubRateLimitDetails } from "@/lib/github-rate-limit";
 import {
   BarChart,
   Bar,
@@ -187,8 +188,11 @@ export default function ContributionGraph() {
         : `/api/metrics/contributions?days=${days}${accountParam}`;
 
     fetch(url)
-      .then((r) => {
-        if (!r.ok) throw new Error("API error");
+      .then(async (r) => {
+        if (!r.ok) {
+          const rateLimit = await readGitHubRateLimitDetails(r);
+          throw new Error(rateLimit?.message ?? "Failed to load contribution data.");
+        }
         return r.json();
       })
       .then((res: ContributionResponse) => {
@@ -201,14 +205,14 @@ export default function ContributionGraph() {
           .map(([day, commits]) => ({ day, commits }));
         setData(sorted);
         setCommits(res.commits ?? []);
+        setLastUpdated(new Date());
+        setMinutesAgo(0);
       })
-      .catch(() => {
-        setError("Failed to load contribution data.");
+      .catch((err: Error) => {
+        setError(err.message);
       })
       .finally(() => {
         setLoading(false);
-        setLastUpdated(new Date());
-        setMinutesAgo(0);
       });
     }, [days, selectedAccount, customFrom, customTo, customLabel]);
 
