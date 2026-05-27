@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import CustomCursor from "@/components/CustomCursor";
 
 /* ═══════════════════════════════════════════
    PUBLIC TYPES
@@ -22,7 +23,7 @@ const BG = 'transparent'
 const SURF = '#0e0e0e';
 const BORDER = '#1a1a1a';
 const TEXT = '#e0e0e0';
-const MUTED = '#555';
+const MUTED = '#94a3b8';
 const HC = ['#111', '#1e1b4b', '#3730a3', '#4f46e5', A]; // heatmap levels
 const MC = ['#111', '#1e1b4b', '#3730a3', A];             // mini heatmap
 
@@ -167,11 +168,11 @@ function LandingNav() {
    BENTO WIDGETS
    ═══════════════════════════════════════════ */
 const wLabel: React.CSSProperties = {
-  fontFamily: MONO, fontSize: 10, fontWeight: 500,
-  color: '#444', textTransform: 'uppercase', letterSpacing: '0.1em',
+  fontFamily: MONO, fontSize: 10, fontWeight: 600,
+  color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.1em',
 };
 const wValue: React.CSSProperties = {
-  fontFamily: MONO, fontWeight: 600, color: TEXT,
+  fontFamily: MONO, fontWeight: 700, color: TEXT,
 };
 
 function Cell({
@@ -198,23 +199,23 @@ function ChartWidget() {
   const [hovBar, setHovBar] = useState(-1);
   const max = 9;
   return (
-    <Cell spanCols={2} style={{ display: 'flex', flexDirection: 'column', minHeight: 100 }}>
-      <div ref={ref} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+    <Cell spanCols={2} style={{ display: 'flex', flexDirection: 'column', minHeight: 160, padding: '18px 20px' }}>
+      <div ref={ref} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
         <span style={wLabel}>contributions / 30d</span>
-        <span style={{ ...wLabel, color: A }}>■ active</span>
+        <span style={{ ...wLabel, color: '#10b981' }}>■ active</span>
       </div>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: 2, minHeight: 60 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: 3, minHeight: 100 }}>
         {BARS.map((v, i) => (
           <div
             key={i}
             onMouseEnter={() => setHovBar(i)}
             onMouseLeave={() => setHovBar(-1)}
             style={{
-              flex: 1, borderRadius: '2px 2px 0 0',
-              background: hovBar === i ? '#fff' : A,
+              flex: 1, borderRadius: '3px 3px 0 0',
+              background: hovBar === i ? '#ffffff' : A,
               height: vis ? `${(v / max) * 100}%` : '0%',
-              opacity: hovBar === i ? 1 : 0.3 + (v / max) * 0.7,
-              transition: `height 0.5s cubic-bezier(0.4,0,0.2,1) ${i * 20}ms, opacity 0.15s`,
+              opacity: hovBar === i ? 1 : 0.35 + (v / max) * 0.65,
+              transition: `height 0.6s cubic-bezier(0.16,1,0.3,1) ${i * 20}ms, opacity 0.15s, background-color 0.15s`,
               cursor: 'crosshair', position: 'relative',
             }}
           >
@@ -222,9 +223,10 @@ function ChartWidget() {
               <div style={{
                 position: 'absolute', bottom: '100%', left: '50%',
                 transform: 'translateX(-50%)',
-                background: '#fff', color: '#000', fontSize: 9,
-                fontFamily: MONO, padding: '2px 4px', borderRadius: 3,
-                marginBottom: 2, whiteSpace: 'nowrap', fontWeight: 600,
+                background: '#ffffff', color: '#000000', fontSize: 10,
+                fontFamily: MONO, padding: '3px 6px', borderRadius: 4,
+                marginBottom: 4, whiteSpace: 'nowrap', fontWeight: 700,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
               }}>
                 {v}
               </div>
@@ -238,29 +240,29 @@ function ChartWidget() {
 
 function StreakWidget() {
   const [ref, vis] = useScrollReveal(0);
-  const r = 26, circ = 2 * Math.PI * r, pct = 23 / 30;
+  const r = 38, circ = 2 * Math.PI * r, pct = 23 / 30;
   return (
-    <Cell>
+    <Cell style={{ padding: '18px 16px' }}>
       <div
         ref={ref}
-        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 4 }}
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 }}
       >
-        <div style={{ position: 'relative', width: 62, height: 62 }}>
-          <svg width="62" height="62" viewBox="0 0 62 62" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="31" cy="31" r={r} fill="none" stroke="#1a1a1a" strokeWidth="3" />
+        <div style={{ position: 'relative', width: 90, height: 90 }}>
+          <svg width="90" height="90" viewBox="0 0 90 90" style={{ transform: 'rotate(-90deg)' }}>
+            <circle cx="45" cy="45" r={r} fill="none" stroke="#1e293b" strokeWidth="4" />
             <circle
-              cx="31" cy="31" r={r} fill="none" stroke={A} strokeWidth="3"
+              cx="45" cy="45" r={r} fill="none" stroke={A} strokeWidth="4"
               strokeDasharray={circ}
               strokeDashoffset={circ * (1 - (vis ? pct : 0))}
               strokeLinecap="round"
-              style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1) 0.3s' }}
+              style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(0.16,1,0.3,1) 0.3s' }}
             />
           </svg>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ ...wValue, fontSize: 20 }}>23</span>
+            <span style={{ ...wValue, fontSize: 28 }}>23</span>
           </div>
         </div>
-        <span style={{ ...wLabel, fontSize: 9 }}>day streak</span>
+        <span style={{ ...wLabel, fontSize: 9.5, color: '#94a3b8' }}>day streak</span>
       </div>
     </Cell>
   );
@@ -269,17 +271,17 @@ function StreakWidget() {
 function MergeWidget() {
   const [ref, vis] = useScrollReveal(0);
   return (
-    <Cell>
+    <Cell style={{ padding: '18px 20px' }}>
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>merge rate</span>
-        <span style={{ ...wValue, fontSize: 26, marginTop: 4, color: A }}>
-          87<span style={{ color: '#333', fontSize: 14 }}>%</span>
+        <span style={{ ...wValue, fontSize: 32, marginTop: 6, color: A }}>
+          87<span style={{ color: '#94a3b8', fontSize: 16 }}>%</span>
         </span>
-        <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
+        <div style={{ marginTop: 10, height: 6, borderRadius: 3, background: '#1e293b', overflow: 'hidden' }}>
           <div style={{
-            height: '100%', borderRadius: 2, background: A,
+            height: '100%', borderRadius: 3, background: A,
             width: vis ? '87%' : '0%',
-            transition: 'width 1s cubic-bezier(0.4,0,0.2,1) 0.2s',
+            transition: 'width 1.2s cubic-bezier(0.16,1,0.3,1) 0.2s',
           }} />
         </div>
       </div>
@@ -290,17 +292,17 @@ function MergeWidget() {
 function GoalWidget() {
   const [ref, vis] = useScrollReveal(0);
   return (
-    <Cell>
+    <Cell style={{ padding: '18px 20px' }}>
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>weekly goal</span>
-        <span style={{ ...wValue, fontSize: 26, marginTop: 4 }}>
-          84<span style={{ color: '#333', fontSize: 14 }}>%</span>
+        <span style={{ ...wValue, fontSize: 32, marginTop: 6 }}>
+          84<span style={{ color: '#94a3b8', fontSize: 16 }}>%</span>
         </span>
-        <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
+        <div style={{ marginTop: 10, height: 6, borderRadius: 3, background: '#1e293b', overflow: 'hidden' }}>
           <div style={{
-            height: '100%', borderRadius: 2, background: '#f59e0b',
+            height: '100%', borderRadius: 3, background: '#f59e0b',
             width: vis ? '84%' : '0%',
-            transition: 'width 1s cubic-bezier(0.4,0,0.2,1) 0.3s',
+            transition: 'width 1.2s cubic-bezier(0.16,1,0.3,1) 0.3s',
           }} />
         </div>
       </div>
@@ -311,15 +313,15 @@ function GoalWidget() {
 function HeatmapMini() {
   const [ref, vis] = useScrollReveal(0);
   return (
-    <Cell>
+    <Cell style={{ padding: '18px 20px' }}>
       <div ref={ref}>
-        <span style={{ ...wLabel, display: 'block', marginBottom: 8 }}>heatmap</span>
-        <div style={{ display: 'grid', gridTemplateRows: 'repeat(7, 1fr)', gridAutoFlow: 'column', gap: 2 }}>
+        <span style={{ ...wLabel, display: 'block', marginBottom: 12 }}>heatmap</span>
+        <div style={{ display: 'grid', gridTemplateRows: 'repeat(7, 1fr)', gridAutoFlow: 'column', gap: 3 }}>
           {MINI.map((v, i) => (
             <div
               key={i}
               style={{
-                width: 8, height: 8, borderRadius: 1.5,
+                width: 11, height: 11, borderRadius: 2,
                 background: MC[v],
                 opacity: vis ? 1 : 0,
                 transform: vis ? 'scale(1)' : 'scale(0)',
@@ -337,7 +339,7 @@ function BentoGrid() {
   return (
     <div style={{
       display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: 5, width: '100%', maxWidth: 380,
+      gap: 12, width: '100%', maxWidth: 500,
     }}>
       <ChartWidget />
       <StreakWidget />
@@ -442,7 +444,7 @@ function CommitTicker() {
           <span
             key={i}
             style={{
-              fontFamily: MONO, fontSize: 12, color: '#333',
+              fontFamily: MONO, fontSize: 12, color: '#cbd5e1',
               display: 'inline-flex', alignItems: 'center', gap: 10,
             }}
           >
@@ -463,15 +465,15 @@ function HeatmapSection() {
   return (
     <section ref={ref} style={{ padding: '64px clamp(20px,4vw,48px)', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: '#333', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           52 weeks of contributions
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>less</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: '#64748b' }}>less</span>
           {HC.map((c, i) => (
             <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: c, border: `1px solid ${BORDER}` }} />
           ))}
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>more</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: '#64748b' }}>more</span>
         </div>
       </div>
       <div style={{
@@ -524,22 +526,22 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
         lineHeight: 1, letterSpacing: '-0.03em',
       }}>
         <Counter end={value} active={vis} />
-        <span style={{ color: '#222', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
+          <span style={{ color: A, fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
+        </div>
+        <div style={{ fontFamily: MONO, fontSize: 10, color: '#94a3b8', letterSpacing: '0.12em', marginTop: 8 }}>
+          {label}
+        </div>
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', marginTop: 8 }}>
-        {label}
-      </div>
-    </div>
-  );
-}
+    );
+  }
 
-function StatsSection() {
-  return (
-    <section style={{
-      padding: '64px clamp(20px,4vw,48px)',
-      display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
-      gap: 24, borderTop: '1px solid #111',
-    }}>
+  function StatsSection() {
+    return (
+      <section style={{
+        padding: '64px clamp(20px,4vw,48px)',
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
+        gap: 24, borderTop: '1px solid #1f293b',
+      }}>
       {STATS.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
       ))}
@@ -584,13 +586,13 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
       ref={ref}
       style={{
         display: 'flex', gap: 'clamp(16px,3vw,32px)',
-        padding: '24px 0', borderBottom: '1px solid #111',
+        padding: '24px 0', borderBottom: '1px solid #1f293b',
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateX(0)' : 'translateX(-12px)',
         transition: `all 0.5s ease ${index * 50}ms`,
       }}
     >
-      <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: A, minWidth: 28, paddingTop: 3 }}>
+      <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: A, minWidth: 32, paddingTop: 1 }}>
         {f.num}
       </span>
       <div>
@@ -601,7 +603,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         }}>
           {f.title}
         </h3>
-        <p style={{ fontSize: 14, color: '#444', lineHeight: 1.65, margin: 0 }}>
+        <p style={{ fontSize: 14, color: '#cbd5e1', lineHeight: 1.65, margin: 0 }}>
           {f.desc}
         </p>
       </div>
@@ -613,10 +615,10 @@ function FeaturesSection() {
   return (
     <section style={{
       padding: '64px clamp(20px,4vw,48px) 80px',
-      borderTop: '1px solid #111',
+      borderTop: '1px solid #1f293b',
       maxWidth: 720, margin: '0 auto',
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         FEATURES
       </div>
       {FEATURES.map((f, i) => (
@@ -642,22 +644,29 @@ function SetupSection() {
         transition: 'all 0.7s ease',
       }}
     >
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', marginBottom: 24 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', marginBottom: 24 }}>
         SETUP
       </div>
 
       <div style={{
-        background: SURF, border: `1px solid ${BORDER}`,
-        borderRadius: 8, padding: '20px 28px', maxWidth: 480, width: '100%',
+        background: '#0a0a0c', border: `1px solid #1f293b`,
+        borderRadius: 8, padding: '24px 28px', maxWidth: 480, width: '100%',
         textAlign: 'left', marginBottom: 32,
         fontFamily: MONO, fontSize: 13, lineHeight: 1.8,
+        boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
       }}>
-        <div style={{ color: '#333' }}># start tracking in 30 seconds</div>
+        {/* Terminal Header Mock */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }} />
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981' }} />
+        </div>
+        <div style={{ color: '#10b981', fontWeight: 500 }}># start tracking in 30 seconds</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>→</span> sign in at{' '}
           <span style={{ color: A }}>devtrack.vercel.app</span>
         </div>
-        <div style={{ color: '#333', marginTop: 4 }}># or self-host</div>
+        <div style={{ color: '#10b981', marginTop: 8, fontWeight: 500 }}># or self-host</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>$</span> git clone github.com/…/devtrack
         </div>
@@ -680,7 +689,7 @@ function SetupSection() {
         </a>
       </div>
 
-      <div style={{ fontFamily: MONO, fontSize: 11, color: '#222', marginTop: 20, letterSpacing: '0.06em' }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: '#64748b', marginTop: 20, letterSpacing: '0.06em' }}>
         MIT License · Self-hostable · Free forever · Zero vendor lock-in
       </div>
     </section>
@@ -712,7 +721,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
       }}
     >
       {/* Label */}
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         OPEN SOURCE
       </div>
 
@@ -722,11 +731,11 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           <div
             key={s.label}
             style={{
-              background: SURF, border: `1px solid ${BORDER}`,
+              background: '#0a0a0c', border: `1px solid #1f293b`,
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#444', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: '#94a3b8', letterSpacing: '0.1em', marginBottom: 10 }}>
               {s.icon} {s.label}
             </div>
             <div style={{
@@ -735,7 +744,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               lineHeight: 1, letterSpacing: '-0.03em',
             }}>
               <Counter end={s.value} active={vis} />
-              {s.suffix && <span style={{ color: '#444', fontSize: '0.55em' }}>{s.suffix}</span>}
+              {s.suffix && <span style={{ color: A, fontSize: '0.75em' }}>{s.suffix}</span>}
             </div>
           </div>
         ))}
@@ -775,7 +784,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               title={`@${c.login}`}
               style={{
                 width: 38, height: 38, borderRadius: '50%',
-                border: `2px solid ${BG}`,
+                border: `2px solid #000000`,
                 marginLeft: i > 0 ? -11 : 0,
                 overflow: 'hidden', display: 'block',
                 position: 'relative', zIndex: stats.contributors.length - i,
@@ -807,10 +816,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           {stats.contributorCount > stats.contributors.length && (
             <div style={{
               width: 38, height: 38, borderRadius: '50%',
-              border: `2px solid ${BG}`,
-              background: '#181818', marginLeft: -11,
+              border: `2px solid #000000`,
+              background: '#1e293b', marginLeft: -11,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: MONO, fontSize: 9, color: '#555', flexShrink: 0,
+              fontFamily: MONO, fontSize: 10, color: '#cbd5e1', flexShrink: 0,
             }}>
               +{stats.contributorCount - stats.contributors.length}
             </div>
@@ -848,36 +857,6 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
     </section>
   );
 }
-
-/* ═══════════════════════════════════════════
-   LANDING FOOTER  (above global Footer)
-   ═══════════════════════════════════════════ */
-function LandingFooter() {
-  return (
-    <footer style={{
-      borderTop: `1px solid #111`,
-      padding: '24px clamp(20px,4vw,48px)',
-      display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
-      justifyContent: 'space-between', alignItems: 'center',
-    }}>
-      <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
-        © {new Date().getFullYear()} DEVTRACK
-      </span>
-      <div style={{ display: 'flex', gap: 20 }}>
-        {[
-          { label: 'GitHub', href: 'https://github.com/Priyanshu-byte-coder/devtrack' },
-          { label: 'Docs', href: 'https://github.com/Priyanshu-byte-coder/devtrack/blob/main/DEVELOPMENT.md' },
-          { label: 'Issues', href: 'https://github.com/Priyanshu-byte-coder/devtrack/issues' },
-        ].map(l => (
-          <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="lnd-footer-link">
-            {l.label}
-          </a>
-        ))}
-      </div>
-    </footer>
-  );
-}
-
 /* ═══════════════════════════════════════════
    MAIN EXPORT
    ═══════════════════════════════════════════ */
@@ -885,8 +864,9 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
   return (
     <div
       className="lnd-root"
-      style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}
+      style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', zIndex: 1, overflowX: 'hidden' }}
     >
+      <CustomCursor />
       <MouseSpotlight />
       <LandingNav />
       <HeroSection />
@@ -896,7 +876,6 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <FeaturesSection />
       <ContributeSection stats={repoStats} />
       <SetupSection />
-      <LandingFooter />
     </div>
   );
 }

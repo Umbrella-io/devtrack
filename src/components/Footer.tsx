@@ -1,10 +1,16 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const year = new Date().getFullYear();
 
 export default function Footer() {
+  const pathname = usePathname();
+  const isLanding = pathname === "/";
+
   return (
-    <footer className="dark mt-auto border-t border-[var(--border)] bg-[var(--background)] relative">
+    <footer className={`dark mt-auto border-t relative ${isLanding ? 'bg-transparent border-slate-900/40' : 'border-[var(--border)] bg-[var(--background)]'}`}>
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(59,130,246,0.08),transparent)] pointer-events-none" />
       <div className="relative mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr]">
