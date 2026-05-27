@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { stripHtml } from "@/lib/sanitize";
 
 interface Goal {
   id: string;
@@ -32,11 +33,18 @@ export default function GoalTracker() {
     e.preventDefault();
     setCreating(true);
 
+    // Sanitize on the client too (defence-in-depth)
+    const sanitizedLabel = stripHtml(label).slice(0, 100);
+    if (!sanitizedLabel) {
+      setCreating(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/goals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label, target }),
+        body: JSON.stringify({ label: sanitizedLabel, target }),
       });
 
       if (!response.ok) {
@@ -76,10 +84,13 @@ export default function GoalTracker() {
         <ul className="space-y-4">
           {goals.map((goal) => {
             const pct = Math.min((goal.current / goal.target) * 100, 100);
+            // stripHtml here is a second safety net in case older DB rows contain
+            // unsanitized data that predates this fix.
+            const safeLabel = stripHtml(goal.label);
             return (
               <li key={goal.id}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-[var(--card-foreground)]">{goal.label}</span>
+                  <span className="text-[var(--card-foreground)]">{safeLabel}</span>
                   <span className="text-[var(--muted-foreground)]">
                     {goal.current}/{goal.target}
                   </span>
@@ -107,6 +118,7 @@ export default function GoalTracker() {
             onChange={(event) => setLabel(event.target.value)}
             placeholder="Commit every day"
             required
+            maxLength={100}
             disabled={creating}
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)]"
           />
@@ -119,6 +131,7 @@ export default function GoalTracker() {
             id="goal-target"
             type="number"
             min={1}
+            max={365}
             value={target}
             onChange={(event) => setTarget(Number(event.target.value))}
             disabled={creating}

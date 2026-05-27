@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { validateTextInput } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +41,21 @@ export async function POST(req: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await req.json()) as { label?: string; target?: number };
-  if (!body.label || !body.target) {
-    return Response.json({ error: "label and target required" }, { status: 400 });
+  const body = (await req.json()) as { label?: unknown; target?: unknown };
+
+  // --- Validate & sanitize label (strip HTML, enforce length) ---
+  const labelResult = validateTextInput(body.label, "label", 100);
+  if (!labelResult.ok) {
+    return Response.json({ error: labelResult.error }, { status: 400 });
+  }
+
+  // --- Validate target (must be a positive integer) ---
+  const target = Number(body.target);
+  if (!Number.isInteger(target) || target < 1 || target > 365) {
+    return Response.json(
+      { error: "target must be an integer between 1 and 365" },
+      { status: 400 }
+    );
   }
 
   const { data: user } = await supabaseAdmin
@@ -57,8 +70,8 @@ export async function POST(req: Request) {
     .from("goals")
     .insert({
       user_id: user.id,
-      label: body.label,
-      target: body.target,
+      label: labelResult.value,   // sanitized value stored, never raw input
+      target,
       week_start: currentWeekStart(),
     })
     .select()
