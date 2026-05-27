@@ -23,17 +23,35 @@ export default function NotificationBell() {
 
       const data = await res.json();
       setNotifications(data.notifications ?? []);
-      setUnreadCount(data.unreadCount ?? 0);
+      const count = data.unreadCount ?? 0;
+      setUnreadCount(count);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("devtrack:unread-notification-count", count.toString());
+      }
     } catch {
       // silent fail
     }
   }, []);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("devtrack:unread-notification-count");
+      if (stored !== null) {
+        const parsed = parseInt(stored, 10);
+        if (!isNaN(parsed) && parsed >= 0) {
+          setUnreadCount(parsed);
+        }
+      }
+    }
     fetchNotifications();
 
-    const interval = setInterval(fetchNotifications, 60_000);
-    return () => clearInterval(interval);
+    const handleNotifications = () => {
+      fetchNotifications();
+    };
+
+    window.addEventListener("devtrack:notifications", handleNotifications);
+    return () =>
+      window.removeEventListener("devtrack:notifications", handleNotifications);
   }, [fetchNotifications]);
 
   useEffect(() => {
@@ -46,9 +64,9 @@ export default function NotificationBell() {
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", handleClickOutside);
     return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("pointerdown", handleClickOutside);
   }, []);
 
   const handleOpen = useCallback(async () => {
@@ -58,6 +76,9 @@ export default function NotificationBell() {
       if (!prev && unreadCount > 0) {
         fetch("/api/notifications", { method: "PATCH" }).catch(() => {});
         setUnreadCount(0);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("devtrack:unread-notification-count", "0");
+        }
         setNotifications((prev) =>
           prev.map((n) => ({ ...n, read: true }))
         );
@@ -120,12 +141,33 @@ export default function NotificationBell() {
             <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
               Notifications
             </h3>
-
-            {unreadCount === 0 && (
-              <span className="text-xs text-[var(--muted-foreground)]">
-                All caught up
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {unreadCount === 0 && (
+                <span className="text-xs text-[var(--muted-foreground)]">
+                  All caught up
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-md p-1 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-colors"
+                aria-label="Close notifications"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--border)]  scrollbar-thin">
@@ -150,9 +192,7 @@ export default function NotificationBell() {
                 </li>
               ))
             )}
-          </ul>
-
-          
+          </ul>          
         </div>
       )}
     </div>

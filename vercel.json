@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/wakatime/sync",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/goals/sync",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

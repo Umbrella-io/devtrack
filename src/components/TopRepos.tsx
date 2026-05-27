@@ -1,4 +1,5 @@
 "use client";
+import SectionHeader from "./SectionHeader";
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
@@ -86,6 +87,7 @@ export default function TopRepos() {
   const [pinnedRepos, setPinnedRepos] = useState<string[]>([]);
   const [pinError, setPinError] = useState<string | null>(null);
   const [activeHealthRepo, setActiveHealthRepo] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   useEffect(() => {
     fetch("/api/user/settings")
       .then((r) => r.json())
@@ -130,6 +132,7 @@ export default function TopRepos() {
   const fetchRepos = useCallback(() => {
     setLoading(true);
     setError(null);
+    setSearchQuery("");
     const accountParam = selectedAccount !== null
       ? `&accountId=${encodeURIComponent(selectedAccount)}`
       : "";
@@ -204,6 +207,12 @@ export default function TopRepos() {
     ...pinnedRepos.map(pin => repos.find(r => r.name === pin)).filter(Boolean) as Repo[],
     ...baseSortedRepos.filter(r => !pinnedRepos.includes(r.name))
   ];
+  // client-side search filter — only shown when list has more than 10 repos
+  const filteredRepos = searchQuery.trim()
+    ? sortedRepos.filter((r) =>
+        r.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : sortedRepos;
 
   const maxCommits = repos.reduce((max, r) => Math.max(max, r.commits), 1);
 
@@ -211,7 +220,10 @@ export default function TopRepos() {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Top Repositories</h2>
+          <SectionHeader
+    title={`Top Repositories${!loading && repos.length > 0 ? ` (${repos.length})` : ""}`}
+  />
+
           {pinError && (
             <p className="text-xs text-[var(--destructive)]">{pinError}</p>
           )}
@@ -258,6 +270,16 @@ export default function TopRepos() {
         <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
       ) : (
       <>
+        {repos.length > 10 && (
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search repositories…"
+            aria-label="Search repositories"
+            className="mb-3 w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
+          />
+        )}
         <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)] mb-2 px-0">
           <button
             type="button"
@@ -283,7 +305,11 @@ export default function TopRepos() {
           </button>
         </div>
         <ul className="space-y-3">
-          {sortedRepos.map((repo, idx) => {
+          {filteredRepos.length === 0 ? (
+            <p className="text-sm text-[var(--muted-foreground)] py-4 text-center">
+              No repos match your search.
+            </p>
+          ) : filteredRepos.map((repo, idx) => {
             const isPinned = pinnedRepos.includes(repo.name);
             const barWidth = Math.max(
               Math.round((repo.commits / maxCommits) * 100),
