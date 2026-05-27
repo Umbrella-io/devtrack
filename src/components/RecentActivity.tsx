@@ -8,6 +8,7 @@ type ActivityType =
   | "pull_request"
   | "issue"
   | "release"
+  | "discussion"
   | "other";
 
 interface ActivityItem {
@@ -25,6 +26,7 @@ function getTypeBadge(type: ActivityType): string {
   if (type === "pull_request") return "PR";
   if (type === "issue") return "Issue";
   if (type === "release") return "Release";
+  if (type === "discussion") return "Discussion";
   return "Event";
 }
 
@@ -78,6 +80,20 @@ function getTypeIcon(type: ActivityType): ReactNode {
       <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
         <path
           d="M8 2l1.6 3.2L13 6l-2.5 2.4L11 12l-3-1.6L5 12l.5-3.6L3 6l3.4-.8L8 2Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  if (type === "discussion") {
+    return (
+      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+        <path
+          d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6A1.5 1.5 0 0 1 12.5 11H9l-3 2.5V11H3.5A1.5 1.5 0 0 1 2 9.5v-6Z"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.2"
