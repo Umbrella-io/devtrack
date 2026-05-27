@@ -255,3 +255,31 @@ body {
 @media (max-width: 640px) {
   .lnd-ticker { animation-duration: 20s !important; }
 }
+
+/* =========================
+   Navbar Responsive Fix
+   ========================= */
+
+@media (max-width: 768px) {
+  .nav-links {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .nav-links.active {
+    display: flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-links {
+    gap: 10px;
+    padding: 10px 0;
+  }
+}
