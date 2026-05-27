@@ -62,7 +62,6 @@ async function fetchContributionsForAccount(
   days: number,
   cacheContext: { bypass: boolean; userId: string },
   fromDate?: string
-
 ): Promise<ContributionResponse> {
   const key = metricsCacheKey(cacheContext.userId, "contributions", {
     days,
@@ -81,6 +80,13 @@ async function fetchContributionsForAccount(
       since.setDate(since.getDate() - days);
       const sinceStr = fromDate ?? toLocalDateStr(since);
 
+      // GitHub API Rate Limits:
+      // - Unauthenticated: 10 requests/min for Search API
+      // - Authenticated (PAT/OAuth token): 30 requests/min for Search API
+      // - A Personal Access Token (Settings → Developer Settings → Personal Access Tokens)
+      //   significantly increases this limit and is strongly recommended.
+      // - If the limit is exceeded, GitHub returns HTTP 429 (Too Many Requests)
+      //   or HTTP 403 (Forbidden). We handle both gracefully below.
       let allItems: GitHubCommitSearchItem[] = [];
       const commitItems: CommitItem[] = [];
       let totalCount = 0;
@@ -100,26 +106,31 @@ async function fetchContributionsForAccount(
         searchUrl.searchParams.set("sort", "author-date");
         searchUrl.searchParams.set("order", "desc");
 
-        const searchRes = await fetch(
-          searchUrl.toString(),
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: "application/vnd.github+json",
-            },
-            cache: "no-store",
-          }
-        );
+        const searchRes = await fetch(searchUrl.toString(), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+          cache: "no-store",
+        });
 
         if (!searchRes.ok) {
-          // If we're being rate limited or hit a secondary rate limit/permission error,
-          // return partial results collected so far instead of failing the whole request.
+          // Rate limit handling:
+          // - HTTP 429: Primary rate limit exceeded (too many requests per minute).
+          //   GitHub includes a "Retry-After" header indicating seconds to wait.
+          // - HTTP 403: Secondary rate limit or abuse detection trigger.
+          //   GitHub uses 403 (not 429) for secondary rate limits.
+          // Strategy: return partial results collected so far instead of failing
+          // the whole request — gives the user some data rather than nothing.
           if (searchRes.status === 429 || searchRes.status === 403) {
             if (allItems.length === 0) {
-              // If no items were retrieved at all, surface the error so callers know
-              // the request could not be fulfilled.
+              // No items retrieved at all — surface the error so callers know
+              // the request could not be fulfilled. The dashboard will show an
+              // error state. User should wait ~1 minute before retrying,
+              // or add a PAT token in Settings to increase their rate limit.
               throw new Error(`GitHub API error: ${searchRes.status}`);
             }
+            // Return whatever partial data was collected before hitting the limit.
             break;
           }
 
@@ -190,6 +201,8 @@ async function fetchGitLabContributions(
       let page = 1;
       const commitsByDay: Record<string, number> = {};
 
+      // GitLab API rate limit: 2000 requests/min for authenticated users.
+      // Much more generous than GitHub — pagination is safe here.
       while (page > 0) {
         const url = new URL("https://gitlab.com/api/v4/events");
         url.searchParams.set("action", "pushed");
@@ -204,6 +217,8 @@ async function fetchGitLabContributions(
         });
 
         if (!response.ok) {
+          // GitLab returns HTTP 429 when rate limited.
+          // Unlike GitHub, it always includes a "Retry-After" header.
           throw new Error("GitLab API error");
         }
 
@@ -289,15 +304,17 @@ export async function GET(req: NextRequest) {
   if (fromParam && toParam) {
     fromDate = fromParam;
     const msPerDay = 1000 * 60 * 60 * 24;
-    days = Math.ceil(
-      (new Date(toParam).getTime() - new Date(fromParam).getTime()) / msPerDay
-    ) + 1;
+    days =
+      Math.ceil(
+        (new Date(toParam).getTime() - new Date(fromParam).getTime()) /
+          msPerDay
+      ) + 1;
   } else {
     const daysParam = req.nextUrl.searchParams.get("days");
     const parsedDays = daysParam ? parseInt(daysParam, 10) : NaN;
     days = isNaN(parsedDays) ? 30 : Math.max(1, Math.min(365, parsedDays));
   }
-  
+
   const accountId = req.nextUrl.searchParams.get("accountId");
   const usernameParam = req.nextUrl.searchParams.get("username");
   const username = usernameParam ? normalizeGitHubUsername(usernameParam) : null;
@@ -372,11 +389,16 @@ export async function GET(req: NextRequest) {
 
     const results = await Promise.allSettled(
       accounts.map((account) =>
-        fetchContributionsForAccount(account.token, account.githubLogin, days, {
-          bypass,
-          userId: account.githubId,
-
-        }, fromDate)
+        fetchContributionsForAccount(
+          account.token,
+          account.githubLogin,
+          days,
+          {
+            bypass,
+            userId: account.githubId,
+          },
+          fromDate
+        )
       )
     );
 

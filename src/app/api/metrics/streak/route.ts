@@ -33,6 +33,23 @@ async function fetchActiveDates(
       const sinceStr = since.toISOString().slice(0, 10);
 
       const activeDates = new Set<string>();
+
+      // GitHub Search API rate limits:
+      // - Unauthenticated: 10 requests/min
+      // - Authenticated (PAT/OAuth token): 30 requests/min
+      // This loop fetches up to 10 pages (1000 commits) over the last 90 days.
+      // Each page = 1 API request. Active users with many commits may need
+      // multiple pages, consuming more of the rate limit budget.
+      //
+      // What happens when rate limited:
+      // - GitHub returns HTTP 429 (Too Many Requests) or HTTP 403 (Forbidden)
+      // - The error is thrown and caught by the GET handler
+      // - The streak widget shows an error state on the dashboard
+      // - User should wait ~1 minute before refreshing
+      //
+      // How to increase the limit:
+      // - Connect a Personal Access Token (PAT) in Settings
+      // - PAT increases Search API limit to 30 req/min vs 10 req/min
       let page = 1;
       while (true) {
         const searchRes = await fetch(
@@ -47,6 +64,10 @@ async function fetchActiveDates(
         );
 
         if (!searchRes.ok) {
+          // HTTP 429: Primary rate limit exceeded (too many requests/min).
+          // HTTP 403: Secondary rate limit or abuse detection by GitHub.
+          // Both are thrown here so the GET handler can return a 502
+          // and show a user-friendly error state on the streak widget.
           throw new Error("GitHub API error");
         }
 
@@ -58,6 +79,9 @@ async function fetchActiveDates(
           activeDates.add(item.commit.author.date.slice(0, 10));
         }
 
+        // Stop paginating when:
+        // - Fewer than 100 results returned (last page)
+        // - Reached 10 pages (1000 commits max to avoid excessive API usage)
         if (data.items.length < 100 || page >= 10) break;
         page++;
       }
@@ -108,7 +132,11 @@ function calculateStreakFromDates(
         longestStreak = currentRun;
       }
     } else {
-      runs.push({ start: runStart, end: commitDays[i - 1], length: currentRun });
+      runs.push({
+        start: runStart,
+        end: commitDays[i - 1],
+        length: currentRun,
+      });
       runStart = commitDays[i];
       currentRun = 1;
     }
@@ -179,10 +207,10 @@ export async function GET(req: NextRequest) {
         session.accessToken,
         { bypass, userId: session.githubId }
       );
-      return Response.json(
-        calculateStreakFromDates(activeDates, freezeDates)
-      );
+      return Response.json(calculateStreakFromDates(activeDates, freezeDates));
     } catch {
+      // Catches GitHub API rate limit errors (HTTP 429/403).
+      // Returns 502 so the streak widget shows a user-friendly error state.
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -210,6 +238,10 @@ export async function GET(req: NextRequest) {
       )
     );
 
+    // Merge active dates across all accounts.
+    // Failed accounts (e.g. rate limited) are silently skipped via
+    // Promise.allSettled — the streak is calculated from whichever
+    // accounts succeeded rather than failing entirely.
     const unifiedDates = new Set<string>();
     for (const result of dateResults) {
       if (result.status === "fulfilled") {
@@ -252,6 +284,7 @@ export async function GET(req: NextRequest) {
     });
     return Response.json(calculateStreakFromDates(activeDates, freezeDates));
   } catch {
+    // Catches GitHub API rate limit errors (HTTP 429/403).
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

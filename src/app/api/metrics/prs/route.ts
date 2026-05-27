@@ -118,22 +118,29 @@ async function fetchFirstReviewTimestamp(
     return null;
   }
 
+  // GitHub REST API rate limits:
+  // - Authenticated: 5000 requests/hour (core API, not Search API)
+  // - These two parallel requests count against the core rate limit.
+  // - If rate limited (HTTP 403/429), we return null so the PR is
+  //   excluded from the average rather than failing the whole request.
   const headers = {
     Authorization: `Bearer ${token}`,
     Accept: "application/vnd.github+json",
   };
   const [reviewsRes, commentsRes] = await Promise.all([
-    fetch(`${GITHUB_API}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`, {
-      headers,
-      cache: "no-store",
-    }),
-    fetch(`${GITHUB_API}/repos/${repo}/pulls/${pr.number}/comments?per_page=100`, {
-      headers,
-      cache: "no-store",
-    }),
+    fetch(
+      `${GITHUB_API}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`,
+      { headers, cache: "no-store" }
+    ),
+    fetch(
+      `${GITHUB_API}/repos/${repo}/pulls/${pr.number}/comments?per_page=100`,
+      { headers, cache: "no-store" }
+    ),
   ]);
 
   if (!reviewsRes.ok || !commentsRes.ok) {
+    // Silently return null on rate limit (403/429) or permission error.
+    // This PR will be excluded from the avgFirstReviewHours calculation.
     return null;
   }
 
@@ -150,6 +157,10 @@ async function getAverageFirstReviewHours(
   token: string,
   prs: PullRequestSearchItem[]
 ): Promise<number | null> {
+  // Fetches review data for up to 30 PRs (2 API calls each = up to 60 requests).
+  // All requests run in parallel via Promise.all to minimize latency.
+  // Rate limit impact: 60 requests against the 5000/hr core API limit.
+  // With a PAT token this is well within limits for typical usage.
   const reviewedPrs = await Promise.all(
     prs.slice(0, 30).map(async (pr) => {
       const firstReviewAt = await fetchFirstReviewTimestamp(token, pr);
@@ -185,6 +196,14 @@ async function fetchPRMetrics(
   token: string,
   options: { staleThresholdDays: number; githubLogin?: string | null }
 ): Promise<PRMetricsBase> {
+  // GitHub Search API rate limits:
+  // - Unauthenticated: 10 requests/min
+  // - Authenticated (PAT/OAuth): 30 requests/min
+  // This single request fetches up to 100 PRs.
+  // If rate limited (HTTP 429 or 403), the error propagates to the
+  // GET handler which returns HTTP 502 to the client, showing an
+  // error state on the PR metrics widget.
+  // Fix: connect a PAT token in Settings to increase the limit to 30 req/min.
   const searchRes = await fetch(
     `${GITHUB_API}/search/issues?q=type:pr+author:@me&sort=updated&order=desc&per_page=100`,
     {
@@ -194,6 +213,9 @@ async function fetchPRMetrics(
   );
 
   if (!searchRes.ok) {
+    // HTTP 429: Primary rate limit exceeded.
+    // HTTP 403: Secondary rate limit or abuse detection.
+    // Both result in a 502 response to the client from the GET handler.
     throw new Error("GitHub API error");
   }
 
@@ -268,6 +290,8 @@ async function fetchPRMetrics(
 }
 
 async function fetchGitLabMRMetrics(token: string): Promise<PRMetricsBase> {
+  // GitLab API rate limit: 2000 requests/min for authenticated users.
+  // Much more generous than GitHub — pagination across all pages is safe.
   const perPage = 100;
   let page = 1;
   let totalPages: number | null = null;
@@ -289,6 +313,8 @@ async function fetchGitLabMRMetrics(token: string): Promise<PRMetricsBase> {
     });
 
     if (!response.ok) {
+      // GitLab returns HTTP 429 when rate limited,
+      // always with a "Retry-After" header in seconds.
       throw new Error("GitLab API error");
     }
 
@@ -432,9 +458,7 @@ function formatPRMetrics(metrics: PRMetricsBase) {
     staleThresholdDays: metrics.staleThresholdDays,
     staleSearchUrl: metrics.staleSearchUrl,
     mergeRate:
-      metrics.total > 0
-        ? `${Math.round(metrics.mergeRate * 100)}%`
-        : "0%",
+      metrics.total > 0 ? `${Math.round(metrics.mergeRate * 100)}%` : "0%",
   };
 }
 
@@ -462,7 +486,14 @@ async function getGitLabMetrics(
     return null;
   }
 }
+
 async function fetchReviewMetrics(token: string): Promise<ReviewMetrics> {
+  // GitHub GraphQL API rate limits:
+  // - Authenticated: 5000 points/hour (each query costs ~1 point)
+  // - This query fetches up to 100 review contributions in a single request.
+  // - Much more efficient than REST for nested data like this.
+  // - If rate limited, the caller catches the error and returns null,
+  //   so the reviews section is simply omitted from the response.
   const query = `
     query {
       viewer {
@@ -515,7 +546,8 @@ async function fetchReviewMetrics(token: string): Promise<ReviewMetrics> {
 
   const repoCounts: Record<string, number> = {};
   for (const node of nodes) {
-    const repo = node.pullRequestReview?.pullRequest?.repository?.nameWithOwner;
+    const repo =
+      node.pullRequestReview?.pullRequest?.repository?.nameWithOwner;
     if (repo) repoCounts[repo] = (repoCounts[repo] ?? 0) + 1;
   }
 
@@ -531,6 +563,7 @@ async function fetchReviewMetrics(token: string): Promise<ReviewMetrics> {
     topRepos,
   };
 }
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken) {
@@ -560,7 +593,10 @@ export async function GET(req: NextRequest) {
         getGitLabMetrics(gitlabToken, gitlabCacheContext),
         fetchReviewMetrics(session.accessToken).catch(() => null),
       ]);
-      return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
+      return Response.json({
+        ...formatPRMetricsResponse(result, gitlab),
+        reviews,
+      });
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
@@ -640,7 +676,10 @@ export async function GET(req: NextRequest) {
       getGitLabMetrics(gitlabToken, gitlabCacheContext),
       fetchReviewMetrics(session.accessToken).catch(() => null),
     ]);
-    return Response.json({ ...formatPRMetricsResponse(merged, gitlab), reviews });
+    return Response.json({
+      ...formatPRMetricsResponse(merged, gitlab),
+      reviews,
+    });
   }
 
   const accounts = await getAllAccounts(
@@ -670,7 +709,10 @@ export async function GET(req: NextRequest) {
       getGitLabMetrics(gitlabToken, gitlabCacheContext),
       fetchReviewMetrics(selectedAccount.token).catch(() => null),
     ]);
-    return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
+    return Response.json({
+      ...formatPRMetricsResponse(result, gitlab),
+      reviews,
+    });
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
