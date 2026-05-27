@@ -41,23 +41,48 @@ function extractPackageName(mod) {
   return mod.split("/")[0];
 }
 
-const IMPORT_RE = /^\s*(?:import|export)\s[^'"]*from\s+['"]([^'"]+)['"]/gm;
-const SIDE_EFFECT_IMPORT_RE = /^\s*import\s+['"]([^'"]+)['"]/gm;
-const DYNAMIC_RE = /(?:require|import)\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+const parser = require("@babel/parser");
 
 function extractImports(src) {
   const imports = [];
 
-  // Strip single-line and multi-line comments to prevent quotes inside comments from throwing off the regex
-  const cleanSrc = src
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  let ast;
+  try {
+    ast = parser.parse(src, {
+      sourceType: "unambiguous",
+      plugins: ["typescript", "jsx", "dynamicImport"],
+    });
+  } catch (e) {
+    return imports;
+  }
 
-  for (const re of [IMPORT_RE, SIDE_EFFECT_IMPORT_RE, DYNAMIC_RE]) {
-    re.lastIndex = 0;
-    let m;
-    while ((m = re.exec(cleanSrc)) !== null) {
-      imports.push(m[1]);
+  const stack = [ast.program];
+
+  while (stack.length) {
+    const node = stack.pop();
+
+    if (!node || typeof node !== "object") continue;
+
+    if (node.type === "ImportDeclaration") {
+      imports.push(node.source.value);
+    }
+
+    if (node.type === "ExportNamedDeclaration" && node.source) {
+      imports.push(node.source.value);
+    }
+
+    if (
+      node.type === "CallExpression" &&
+      node.callee?.name === "require" &&
+      node.arguments?.[0]?.type === "StringLiteral"
+    ) {
+      imports.push(node.arguments[0].value);
+    }
+
+    for (const key in node) {
+      const val = node[key];
+      if (Array.isArray(val)) stack.push(...val);
+      else if (val && typeof val === "object") stack.push(val);
     }
   }
 
