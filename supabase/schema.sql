@@ -8,7 +8,8 @@ create table if not exists users (
   created_at   timestamptz default now(),
   updated_at   timestamptz default now(),
   wakatime_api_key_encrypted text,
-  wakatime_api_key_iv text
+  wakatime_api_key_iv text,
+  is_sponsor   boolean default false
 );
 
 create table if not exists goals (

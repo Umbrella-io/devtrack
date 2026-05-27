@@ -6,7 +6,7 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const SUPABASE_ADMIN_UNAVAILABLE_MESSAGE =
   "Supabase admin client is unavailable. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line
 type SupabaseAdminClient = SupabaseClient<any, any, any>;
 
 function createUnavailableSupabaseAdmin(): SupabaseAdminClient {
@@ -31,6 +31,7 @@ interface User {
   is_public: boolean;
   created_at: string;
   updated_at: string;
+  is_sponsor?: boolean;
 }
 
 /**
@@ -43,7 +44,7 @@ export async function getUserByUsername(
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
-      .select("id,github_id,github_login,is_public,created_at,updated_at")
+      .select("id,github_id,github_login,is_public,created_at,updated_at,is_sponsor")
       .ilike("github_login", username)
       .eq("is_public", true)
       .single();

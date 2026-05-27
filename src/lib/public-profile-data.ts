@@ -25,6 +25,7 @@ export interface StreakData {
 export interface PublicProfileData {
   username: string;
   userId: string;
+  isSponsor: boolean;
   repos: TopRepo[];
   contributions: ContributionData;
   streak: StreakData;

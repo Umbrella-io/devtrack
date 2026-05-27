@@ -11,7 +11,7 @@ export type RepoStats = {
   openIssues: number;
   contributorCount: number;
   goodFirstIssues: number;
-  contributors: Array<{ login: string; avatar_url: string; html_url: string }>;
+  contributors: Array<{ login: string; avatar_url: string; html_url: string; isSponsor?: boolean }>;
 };
 
 /* ═══════════════════════════════════════════
@@ -772,10 +772,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               href={c.html_url}
               target="_blank"
               rel="noopener noreferrer"
-              title={`@${c.login}`}
+              title={c.isSponsor ? `@${c.login} (Sponsor 💎)` : `@${c.login}`}
               style={{
                 width: 38, height: 38, borderRadius: '50%',
-                border: `2px solid ${BG}`,
+                border: `2px solid ${c.isSponsor ? '#ec4899' : BG}`,
                 marginLeft: i > 0 ? -11 : 0,
                 overflow: 'hidden', display: 'block',
                 position: 'relative', zIndex: stats.contributors.length - i,
