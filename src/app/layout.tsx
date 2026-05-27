@@ -1,6 +1,7 @@
 import CustomCursor from "@/components/CustomCursor";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import AppNavbar from "@/components/AppNavbar";
 import Footer from "@/components/Footer";
 import DeferredVercelMetrics from "@/components/DeferredVercelMetrics";
 import Providers from "./providers";
@@ -86,12 +87,15 @@ export default async function RootLayout({
       <body
         className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
-        <CustomCursor />       
+        <CustomCursor />
         <PWARegister />
 
         <div className="flex min-h-screen flex-col">
           <div className="flex-1">
-            <Providers>{children}</Providers>
+            <Providers>
+              <AppNavbar />
+              {children}
+            </Providers>
           </div>
 
           <Footer />
