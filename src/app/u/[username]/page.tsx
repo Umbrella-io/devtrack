@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import BadgeSection from "@/components/BadgeSection";
 import StatsCard from "@/components/StatsCard";
 import ShareProfileSection from "@/components/ShareProfileSection";
+import ThemeToggle from "@/components/ThemeToggle";
 import { getUserByUsername } from "@/lib/supabase";
 import {
   fetchPublicTopRepos,
