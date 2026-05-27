@@ -1,48 +1,15 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { resolveAppUser } from "@/lib/resolve-user";
+import { validateTextInput } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 
-interface Goal {
-  id: string;
-  user_id: string;
-  title: string;
-  target: number;
-  current: number;
-  unit: string;
-  recurrence: string;
-  deadline: string | null;
-  period_start: string | null;
-  created_at: string;
-}
-
-type Recurrence = "none" | "weekly" | "monthly";
-
-const VALID_RECURRENCES = ["none", "weekly", "monthly"] as const;
-const MAX_TITLE_LEN = 100;
-const MAX_UNIT_LEN = 30;
-const MIN_TARGET = 1;
-const MAX_TARGET = 10_000;
-
-// Hard cap to prevent storage exhaustion and catastrophic Promise.all execution
-const MAX_GOALS_PER_USER = 5;
-
-function getPeriodStart(recurrence: Recurrence): string {
+function currentWeekStart(): string {
   const now = new Date();
-  if (recurrence === "weekly") {
-    const day = now.getUTCDay();
-    const diff = day === 0 ? -6 : 1 - day; // Monday
-    const monday = new Date(now);
-    monday.setUTCDate(now.getUTCDate() + diff);
-    monday.setUTCHours(0, 0, 0, 0);
-    return monday.toISOString();
-  }
-  if (recurrence === "monthly") {
-    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-  }
-  return new Date(0).toISOString(); // 'none' never resets
+  const d = new Date(now);
+  d.setDate(now.getDate() - now.getDay() + 1); // Monday
+  return d.toISOString().slice(0, 10);
 }
 
 export async function GET() {
@@ -51,52 +18,21 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { data: user } = await supabaseAdmin
+    .from("users")
+    .select("id")
+    .eq("github_id", session.githubId)
+    .single();
 
-  const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
-  // Added .limit() to bound the database payload and the subsequent Promise.all loop
   const { data: goals } = await supabaseAdmin
     .from("goals")
     .select("*")
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(MAX_GOALS_PER_USER);
+    .eq("week_start", currentWeekStart());
 
-  // Reset progress if we're in a new period
-  const processedGoals = await Promise.all(
-    (goals ?? []).map(async (goal: Goal) => {
-      if (goal.recurrence === "none") return goal;
-
-      const periodStart = new Date(getPeriodStart(goal.recurrence as Recurrence));
-      const storedPeriodStart = goal.period_start
-        ? new Date(goal.period_start)
-        : new Date(0);
-
-      if (storedPeriodStart < periodStart) {
-        const { data: updated } = await supabaseAdmin
-          .from("goals")
-          .update({ current: 0, period_start: periodStart.toISOString() })
-          .eq("id", goal.id)
-          .lt("period_start", periodStart.toISOString())
-          .select()
-          .single();
-
-        if (updated) return updated;
-
-        const { data: current } = await supabaseAdmin
-          .from("goals")
-          .select("*")
-          .eq("id", goal.id)
-          .single();
-        return current ?? goal;
-      }
-
-      return goal;
-    })
-  );
-
-  return Response.json({ goals: processedGoals });
+  return Response.json({ goals: goals ?? [] });
 }
 
 export async function POST(req: Request) {
@@ -105,89 +41,43 @@ export async function POST(req: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: unknown;
+  const body = (await req.json()) as { label?: unknown; target?: unknown };
 
-try {
-  body = await req.json();
-} catch {
-  return Response.json({ error: "Invalid JSON" }, { status: 400 });
-}
-
-
-  if (typeof body !== "object" || body === null) {
-    return Response.json({ error: "Invalid request body" }, { status: 400 });
+  // --- Validate & sanitize label (strip HTML, enforce length) ---
+  const labelResult = validateTextInput(body.label, "label", 100);
+  if (!labelResult.ok) {
+    return Response.json({ error: labelResult.error }, { status: 400 });
   }
 
-  const { title, target, unit, recurrence, deadline } = body as Record<string, unknown>;
-
-  if (typeof title !== "string" || title.trim().length === 0) {
-    return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
-  }
-  if (title.length > MAX_TITLE_LEN) {
-    return Response.json({ error: `title must be ${MAX_TITLE_LEN} characters or fewer` }, { status: 400 });
-  }
-  if (
-    typeof target !== "number" ||
-    !Number.isInteger(target) ||
-    target < MIN_TARGET ||
-    target > MAX_TARGET
-  ) {
+  // --- Validate target (must be a positive integer) ---
+  const target = Number(body.target);
+  if (!Number.isInteger(target) || target < 1 || target > 365) {
     return Response.json(
-      { error: `target must be an integer between ${MIN_TARGET} and ${MAX_TARGET}` },
+      { error: "target must be an integer between 1 and 365" },
       { status: 400 }
     );
   }
 
-  const safeUnit = typeof unit === "string" ? unit.slice(0, MAX_UNIT_LEN) : "commits";
-  const safeRecurrence: Recurrence = VALID_RECURRENCES.includes(recurrence as Recurrence)
-    ? (recurrence as Recurrence)
-    : "none";
+  const { data: user } = await supabaseAdmin
+    .from("users")
+    .select("id")
+    .eq("github_id", session.githubId)
+    .single();
 
-  let safeDeadline: string | null = null;
-  if (typeof deadline === "string") {
-    const d = new Date(deadline);
-    if (!isNaN(d.getTime())) {
-      d.setUTCHours(23, 59, 59, 999);
-      safeDeadline = d.toISOString();
-    }
-  }
-
-  const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
-
-  // Pre-check count query using head option for peak performance
-  const { count, error: countError } = await supabaseAdmin
-    .from("goals")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id);
-
-  if (countError) {
-    return Response.json({ error: "Failed to verify goal limits" }, { status: 500 });
-  }
-
-  if ((count ?? 0) >= MAX_GOALS_PER_USER) {
-    return Response.json(
-      { error: `You can have at most ${MAX_GOALS_PER_USER} goals.` },
-      { status: 400 }
-    );
-  }
 
   const { data: goal, error } = await supabaseAdmin
     .from("goals")
     .insert({
       user_id: user.id,
-      title: title.trim(),
+      label: labelResult.value,   // sanitized value stored, never raw input
       target,
-      unit: safeUnit,
-      recurrence: safeRecurrence,
-      period_start: getPeriodStart(safeRecurrence),
-      deadline: safeDeadline,
-      current: 0,
+      week_start: currentWeekStart(),
     })
     .select()
     .single();
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) return Response.json({ error: "Failed to create goal" }, { status: 500 });
 
   return Response.json({ goal }, { status: 201 });
 }
