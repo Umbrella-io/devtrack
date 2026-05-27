@@ -18,68 +18,12 @@ import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
-type ActivityType =
-  | "push"
-  | "pull_request"
-  | "issue"
-  | "release"
-  | "other";
+import {
+  type ActivityItem,
+  type RawEvent,
+  formatActivity,
+} from "@/lib/activity-formatter";
 
-interface ActivityItem {
-  id: string;
-  type: ActivityType;
-  createdAt: string;
-  title: string;
-  subtitle: string;
-  repo: string;
-  url: string;
-}
-
-interface RawEvent {
-  id: string;
-  type: string;
-  created_at: string;
-  repo?: { name?: string };
-  payload?: {
-    ref?: string;
-    head?: string;
-    action?: string;
-    commits?: Array<{ sha?: string }>;
-    pull_request?: {
-      html_url?: string;
-      number?: number;
-      title?: string;
-      merged?: boolean;
-    };
-    issue?: {
-      html_url?: string;
-      number?: number;
-      title?: string;
-    };
-    release?: {
-      html_url?: string;
-      tag_name?: string;
-      name?: string;
-    };
-  };
-}
-
-const SUPPORTED_EVENT_TYPES = new Set([
-  "PushEvent",
-  "PullRequestEvent",
-  "IssuesEvent",
-  "ReleaseEvent",
-]);
-
-function getRepoUrl(repoName: string): string {
-  return `https://github.com/${repoName}`;
-}
-
-function capitalize(value: string): string {
-  return value.length > 0
-    ? value[0].toUpperCase() + value.slice(1)
-    : "Updated";
-}
 
 async function fetchFormattedActivity(token: string): Promise<ActivityItem[]> {
   const events = (await fetchUserEvents(token)) as RawEvent[];

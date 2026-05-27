@@ -1,12 +1,67 @@
-const SUPPORTED_EVENT_TYPES = new Set([
+/**
+ * Activity formatter utilities extracted from the metrics/activity route.
+ *
+ * Keeping these in a standalone module allows unit tests to import the
+ * pure formatting logic without pulling in Next.js route machinery (which
+ * only permits the HTTP-verb exports GET/POST/etc. from route files).
+ */
+
+export type ActivityType = "push" | "pull_request" | "issue" | "release" | "other";
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityType;
+  createdAt: string;
+  title: string;
+  subtitle: string;
+  repo: string;
+  url: string;
+}
+
+export interface RawEvent {
+  id: string;
+  type: string;
+  created_at: string;
+  repo?: { name?: string };
+  payload?: {
+    ref?: string;
+    head?: string;
+    action?: string;
+    commits?: Array<{ sha?: string }>;
+    pull_request?: {
+      html_url?: string;
+      number?: number;
+      title?: string;
+      merged?: boolean;
+    };
+    issue?: {
+      html_url?: string;
+      number?: number;
+      title?: string;
+    };
+    release?: {
+      html_url?: string;
+      tag_name?: string;
+      name?: string;
+    };
+  };
+}
+
+export const SUPPORTED_EVENT_TYPES = new Set([
   "PushEvent",
   "PullRequestEvent",
   "IssuesEvent",
   "ReleaseEvent",
 ]);
+
 function getRepoUrl(repoName: string): string {
   return `https://github.com/${repoName}`;
 }
+
+function capitalize(value: string): string {
+  return value.length > 0 ? value[0].toUpperCase() + value.slice(1) : "Updated";
+}
+
 export function formatActivity(event: RawEvent): ActivityItem | null {
   const repoName = event.repo?.name;
 
