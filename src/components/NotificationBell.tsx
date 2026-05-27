@@ -23,13 +23,26 @@ export default function NotificationBell() {
 
       const data = await res.json();
       setNotifications(data.notifications ?? []);
-      setUnreadCount(data.unreadCount ?? 0);
+      const count = data.unreadCount ?? 0;
+      setUnreadCount(count);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("devtrack:unread-notification-count", count.toString());
+      }
     } catch {
       // silent fail
     }
   }, []);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("devtrack:unread-notification-count");
+      if (stored !== null) {
+        const parsed = parseInt(stored, 10);
+        if (!isNaN(parsed) && parsed >= 0) {
+          setUnreadCount(parsed);
+        }
+      }
+    }
     fetchNotifications();
 
     const handleNotifications = () => {
@@ -63,6 +76,9 @@ export default function NotificationBell() {
       if (!prev && unreadCount > 0) {
         fetch("/api/notifications", { method: "PATCH" }).catch(() => {});
         setUnreadCount(0);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("devtrack:unread-notification-count", "0");
+        }
         setNotifications((prev) =>
           prev.map((n) => ({ ...n, read: true }))
         );
