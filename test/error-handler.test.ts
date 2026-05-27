@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { logError } from "../src/lib/error-handler";
 
 describe("logError", () => {
@@ -6,9 +6,16 @@ describe("logError", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("logs error message and context in development mode", () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: "development" },
+      writable: true,
+    });
 
     const error = new Error("Test error message");
     logError(error, {
@@ -17,15 +24,19 @@ describe("logError", () => {
     });
 
     expect(console.error).toHaveBeenCalled();
-    const logCalls = (console.error as any).mock.calls;
-    expect(logCalls.length).toBeGreaterThan(0);
 
-    process.env.NODE_ENV = originalEnv;
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: originalEnv },
+      writable: true,
+    });
   });
 
   it("logs string error", () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: "development" },
+      writable: true,
+    });
 
     logError("String error", {
       endpoint: "/api/test",
@@ -34,12 +45,18 @@ describe("logError", () => {
 
     expect(console.error).toHaveBeenCalled();
 
-    process.env.NODE_ENV = originalEnv;
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: originalEnv },
+      writable: true,
+    });
   });
 
   it("logs error with userId context", () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: "development" },
+      writable: true,
+    });
 
     const error = new Error("User error");
     logError(error, {
@@ -56,12 +73,18 @@ describe("logError", () => {
     expect(logObj.endpoint).toBe("/api/user");
     expect(logObj.userId).toBe("user-123");
 
-    process.env.NODE_ENV = originalEnv;
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: originalEnv },
+      writable: true,
+    });
   });
 
   it("logs error with additional context", () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: "development" },
+      writable: true,
+    });
 
     const error = new Error("Context error");
     logError(error, {
@@ -72,12 +95,18 @@ describe("logError", () => {
 
     expect(console.error).toHaveBeenCalled();
 
-    process.env.NODE_ENV = originalEnv;
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: originalEnv },
+      writable: true,
+    });
   });
 
   it("handles null error gracefully", () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: "development" },
+      writable: true,
+    });
 
     logError(null, {
       endpoint: "/api/test",
@@ -86,12 +115,18 @@ describe("logError", () => {
 
     expect(console.error).toHaveBeenCalled();
 
-    process.env.NODE_ENV = originalEnv;
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: originalEnv },
+      writable: true,
+    });
   });
 
   it("handles undefined error gracefully", () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: "development" },
+      writable: true,
+    });
 
     logError(undefined, {
       endpoint: "/api/test",
@@ -100,12 +135,18 @@ describe("logError", () => {
 
     expect(console.error).toHaveBeenCalled();
 
-    process.env.NODE_ENV = originalEnv;
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: originalEnv },
+      writable: true,
+    });
   });
 
   it("does not include stack traces in production", () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "production";
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: "production" },
+      writable: true,
+    });
 
     const error = new Error("Production error");
     logError(error, {
@@ -117,6 +158,9 @@ describe("logError", () => {
     const logCalls = (console.error as any).mock.calls;
     expect(logCalls.length).toBeGreaterThan(0);
 
-    process.env.NODE_ENV = originalEnv;
+    Object.defineProperty(process, "env", {
+      value: { ...process.env, NODE_ENV: originalEnv },
+      writable: true,
+    });
   });
 });
