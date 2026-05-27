@@ -21,6 +21,7 @@ const FRAMEWORK_ALIASES = new Set([
 function collectFiles(dir) {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (["test", "tests", "e2e"].includes(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       if (["node_modules", ".next", "dist", ".git", "build", "coverage", "out"].includes(entry.name)) continue;
