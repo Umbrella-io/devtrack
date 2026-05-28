@@ -83,6 +83,11 @@ export function AIMentorWidget() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     fetch("/api/ai-insights?type=weekly_summary", { cache: "no-store" })
@@ -109,10 +114,13 @@ export function AIMentorWidget() {
 
   if (!data) return null;
 
-  const formattedDate = new Date(data.generatedAt).toLocaleDateString(
-    undefined,
-    { month: "short", day: "numeric", year: "numeric" }
-  );
+  const formattedDate = mounted
+    ? new Date(data.generatedAt).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">

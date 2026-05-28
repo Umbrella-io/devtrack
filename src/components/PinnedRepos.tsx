@@ -111,7 +111,7 @@ export default function PinnedRepos() {
                           repo.primaryLanguage.color ?? "#8b949e",
                       }}
                     />
-                    {repo.primaryLanguage.name}
+                    {repo.primaryLanguage?.name}
                   </span>
                 )}
                 <span className="flex items-center gap-1">

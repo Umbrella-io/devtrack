@@ -56,7 +56,7 @@ export async function GET() {
   const webhookIds = webhooks?.map((w) => w.id) || [];
   const { data: webhookDeliveries } = await supabaseAdmin
     .from("webhook_deliveries")
-    .select("*")
+    .select("id, webhook_id, event_type, payload, response_status, response_body, delivered_at, created_at")
     .in("webhook_id", webhookIds);
   sections.webhookDeliveries = webhookDeliveries || [];
 
