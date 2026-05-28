@@ -275,6 +275,7 @@ function SettingsPageContent() {
       }
     } catch (error) {
       console.error("Error updating settings:", error);
+      toast.error("Failed to update public profile setting");
     } finally {
       setSaving(false);
     }
@@ -299,6 +300,7 @@ function SettingsPageContent() {
       }
     } catch (error) {
       console.error("Error updating leaderboard setting:", error);
+      toast.error("Failed to update leaderboard setting");
     } finally {
       setSaving(false);
     }
@@ -334,16 +336,14 @@ function SettingsPageContent() {
   const copyShareLink = () => {
     if (!settings) return;
     const link = `${window.location.origin}/u/${settings.github_login}`;
-    navigator.clipboard
-      .writeText(link)
-      .then(() => {
-        setCopied(true);
-        toast.success("Link copied successfully!");
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(() => {
-        toast.error("Failed to copy link");
-      });
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      toast.success("Link copied successfully!");
+      setTimeout(() => setCopied(false), 2000);
+    }).catch((err) => {
+      console.error("Clipboard copy failed:", err);
+      toast.error("Failed to copy link");
+    });
   };
 
   const handleRemoveAccount = async (githubId: string) => {
@@ -364,8 +364,10 @@ function SettingsPageContent() {
       setLinkedAccounts((current) =>
         current.filter((account) => account.githubId !== githubId)
       );
-    } catch {
+    } catch (error) {
+      console.error("Failed to remove account:", error);
       setRemoveError("Failed to remove account");
+      toast.error("Failed to remove account");
     } finally {
       setRemovingAccountId(null);
     }
@@ -438,7 +440,6 @@ function SettingsPageContent() {
             {statusMessage.message}
           </div>
         )}
-
         {/* Public Profile Section */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="flex items-start justify-between mb-6 gap-4">
@@ -462,16 +463,14 @@ function SettingsPageContent() {
                   className="sr-only"
                 />
                 <div
-                  className={`block w-10 h-6 rounded-full transition-colors ${
-                    settings.is_public
-                      ? "bg-[var(--accent)]"
-                      : "bg-[var(--control)]"
-                  }`}
+                  className={`block w-10 h-6 rounded-full transition-colors ${settings.is_public
+                    ? "bg-[var(--accent)]"
+                    : "bg-[var(--control)]"
+                    }`}
                 />
                 <div
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
-                    settings.is_public ? "translate-x-4" : ""
-                  }`}
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${settings.is_public ? "translate-x-4" : ""
+                    }`}
                 />
               </div>
             </label>
@@ -592,16 +591,14 @@ function SettingsPageContent() {
                   className="sr-only"
                 />
                 <div
-                  className={`block h-6 w-10 rounded-full transition-colors ${
-                    settings.leaderboard_opt_in
-                      ? "bg-[var(--accent)]"
-                      : "bg-[var(--control)]"
-                  }`}
+                  className={`block h-6 w-10 rounded-full transition-colors ${settings.leaderboard_opt_in
+                    ? "bg-[var(--accent)]"
+                    : "bg-[var(--control)]"
+                    }`}
                 />
                 <div
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
-                    settings.leaderboard_opt_in ? "translate-x-4" : ""
-                  }`}
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${settings.leaderboard_opt_in ? "translate-x-4" : ""
+                    }`}
                 />
               </div>
             </label>
@@ -700,7 +697,7 @@ function SettingsPageContent() {
               </p>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <label htmlFor="wakatime-key" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">

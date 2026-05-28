@@ -10,6 +10,7 @@ import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
+import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
 import dynamic from "next/dynamic";
 
 const SkeletonCard = () => (
@@ -88,7 +89,7 @@ import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
-import CodingTimeCard from "@/components/CodingTimeCard";
+import CodingTimeWidget from "@/components/CodingTimeWidget";
 import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
@@ -106,22 +107,24 @@ export default async function DashboardPage() {
     <DashboardSSEProvider>
       <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
-      <div className="mb-6 flex justify-end items-center gap-2">
-        <Link
-          href="/wrapped"
-          className="rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
-        >
-          Year in Code
-        </Link>
-        <Link
-          href="/dashboard/settings"
-          className="secondary-button flex min-w-[140px] items-center justify-center rounded-xl px-4 py-2 text-sm font-medium"
-        >
-          Settings
-        </Link>
-        <ExportButton />
-      </div>
-      <StreakAtRiskBanner />
+        <div className="mb-6 flex flex-wrap items-stretch justify-center gap-2 sm:justify-end">
+          <Link
+            href="/wrapped"
+            className="flex min-w-0 flex-1 items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-center text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90 sm:min-w-[140px] sm:flex-none"
+          >
+            Year in Code
+          </Link>
+          <Link
+            href="/dashboard/settings"
+            className="secondary-button flex min-w-0 flex-1 items-center justify-center rounded-xl px-4 py-2 text-center text-sm font-medium sm:min-w-[140px] sm:flex-none"
+          >
+            Settings
+          </Link>
+          <div className="w-full sm:w-auto">
+            <ExportButton />
+          </div>
+        </div>
+        <StreakAtRiskBanner />
 
       <div className="mb-6 mt-6">
         <Link href="/wrapped">
@@ -163,13 +166,16 @@ export default async function DashboardPage() {
           <div className="mt-6">
             <FriendComparison />
           </div>
+          <div className="mt-6">
+            <RepoAnalyticsExplorer />
+          </div>
         </div>
 
         <div>
           <StreakTracker />
           <LocalCodingTime />
           <div className="mt-6">
-            <CodingTimeCard />
+            <CodingTimeWidget />
           </div>
         </div>
       </div>

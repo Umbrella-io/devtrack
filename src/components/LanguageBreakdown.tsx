@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 
 interface Language {
   name: string;
@@ -28,17 +29,21 @@ function getColor(name: string): string {
 }
 
 export default function LanguageBreakdown() {
+  const { selectedAccount } = useAccount();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/metrics/languages")
+    const url = selectedAccount !== null
+      ? `/api/metrics/languages?accountId=${encodeURIComponent(selectedAccount)}`
+      : "/api/metrics/languages";
+    fetch(url)
       .then((r) => r.json())
       .then((d: { languages: Language[] }) => setLanguages(d.languages ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedAccount]);
 
   const totalPercentage = languages.reduce((sum, lang) => sum + lang.percentage, 0);
   const roundedTotal = Math.round(totalPercentage * 10) / 10;

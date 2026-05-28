@@ -5,7 +5,7 @@ import { supabaseAdmin } from "./supabase";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 const SESSION_UPDATE_AGE = 24 * 60 * 60;
-const useSecureCookies = process.env.NODE_ENV === "production";
+const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://") ?? process.env.NODE_ENV === "production";
 
 const GITHUB_API = "https://api.github.com";
 // Re-validate the stored GitHub token at most once every 24 hours per session.
@@ -24,8 +24,19 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-  signIn: "/auth/signin",
-},
+    signIn: "/auth/signin",
+  },
+  cookies: {
+    sessionToken: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+  },
   session: {
     strategy: "jwt",
     maxAge: SESSION_MAX_AGE,
@@ -38,26 +49,40 @@ export const authOptions: NextAuthOptions = {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {
         const p = profile as { id: number; login: string };
-        const { data: user } = await supabaseAdmin.from("users").upsert(
-          {
-            github_id: String(p.id),
-            github_login: p.login,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "github_id" }
-        ).select("id").single();
+        try {
+          const { data: user, error: upsertError } = await supabaseAdmin
+            .from("users")
+            .upsert(
+              {
+                github_id: String(p.id),
+                github_login: p.login,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "github_id" }
+            )
+            .select("id")
+            .single();
 
-        if (user?.id && account.access_token) {
-          try {
-            await syncGitHubAchievementsForUser({
-              userId: user.id,
-              githubLogin: p.login,
-              token: account.access_token,
-              force: true,
-            });
-          } catch (error) {
-            console.error("GitHub achievements sync failed:", error);
+          if (upsertError) {
+            console.error("[auth] Supabase upsert error:", upsertError);
           }
+
+          if (user?.id && account.access_token) {
+            try {
+              await syncGitHubAchievementsForUser({
+                userId: user.id,
+                githubLogin: p.login,
+                token: account.access_token,
+                force: true,
+              });
+            } catch (error) {
+              console.error("[auth] GitHub achievements sync failed:", error);
+            }
+          }
+        } catch (error) {
+          // Database failures must not block sign-in — the user is authenticated
+          // by GitHub; local sync is best-effort.
+          console.error("[auth] signIn callback error (non-fatal):", error);
         }
       }
       return true;
