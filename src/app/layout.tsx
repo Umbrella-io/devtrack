@@ -1,4 +1,5 @@
 import CustomCursor from "@/components/CustomCursor";
+import Navbar from "@/components/Navbar";
 import type { Metadata, Viewport } from "next";
 import { Inter, Syne, JetBrains_Mono } from "next/font/google";
 import AppNavbar from "@/components/AppNavbar";
@@ -88,6 +89,7 @@ export default async function RootLayout({
         <OfflineBanner />
 
         <div className="flex min-h-screen flex-col">
+          <Navbar />
           <div className="flex-1">
             <Providers>
               <AppNavbar />
