@@ -148,3 +148,41 @@ describe('getAccountToken', () => {
     expect(result).toBeNull();
   });
 });
+
+describe('mergeMetrics', () => {
+  it('returns merged value when all results are fulfilled', async () => {
+    const { mergeMetrics } = await import('../src/lib/github-accounts');
+    const results: PromiseFulfilledResult<{ count: number }>[] = [
+      { status: 'fulfilled', value: { count: 5 } },
+      { status: 'fulfilled', value: { count: 3 } },
+    ];
+    const merged = mergeMetrics(results, (a, b) => ({ count: a.count + b.count }));
+    expect(merged).toEqual({ count: 8 });
+  });
+
+  it('ignores rejected results and merges fulfilled', async () => {
+    const { mergeMetrics } = await import('../src/lib/github-accounts');
+    const results: PromiseSettledResult<{ count: number }>[] = [
+      { status: 'fulfilled', value: { count: 5 } },
+      { status: 'rejected', reason: new Error('fail') },
+      { status: 'fulfilled', value: { count: 3 } },
+    ];
+    const merged = mergeMetrics(results, (a, b) => ({ count: a.count + b.count }));
+    expect(merged).toEqual({ count: 8 });
+  });
+
+  it('returns null for empty results array', async () => {
+    const { mergeMetrics } = await import('../src/lib/github-accounts');
+    const merged = mergeMetrics([], (a, b) => ({ count: a.count + b.count }));
+    expect(merged).toBeNull();
+  });
+
+  it('returns single fulfilled result without merging', async () => {
+    const { mergeMetrics } = await import('../src/lib/github-accounts');
+    const results: PromiseFulfilledResult<{ count: number }>[] = [
+      { status: 'fulfilled', value: { count: 10 } },
+    ];
+    const merged = mergeMetrics(results, (a, b) => ({ count: a.count + b.count }));
+    expect(merged).toEqual({ count: 10 });
+  });
+});

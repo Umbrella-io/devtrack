@@ -185,4 +185,119 @@ describe("formatActivity", () => {
     };
     expect(formatActivity(event as any)).toBeNull();
   });
+
+  it("formats PushEvent with multiple commits", () => {
+    const event = {
+      id: "100",
+      type: "PushEvent",
+      created_at: "2024-01-15T10:00:00Z",
+      repo: { name: "test/repo" },
+      payload: {
+        commits: [{}, {}, {}],
+        ref: "refs/heads/main",
+        head: "abc123",
+      },
+    };
+    const result = formatActivity(event as any);
+    expect(result?.title).toBe("Pushed 3 commits to main");
+  });
+
+  it("formats PullRequestEvent for opened state", () => {
+    const event = {
+      id: "101",
+      type: "PullRequestEvent",
+      created_at: "2024-01-15T10:00:00Z",
+      repo: { name: "test/repo" },
+      payload: {
+        action: "opened",
+        pull_request: {
+          html_url: "https://github.com/test/repo/pull/42",
+          number: 42,
+          title: "Add new feature",
+        },
+      },
+    };
+    const result = formatActivity(event as any);
+    expect(result?.type).toBe("pull_request");
+    expect(result?.title).toBe("Opened pull request #42");
+  });
+
+  it("formats PullRequestEvent for closed and merged state", () => {
+    const event = {
+      id: "102",
+      type: "PullRequestEvent",
+      created_at: "2024-01-15T10:00:00Z",
+      repo: { name: "test/repo" },
+      payload: {
+        action: "closed",
+        pull_request: {
+          html_url: "https://github.com/test/repo/pull/43",
+          number: 43,
+          title: "Fix bug",
+          merged: true,
+        },
+      },
+    };
+    const result = formatActivity(event as any);
+    expect(result?.title).toBe("Merged pull request #43");
+  });
+
+  it("formats PullRequestEvent for closed without merge", () => {
+    const event = {
+      id: "103",
+      type: "PullRequestEvent",
+      created_at: "2024-01-15T10:00:00Z",
+      repo: { name: "test/repo" },
+      payload: {
+        action: "closed",
+        pull_request: {
+          html_url: "https://github.com/test/repo/pull/44",
+          number: 44,
+          title: "WIP feature",
+          merged: false,
+        },
+      },
+    };
+    const result = formatActivity(event as any);
+    expect(result?.title).toBe("Closed pull request #44");
+  });
+
+  it("formats IssuesEvent for opened state", () => {
+    const event = {
+      id: "104",
+      type: "IssuesEvent",
+      created_at: "2024-01-15T10:00:00Z",
+      repo: { name: "test/repo" },
+      payload: {
+        action: "opened",
+        issue: {
+          html_url: "https://github.com/test/repo/issues/10",
+          number: 10,
+          title: "Bug report",
+        },
+      },
+    };
+    const result = formatActivity(event as any);
+    expect(result?.type).toBe("issue");
+    expect(result?.title).toBe("Opened issue #10");
+  });
+
+  it("formats IssuesEvent for closed state", () => {
+    const event = {
+      id: "105",
+      type: "IssuesEvent",
+      created_at: "2024-01-15T10:00:00Z",
+      repo: { name: "test/repo" },
+      payload: {
+        action: "closed",
+        issue: {
+          html_url: "https://github.com/test/repo/issues/11",
+          number: 11,
+          title: "Feature request",
+        },
+      },
+    };
+    const result = formatActivity(event as any);
+    expect(result?.title).toBe("Closed issue #11");
+  });
 });

@@ -34,4 +34,19 @@ describe("dateUtils dateDiffDays", () => {
   it("handles large day differences", () => {
     expect(dateDiffDays("2024-01-01", "2024-12-31")).toBe(365);
   });
+
+  it("returns 1 for consecutive days regardless of month length", () => {
+    expect(dateDiffDays("2024-01-30", "2024-01-31")).toBe(1);
+    expect(dateDiffDays("2024-02-28", "2024-02-29")).toBe(1);
+  });
+
+  it("handles negative day differences spanning years", () => {
+    expect(dateDiffDays("2025-01-01", "2024-01-01")).toBe(-366);
+  });
+
+  it("returns fractional days when times differ on same date", () => {
+    const diff = dateDiffDays("2024-06-15T10:00:00Z", "2024-06-15T23:59:59Z");
+    expect(diff).toBeGreaterThan(0);
+    expect(diff).toBeLessThan(1);
+  });
 });
