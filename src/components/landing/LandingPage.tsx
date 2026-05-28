@@ -108,8 +108,7 @@ function MouseSpotlight() {
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (ref.current) {
-        ref.current.style.left = e.clientX + 'px';
-        ref.current.style.top = e.clientY + 'px';
+        ref.current.style.transform = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
       }
     };
     window.addEventListener('mousemove', fn, { passive: true });
@@ -121,10 +120,11 @@ function MouseSpotlight() {
       aria-hidden
       style={{
         position: 'fixed', pointerEvents: 'none', zIndex: 0,
+        left: 0, top: 0,
         width: 700, height: 700,
         background: 'radial-gradient(circle, rgba(129,140,248,0.05) 0%, transparent 70%)',
-        transform: 'translate(-50%,-50%)',
-        transition: 'left 0.15s ease-out, top 0.15s ease-out',
+        transform: 'translate3d(-50%, -50%, 0)',
+        willChange: 'transform',
       }}
     />
   );
@@ -391,7 +391,7 @@ margin: '0 0 24px',
         >
           YOUR<br />CODE<br />HAS A<br />
           <span style={{ color: A }}>PULSE</span>
-          <span style={{ color: '#222' }}>.</span>
+          <span style={{ color: '#9ca3af' }}>.</span>
         </h1>
 
         {/* Tagline */}
@@ -527,7 +527,7 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
         lineHeight: 1, letterSpacing: '-0.03em',
       }}>
         <Counter end={value} active={vis} />
-        <span style={{ color: '#222', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
+        <span style={{ color: '#9ca3af', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
       </div>
       <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', marginTop: 8 }}>
         {label}
@@ -683,7 +683,7 @@ function SetupSection() {
         </a>
       </div>
 
-      <div style={{ fontFamily: MONO, fontSize: 11, color: '#222', marginTop: 20, letterSpacing: '0.06em' }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: '#9ca3af', marginTop: 20, letterSpacing: '0.06em' }}>
         MIT License · Self-hostable · Free forever · Zero vendor lock-in
       </div>
     </section>
@@ -852,34 +852,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
   );
 }
 
-/* ═══════════════════════════════════════════
-   LANDING FOOTER  (above global Footer)
-   ═══════════════════════════════════════════ */
-function LandingFooter() {
-  return (
-    <footer style={{
-      borderTop: `1px solid #111`,
-      padding: '40px clamp(20px,4vw,48px)',
-      display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
-      justifyContent: 'space-between', alignItems: 'center',
-    }}>
-      <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
-        © {new Date().getFullYear()} DEVTRACK
-      </span>
-      <div style={{ display: 'flex', gap: 20 }}>
-        {[
-          { label: 'GitHub', href: 'https://github.com/Priyanshu-byte-coder/devtrack' },
-          { label: 'Docs', href: 'https://github.com/Priyanshu-byte-coder/devtrack/blob/main/DEVELOPMENT.md' },
-          { label: 'Issues', href: 'https://github.com/Priyanshu-byte-coder/devtrack/issues' },
-        ].map(l => (
-          <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="lnd-footer-link">
-            {l.label}
-          </a>
-        ))}
-      </div>
-    </footer>
-  );
-}
+
 
 /* ═══════════════════════════════════════════
    MAIN EXPORT
@@ -899,7 +872,7 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <FeaturesSection />
       <ContributeSection stats={repoStats} />
       <SetupSection />
-      <LandingFooter />
+
     </div>
   );
 }

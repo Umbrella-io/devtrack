@@ -12,8 +12,7 @@ function MouseSpotlight() {
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (ref.current) {
-        ref.current.style.left = e.clientX + "px";
-        ref.current.style.top = e.clientY + "px";
+        ref.current.style.transform = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
       }
     };
     window.addEventListener("mousemove", fn, { passive: true });
@@ -25,11 +24,12 @@ function MouseSpotlight() {
       aria-hidden
       style={{
         position: "fixed", pointerEvents: "none", zIndex: 0,
+        left: 0, top: 0,
         width: 600, height: 600,
         background:
           "radial-gradient(circle, rgba(129,140,248,0.06) 0%, transparent 70%)",
-        transform: "translate(-50%,-50%)",
-        transition: "left 0.15s ease-out, top 0.15s ease-out",
+        transform: "translate3d(-50%, -50%, 0)",
+        willChange: "transform",
       }}
     />
   );
@@ -67,7 +67,7 @@ export default function SignInPage() {
       <div
         style={{
           width: "100%",
-          maxWidth: 420,
+          maxWidth: 520,
           border: "1px solid #1a1a1a",
           borderRadius: 12,
           padding: "clamp(28px,5vw,48px) clamp(24px,5vw,40px)",

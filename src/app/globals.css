@@ -58,6 +58,10 @@
   --shadow-medium: 0 24px 45px -28px rgba(2, 6, 23, 0.85);
 }
 
+html, body {
+  overscroll-behavior: none;
+}
+
 body {
   background:
     radial-gradient(circle at 0% 0%, rgba(96, 165, 250, 0.16), transparent 36%),
@@ -65,6 +69,7 @@ body {
     var(--background);
   color: var(--foreground);
   transition: background-color 200ms ease, color 200ms ease;
+  overscroll-behavior: none;
 }
 
 .surface-card {
