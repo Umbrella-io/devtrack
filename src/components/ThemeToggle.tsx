@@ -48,11 +48,13 @@ export default function ThemeToggle() {
 
   const isDark = theme === "dark";
 
+
+
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-sm font-medium text-[var(--card-foreground)] transition-all duration-300 hover:bg-[var(--control)] active:scale-95"
+      className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-sm font-medium text-[var(--card-foreground)] transition-colors duration-300 hover:bg-[var(--control)] active:scale-95"
       aria-label="Toggle theme"
       aria-pressed={isDark}
     >
@@ -63,6 +65,7 @@ export default function ThemeToggle() {
           <SunIcon className="h-[18px] w-[18px]" aria-hidden="true" />
         )}
       </span>
+
       <span className="transition-colors duration-300">
         {isDark ? "Dark" : "Light"}
       </span>

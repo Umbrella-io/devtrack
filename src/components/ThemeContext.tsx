@@ -2,10 +2,11 @@
 
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+import { Theme, themes } from "@/lib/themes";
 
 interface ThemeContextType {
   theme: Theme | undefined;
+  setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
 }
 
@@ -30,19 +31,45 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   useSafeLayoutEffect(() => {
-    if (theme) {
-      document.documentElement.classList.toggle("dark", theme === "dark");
-      document.documentElement.style.colorScheme = theme;
-      localStorage.setItem(STORAGE_KEY, theme);
+    if (!theme) return;
+
+    const root = document.documentElement;
+
+    const themeClasses = [
+      "theme-dracula",
+      "theme-nord",
+      "theme-catppuccin-mocha",
+      "theme-solarized-dark",
+    ];
+
+    root.classList.remove(...themeClasses);
+
+    const currentTheme = themes[theme];
+    const isDarkTheme = currentTheme.mode === "dark";
+
+    root.classList.toggle("dark", isDarkTheme);
+
+    if (theme !== "light" && theme !== "dark") {
+      root.classList.add(`theme-${theme}`);
     }
+
+    root.style.colorScheme = isDarkTheme ? "dark" : "light";
+
+    localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+    setTheme((prev) => {
+      if (prev === "light") {
+        return "dark";
+      }
+
+      return "light";
+    });
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

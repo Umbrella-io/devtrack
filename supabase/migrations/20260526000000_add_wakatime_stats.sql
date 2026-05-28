@@ -1,7 +1,9 @@
+DROP TABLE IF EXISTS wakatime_stats CASCADE;
+
 -- Add wakatime_stats table to cache daily wakatime summaries
 CREATE TABLE wakatime_stats (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     date DATE NOT NULL,
     total_seconds INTEGER NOT NULL DEFAULT 0,
     languages JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -17,6 +19,6 @@ ALTER TABLE wakatime_stats ENABLE ROW LEVEL SECURITY;
 -- Allow users to read their own stats
 CREATE POLICY "Users can view their own wakatime stats"
     ON wakatime_stats FOR SELECT
-    USING (auth.uid() = user_id);
+    USING (auth.uid()::text = user_id);
 
-
+    
