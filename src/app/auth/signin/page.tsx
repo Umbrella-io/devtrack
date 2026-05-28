@@ -98,9 +98,9 @@ export default function SignInPage() {
           style={{
             fontFamily: DISP,
             fontWeight: 800,
-            fontSize: "clamp(34px,6vw,52px)",
+            fontSize: "clamp(34px,6vw,35px)",
             letterSpacing: "-0.04em",
-            lineHeight: 0.95,
+            lineHeight: 1.25,
             color: "#e8e8e8",
             margin: "0 0 16px",
           }}
