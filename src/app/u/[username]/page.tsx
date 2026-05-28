@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 import BadgeSection from "@/components/BadgeSection";
 import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
@@ -6,6 +7,10 @@ import CopyLinkButton from "@/components/CopyLinkButton";
 import ThemeToggle from "@/components/ThemeToggle"; 
 import { getUserByUsername } from "@/lib/supabase";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
+
+
+
+
 import {
   fetchPublicTopRepos,
   fetchPublicContributions,
@@ -18,9 +23,17 @@ async function fetchPublicProfile(
   options: { includeAchievements?: boolean } = {}
 ): Promise<PublicProfileData | null> {
   const user = await getUserByUsername(username);
+
   if (!user) return null;
 
+  const canonicalUsername = user.github_login.toLowerCase();
+
+  if (username !== canonicalUsername) {
+    redirect(`/u/${canonicalUsername}`);
+  }
+
   const githubToken = process.env.GITHUB_TOKEN;
+
   const [repos, contributions, streak, achievementsCache] = await Promise.all([
     fetchPublicTopRepos(user.github_login, githubToken, 30),
     fetchPublicContributions(user.github_login, githubToken, 30),
