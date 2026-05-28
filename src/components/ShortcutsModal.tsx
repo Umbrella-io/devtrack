@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ShortcutsModalProps {
   isOpen: boolean;
@@ -25,6 +25,13 @@ export default function ShortcutsModal({
 }: ShortcutsModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && typeof navigator !== "undefined") {
+      setIsMac(/Mac|iPod|iPhone|iPad/.test(navigator.userAgent));
+    }
+  }, []);
 
    useEffect(() => {
     if (!isOpen) return;
@@ -114,7 +121,7 @@ export default function ShortcutsModal({
               {item.action}
             </span>
             <kbd className="min-w-[28px] rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-center text-xs font-semibold text-[var(--card-foreground)] shadow-sm">
-              {item.key}
+              {item.key === "T" ? (isMac ? "Option + T" : "Alt + T") : item.key}
             </kbd>
           </div>
         ))}

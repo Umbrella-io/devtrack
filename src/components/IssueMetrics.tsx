@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 
 interface IssueData {
   opened: number;
@@ -12,15 +13,20 @@ interface IssueData {
 }
 
 export default function IssueMetrics() {
+  const { selectedAccount } = useAccount();
   const [metrics, setMetrics] = useState<IssueData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMetrics = () => {
+  const fetchMetrics = useCallback(() => {
     setLoading(true);
     setError(null);
 
-    fetch("/api/metrics/issues")
+    const url = selectedAccount !== null
+      ? `/api/metrics/issues?accountId=${encodeURIComponent(selectedAccount)}`
+      : "/api/metrics/issues";
+
+    fetch(url)
       .then((r) => r.json())
       .then((data: IssueData) => setMetrics(data))
       .catch(() =>
@@ -29,11 +35,11 @@ export default function IssueMetrics() {
         )
       )
       .finally(() => setLoading(false));
-  };
+  }, [selectedAccount]);
 
   useEffect(() => {
     fetchMetrics();
-  }, []);
+  }, [fetchMetrics]);
 
   const stats = metrics
     ? [

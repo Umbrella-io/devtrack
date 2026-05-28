@@ -8,7 +8,11 @@ create table if not exists users (
   created_at   timestamptz default now(),
   updated_at   timestamptz default now(),
   wakatime_api_key_encrypted text,
-  wakatime_api_key_iv text
+  wakatime_api_key_iv text,
+  is_sponsor   boolean default false,
+  discord_webhook_url text,
+  timezone text default 'UTC',
+  last_discord_notification_at timestamptz
 );
 
 create table if not exists goals (
@@ -18,6 +22,7 @@ create table if not exists goals (
   target       integer not null,
   current      integer not null default 0,
   unit         text not null default 'commits',
+  deadline     timestamptz,
   recurrence   text not null default 'none' check (recurrence in ('none', 'weekly', 'monthly')),
   period_start timestamptz default now(),
   created_at   timestamptz default now(),
@@ -56,3 +61,47 @@ create index if not exists idx_ai_insights_type    on ai_insights(insight_type);
 -- Unique index required by the upsert conflict target in /api/ai-insights
 create unique index if not exists idx_ai_insights_user_type
   on ai_insights(user_id, insight_type);
+
+create table if not exists user_github_achievements (
+  user_id      text primary key references users(id) on delete cascade,
+  github_login text not null,
+  achievements jsonb not null default '[]'::jsonb,
+  synced_at    timestamptz,
+  fetch_error  text,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+
+create index if not exists idx_user_github_achievements_login
+  on user_github_achievements(github_login);
+
+alter table user_github_achievements enable row level security;
+
+create policy "user_github_achievements_select_own"
+  on user_github_achievements for select
+  using (user_id = auth.uid()::text);
+
+-- Refactor local coding sessions sync to use a database transaction function
+create or replace function batch_upsert_sessions(sessions jsonb)
+returns void as $$
+declare
+  session_record jsonb;
+begin
+  for session_record in select * from jsonb_array_elements(sessions) loop
+    insert into local_coding_sessions (user_id, date, total_seconds, file_count, project_count)
+    values (
+      (session_record->>'user_id'),
+      (session_record->>'date')::date,
+      (session_record->>'total_seconds')::integer,
+      coalesce((session_record->>'file_count')::integer, 0),
+      coalesce((session_record->>'project_count')::integer, 0)
+    )
+    on conflict (user_id, date) do update set
+      total_seconds = excluded.total_seconds,
+      file_count = excluded.file_count,
+      project_count = excluded.project_count,
+      updated_at = now();
+  end loop;
+end;
+$$ language plpgsql security definer;
+
