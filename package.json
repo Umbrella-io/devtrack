@@ -30,6 +30,7 @@
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^2.12.7",
+    "server-only": "^0.0.1",
     "sonner": "^2.0.7"
   },
   "devDependencies": {

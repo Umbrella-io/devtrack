@@ -1,14 +1,28 @@
-import { createClient } from "@supabase/supabase-js";
+import 'server-only';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Do not throw here — build-time rendering can touch this module before
+export const SUPABASE_ADMIN_UNAVAILABLE_MESSAGE =
+  "Supabase admin client is unavailable. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.";
+
+type SupabaseAdminClient = SupabaseClient<any, any, any>;
+
+function createUnavailableSupabaseAdmin(): SupabaseAdminClient {
+  return {
+    from() {
+      throw new Error(SUPABASE_ADMIN_UNAVAILABLE_MESSAGE);
+    },
+  } as unknown as SupabaseAdminClient;
+}
+
+// Do not throw here - build-time rendering can touch this module before
 // runtime environment variables are present. Guard call sites instead.
-export const supabaseAdmin: any =
+export const supabaseAdmin: SupabaseAdminClient =
   supabaseUrl && serviceRoleKey && !supabaseUrl.includes("placeholder")
     ? createClient(supabaseUrl, serviceRoleKey)
-    : null;
+    : createUnavailableSupabaseAdmin();
 
 interface User {
   id: string;
@@ -17,6 +31,7 @@ interface User {
   is_public: boolean;
   created_at: string;
   updated_at: string;
+  is_sponsor?: boolean;
 }
 
 /**
@@ -26,12 +41,10 @@ interface User {
 export async function getUserByUsername(
   username: string
 ): Promise<User | null> {
-  if (!supabaseAdmin) return null;
-
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
-      .select("id,github_id,github_login,is_public,created_at,updated_at")
+      .select("id,github_id,github_login,is_public,created_at,updated_at,is_sponsor")
       .ilike("github_login", username)
       .eq("is_public", true)
       .single();
@@ -58,8 +71,6 @@ export async function updateUserPublicFlag(
   userId: string,
   isPublic: boolean
 ): Promise<User | null> {
-  if (!supabaseAdmin) return null;
-
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
@@ -79,3 +90,5 @@ export async function updateUserPublicFlag(
     return null;
   }
 }
+
+
