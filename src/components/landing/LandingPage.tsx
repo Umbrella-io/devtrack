@@ -168,7 +168,7 @@ function LandingNav() {
    ═══════════════════════════════════════════ */
 const wLabel: React.CSSProperties = {
   fontFamily: MONO, fontSize: 10, fontWeight: 500,
-  color: '#444', textTransform: 'uppercase', letterSpacing: '0.1em',
+  color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em',
 };
 const wValue: React.CSSProperties = {
   fontFamily: MONO, fontWeight: 600, color: TEXT,
@@ -273,7 +273,7 @@ function MergeWidget() {
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>merge rate</span>
         <span style={{ ...wValue, fontSize: 26, marginTop: 4, color: A }}>
-          87<span style={{ color: '#333', fontSize: 14 }}>%</span>
+          87<span style={{ color: '#9ca3af', fontSize: 14 }}>%</span>
         </span>
         <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
           <div style={{
@@ -294,7 +294,7 @@ function GoalWidget() {
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>weekly goal</span>
         <span style={{ ...wValue, fontSize: 26, marginTop: 4 }}>
-          84<span style={{ color: '#333', fontSize: 14 }}>%</span>
+          84<span style={{ color: '#9ca3af', fontSize: 14 }}>%</span>
         </span>
         <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
           <div style={{
@@ -445,7 +445,7 @@ function CommitTicker() {
           <span
             key={i}
             style={{
-              fontFamily: MONO, fontSize: 12, color: '#333',
+              fontFamily: MONO, fontSize: 12, color: '#9ca3af',
               display: 'inline-flex', alignItems: 'center', gap: 10,
             }}
           >
@@ -466,15 +466,15 @@ function HeatmapSection() {
   return (
     <section ref={ref} style={{ padding: '64px clamp(20px,4vw,48px)', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: '#333', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           52 weeks of contributions
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>less</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af' }}>less</span>
           {HC.map((c, i) => (
             <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: c, border: `1px solid ${BORDER}` }} />
           ))}
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>more</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af' }}>more</span>
         </div>
       </div>
       <div style={{
@@ -529,7 +529,7 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
         <Counter end={value} active={vis} />
         <span style={{ color: '#222', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', marginTop: 8 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', marginTop: 8 }}>
         {label}
       </div>
     </div>
@@ -619,7 +619,7 @@ function FeaturesSection() {
       borderTop: '1px solid #111',
       maxWidth: 720, margin: '0 auto',
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         FEATURES
       </div>
       {FEATURES.map((f, i) => (
@@ -645,7 +645,7 @@ function SetupSection() {
         transition: 'all 0.7s ease',
       }}
     >
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', marginBottom: 24 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', marginBottom: 24 }}>
         SETUP
       </div>
 
@@ -655,12 +655,12 @@ function SetupSection() {
         textAlign: 'left', marginBottom: 32,
         fontFamily: MONO, fontSize: 13, lineHeight: 1.8,
       }}>
-        <div style={{ color: '#333' }}># start tracking in 30 seconds</div>
+        <div style={{ color: '#9ca3af' }}># start tracking in 30 seconds</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>→</span> sign in at{' '}
           <span style={{ color: A }}>devtrack.vercel.app</span>
         </div>
-        <div style={{ color: '#333', marginTop: 4 }}># or self-host</div>
+        <div style={{ color: '#9ca3af', marginTop: 4 }}># or self-host</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>$</span> git clone github.com/…/devtrack
         </div>
@@ -715,7 +715,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
       }}
     >
       {/* Label */}
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         OPEN SOURCE
       </div>
 
@@ -729,7 +729,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#444', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.1em', marginBottom: 10 }}>
               {s.icon} {s.label}
             </div>
             <div style={{
@@ -738,7 +738,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               lineHeight: 1, letterSpacing: '-0.03em',
             }}>
               <Counter end={s.value} active={vis} />
-              {s.suffix && <span style={{ color: '#444', fontSize: '0.55em' }}>{s.suffix}</span>}
+              {s.suffix && <span style={{ color: '#9ca3af', fontSize: '0.55em' }}>{s.suffix}</span>}
             </div>
           </div>
         ))}
