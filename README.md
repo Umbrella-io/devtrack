@@ -23,8 +23,6 @@
 
 ---
 
-
-
 ## 📋 Table of Contents
 
 - [Why DevTrack?](#-why-devtrack)
@@ -56,28 +54,28 @@ Whether you're a solo developer tracking consistency, a student building your po
 
 ## ✨ Features
 
-| Feature | Description |
-|---|---|
-| **GitHub OAuth** | Sign in with GitHub — no extra account needed |
+| Feature                   | Description                                                              |
+| ------------------------- | ------------------------------------------------------------------------ |
+| **GitHub OAuth**          | Sign in with GitHub — no extra account needed                            |
 | **Commit Activity Chart** | Visualize daily commit activity with 7d / 14d / 30d / 90d range selector |
-| **Commit Streak Tracker** | Current streak, longest streak, active days — stay consistent |
-| **PR Analytics** | Average review time, merge rate, open/closed PR count |
-| **Top Repositories** | Ranked list of your most active repos over any time range |
-| **Weekly Goal Tracker** | Set coding goals and track progress with a progress bar UI |
-| **No separate backend** | Next.js API routes + Supabase, deploy to Vercel for free |
+| **Commit Streak Tracker** | Current streak, longest streak, active days — stay consistent            |
+| **PR Analytics**          | Average review time, merge rate, open/closed PR count                    |
+| **Top Repositories**      | Ranked list of your most active repos over any time range                |
+| **Weekly Goal Tracker**   | Set coding goals and track progress with a progress bar UI               |
+| **No separate backend**   | Next.js API routes + Supabase, deploy to Vercel for free                 |
 
 ---
 
 ## 🛠 Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
-| Auth | GitHub OAuth via NextAuth.js |
-| Database | Supabase (PostgreSQL) |
-| API | Next.js Route Handlers (`/app/api/`) |
-| Charts | Recharts |
-| Deployment | Vercel (free, auto-deploys from GitHub) |
+| Layer      | Technology                                        |
+| ---------- | ------------------------------------------------- |
+| Frontend   | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Auth       | GitHub OAuth via NextAuth.js                      |
+| Database   | Supabase (PostgreSQL)                             |
+| API        | Next.js Route Handlers (`/app/api/`)              |
+| Charts     | Recharts                                          |
+| Deployment | Vercel (free, auto-deploys from GitHub)           |
 
 ---
 
@@ -128,7 +126,7 @@ To deploy your own production instance, see the **[Self-Hosting Guide](./docs/se
 ```bash
 git clone https://github.com/Priyanshu-byte-coder/devtrack.git
 cd devtrack
-npm install
+pnpm install
 ```
 
 **2. Set up Supabase**
@@ -158,26 +156,26 @@ Fill in the environment variables. Below is a detailed description of each varia
 > [!WARNING]
 > Never commit `.env` or `.env.local` files to Git. They contain sensitive security credentials. The `.gitignore` file is pre-configured to ignore these files.
 
-| Variable | Required | Description | Example / Recommendation |
-|---|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | **Yes** | Your Supabase project URL | `https://your-project.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Yes** | Supabase public API anonymous key | `eyJhbGciOiJIUzI1NiIsInR...` |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Supabase service role key (Never expose client-side) | `eyJhbGciOiJIUzI1NiIsInR...` |
-| `NEXTAUTH_URL` | **Yes** | Fully qualified base URL of the app | `http://localhost:3000` (Local) |
-| `NEXTAUTH_SECRET` | **Yes** | NextAuth session encryption key | Generate with `openssl rand -base64 32` |
-| `GITHUB_ID` | **Yes** | GitHub OAuth Application Client ID | Obtain from GitHub Developer Settings |
-| `GITHUB_SECRET` | **Yes** | GitHub OAuth Application Client Secret | Obtain from GitHub Developer Settings |
-| `ENCRYPTION_KEY` | **Yes** | 32-byte hex key for encrypting OAuth tokens | Generate with `openssl rand -hex 32` |
-| `GITHUB_WEBHOOK_SECRET` | No | Real-time metric refresh signature validation key | Generate with `openssl rand -hex 32` |
-| `GITHUB_TOKEN` | No | Personal Access Token to avoid GitHub API rate limits | Classic or fine-grained GitHub PAT |
-| `UPSTASH_REDIS_REST_URL` | No | Upstash Redis REST endpoint for caching | `https://your-db.upstash.io` |
-| `UPSTASH_REDIS_REST_TOKEN` | No | Upstash Redis REST access token | Caching credentials from Upstash |
-| `GROQ_API_KEY` | No | Groq API Key to enable AI-powered weekly insights | `gsk_...` (From console.groq.com) |
+| Variable                        | Required | Description                                           | Example / Recommendation                |
+| ------------------------------- | -------- | ----------------------------------------------------- | --------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | **Yes**  | Your Supabase project URL                             | `https://your-project.supabase.co`      |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Yes**  | Supabase public API anonymous key                     | `eyJhbGciOiJIUzI1NiIsInR...`            |
+| `SUPABASE_SERVICE_ROLE_KEY`     | **Yes**  | Supabase service role key (Never expose client-side)  | `eyJhbGciOiJIUzI1NiIsInR...`            |
+| `NEXTAUTH_URL`                  | **Yes**  | Fully qualified base URL of the app                   | `http://localhost:3000` (Local)         |
+| `NEXTAUTH_SECRET`               | **Yes**  | NextAuth session encryption key                       | Generate with `openssl rand -base64 32` |
+| `GITHUB_ID`                     | **Yes**  | GitHub OAuth Application Client ID                    | Obtain from GitHub Developer Settings   |
+| `GITHUB_SECRET`                 | **Yes**  | GitHub OAuth Application Client Secret                | Obtain from GitHub Developer Settings   |
+| `ENCRYPTION_KEY`                | **Yes**  | 32-byte hex key for encrypting OAuth tokens           | Generate with `openssl rand -hex 32`    |
+| `GITHUB_WEBHOOK_SECRET`         | No       | Real-time metric refresh signature validation key     | Generate with `openssl rand -hex 32`    |
+| `GITHUB_TOKEN`                  | No       | Personal Access Token to avoid GitHub API rate limits | Classic or fine-grained GitHub PAT      |
+| `UPSTASH_REDIS_REST_URL`        | No       | Upstash Redis REST endpoint for caching               | `https://your-db.upstash.io`            |
+| `UPSTASH_REDIS_REST_TOKEN`      | No       | Upstash Redis REST access token                       | Caching credentials from Upstash        |
+| `GROQ_API_KEY`                  | No       | Groq API Key to enable AI-powered weekly insights     | `gsk_...` (From console.groq.com)       |
 
 **5. Run locally**
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and sign in with GitHub. 🎉
@@ -201,18 +199,18 @@ Open [http://localhost:3000](http://localhost:3000) and sign in with GitHub. �
 
 > New to open source? Issues marked **`good first issue`** are a great place to start!
 
-| Issue | Feature | Difficulty |
-|---|---|---|
-| [#1](https://github.com/Priyanshu-byte-coder/devtrack/issues/1) | Dark mode toggle | 🟢 Beginner |
-| [#14](https://github.com/Priyanshu-byte-coder/devtrack/issues/14) | Responsive mobile layout | 🟢 Beginner |
-| [#13](https://github.com/Priyanshu-byte-coder/devtrack/issues/13) | Create Goal form UI | 🟢 Beginner |
-| [#17](https://github.com/Priyanshu-byte-coder/devtrack/issues/17) | Chart type toggle (bar/line) | 🟡 Intermediate |
-| [#18](https://github.com/Priyanshu-byte-coder/devtrack/issues/18) | Contribution heatmap calendar | 🟡 Intermediate |
-| [#32](https://github.com/Priyanshu-byte-coder/devtrack/issues/32) | Language breakdown widget | 🟡 Intermediate |
-| [#33](https://github.com/Priyanshu-byte-coder/devtrack/issues/33) | Activity feed | 🟡 Intermediate |
-| [#34](https://github.com/Priyanshu-byte-coder/devtrack/issues/34) | Auto-progress goals from commits | 🔴 Advanced |
-| [#6](https://github.com/Priyanshu-byte-coder/devtrack/issues/6) | GitLab integration | 🔴 Advanced |
-| [#20](https://github.com/Priyanshu-byte-coder/devtrack/issues/20) | Slack/Discord weekly digest | 🔴 Advanced |
+| Issue                                                             | Feature                          | Difficulty      |
+| ----------------------------------------------------------------- | -------------------------------- | --------------- |
+| [#1](https://github.com/Priyanshu-byte-coder/devtrack/issues/1)   | Dark mode toggle                 | 🟢 Beginner     |
+| [#14](https://github.com/Priyanshu-byte-coder/devtrack/issues/14) | Responsive mobile layout         | 🟢 Beginner     |
+| [#13](https://github.com/Priyanshu-byte-coder/devtrack/issues/13) | Create Goal form UI              | 🟢 Beginner     |
+| [#17](https://github.com/Priyanshu-byte-coder/devtrack/issues/17) | Chart type toggle (bar/line)     | 🟡 Intermediate |
+| [#18](https://github.com/Priyanshu-byte-coder/devtrack/issues/18) | Contribution heatmap calendar    | 🟡 Intermediate |
+| [#32](https://github.com/Priyanshu-byte-coder/devtrack/issues/32) | Language breakdown widget        | 🟡 Intermediate |
+| [#33](https://github.com/Priyanshu-byte-coder/devtrack/issues/33) | Activity feed                    | 🟡 Intermediate |
+| [#34](https://github.com/Priyanshu-byte-coder/devtrack/issues/34) | Auto-progress goals from commits | 🔴 Advanced     |
+| [#6](https://github.com/Priyanshu-byte-coder/devtrack/issues/6)   | GitLab integration               | 🔴 Advanced     |
+| [#20](https://github.com/Priyanshu-byte-coder/devtrack/issues/20) | Slack/Discord weekly digest      | 🔴 Advanced     |
 
 ### 🔭 Future Vision
 
@@ -234,7 +232,7 @@ DevTrack actively welcomes contributors of all skill levels, including **GSSoC 2
 1. **Browse** [open issues](https://github.com/Priyanshu-byte-coder/devtrack/issues) — start with the `good first issue` label
 2. **Comment** on the issue to get assigned before you start work
 3. **Fork → branch** (`feat/issue-42-description`) → **PR against `main`**
-4. **Check CI passes**: `npm run lint && npm run type-check`
+4. **Check CI passes**: `pnpm run lint && pnpm run type-check`
 
 See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for full guidelines, commit style, and the review process.
 

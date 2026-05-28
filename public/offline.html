@@ -46,13 +46,25 @@
       font-weight: 600;
       cursor: pointer;
     }
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        scroll-behavior: auto;
+        transition: none !important;
+        animation: none !important;
+      }
+    }
   </style>
 </head>
 <body>
   <main class="card">
     <h1>You are offline</h1>
     <p>DevTrack is installed, but this page needs internet. Please reconnect and try again.</p>
-    <button onclick="window.location.reload()">Retry</button>
+    <button
+    type="button"
+    onclick="window.location.reload()"
+    >
+      Retry
+    </button>
   </main>
 </body>
 </html>
