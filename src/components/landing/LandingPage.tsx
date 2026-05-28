@@ -22,7 +22,7 @@ const BG = 'transparent'
 const SURF = '#0e0e0e';
 const BORDER = '#1a1a1a';
 const TEXT = '#e0e0e0';
-const MUTED = '#555';
+const MUTED = '#94a3b8';
 const HC = ['#111', '#1e1b4b', '#3730a3', '#4f46e5', A]; // heatmap levels
 const MC = ['#111', '#1e1b4b', '#3730a3', A];             // mini heatmap
 
@@ -538,7 +538,7 @@ function StatsSection() {
     <section style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
-      gap: 24, borderTop: '1px solid #111',
+        gap: 24, borderTop: '1px solid #1f293b',
     }}>
       {STATS.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
@@ -584,7 +584,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
       ref={ref}
       style={{
         display: 'flex', gap: 'clamp(16px,3vw,32px)',
-        padding: '24px 0', borderBottom: '1px solid #111',
+        padding: '24px 0', borderBottom: '1px solid #1f293b',
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateX(0)' : 'translateX(-12px)',
         transition: `all 0.5s ease ${index * 50}ms`,
@@ -613,10 +613,10 @@ function FeaturesSection() {
   return (
     <section style={{
       padding: '64px clamp(20px,4vw,48px) 80px',
-      borderTop: '1px solid #111',
+      borderTop: '1px solid #1f293b',
       maxWidth: 720, margin: '0 auto',
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         FEATURES
       </div>
       {FEATURES.map((f, i) => (
@@ -642,22 +642,29 @@ function SetupSection() {
         transition: 'all 0.7s ease',
       }}
     >
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', marginBottom: 24 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', marginBottom: 24 }}>
         SETUP
       </div>
 
       <div style={{
-        background: SURF, border: `1px solid ${BORDER}`,
-        borderRadius: 8, padding: '20px 28px', maxWidth: 480, width: '100%',
+        background: '#0a0a0c', border: `1px solid #1f293b`,
+        borderRadius: 8, padding: '24px 28px', maxWidth: 480, width: '100%',
         textAlign: 'left', marginBottom: 32,
         fontFamily: MONO, fontSize: 13, lineHeight: 1.8,
+        boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
       }}>
-        <div style={{ color: '#9ca3af' }}># start tracking in 30 seconds</div>
+        {/* Terminal Header Mock */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }} />
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981' }} />
+        </div>
+        <div style={{ color: '#10b981', fontWeight: 500 }}># start tracking in 30 seconds</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>→</span> sign in at{' '}
           <span style={{ color: A }}>devtrack.vercel.app</span>
         </div>
-        <div style={{ color: '#9ca3af', marginTop: 4 }}># or self-host</div>
+        <div style={{ color: '#10b981', marginTop: 8, fontWeight: 500 }}># or self-host</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>$</span> git clone github.com/…/devtrack
         </div>
@@ -705,14 +712,14 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
-        borderTop: '1px solid #111',
+        borderTop: '1px solid #1f293b',
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(24px)',
         transition: 'all 0.7s ease',
       }}
     >
       {/* Label */}
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         OPEN SOURCE
       </div>
 
@@ -722,11 +729,11 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           <div
             key={s.label}
             style={{
-              background: SURF, border: `1px solid ${BORDER}`,
+              background: '#0a0a0c', border: `1px solid #1f293b`,
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: '#94a3b8', letterSpacing: '0.1em', marginBottom: 10 }}>
               {s.icon} {s.label}
             </div>
             <div style={{
@@ -735,7 +742,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               lineHeight: 1, letterSpacing: '-0.03em',
             }}>
               <Counter end={s.value} active={vis} />
-              {s.suffix && <span style={{ color: '#9ca3af', fontSize: '0.55em' }}>{s.suffix}</span>}
+              {s.suffix && <span style={{ color: A, fontSize: '0.75em' }}>{s.suffix}</span>}
             </div>
           </div>
         ))}
@@ -807,10 +814,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           {stats.contributorCount > stats.contributors.length && (
             <div style={{
               width: 38, height: 38, borderRadius: '50%',
-              border: `2px solid ${BG}`,
-              background: '#181818', marginLeft: -11,
+              border: `2px solid #000000`,
+              background: '#1e293b', marginLeft: -11,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: MONO, fontSize: 9, color: '#555', flexShrink: 0,
+              fontFamily: MONO, fontSize: 10, color: '#cbd5e1', flexShrink: 0,
             }}>
               +{stats.contributorCount - stats.contributors.length}
             </div>
