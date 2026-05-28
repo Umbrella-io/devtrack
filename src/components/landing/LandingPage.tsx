@@ -86,6 +86,13 @@ function Counter({ end, active }: { end: number; active: boolean }) {
   const [val, setVal] = useState(0);
   useEffect(() => {
     if (!active) return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      setVal(end);
+      return;
+    }
+
     const dur = 1500;
     const t0 = performance.now();
     let raf: number;
