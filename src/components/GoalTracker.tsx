@@ -71,7 +71,12 @@ export default function GoalTracker() {
         } else if (res.status === 502) {
           msg = "GitHub sync failed: Expired token or missing repo scope.";
         }
-        setSyncError(msg);
+        if (res.status === 429) {
+          const data = await res.json();
+          setSyncError(data.error ?? "GitHub rate limit reached. Please try again later.");
+        } else {
+          setSyncError("Failed to sync goals. Please try again.");
+        }
         return;
       }
       await loadGoals();

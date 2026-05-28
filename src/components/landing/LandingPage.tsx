@@ -22,7 +22,7 @@ const BG = 'transparent'
 const SURF = '#0e0e0e';
 const BORDER = '#1a1a1a';
 const TEXT = '#e0e0e0';
-const MUTED = '#555';
+const MUTED = '#9ca3af';
 const HC = ['#111', '#1e1b4b', '#3730a3', '#4f46e5', A]; // heatmap levels
 const MC = ['#111', '#1e1b4b', '#3730a3', A];             // mini heatmap
 
@@ -337,7 +337,7 @@ function BentoGrid() {
   return (
     <div style={{
       display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: 5, width: '100%', maxWidth: 380,
+      gap: 5, width: '100%', maxWidth: 450,
     }}>
       <ChartWidget />
       <StreakWidget />
@@ -357,17 +357,18 @@ function HeroSection() {
       style={{
         minHeight: '100vh',
         display: 'flex', alignItems: 'center',
-        padding: '80px clamp(24px,5vw,64px) 40px',
-        gap: 'clamp(32px,5vw,80px)',
+       padding: '120px clamp(24px,5vw,64px) 40px',
+        gap: 'clamp(24px,4vw,56px)',
         flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
       }}
     >
       {/* Left: text */}
-      <div style={{ flex: '1 1 340px', maxWidth: 500 }}>
+      <div style={{ flex: '1 1 340px', maxWidth: 620 }}>
         {/* Badge */}
         <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
+         display: 'flex',
+          alignItems: 'flex-start', gap: 8,
           background: 'rgba(129,140,248,0.08)', border: '1px solid rgba(129,140,248,0.2)',
           borderRadius: 20, padding: '4px 12px', marginBottom: 24,
         }}>
@@ -381,8 +382,10 @@ function HeroSection() {
         <h1
           style={{
             fontFamily: DISP, fontWeight: 800,
-            fontSize: 'clamp(40px,6vw,76px)', lineHeight: 0.95,
-            letterSpacing: '-0.04em', color: TEXT, margin: '0 0 24px',
+           fontSize: 'clamp(48px,6vw,96px)', lineHeight: 0.95,
+            letterSpacing: '-0.04em',
+color: '#c4c4c4',
+margin: '0 0 24px',
             animation: 'lndHeroIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both',
           }}
         >
@@ -393,8 +396,8 @@ function HeroSection() {
 
         {/* Tagline */}
         <p style={{
-          fontSize: 'clamp(15px,1.8vw,17px)', color: MUTED,
-          lineHeight: 1.65, maxWidth: 400, margin: '0 0 32px',
+          fontSize: 'clamp(15px,1.8vw,17px)', color: '#6b7280',
+          lineHeight: 1.65, maxWidth: 460, margin: '0 0 32px',
         }}>
           Open-source developer productivity dashboard. Track GitHub streaks,
           PR velocity, and coding goals — automatically.
@@ -601,7 +604,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         }}>
           {f.title}
         </h3>
-        <p style={{ fontSize: 14, color: '#444', lineHeight: 1.65, margin: 0 }}>
+        <p style={{ fontSize: 14, color: '#9ca3af', lineHeight: 1.65, margin: 0 }}>
           {f.desc}
         </p>
       </div>
@@ -856,7 +859,7 @@ function LandingFooter() {
   return (
     <footer style={{
       borderTop: `1px solid #111`,
-      padding: '24px clamp(20px,4vw,48px)',
+      padding: '40px clamp(20px,4vw,48px)',
       display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
       justifyContent: 'space-between', alignItems: 'center',
     }}>
