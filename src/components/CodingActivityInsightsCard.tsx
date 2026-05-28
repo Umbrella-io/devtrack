@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { RefreshCw, Loader2 } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -245,13 +246,22 @@ export default function CodingActivityInsightsCard() {
             {subtitle}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={fetchInsights}
-          className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)]"
-        >
-          Refresh
-        </button>
+
+         <button
+  type="button"
+  onClick={fetchInsights}
+  disabled={loading}
+  className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50"
+>
+  {loading ? (
+    <>
+      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+      Refreshing
+    </>
+  ) : (
+    "Refresh"
+  )}
+</button> 
       </div>
 
       {loading ? (
