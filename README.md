@@ -98,16 +98,6 @@ Whether you're a solo developer tracking consistency, a student building your po
 ## 🛠 Tech Stack
 
 
-| Layer      | Technology                                        |
-| ---------- | ------------------------------------------------- |
-| Frontend   | Next.js 14 (App Router), TypeScript, Tailwind CSS |
-| Auth       | GitHub OAuth via NextAuth.js                      |
-| Database   | Supabase (PostgreSQL)                             |
-| API        | Next.js Route Handlers (`/app/api/`)              |
-| Charts     | Recharts                                          |
-| Deployment | Vercel (free, auto-deploys from GitHub)           |
-
-
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
