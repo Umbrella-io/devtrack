@@ -538,7 +538,7 @@ function StatsSection() {
     <section style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
-        gap: 24, borderTop: '1px solid #1f293b',
+        gap: 24, borderTop: '1px solid #1e293b',
     }}>
       {STATS.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
@@ -584,7 +584,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
       ref={ref}
       style={{
         display: 'flex', gap: 'clamp(16px,3vw,32px)',
-        padding: '24px 0', borderBottom: '1px solid #1f293b',
+        padding: '24px 0', borderBottom: '1px solid #1e293b',
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateX(0)' : 'translateX(-12px)',
         transition: `all 0.5s ease ${index * 50}ms`,
@@ -613,7 +613,7 @@ function FeaturesSection() {
   return (
     <section style={{
       padding: '64px clamp(20px,4vw,48px) 80px',
-      borderTop: '1px solid #1f293b',
+      borderTop: '1px solid #1e293b',
       maxWidth: 720, margin: '0 auto',
     }}>
       <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
@@ -647,7 +647,7 @@ function SetupSection() {
       </div>
 
       <div style={{
-        background: '#0a0a0c', border: `1px solid #1f293b`,
+        background: '#0a0a0c', border: `1px solid #1e293b`,
         borderRadius: 8, padding: '24px 28px', maxWidth: 480, width: '100%',
         textAlign: 'left', marginBottom: 32,
         fontFamily: MONO, fontSize: 13, lineHeight: 1.8,
@@ -712,7 +712,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
-        borderTop: '1px solid #1f293b',
+        borderTop: '1px solid #1e293b',
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(24px)',
         transition: 'all 0.7s ease',
@@ -729,7 +729,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           <div
             key={s.label}
             style={{
-              background: '#0a0a0c', border: `1px solid #1f293b`,
+              background: '#0a0a0c', border: `1px solid #1e293b`,
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
