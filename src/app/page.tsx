@@ -27,7 +27,11 @@ const jetbrains = JetBrains_Mono({
 });
 
 async function fetchRepoStats(): Promise<RepoStats> {
-  const GH_HEADERS = { Accept: "application/vnd.github.v3+json" };
+  const token = process.env.GITHUB_TOKEN;
+  const GH_HEADERS: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   const OPTS = (ttl: number) => ({ next: { revalidate: ttl }, headers: GH_HEADERS });
 
   try {
