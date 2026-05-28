@@ -2,6 +2,9 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache, METRICS_CACHE_TTL_SECONDS} from "@/lib/metrics-cache";
+import { getAccountToken } from "@/lib/github-accounts";
+import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 const GITHUB_API = "https://api.github.com";
@@ -10,25 +13,53 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken || !session.githubLogin) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
 
-  const accountId = req.nextUrl.searchParams.get("accountId");
+  let token = session.accessToken;
+  let githubLogin = session.githubLogin;
+  let userId = session.githubId ?? session.githubLogin;
+
+  if (accountId && accountId !== session.githubId) {
+    if (!session.githubId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userRow = await resolveAppUser(session.githubId, session.githubLogin);
+    if (!userRow) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const accountToken = await getAccountToken(userRow.id, accountId);
+    if (!accountToken) {
+      return Response.json({ error: "Account not found" }, { status: 404 });
+    }
+    const { data: accountRow } = await supabaseAdmin
+      .from("user_github_accounts")
+      .select("github_login")
+      .eq("user_id", userRow.id)
+      .eq("github_id", accountId)
+      .single();
+    if (!accountRow?.github_login) {
+      return Response.json({ error: "Account not found" }, { status: 404 });
+    }
+    token = accountToken;
+    githubLogin = accountRow.github_login;
+    userId = accountId;
+  }
 
   const key = metricsCacheKey(
-    session.githubId ?? session.githubLogin,
+    userId,
     "languages" as any,
-    {
-      accountId: accountId || undefined,
-    }
+    { accountId: accountId || undefined }
   );
+
   try {
     const data = await withMetricsCache({ bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.languages }, async () => {
-      const headers = { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" };
+      const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" };
       const since = new Date();
       since.setDate(since.getDate() - 90);
 
       const searchRes = await fetch(
-        `${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${since.toISOString().slice(0, 10)}&per_page=100&sort=author-date&order=desc`,
+        `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${since.toISOString().slice(0, 10)}&per_page=100&sort=author-date&order=desc`,
         { headers, cache: "no-store" }
       );
       if (!searchRes.ok) throw new Error("API Error");
@@ -41,7 +72,7 @@ export async function GET(req: NextRequest) {
         repoNames.map(async (repoName) => {
           try {
               const repoCacheKey = metricsCacheKey(
-                session.githubId || session.githubLogin || "unknown",
+                userId,
                 "repo_languages" as any,
                 { repoName }
                 );

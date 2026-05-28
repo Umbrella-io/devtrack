@@ -434,13 +434,30 @@ margin: '0 0 24px',
    COMMIT TICKER
    ═══════════════════════════════════════════ */
 function CommitTicker() {
+  const tickerRef = useRef<HTMLDivElement>(null);
   const doubled = [...COMMITS, ...COMMITS];
+
+  useEffect(() => {
+    const restartTickerAnimation = () => {
+      const ticker = tickerRef.current;
+
+      if (document.hidden || !ticker) return;
+
+      ticker.style.animation = 'none';
+      void ticker.offsetHeight;
+      ticker.style.animation = '';
+    };
+
+    document.addEventListener('visibilitychange', restartTickerAnimation);
+    return () => document.removeEventListener('visibilitychange', restartTickerAnimation);
+  }, []);
+
   return (
     <div style={{
       borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`,
       padding: '10px 0', overflow: 'hidden', background: BG,
     }}>
-      <div className="lnd-ticker" style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap' }}>
+      <div ref={tickerRef} className="lnd-ticker" style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap' }}>
         {doubled.map((c, i) => (
           <span
             key={i}
