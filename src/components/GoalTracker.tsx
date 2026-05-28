@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useRef } from "react";
+import { submitGoalWithRefresh } from "@/lib/goal-tracker";
 
 type Recurrence = "none" | "weekly" | "monthly";
 
@@ -130,14 +131,15 @@ export default function GoalTracker() {
     setCreateError(null);
 
     try {
-      const response = await fetch("/api/goals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, target, unit, recurrence, deadline: deadline || null }),
+      const result = await submitGoalWithRefresh({
+        payload: { title, target, unit, recurrence, deadline: deadline || null },
+        handleSync,
+        loadGoals,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create goal");
+      if (!result.created) {
+        setCreateError(result.error);
+        return;
       }
 
       setTitle("");
