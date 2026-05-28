@@ -28,6 +28,14 @@ function getColor(name: string): string {
   return LANG_COLORS[name] ?? FALLBACK_COLOR;
 }
 
+function LanguageDot({ color, label }: { color: string; label: string }) {
+  return (
+    <svg width="0.75rem" height="0.75rem" viewBox="0 0 8 8" className="shrink-0" title={label}>
+      <circle cx="4" cy="4" r="4" fill={color} />
+    </svg>
+  );
+}
+
 export default function LanguageBreakdown() {
   const { selectedAccount } = useAccount();
   const [languages, setLanguages] = useState<Language[]>([]);
@@ -107,9 +115,9 @@ export default function LanguageBreakdown() {
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
             {displayLanguages.map((lang) => (
               <div key={lang.name} className="flex items-center gap-2 text-sm">
-                <span
-                  className="inline-block h-3 w-3 shrink-0 rounded-full"
-                  style={{ backgroundColor: lang.name === "Other" ? "var(--control)" : getColor(lang.name) }}
+                <LanguageDot 
+                  color={lang.name === "Other" ? "var(--control)" : getColor(lang.name)}
+                  label={`${lang.name}: ${lang.percentage}%`}
                 />
                 <span className="truncate text-[var(--card-foreground)]">
                   {lang.name}
