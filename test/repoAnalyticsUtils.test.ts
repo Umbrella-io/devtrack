@@ -33,6 +33,17 @@ describe("repoAnalyticsUtils", () => {
       const formatted = formatRelativeDate(fortyDaysAgo.toISOString());
       expect(formatted).not.toContain("days ago");
     });
+
+    it("should return '29 days ago' for exactly 29 days ago", () => {
+      const twentyNineDaysAgo = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+      expect(formatRelativeDate(twentyNineDaysAgo.toISOString())).toBe("29 days ago");
+    });
+
+    it("should return absolute date for exactly 30 days ago", () => {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const formatted = formatRelativeDate(thirtyDaysAgo.toISOString());
+      expect(formatted).not.toContain("days ago");
+    });
   });
 
   describe("formatDisplayDate", () => {

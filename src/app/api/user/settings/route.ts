@@ -11,7 +11,7 @@ async function fetchUserSettings(userId: string) {
   // Tier 1: All columns
   const res1 = await supabaseAdmin
     .from("users")
-    .select("id, github_login, is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv")
+    .select("id, github_login, is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, weekly_digest_opt_in")
     .eq("id", userId)
     .single();
 
@@ -22,7 +22,9 @@ async function fetchUserSettings(userId: string) {
       hasLeaderboardOptIn: true,
       hasPinnedRepos: true,
       hasWakatimeKey: true,
+      hasWeeklyDigestOptIn: true,
       leaderboard_opt_in: (res1.data as any).leaderboard_opt_in ?? false,
+      weekly_digest_opt_in: (res1.data as any).weekly_digest_opt_in ?? false,
       pinned_repos: (res1.data as any).pinned_repos || [],
       wakatime_api_key_encrypted: (res1.data as any).wakatime_api_key_encrypted || null,
       wakatime_api_key_iv: (res1.data as any).wakatime_api_key_iv || null,
@@ -36,7 +38,9 @@ async function fetchUserSettings(userId: string) {
       hasLeaderboardOptIn: false,
       hasPinnedRepos: false,
       hasWakatimeKey: false,
+      hasWeeklyDigestOptIn: false,
       leaderboard_opt_in: false,
+      weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
       wakatime_api_key_encrypted: null,
       wakatime_api_key_iv: null,
@@ -57,7 +61,9 @@ async function fetchUserSettings(userId: string) {
       hasLeaderboardOptIn: true,
       hasPinnedRepos: false,
       hasWakatimeKey: false,
+      hasWeeklyDigestOptIn: false,
       leaderboard_opt_in: (res2.data as any).leaderboard_opt_in ?? false,
+      weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
       wakatime_api_key_encrypted: null,
       wakatime_api_key_iv: null,
@@ -71,7 +77,9 @@ async function fetchUserSettings(userId: string) {
       hasLeaderboardOptIn: false,
       hasPinnedRepos: false,
       hasWakatimeKey: false,
+      hasWeeklyDigestOptIn: false,
       leaderboard_opt_in: false,
+      weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
       wakatime_api_key_encrypted: null,
       wakatime_api_key_iv: null,
@@ -92,7 +100,9 @@ async function fetchUserSettings(userId: string) {
       hasLeaderboardOptIn: false,
       hasPinnedRepos: false,
       hasWakatimeKey: false,
+      hasWeeklyDigestOptIn: false,
       leaderboard_opt_in: false,
+      weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
       wakatime_api_key_encrypted: null,
       wakatime_api_key_iv: null,
@@ -105,7 +115,9 @@ async function fetchUserSettings(userId: string) {
     hasLeaderboardOptIn: false,
     hasPinnedRepos: false,
     hasWakatimeKey: false,
+    hasWeeklyDigestOptIn: false,
     leaderboard_opt_in: false,
+    weekly_digest_opt_in: false,
     pinned_repos: [] as string[],
     wakatime_api_key_encrypted: null,
     wakatime_api_key_iv: null,
@@ -139,6 +151,7 @@ export async function GET(req: NextRequest) {
     github_login: (result.data as any).github_login,
     is_public: (result.data as any).is_public,
     leaderboard_opt_in: result.leaderboard_opt_in,
+    weekly_digest_opt_in: result.weekly_digest_opt_in,
     pinned_repos: result.pinned_repos,
     has_wakatime_key: !!result.wakatime_api_key_encrypted && !!result.wakatime_api_key_iv,
   });
@@ -160,14 +173,14 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  let body: { is_public?: boolean; leaderboard_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key?: string };
+  let body: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key } = body;
+  const { is_public, leaderboard_opt_in, weekly_digest_opt_in, pinned_repos, wakatime_api_key } = body;
 
   // Retrieve supported columns first
   const settingsResult = await fetchUserSettings(user.id);
@@ -176,8 +189,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
 
-  const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey } = settingsResult;
-  const updates: { is_public?: boolean; leaderboard_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key_encrypted?: string | null; wakatime_api_key_iv?: string | null } = {};
+  const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey, hasWeeklyDigestOptIn } = settingsResult;
+  const updates: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key_encrypted?: string | null; wakatime_api_key_iv?: string | null } = {};
 
   if (is_public !== undefined && is_public !== null && typeof is_public === "boolean") {
     updates.is_public = is_public;
@@ -193,6 +206,15 @@ export async function PATCH(req: NextRequest) {
     if (leaderboard_opt_in) {
       updates.is_public = true;
     }
+  }
+
+  if (
+    hasWeeklyDigestOptIn &&
+    weekly_digest_opt_in !== undefined &&
+    weekly_digest_opt_in !== null &&
+    typeof weekly_digest_opt_in === "boolean"
+  ) {
+    updates.weekly_digest_opt_in = weekly_digest_opt_in;
   }
 
   if (hasPinnedRepos && pinned_repos !== undefined && pinned_repos !== null && Array.isArray(pinned_repos)) {
@@ -230,6 +252,7 @@ export async function PATCH(req: NextRequest) {
       github_login: (settingsResult.data as any).github_login,
       is_public: (settingsResult.data as any).is_public,
       leaderboard_opt_in: settingsResult.leaderboard_opt_in,
+      weekly_digest_opt_in: settingsResult.weekly_digest_opt_in,
       pinned_repos: settingsResult.pinned_repos,
       has_wakatime_key: !!settingsResult.wakatime_api_key_encrypted && !!settingsResult.wakatime_api_key_iv,
     });
@@ -238,6 +261,7 @@ export async function PATCH(req: NextRequest) {
   // Query only supported columns in the returning select statement
   const selectCols = ["id", "github_login", "is_public"];
   if (hasLeaderboardOptIn) selectCols.push("leaderboard_opt_in");
+  if (hasWeeklyDigestOptIn) selectCols.push("weekly_digest_opt_in");
   if (hasPinnedRepos) selectCols.push("pinned_repos");
   if (hasWakatimeKey) {
     selectCols.push("wakatime_api_key_encrypted");
@@ -261,6 +285,7 @@ export async function PATCH(req: NextRequest) {
     github_login: (updated as any).github_login,
     is_public: (updated as any).is_public,
     leaderboard_opt_in: (updated as any).leaderboard_opt_in ?? false,
+    weekly_digest_opt_in: (updated as any).weekly_digest_opt_in ?? false,
     pinned_repos: (updated as any).pinned_repos || [],
     has_wakatime_key: !!(updated as any).wakatime_api_key_encrypted && !!(updated as any).wakatime_api_key_iv,
   });
