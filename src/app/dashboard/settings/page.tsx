@@ -275,6 +275,7 @@ function SettingsPageContent() {
       }
     } catch (error) {
       console.error("Error updating settings:", error);
+      toast.error("Failed to update public profile setting");
     } finally {
       setSaving(false);
     }
@@ -299,6 +300,7 @@ function SettingsPageContent() {
       }
     } catch (error) {
       console.error("Error updating leaderboard setting:", error);
+      toast.error("Failed to update leaderboard setting");
     } finally {
       setSaving(false);
     }
@@ -338,7 +340,8 @@ function SettingsPageContent() {
       setCopied(true);
       toast.success("Link copied successfully!");
       setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {
+    }).catch((err) => {
+      console.error("Clipboard copy failed:", err);
       toast.error("Failed to copy link");
     });
   };
@@ -361,8 +364,10 @@ function SettingsPageContent() {
       setLinkedAccounts((current) =>
         current.filter((account) => account.githubId !== githubId)
       );
-    } catch {
+    } catch (error) {
+      console.error("Failed to remove account:", error);
       setRemoveError("Failed to remove account");
+      toast.error("Failed to remove account");
     } finally {
       setRemovingAccountId(null);
     }

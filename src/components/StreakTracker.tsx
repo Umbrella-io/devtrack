@@ -102,7 +102,8 @@ export default function StreakTracker() {
       setData(streakData);
       setContributionData(contribData);
       setFreezeDates(streakData.freezeDates || []);
-    } catch {
+    } catch (err) {
+      console.error("Failed to fetch streak data:", err);
       setError("We couldn't load your streak data right now. Please try again in a moment.");
     } finally {
       setLoading(false);
@@ -116,7 +117,10 @@ export default function StreakTracker() {
     fetch("/api/streak/freeze")
       .then((r) => r.json())
       .then((d: FreezeData) => setFreeze(d))
-      .catch(() => setFreeze(null))
+      .catch((err) => {
+        console.error("Failed to fetch freeze data:", err);
+        setFreeze(null);
+      })
       .finally(() => setFreezeLoading(false));
   };
 
@@ -186,7 +190,8 @@ export default function StreakTracker() {
       setData(streakData);
       setFreeze(freezeData);
       toast.success("Streak freeze activated for today!");
-    } catch {
+    } catch (err) {
+      console.error("Failed to apply streak freeze:", err);
       toast.error("Failed to activate streak freeze.");
       fetchFreeze();
     } finally {
@@ -221,7 +226,9 @@ export default function StreakTracker() {
       ]);
       setData(streakData);
       setFreeze(freezeData);
-    } catch {
+    } catch (err) {
+      console.error("Failed to cancel streak freeze:", err);
+      toast.error("Failed to cancel streak freeze.");
       fetchFreeze();
     } finally {
       setCancelling(false);
@@ -370,7 +377,8 @@ export default function StreakTracker() {
       toast.success("Streak stats copied to clipboard!");
 
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch (err) {
+      console.error("Failed to copy streak stats:", err);
       toast.error("Failed to copy streak stats.");
     }
   };

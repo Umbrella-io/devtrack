@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { toast } from "sonner";
 
 interface CommunityData {
   discussionsStarted: number;
@@ -32,11 +33,13 @@ export default function CommunityMetrics() {
         return response.json();
       })
       .then((data: CommunityData) => setMetrics(data))
-      .catch(() =>
+      .catch((err) => {
+        console.error("Failed to fetch community metrics:", err);
         setError(
           "We couldn't load your discussion analytics right now. Please try again in a moment."
-        )
-      )
+        );
+        toast.error("Failed to load community metrics");
+      })
       .finally(() => setLoading(false));
   }, [selectedAccount]);
 
