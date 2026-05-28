@@ -81,7 +81,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PublicProfilePage({ params }: PageProps) {
   const { username } = await params; // 💡 Fix 2: await the async params object
-   const profile = await fetchPublicProfile(username); // ⚡ Pulls directly from request memory
+  // 🛠️ TEMPORARY MOCK DATA FOR LOCAL TESTING
+  const profile = {
+    username: username || "testuser",
+    userId: "123",
+    repos: [{ name: "owner/my-cool-repo", commits: 42, url: "https://github.com" }],
+    contributions: { days: 30, total: 150, data: { "2026-05-01": 5 } },
+    streak: { current: 5, longest: 12, totalActiveDays: 20, lastCommitDate: "2026-05-25" }
+  };
+
+   //const profile = await fetchPublicProfile(username); // ⚡ Pulls directly from request memory
 
   if (!profile) {
     return (
