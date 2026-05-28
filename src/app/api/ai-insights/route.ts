@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { weeklyProductivityPrompt } from "@/lib/ai-prompts";
 import {
   analyzePatterns,
   computeTrends,
   DeveloperMetrics,
 } from "@/lib/ai-mentor";
-
+const aiInsightsRateLimit = new Map<
+  string,
+  { count: number; resetTime: number }
+>();
 export const dynamic = "force-dynamic";
 
 interface ContributionsApiResponse {
@@ -45,6 +49,30 @@ export async function GET(request: Request) {
   }
 
   const userId = session.githubId;
+  const currentTime = Date.now();
+  const WINDOW_MS = 60 * 60 * 1000;
+  const MAX_REQUESTS = 5;
+
+  let existing = aiInsightsRateLimit.get(userId);
+  if (!existing || currentTime > existing.resetTime) {
+    existing = { count: 0, resetTime: currentTime + WINDOW_MS };
+    aiInsightsRateLimit.set(userId, existing);
+  }
+
+  if (existing.count >= MAX_REQUESTS) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(
+            Math.ceil((existing.resetTime - currentTime) / 1000)
+          ),
+        },
+      }
+    );
+  }
+  existing.count += 1;
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") ?? "weekly_summary";
 
@@ -119,11 +147,8 @@ export async function GET(request: Request) {
 
   let aiSummary: string | null = null;
 
-  if (type === "weekly_summary" && process.env.ANTHROPIC_API_KEY) {
+  if (type === "weekly_summary" && process.env.GROQ_API_KEY) {
     try {
-      const Anthropic = (await import("@anthropic-ai/sdk")).default;
-      const anthropic = new Anthropic();
-
       const topRepoName = metrics.repos[0]?.name ?? "unknown";
       const totalCommits = metrics.commits.reduce((s, d) => s + d.count, 0);
       const trendLabel =
@@ -131,32 +156,43 @@ export async function GET(request: Request) {
           ? `+${trend.percentage}%`
           : `-${trend.percentage}%`;
 
-      const prompt = `You are a senior engineering mentor reviewing a developer's GitHub activity from the past week.
-
-Here is their data:
-- Active coding days: ${metrics.streak.activeDays}
-- Current streak: ${metrics.streak.current} days
-- Total commits (90d): ${totalCommits}
-- PRs merged: ${metrics.prs.merged}, open: ${metrics.prs.open}
-- Avg PR merge time: ${metrics.prs.avgMergeTimeDays.toFixed(1)} days
-- Top repository: ${topRepoName}
-- Activity trend: ${trendLabel} vs prior period
-
-Write a warm, concise 3-sentence weekly summary. Start with a highlight, add one observation, end with one actionable tip. Address the developer as "you". No bullet points.`;
-
-      const message = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 300,
-        messages: [{ role: "user", content: prompt }],
+      const prompt = weeklyProductivityPrompt({
+        activeDays: metrics.streak.activeDays,
+        currentStreak: metrics.streak.current,
+        totalCommits,
+        prsMerged: metrics.prs.merged,
+        prsOpen: metrics.prs.open,
+        avgMergeTimeDays: metrics.prs.avgMergeTimeDays,
+        topRepoName,
+        trendLabel,
       });
 
-      aiSummary =
-        message.content[0].type === "text" ? message.content[0].text : null;
-    } catch (err) {
-      console.error(
-        "Claude API error — falling back to rule-based summary",
-        err
+      const groqRes = await fetch(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            max_tokens: 300,
+            messages: [{ role: "user", content: prompt }],
+          }),
+        }
       );
+
+      if (groqRes.ok) {
+        const groqData = (await groqRes.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
+        aiSummary = groqData.choices?.[0]?.message?.content ?? null;
+      } else {
+        console.error("Groq API error", groqRes.status, await groqRes.text());
+      }
+    } catch (err) {
+      console.error("Groq API error — falling back to rule-based summary", err);
     }
   }
 
