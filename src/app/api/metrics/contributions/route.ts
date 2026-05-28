@@ -204,6 +204,7 @@ async function fetchGitLabContributions(
 
       const MAX_PAGES = 10;
       let page = 1;
+      const MAX_PAGES = 10;
       const commitsByDay: Record<string, number> = {};
 
       while (page > 0 && page <= MAX_PAGES) {
