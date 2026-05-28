@@ -148,11 +148,16 @@ export default function GoalTracker() {
       setRecurrence("none");
       setDeadline("");
 
-      if (result.error) {
-        setCreateError(result.error);
+      // Immediately sync if it was a commit-based goal or prs
+      if (unit === "commits" || unit === "prs") {
+        await handleSync();
+      } else {
+        await loadGoals().catch(() => { });
       }
+    } catch {
+      setCreateError("Failed to create goal. Please try again.");
     } finally {
-      setCreating(false);
+      setCreating(false);  
     }
   }
 
