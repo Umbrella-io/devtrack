@@ -7,6 +7,7 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const SUPABASE_ADMIN_UNAVAILABLE_MESSAGE =
   "Supabase admin client is unavailable. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.";
 
+// eslint-disable-next-line
 type SupabaseAdminClient = SupabaseClient<any, any, any>;
 
 function createUnavailableSupabaseAdmin(): SupabaseAdminClient {
