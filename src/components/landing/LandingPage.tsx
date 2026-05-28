@@ -22,7 +22,7 @@ const BG = 'transparent'
 const SURF = '#0e0e0e';
 const BORDER = '#1a1a1a';
 const TEXT = '#e0e0e0';
-const MUTED = '#9ca3af';
+const MUTED = '#555';
 const HC = ['#111', '#1e1b4b', '#3730a3', '#4f46e5', A]; // heatmap levels
 const MC = ['#111', '#1e1b4b', '#3730a3', A];             // mini heatmap
 
@@ -337,7 +337,7 @@ function BentoGrid() {
   return (
     <div style={{
       display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: 5, width: '100%', maxWidth: 450,
+      gap: 5, width: '100%', maxWidth: 380,
     }}>
       <ChartWidget />
       <StreakWidget />
@@ -357,18 +357,17 @@ function HeroSection() {
       style={{
         minHeight: '100vh',
         display: 'flex', alignItems: 'center',
-       padding: '120px clamp(24px,5vw,64px) 40px',
-        gap: 'clamp(24px,4vw,56px)',
+        padding: '80px clamp(24px,5vw,64px) 40px',
+        gap: 'clamp(32px,5vw,80px)',
         flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
       }}
     >
       {/* Left: text */}
-      <div style={{ flex: '1 1 340px', maxWidth: 620 }}>
+      <div style={{ flex: '1 1 340px', maxWidth: 500 }}>
         {/* Badge */}
         <div style={{
-         display: 'flex',
-          alignItems: 'flex-start', gap: 8,
+          display: 'inline-flex', alignItems: 'center', gap: 8,
           background: 'rgba(129,140,248,0.08)', border: '1px solid rgba(129,140,248,0.2)',
           borderRadius: 20, padding: '4px 12px', marginBottom: 24,
         }}>
@@ -382,10 +381,8 @@ function HeroSection() {
         <h1
           style={{
             fontFamily: DISP, fontWeight: 800,
-           fontSize: 'clamp(48px,6vw,96px)', lineHeight: 0.95,
-            letterSpacing: '-0.04em',
-color: '#c4c4c4',
-margin: '0 0 24px',
+            fontSize: 'clamp(40px,6vw,76px)', lineHeight: 0.95,
+            letterSpacing: '-0.04em', color: TEXT, margin: '0 0 24px',
             animation: 'lndHeroIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both',
           }}
         >
@@ -396,8 +393,8 @@ margin: '0 0 24px',
 
         {/* Tagline */}
         <p style={{
-          fontSize: 'clamp(15px,1.8vw,17px)', color: '#6b7280',
-          lineHeight: 1.65, maxWidth: 460, margin: '0 0 32px',
+          fontSize: 'clamp(15px,1.8vw,17px)', color: MUTED,
+          lineHeight: 1.65, maxWidth: 400, margin: '0 0 32px',
         }}>
           Open-source developer productivity dashboard. Track GitHub streaks,
           PR velocity, and coding goals — automatically.
@@ -434,30 +431,13 @@ margin: '0 0 24px',
    COMMIT TICKER
    ═══════════════════════════════════════════ */
 function CommitTicker() {
-  const tickerRef = useRef<HTMLDivElement>(null);
   const doubled = [...COMMITS, ...COMMITS];
-
-  useEffect(() => {
-    const restartTickerAnimation = () => {
-      const ticker = tickerRef.current;
-
-      if (document.hidden || !ticker) return;
-
-      ticker.style.animation = 'none';
-      void ticker.offsetHeight;
-      ticker.style.animation = '';
-    };
-
-    document.addEventListener('visibilitychange', restartTickerAnimation);
-    return () => document.removeEventListener('visibilitychange', restartTickerAnimation);
-  }, []);
-
   return (
     <div style={{
       borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`,
       padding: '10px 0', overflow: 'hidden', background: BG,
     }}>
-      <div ref={tickerRef} className="lnd-ticker" style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap' }}>
+      <div className="lnd-ticker" style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap' }}>
         {doubled.map((c, i) => (
           <span
             key={i}
@@ -522,9 +502,9 @@ function HeatmapSection() {
    ═══════════════════════════════════════════ */
 const STATS = [
   { value: 847, label: 'COMMITS TRACKED' },
-  { value: 43,  label: 'PRS MERGED' },
-  { value: 89,  label: 'DAY BEST STREAK' },
-  { value: 67,  label: 'REVIEWS GIVEN' },
+  { value: 43, label: 'PRS MERGED' },
+  { value: 89, label: 'DAY BEST STREAK' },
+  { value: 67, label: 'REVIEWS GIVEN' },
 ];
 
 function StatItem({ value, label, delay }: { value: number; label: string; delay: number }) {
@@ -621,7 +601,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         }}>
           {f.title}
         </h3>
-        <p style={{ fontSize: 14, color: '#9ca3af', lineHeight: 1.65, margin: 0 }}>
+        <p style={{ fontSize: 14, color: '#444', lineHeight: 1.65, margin: 0 }}>
           {f.desc}
         </p>
       </div>
@@ -714,10 +694,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
   const [ref, vis] = useScrollReveal(0.08);
 
   const statTiles = [
-    { icon: '★', value: stats.stars,          suffix: '',  label: 'GITHUB STARS' },
-    { icon: '⑂', value: stats.forks,          suffix: '',  label: 'FORKS' },
+    { icon: '★', value: stats.stars, suffix: '', label: 'GITHUB STARS' },
+    { icon: '⑂', value: stats.forks, suffix: '', label: 'FORKS' },
     { icon: '◎', value: stats.contributorCount, suffix: '+', label: 'CONTRIBUTORS' },
-    { icon: '◈', value: stats.goodFirstIssues, suffix: '',  label: 'GOOD FIRST ISSUES' },
+    { icon: '◈', value: stats.goodFirstIssues, suffix: '', label: 'GOOD FIRST ISSUES' },
   ];
 
   return (
@@ -874,12 +854,14 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
    ═══════════════════════════════════════════ */
 function LandingFooter() {
   return (
-    <footer style={{
-      borderTop: `1px solid #111`,
-      padding: '40px clamp(20px,4vw,48px)',
-      display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
-      justifyContent: 'space-between', alignItems: 'center',
-    }}>
+    <footer
+      data-testid="landing-footer"
+      style={{
+        borderTop: `1px solid #111`,
+        padding: '24px clamp(20px,4vw,48px)',
+        display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
+        justifyContent: 'space-between', alignItems: 'center',
+      }}>
       <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
         © {new Date().getFullYear()} DEVTRACK
       </span>
