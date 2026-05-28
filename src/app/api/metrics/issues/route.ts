@@ -8,6 +8,8 @@ import {
   metricsCacheKey,
   withMetricsCache,
 } from "@/lib/metrics-cache";
+import { getAccountToken } from "@/lib/github-accounts";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
@@ -17,19 +19,35 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // 1. Check if the user is forcing a refresh
+  const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
-  
-  // 2. Generate a unique cache key for this user's issues
-  const key = metricsCacheKey(session.githubId ?? session.githubLogin, "issues");
+
+  let token = session.accessToken;
+  let userId = session.githubId ?? session.githubLogin;
+
+  if (accountId && accountId !== session.githubId) {
+    if (!session.githubId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userRow = await resolveAppUser(session.githubId, session.githubLogin);
+    if (!userRow) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const accountToken = await getAccountToken(userRow.id, accountId);
+    if (!accountToken) {
+      return Response.json({ error: "Account not found" }, { status: 404 });
+    }
+    token = accountToken;
+    userId = accountId;
+  }
+
+  const key = metricsCacheKey(userId, "issues");
 
   try {
-    // 3. Wrap the GitHub fetch in our bulletproof cache!
     const metrics = await withMetricsCache(
       { bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.issues },
-      () => fetchIssuesMetrics(session.accessToken!)
+      () => fetchIssuesMetrics(token!)
     );
-    
     return Response.json(metrics);
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });

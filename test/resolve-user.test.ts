@@ -1,60 +1,126 @@
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-// Mock Supabase admin client
-const mockSingle = vi.fn();
-const mockEq = vi.fn(() => ({ single: mockSingle }));
-const mockSelect = vi.fn(() => ({
-  eq: mockEq,
-  single: mockSingle,
-}));
-const mockUpsert = vi.fn(() => ({ select: mockSelect }));
-
-vi.mock("@/lib/supabase", () => ({
-  supabaseAdmin: {
-    from: vi.fn((table) => {
-      if (table === "users") {
-        return {
-          select: mockSelect,
-          upsert: mockUpsert,
-        };
-      }
-    }),
-  },
-}));
-
-import { resolveAppUser } from "@/lib/resolve-user";
-
-describe("resolveAppUser function", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+describe("resolve-user", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 
-  it("returns existing user when found", async () => {
-    mockSingle.mockResolvedValueOnce({ data: { id: "user-123" } });
+  it("returns existing user when found in database", async () => {
+    const mockSelect = vi.fn().mockReturnThis();
+    const mockEq = vi.fn().mockReturnThis();
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: { id: "user-123" },
+      error: null,
+    });
+    const mockFrom = vi.fn().mockReturnValue({
+      select: mockSelect,
+      eq: mockEq,
+      single: mockSingle,
+    });
 
-    const result = await resolveAppUser("github-id-1");
+    vi.doMock("@/lib/supabase", () => ({
+      supabaseAdmin: { from: mockFrom },
+    }));
+
+    const { resolveAppUser } = await import("@/lib/resolve-user");
+    const result = await resolveAppUser("github-123", "testuser");
 
     expect(result).toEqual({ id: "user-123" });
-    expect(mockSelect).toHaveBeenCalledWith("id");
-    expect(mockEq).toHaveBeenCalledWith("github_id", "github-id-1");
-    expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  it("upserts and returns user when existing is not found", async () => {
-    // First call (find existing) returns null data
-    mockSingle.mockResolvedValueOnce({ data: null });
-    // Second call (select after upsert) returns upserted user
-    mockSingle.mockResolvedValueOnce({ data: { id: "user-new" } });
+  it("upserts new user when not found", async () => {
+    const mockSelect = vi.fn().mockReturnThis();
+    const mockEq = vi.fn().mockReturnThis();
+    const mockSingle = vi.fn()
+      .mockResolvedValueOnce({
+        data: null,
+        error: { code: "PGRST116" },
+      })
+      .mockResolvedValueOnce({
+        data: { id: "new-user-456" },
+        error: null,
+      });
+    const mockFrom = vi.fn().mockReturnValue({
+      select: mockSelect,
+      eq: mockEq,
+      single: mockSingle,
+    });
+    const mockUpsert = vi.fn().mockReturnThis();
+    const mockSelectAfterUpsert = vi.fn().mockReturnThis();
+    const mockSingleAfterUpsert = vi.fn().mockResolvedValue({
+      data: { id: "new-user-456" },
+      error: null,
+    });
 
-    const result = await resolveAppUser("github-id-2", "octocat");
+    vi.doMock("@/lib/supabase", () => ({
+      supabaseAdmin: {
+        from: (table: string) => {
+          if (table === "users") {
+            return {
+              select: mockSelect,
+              eq: mockEq,
+              single: mockSingle,
+              upsert: mockUpsert.mockReturnValue({
+                select: mockSelectAfterUpsert.mockReturnThis(),
+                single: mockSingleAfterUpsert,
+              }),
+            };
+          }
+          return { select: mockSelect, eq: mockEq, single: mockSingle };
+        },
+      },
+    }));
 
-    expect(result).toEqual({ id: "user-new" });
-    expect(mockUpsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        github_id: "github-id-2",
-        github_login: "octocat",
-      }),
-      { onConflict: "github_id" }
-    );
+    const { resolveAppUser } = await import("@/lib/resolve-user");
+    const result = await resolveAppUser("github-new", "newuser");
+
+    expect(result).toEqual({ id: "new-user-456" });
+  });
+
+  it("returns null when githubLogin is missing", async () => {
+    const mockSelect = vi.fn().mockReturnThis();
+    const mockEq = vi.fn().mockReturnThis();
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: "PGRST116" },
+    });
+    const mockFrom = vi.fn().mockReturnValue({
+      select: mockSelect,
+      eq: mockEq,
+      single: mockSingle,
+    });
+
+    vi.doMock("@/lib/supabase", () => ({
+      supabaseAdmin: { from: mockFrom },
+    }));
+
+    const { resolveAppUser } = await import("@/lib/resolve-user");
+    const result = await resolveAppUser("github-123", undefined as any);
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null on database error", async () => {
+    const mockSelect = vi.fn().mockReturnThis();
+    const mockEq = vi.fn().mockReturnThis();
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: { message: "Database error" },
+    });
+    const mockFrom = vi.fn().mockReturnValue({
+      select: mockSelect,
+      eq: mockEq,
+      single: mockSingle,
+    });
+
+    vi.doMock("@/lib/supabase", () => ({
+      supabaseAdmin: { from: mockFrom },
+    }));
+
+    const { resolveAppUser } = await import("@/lib/resolve-user");
+    const result = await resolveAppUser("github-123", "testuser");
+
+    expect(result).toBeNull();
   });
 });

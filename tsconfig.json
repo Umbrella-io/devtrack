@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["node"],
     "lib": [
       "dom",
       "dom.iterable",
@@ -41,4 +42,5 @@
     "client",
     "server"
   ]
+
 }
