@@ -22,6 +22,13 @@ const ipRateLimits = new Map<
 const RATE_LIMIT_REQUESTS = 30;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 
+function cleanOldEntries(map: Map<string, { count: number; resetAt: number }>) {
+  const now = Date.now();
+  for (const [key, val] of map.entries()) {
+    if (val.resetAt <= now) map.delete(key);
+  }
+}
+
 function getRateLimitKey(req: NextRequest): string {
   // req.ip is populated by the Next.js / Vercel runtime from the verified
   // network-layer source address and cannot be spoofed by the caller.
@@ -61,8 +68,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { username: string } }
 ): Promise<NextResponse> {
+  cleanOldEntries(ipRateLimits);
   const { username } = params;
-
   // Rate limiting
   const ip = getRateLimitKey(req);
   const rateLimit = getUpstashConfig()
