@@ -122,11 +122,12 @@ export async function POST(req: NextRequest) {
     project_count: session.projectCount || 0,
   }));
 
-  const { error: upsertError } = await supabaseAdmin
-    .from("local_coding_sessions")
-    .upsert(records, { onConflict: "user_id,date" });
+  const { error: upsertError } = await supabaseAdmin.rpc("batch_upsert_sessions", {
+    sessions: records,
+  });
 
   if (upsertError) {
+    console.error("Failed to sync sessions via RPC:", upsertError);
     return Response.json({ error: "Failed to sync sessions" }, { status: 500 });
   }
 
