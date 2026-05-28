@@ -113,16 +113,13 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
-  await page.route("**/api/goals/sync**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ ok: true }),
-            last_synced_at: new Date().toISOString(),
-          },
-        ],
-      }),
-    });
-  });
+  await route.fulfill({
+  contentType: "application/json",
+  body: JSON.stringify({
+    ok: true,
+    last_synced_at: new Date().toISOString(),
+  }),
+});
 
   await page.route("**/api/goals/sync", async (route) => {
     await route.fulfill({
