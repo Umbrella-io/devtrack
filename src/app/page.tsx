@@ -56,7 +56,7 @@ async function fetchRepoStats(): Promise<RepoStats> {
         }))
       : [];
 
-    if (mappedContributors.length > 0) {
+    if (mappedContributors.length > 0 && supabaseAdmin) {
       try {
         const logins = mappedContributors.map((c) => c.login);
         const { data: sponsors } = await supabaseAdmin
