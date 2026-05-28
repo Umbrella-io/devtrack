@@ -1,9 +1,16 @@
 import { Metadata } from "next";
 import { cache } from "react"; // 💡 Fix 1: Added for request memoization
+import { redirect } from "next/navigation";
 import BadgeSection from "@/components/BadgeSection";
+import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
-import CopyLinkButton from "@/components/CopyLinkButton";
+import ShareProfileSection from "@/components/ShareProfileSection";
+import ThemeToggle from "@/components/ThemeToggle";
+import CopyLinkButton from "@/components/CopyLinkButton"; // ✅ Keeping your imported button
+
 import { getUserByUsername } from "@/lib/supabase";
+import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
+
 import {
   fetchPublicTopRepos,
   fetchPublicContributions,
@@ -13,17 +20,33 @@ import {
 
 /* -------------------- DATA FETCH -------------------- */
 
-// ⚡ Wrapped in React cache() so it executes exactly ONCE per request lifecycle
-const fetchPublicProfile = cache(async (username: string): Promise<PublicProfileData | null> => {
+async function fetchPublicProfile(
+  username: string,
+  options: { includeAchievements?: boolean } = {}
+): Promise<PublicProfileData | null> {
   const user = await getUserByUsername(username);
+
   if (!user) return null;
+
+  const canonicalUsername = user.github_login.toLowerCase();
+
+  if (username !== canonicalUsername) {
+    redirect(`/u/${canonicalUsername}`);
+  }
 
   const githubToken = process.env.GITHUB_TOKEN;
 
-  const [repos, contributions, streak] = await Promise.all([
+  const [repos, contributions, streak, achievementsCache] = await Promise.all([
     fetchPublicTopRepos(user.github_login, githubToken, 30),
     fetchPublicContributions(user.github_login, githubToken, 30),
     fetchPublicStreak(user.github_login, githubToken),
+    options.includeAchievements
+      ? syncGitHubAchievementsForUser({
+          userId: user.id,
+          githubLogin: user.github_login,
+          token: githubToken,
+        })
+      : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
   ]);
 
   return {
@@ -32,8 +55,10 @@ const fetchPublicProfile = cache(async (username: string): Promise<PublicProfile
     repos,
     contributions,
     streak,
+    achievements: achievementsCache.achievements,
+    achievementsError: achievementsCache.error,
   };
-});
+}
 
 /* -------------------- TYPES & METADATA -------------------- */
 
@@ -41,16 +66,23 @@ interface PageProps {
   params: Promise<{ username: string }>; // 💡 Fix 2: typed as Promise for Next.js 15+ safety
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { username } = await params; // 💡 Fix 2: await the async params object
-  const profile = await fetchPublicProfile(username);
-
+function getProfileUrl(username: string) {
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXTAUTH_URL ||
     "http://localhost:3000";
 
-  const profileUrl = `${baseUrl}/u/${username}`;
+  return `${baseUrl}/u/${username}`;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { username: string };
+}): Promise<Metadata> {
+  const { username } = params;
+  const profile = await fetchPublicProfile(username);
+  const profileUrl = getProfileUrl(username);
 
   if (!profile) {
     return {
@@ -77,33 +109,41 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-/* -------------------- PAGE -------------------- */
+/* -------------------- MAIN PAGE COMPONENT -------------------- */
 
-export default async function PublicProfilePage({ params }: PageProps) {
-  const { username } = await params; // 💡 Fix 2: await the async params object
-  // 🛠️ TEMPORARY MOCK DATA FOR LOCAL TESTING
-  const profile = {
-    username: username || "testuser",
-    userId: "123",
-    repos: [{ name: "owner/my-cool-repo", commits: 42, url: "https://github.com" }],
-    contributions: { days: 30, total: 150, data: { "2026-05-01": 5 } },
-    streak: { current: 5, longest: 12, totalActiveDays: 20, lastCommitDate: "2026-05-25" }
-  };
-
-   //const profile = await fetchPublicProfile(username); // ⚡ Pulls directly from request memory
+export default async function PublicProfilePage({
+  params,
+}: {
+  params: { username: string };
+}) {
+  const { username } = params;
+  const profile = await fetchPublicProfile(username, { includeAchievements: true });
+  const profileUrl = getProfileUrl(username);
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 text-center">
-        <div className="max-w-md">
-          <h1 className="text-3xl font-bold mb-2">Profile Not Found</h1>
-          <p className="text-gray-500 mb-6">
-            This profile is not available or is private.
+      <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors flex items-center justify-center">
+        <div className="surface-card max-w-md rounded-2xl p-8 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+            Profile Not Found
+          </h1>
+          <p className="text-[var(--muted-foreground)] mb-2">
+            This profile is not available or has not been made public.
+          </p>
+          <p className="text-sm text-[var(--muted-foreground)] mb-6">
+            If this is your profile, go to{" "}
+            <a
+              href="/dashboard/settings"
+              className="text-[var(--accent)] underline hover:opacity-80"
+            >
+              Settings
+            </a>{" "}
+            and enable <strong>Public Profile</strong>.
           </p>
 
           <a
             href="/"
-            className="px-6 py-2 rounded-lg bg-black text-white hover:opacity-90"
+            className="primary-button inline-block rounded-lg px-6 py-2"
           >
             Back to Home
           </a>
@@ -116,29 +156,39 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const topRepo = profile.repos[0]?.name ?? "";
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      {/* HEADER */}
+    <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
+          {/* ✅ FIXED THE FLEX-HEADER TO FIT YOUR COPY BUTTON */}
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-3xl md:text-4xl font-bold">
+            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
               @{profile.username}&apos;s Profile
             </h1>
-            <CopyLinkButton />
+            <CopyLinkButton url={profileUrl} />
           </div>
-
-          <p className="mt-2 text-gray-500">
+          <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
           </p>
         </div>
+        
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <StatsCard
+            username={profile.username}
+            avatarUrl={avatarUrl}
+            currentStreak={profile.streak.current}
+            longestStreak={profile.streak.longest}
+            totalCommits={profile.contributions.total}
+            topRepo={topRepo}
+          />
+        </div>
+      </div>
 
-        <StatsCard
+      <div className="mb-8">
+        <ShareProfileSection
           username={profile.username}
-          avatarUrl={avatarUrl}
-          currentStreak={profile.streak.current}
-          longestStreak={profile.streak.longest}
-          totalCommits={profile.contributions.total}
-          topRepo={topRepo}
+          streak={profile.streak.current}
+          profileUrl={profileUrl}
         />
       </div>
 
@@ -158,7 +208,15 @@ export default async function PublicProfilePage({ params }: PageProps) {
         <PublicTopRepos repos={profile.repos} />
       </div>
 
-      {/* ROW 3 */}
+      {/* Row 3: GitHub achievements */}
+      <div className="mt-6">
+        <GitHubAchievements
+          achievements={profile.achievements}
+          error={profile.achievementsError}
+        />
+      </div>
+
+      {/* Row 4: Get your badge */}
       <div className="mt-6">
         <BadgeSection username={profile.username} />
       </div>
@@ -166,7 +224,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
   );
 }
 
-/* -------------------- COMPONENTS -------------------- */
+/* -------------------- SUB-COMPONENTS -------------------- */
 
 function PublicContributionGraph({
   data,
@@ -207,7 +265,6 @@ function PublicContributionGraph({
   );
 }
 
-// 💡 Fix 3: Replaced generic 'any' with explicit interface structures
 interface StreakData {
   current: number;
   longest: number;
@@ -215,6 +272,7 @@ interface StreakData {
   lastCommitDate: string | null;
 }
 
+// 💡 Fix 3: Standard structural typing preserved natively
 function PublicStreakTracker({ streak }: { streak: StreakData }) {
   return (
     <div className="border rounded-xl p-6 space-y-3">

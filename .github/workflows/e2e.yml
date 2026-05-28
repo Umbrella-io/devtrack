@@ -35,10 +35,10 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx -y @playwright/test@1.49.1 install --with-deps chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        run: npx -y @playwright/test@1.49.1 test
+        run: npx playwright test
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4

@@ -33,10 +33,15 @@ async function fetchCIAnalyticsForAccount(token: string, githubLogin: string): P
   const repos = Array.from(repoMap.entries()).map(([name, commits]) => ({ name, commits })).sort((a, b) => b.commits - a.commits).slice(0, 5);
 
   const runsByRepo = await Promise.all(repos.map(async (repo) => {
-    const res = await fetch(`${GITHUB_API}/repos/${repo.name}/actions/runs?per_page=100&created=>=${toIsoDate(30)}`, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }, cache: "no-store" });
-    if (res.status === 404 || res.status === 403) return [];
-    if (!res.ok) throw new Error("API error");
-    const d = await res.json(); return d.workflow_runs ?? [];
+    try {
+      const res = await fetch(`${GITHUB_API}/repos/${repo.name}/actions/runs?per_page=100&created=>=${toIsoDate(30)}`, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }, cache: "no-store" });
+      if (res.status === 404 || res.status === 403) return [];
+      if (!res.ok) throw new Error("API error");
+      const d = await res.json(); return d.workflow_runs ?? [];
+    } catch (err) {
+      console.error(`Failed to fetch signals for repo ${repo.name}:`, err);
+      return [];
+    }
   }));
 
   const runs = runsByRepo.flat().filter((r: WorkflowRun) => r.conclusion);

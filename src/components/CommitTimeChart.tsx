@@ -10,6 +10,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { Sun, Cloud, Sunset, Moon } from "lucide-react";
+import { toast } from "sonner";
   
 interface TimeBlocks {
   morning: number;
@@ -18,10 +20,15 @@ interface TimeBlocks {
   night: number;
 }
 
+interface ChartData {
+  name: string;
+  commits: number;
+  icon: React.ComponentType<any>;
+  key: string;
+}
+
 export default function CommitTimeChart() {
-  const [data, setData] = useState<
-    { name: string; commits: number; icon: string }[]
-  >([]);
+  const [data, setData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
@@ -40,29 +47,29 @@ export default function CommitTimeChart() {
         }
 
         const blocks = res.timeBlocks;
-        const chartData = [
+        const chartData: ChartData[] = [
           {
             name: "Morning (6-12)",
             commits: blocks.morning,
-            icon: "Sun",
+            icon: Sun,
             key: "morning",
           },
           {
             name: "Afternoon (12-18)",
             commits: blocks.afternoon,
-            icon: "CloudSun",
+            icon: Cloud,
             key: "afternoon",
           },
           {
             name: "Evening (18-22)",
             commits: blocks.evening,
-            icon: "Sunset",
+            icon: Sunset,
             key: "evening",
           },
           {
             name: "Night (22-6)",
             commits: blocks.night,
-            icon: "Moon",
+            icon: Moon,
             key: "night",
           },
         ];
@@ -77,9 +84,11 @@ export default function CommitTimeChart() {
         setData(chartData);
         setPeakTime(peak.commits > 0 ? peak.name : null);
       })
-      .catch(() =>
-        setError("We couldn't load your time-of-day data right now."),
-      )
+      .catch((err) => {
+        console.error("Failed to fetch commit time data:", err);
+        setError("We couldn't load your time-of-day data right now.");
+        toast.error("Failed to load time-of-day data");
+      })
       .finally(() => setLoading(false));
   }, [days]);
 

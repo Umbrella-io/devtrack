@@ -160,7 +160,7 @@ export default function PRReviewTrendChart() {
             PR Review Time Trend
           </h2>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-            Average time from PR open to merge over the last 4 weeks.
+            Average time from PR open to merge over the last 12 weeks.
           </p>
         </div>
       </div>
@@ -287,6 +287,7 @@ export default function PRReviewTrendChart() {
                     if (point.avgReviewDays === null) {
                       return (
                         <circle
+                          key={`dot-null-${props.index}`}
                           cx={props.cx}
                           cy={props.cy}
                           r={4}
@@ -298,6 +299,7 @@ export default function PRReviewTrendChart() {
 
                     return (
                       <circle
+                        key={`dot-${props.index}`}
                         cx={props.cx}
                         cy={props.cy}
                         r={5}
