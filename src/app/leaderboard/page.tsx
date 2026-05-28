@@ -1,5 +1,6 @@
 import Link from "next/link";
 import EmptyState from "@/components/EmptyState";
+import SponsorBadge from "@/components/SponsorBadge";
 
 type LeaderboardTab = "streak" | "commits" | "prs";
 
@@ -12,6 +13,7 @@ interface LeaderboardEntry {
   commits: number;
   prs: number;
   score: number;
+  isSponsor: boolean;
 }
 
 interface LeaderboardPayload {
@@ -152,9 +154,10 @@ export default async function LeaderboardPage({
                   <div className="min-w-0">
                     <div
                       title={entry.username}
-                      className="block max-w-[120px] truncate font-semibold text-[var(--card-foreground)] sm:max-w-[180px] md:max-w-none"
+                      className="flex items-center gap-2 max-w-[120px] truncate font-semibold text-[var(--card-foreground)] sm:max-w-[180px] md:max-w-none"
                     >
                       @{entry.username}
+                      {entry.isSponsor && <SponsorBadge />}
                     </div>
                     <div className="text-xs text-[var(--muted-foreground)]">
                       {entry.commits} commits · {entry.prs} PRs · {entry.streak}d

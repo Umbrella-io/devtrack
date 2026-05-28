@@ -222,6 +222,18 @@ pnpm run dev
 
 Open [http://localhost:3000](http://localhost:3000) and sign in with GitHub. 🎉
 
+**6. Run E2E tests**
+
+To run the Playwright end-to-end tests locally:
+
+```bash
+# Install browsers if you haven't already
+npx playwright install --with-deps chromium
+
+# Run the test suite
+npm run test:e2e
+```
+
 ---
 
 ## 🗺 Roadmap

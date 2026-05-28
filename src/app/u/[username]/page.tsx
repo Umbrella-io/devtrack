@@ -5,6 +5,7 @@ import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
 import ShareProfileSection from "@/components/ShareProfileSection";
 import ThemeToggle from "@/components/ThemeToggle";
+import SponsorBadge from "@/components/SponsorBadge";
 import { getUserByUsername } from "@/lib/supabase";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 
@@ -50,6 +51,7 @@ async function fetchPublicProfile(
   return {
     username: user.github_login,
     userId: user.id,
+    isSponsor: user.is_sponsor ?? false,
     repos,
     contributions,
     streak,
@@ -148,9 +150,12 @@ export default async function PublicProfilePage({
     <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
-            @{profile.username}&apos;s Profile
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] flex items-center gap-2">
+              @{profile.username}&apos;s Profile
+              {profile.isSponsor && <SponsorBadge />}
+            </h1>
+          </div>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
           </p>
