@@ -20,7 +20,10 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   webServer: {
-    command: `node node_modules/next/dist/bin/next dev -H 127.0.0.1 -p ${PORT}`,
+    command:
+      process.env.PLAYWRIGHT_SERVER_MODE === "start"
+        ? `npm run start -- --hostname 127.0.0.1 -p ${PORT}`
+        : `node node_modules/next/dist/bin/next dev -H 127.0.0.1 -p ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

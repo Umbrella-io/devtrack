@@ -6,7 +6,7 @@
  * only permits the HTTP-verb exports GET/POST/etc. from route files).
  */
 
-export type ActivityType = "push" | "pull_request" | "issue" | "release" | "other";
+export type ActivityType = "push" | "pull_request" | "issue" | "release" | "discussion" | "other";
 
 export interface ActivityItem {
   id: string;
@@ -44,6 +44,11 @@ export interface RawEvent {
       tag_name?: string;
       name?: string;
     };
+    discussion?: {
+      html_url?: string;
+      number?: number;
+      title?: string;
+    };
   };
 }
 
@@ -52,6 +57,8 @@ export const SUPPORTED_EVENT_TYPES = new Set([
   "PullRequestEvent",
   "IssuesEvent",
   "ReleaseEvent",
+  "DiscussionEvent",
+  "DiscussionCommentEvent",
 ]);
 
 function getRepoUrl(repoName: string): string {
@@ -139,6 +146,37 @@ export function formatActivity(event: RawEvent): ActivityItem | null {
       url: release?.html_url ?? getRepoUrl(repoName),
     };
   }
+  if (event.type === "DiscussionEvent") {
+    const action = event.payload?.action ?? "opened";
+    const discussion = event.payload?.discussion;
+    const number = discussion?.number ? `#${discussion.number}` : "Discussion";
+    const actionText = capitalize(action);
 
+    return {
+      id: event.id,
+      type: "discussion",
+      createdAt: event.created_at,
+      title: `${actionText} discussion ${number}`,
+      subtitle: discussion?.title ?? repoName,
+      repo: repoName,
+      url: discussion?.html_url ?? getRepoUrl(repoName),
+    };
+  }
+
+  if (event.type === "DiscussionCommentEvent") {
+    const discussion = event.payload?.discussion;
+    const number = discussion?.number ? `#${discussion.number}` : "Discussion";
+
+    return {
+      id: event.id,
+      type: "discussion",
+      createdAt: event.created_at,
+      title: `Commented on discussion ${number}`,
+      subtitle: discussion?.title ?? repoName,
+      repo: repoName,
+      url: discussion?.html_url ?? getRepoUrl(repoName),
+    };
+  }
+  
   return null;
 }
