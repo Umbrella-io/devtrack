@@ -112,7 +112,7 @@ export default function SignInPage() {
         <p
           style={{
             fontSize: 14,
-            color: "#555",
+            color: "#9ca3af",
             lineHeight: 1.65,
             margin: "0 0 36px",
             fontFamily: MONO,
@@ -164,7 +164,7 @@ export default function SignInPage() {
           style={{
             fontFamily: MONO,
             fontSize: 11,
-            color: "#333",
+            color: "#9ca3af",
             letterSpacing: "0.06em",
             lineHeight: 1.8,
           }}
