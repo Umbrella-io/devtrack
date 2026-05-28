@@ -55,7 +55,11 @@ const FriendComparison = dynamic(
   {
     ssr: false,
     loading: () => <SkeletonCard />,
+<<<<<<< HEAD
   },
+=======
+  }
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
 );
 
 const ActivityRingChart = dynamic(
@@ -63,7 +67,11 @@ const ActivityRingChart = dynamic(
   {
     ssr: false,
     loading: () => <SkeletonCard />,
+<<<<<<< HEAD
   },
+=======
+  }
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
 );
 
 const ContributionGraph = dynamic(
@@ -71,7 +79,11 @@ const ContributionGraph = dynamic(
   {
     ssr: false,
     loading: () => <ContributionGraphSkeleton />,
+<<<<<<< HEAD
   },
+=======
+  }
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
 );
 
 const ContributionHeatmap = dynamic(
@@ -79,7 +91,11 @@ const ContributionHeatmap = dynamic(
   {
     ssr: false,
     loading: () => <SkeletonCard />,
+<<<<<<< HEAD
   },
+=======
+  }
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
 );
 
 const PRMetrics = dynamic(() => import("@/components/PRMetrics"), {
@@ -92,7 +108,11 @@ const PRBreakdownChart = dynamic(
   {
     ssr: false,
     loading: () => <SkeletonCard />,
+<<<<<<< HEAD
   },
+=======
+  }
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
 );
 
 const CommitTimeChart = dynamic(() => import("@/components/CommitTimeChart"), {
@@ -105,7 +125,11 @@ const PRReviewTrendChart = dynamic(
   {
     ssr: false,
     loading: () => <SkeletonCard />,
+<<<<<<< HEAD
   },
+=======
+  }
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
 );
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import { AIMentorWidget } from "@/components/AIMentorWidget";
@@ -126,7 +150,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardSSEProvider>
-      <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
+      <div className="min-h-screen overflow-x-hidden bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
         <div className="mb-6 flex flex-wrap items-stretch justify-center gap-2 sm:justify-end">
           <Link
@@ -147,24 +171,57 @@ export default async function DashboardPage() {
         </div>
         <StreakAtRiskBanner />
 
-      <div className="mb-6 mt-6">
-        <Link href="/wrapped">
-            <div className="overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-fuchsia-600 p-6 shadow-lg transition-transform hover:scale-[1.01] hover:-z-0"> 
+        <div className="mb-6 mt-6">
+          <Link href="/wrapped">
+            <div className="overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-fuchsia-600 p-6 shadow-lg transition-transform hover:scale-[1.01] hover:-z-0">
               <div className="relative flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-white">Your Year in Code is here! ✨</h2>
-                <p className="mt-1 text-white/90">Discover your top languages, longest streaks, and coding habits of the year.</p>
-              </div>
-              <div className="rounded-full bg-white px-6 py-2 font-bold text-purple-600">
-                View Wrapped
+                <div>
+                  <h2 className="text-2xl font-bold text-white">
+                    Your Year in Code is here! ✨
+                  </h2>
+                  <p className="mt-1 text-white/90">
+                    Discover your top languages, longest streaks, and coding
+                    habits of the year.
+                  </p>
+                </div>
+                <div className="rounded-full bg-white px-6 py-2 font-bold text-purple-600">
+                  View Wrapped
+                </div>
               </div>
               <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
               <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-black/20 blur-3xl"></div>
             </div>
-          </div>
-        </Link>
-      </div>
+          </Link>
+        </div>
 
+        <div className="mb-6">
+          <WeeklySummaryCard />
+        </div>
+
+        <div className="mb-6">
+          <AIMentorWidget />
+        </div>
+
+        <div className="mb-6">
+          <PersonalRecords />
+        </div>
+
+        {/* Row 1: Contribution graph + Streak + Local Coding Time */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <ContributionGraph />
+            <div className="mt-6">
+              <ContributionHeatmap />
+            </div>
+            <div className="mt-6">
+              <FriendComparison />
+            </div>
+            <div className="mt-6 w-full min-w-0 overflow-hidden">
+              <RepoAnalyticsExplorer />
+            </div>
+          </div>
+
+<<<<<<< HEAD
         <div className="mb-6">
           <WeeklySummaryCard />
         </div>
@@ -193,15 +250,20 @@ export default async function DashboardPage() {
             </div>
           </div>
 
+=======
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
           <div>
             <StreakTracker />
             <LocalCodingTime />
             <div className="mt-6">
               <CodingTimeWidget />
             </div>
+<<<<<<< HEAD
           </div>
           <div className="mt-6">
             <RepoAnalyticsExplorer />
+=======
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
           </div>
         </div>
 
@@ -222,14 +284,19 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-6">
+<<<<<<< HEAD
           <LazyWidget fallback={<SkeletonCard />}>
             <PRReviewTrendChart />
           </LazyWidget>
+=======
+          <PRReviewTrendChart />
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
         </div>
 
         {/* Row 3: Issue metrics + CI analytics */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
+<<<<<<< HEAD
             <LazyWidget fallback={<SkeletonCard />}>
               <IssueMetrics />
             </LazyWidget>
@@ -248,38 +315,64 @@ export default async function DashboardPage() {
         {/* Row 4a: Custom Pinned Spotlight repositories */}
         <div className="mt-6">
           <PinnedReposWidget />
+=======
+            <IssueMetrics />
+          </div>
+          <CIAnalytics />
+        </div>
+        {/* Row 3b: Discussion activity */}
+        <div className="mt-6">
+          <DiscussionsWidget />
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
         </div>
 
         {/* Row 4: Pinned repositories */}
         <div className="mt-6">
+<<<<<<< HEAD
           <LazyWidget fallback={<SkeletonCard />}>
             <PinnedRepos />
           </LazyWidget>
+=======
+          <PinnedRepos />
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
         </div>
 
         {/* Row 5: Inactive repository reminder */}
         <div className="mt-6">
+<<<<<<< HEAD
           <LazyWidget fallback={<SkeletonCard />}>
             <InactiveRepositoriesCard />
           </LazyWidget>
+=======
+          <InactiveRepositoriesCard />
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
         </div>
 
         {/* Row 6: Top repos + Language breakdown + Goal tracker */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+<<<<<<< HEAD
           <LazyWidget fallback={<SkeletonCard />}>
             <TopRepos />
           </LazyWidget>
           <LazyWidget fallback={<SkeletonCard />}>
             <LanguageBreakdown />
           </LazyWidget>
+=======
+          <TopRepos />
+          <LanguageBreakdown />
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
           <GoalTracker />
         </div>
 
         {/* Row 7: Recent GitHub activity */}
         <div className="mt-6">
+<<<<<<< HEAD
           <LazyWidget fallback={<SkeletonCard />}>
             <RecentActivity />
           </LazyWidget>
+=======
+          <RecentActivity />
+>>>>>>> 27751b2 (fix: remove invalid eslint directive)
         </div>
       </div>
     </DashboardSSEProvider>
