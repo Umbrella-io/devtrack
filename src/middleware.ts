@@ -8,13 +8,13 @@ const WINDOW_SECONDS = 60;
    SECURITY NOTICE: DEVELOPMENT MODE RATE-LIMIT SCALING
    These high thresholds are configured STRICTLY for local mock
    testing pipelines to handle high concurrent local dashboard refreshes.
-
    NOTE: In Next.js, process.env.NODE_ENV is a compile-time constant.
    It is baked into the bundle at build time and cannot change at runtime.
    Therefore, in production builds, isDev is always false and the
    AUTHENTICATED_LIMIT/ANONYMOUS_LIMIT will always be 60/10 respectively.
    In development (next dev), NODE_ENV is 'development' so the higher
    limits apply during local testing only.
+   ==========================================
    ============================================================ */
 const AUTHENTICATED_LIMIT = isDev ? 5000 : 60;
 const ANONYMOUS_LIMIT = isDev ? 1000 : 10;
@@ -105,6 +105,10 @@ function checkMemoryLimit(
   };
 }
 
+/**
+ * ATOMIC LUA EVALUATION IN UPSTASH REDIS
+ * Prunes expired elements, checks window capacity, and commits mutation atomically.
+ */
 async function checkUpstashLimit(
   key: string,
   limit: number,
@@ -119,18 +123,47 @@ async function checkUpstashLimit(
 
   const cutoff = now - WINDOW_SECONDS * 1000;
   const reset = Math.ceil((now + WINDOW_SECONDS * 1000) / 1000);
+  const memberToken = `${now}:${Math.random().toString(36).slice(2)}`;
+
+  // Lua script ensures thread-safe atomic execution inside Redis engine
+  const luaScript = `
+    local key = KEYS[1]
+    local cutoff = tonumber(ARGV[1])
+    local now = tonumber(ARGV[2])
+    local limit = tonumber(ARGV[3])
+    local windowSeconds = tonumber(ARGV[4])
+    local member = ARGV[5]
+
+    redis.call('ZREMRANGEBYSCORE', key, 0, cutoff)
+    local currentCount = redis.call('ZCARD', key)
+
+    if currentCount >= limit then
+      return {0, currentCount}
+    else
+      redis.call('ZADD', key, now, member)
+      redis.call('EXPIRE', key, windowSeconds)
+      return {1, currentCount + 1}
+    end
+  `;
 
   try {
-    const response = await fetch(`${url}/pipeline`, {
+    const response = await fetch(`${url}/eval`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify([
-        ["ZREMRANGEBYSCORE", key, 0, cutoff],
-        ["ZCARD", key],
-      ]),
+      body: JSON.stringify({
+        script: luaScript,
+        keys: [key],
+        args: [
+          String(cutoff),
+          String(now),
+          String(limit),
+          String(WINDOW_SECONDS),
+          memberToken,
+        ],
+      }),
       cache: "no-store",
     });
 
@@ -138,38 +171,20 @@ async function checkUpstashLimit(
       return null;
     }
 
-    const pipeline = (await response.json()) as Array<{ result?: number }>;
-    const previousCount = Number(pipeline[1]?.result ?? 0);
-
-    if (previousCount >= limit) {
-      return {
-        allowed: false,
-        limit,
-        remaining: 0,
-        reset,
-      };
-    }
-
-    await fetch(`${url}/pipeline`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify([
-        ["ZADD", key, now, `${now}:${Math.random().toString(36).slice(2)}`],
-        ["EXPIRE", key, WINDOW_SECONDS],
-      ]),
-      cache: "no-store",
-    });
+    const data = await response.json();
+    
+    // Upstash REST eval response format: { result: [allowed_flag, current_count] }
+    const [allowedFlag, currentCount] = data.result as [number, number];
+    const isAllowed = allowedFlag === 1;
 
     return {
-      allowed: true,
+      allowed: isAllowed,
       limit,
-      remaining: Math.max(limit - previousCount - 1, 0),
+      remaining: Math.max(limit - currentCount, 0),
       reset,
     };
-  } catch {
+  } catch (error) {
+    console.error("Rate-limiter cloud pipeline failure, falling back to local memory storage:", error);
     return null;
   }
 }

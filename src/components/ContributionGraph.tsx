@@ -115,6 +115,8 @@ export default function ContributionGraph() {
   const [error, setError] = useState<string | null>(null);
   const [commits, setCommits] = useState<CommitItem[]>([]);
   const [usesTouchTooltip, setUsesTouchTooltip] = useState(false);
+  const [repo, setRepo] = useState<string>("all");
+  const [repoOptions, setRepoOptions] = useState<string[]>([]);
   
   // Compare mode state
   const [compareMode, setCompareMode] = useState(false);
@@ -181,10 +183,11 @@ export default function ContributionGraph() {
       selectedAccount !== null
         ? `&accountId=${encodeURIComponent(selectedAccount)}`
         : "";
+    const repoParam = repo !== "all" ? `&repo=${repo}` : "";
     const url =
       customLabel && customFrom && customTo
-        ? `/api/metrics/contributions?from=${customFrom}&to=${customTo}${accountParam}`
-        : `/api/metrics/contributions?days=${days}${accountParam}`;
+        ? `/api/metrics/contributions?from=${customFrom}&to=${customTo}${accountParam}${repoParam}`
+        : `/api/metrics/contributions?days=${days}${accountParam}${repoParam}`;
 
     fetch(url)
       .then((r) => {
@@ -210,9 +213,18 @@ export default function ContributionGraph() {
         setLastUpdated(new Date());
         setMinutesAgo(0);
       });
-    }, [days, selectedAccount, customFrom, customTo, customLabel]);
+    }, [days, selectedAccount, customFrom, customTo, customLabel, repo]);
 
   // Fetch friend data when compare mode is on and compareUser changes
+  useEffect(() => {
+    fetch("/api/metrics/repos?days=90")
+      .then((r) => r.json())
+      .then((d: { repos: { name: string }[] }) =>
+        setRepoOptions(d.repos.map((r) => r.name))
+      )
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (!compareMode || !compareUser) {
       setFriendData([]);
@@ -380,6 +392,20 @@ export default function ContributionGraph() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Repo Filter */}
+          <select
+            value={repo}
+            onChange={(e) => setRepo(e.target.value)}
+            className="bg-slate-700 text-slate-300 text-sm rounded-lg px-2 py-1 border border-slate-600"
+          >
+            <option value="all">All repos</option>
+            {repoOptions.map((r) => (
+              <option key={r} value={r}>
+                {r.split("/")[1]}
+              </option>
+            ))}
+          </select>
+
           {/* Range buttons */}
           <div className="flex gap-1 rounded-lg border border-[var(--border)] bg-[var(--background)] p-1">
             {RANGES.map((r) => (

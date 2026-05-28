@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import RepoCarousel from "./RepoCarousel";
 import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
+import { toast } from "sonner";
 
 export default function RepoAnalyticsExplorer() {
   const [repos, setRepos] = useState<ExplorerRepoCardData[]>([]);
@@ -19,7 +20,11 @@ export default function RepoAnalyticsExplorer() {
         return res.json();
       })
       .then((json: { repos: ExplorerRepoCardData[] }) => setRepos(json.repos ?? []))
-      .catch(() => setError("Could not load repo analytics right now."))
+      .catch((err) => {
+        console.error("Failed to fetch repo analytics:", err);
+        setError("Could not load repo analytics right now.");
+        toast.error("Failed to load repo analytics");
+      })
       .finally(() => setLoading(false));
   }, []);
 
