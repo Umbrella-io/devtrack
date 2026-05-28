@@ -66,13 +66,26 @@ export default function ContactForm() {
     setFeedback("");
 
     try {
-      await new Promise((resolve) => window.setTimeout(resolve, 700));
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error || "We could not submit your message right now.");
+      }
+
       setStatus("success");
       setFeedback("Thanks. Your message has been received.");
       setValues(initialValues);
-    } catch {
+    } catch (error) {
       setStatus("error");
-      setFeedback("We could not submit your message right now. Please try again.");
+      setFeedback(
+        error instanceof Error ? error.message : "We could not submit your message right now. Please try again."
+      );
     }
   }
 
