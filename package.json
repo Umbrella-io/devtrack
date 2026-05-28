@@ -35,6 +35,8 @@
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -44,6 +46,7 @@
     "postcss": "^8.4.38",
     "tailwind-scrollbar": "^3.1.0",
     "tailwindcss": "^3.4.1",
+    "ts-jest": "^29.4.11",
     "typescript": "^5",
     "vitest": "^1.6.0"
   }
