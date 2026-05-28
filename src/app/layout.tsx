@@ -1,3 +1,4 @@
+import CustomCursor from "@/components/CustomCursor";
 import type { Metadata, Viewport } from "next";
 import { Inter, Syne, JetBrains_Mono } from "next/font/google";
 import Footer from "@/components/Footer";
@@ -85,6 +86,7 @@ export default async function RootLayout({
       <body
         className={`${inter.className} ${syne.variable} ${jetbrains.variable} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
+        <CustomCursor />       
         <PWARegister />
 
         <div className="flex min-h-screen flex-col">

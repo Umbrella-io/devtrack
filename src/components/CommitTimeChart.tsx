@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Sun, Cloud, Sunset, Moon } from "lucide-react";
+import { toast } from "sonner";
   
 interface TimeBlocks {
   morning: number;
@@ -83,9 +84,11 @@ export default function CommitTimeChart() {
         setData(chartData);
         setPeakTime(peak.commits > 0 ? peak.name : null);
       })
-      .catch(() =>
-        setError("We couldn't load your time-of-day data right now."),
-      )
+      .catch((err) => {
+        console.error("Failed to fetch commit time data:", err);
+        setError("We couldn't load your time-of-day data right now.");
+        toast.error("Failed to load time-of-day data");
+      })
       .finally(() => setLoading(false));
   }, [days]);
 
