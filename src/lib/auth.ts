@@ -48,20 +48,40 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {
-        const p = profile as { id: number; login: string };
+        const p = profile as { id: number; login: string; email?: string };
         try {
-          const { data: user, error: upsertError } = await supabaseAdmin
+          let { data: user, error: upsertError } = await supabaseAdmin
             .from("users")
             .upsert(
               {
                 github_id: String(p.id),
                 github_login: p.login,
+                email: p.email || null,
                 updated_at: new Date().toISOString(),
               },
               { onConflict: "github_id" }
             )
             .select("id")
             .single();
+
+          // If the email column does not exist yet (migration pending),
+          // PostgREST returns a 42703 error. Fallback to upsert without email.
+          if (upsertError && (upsertError as { code?: string }).code === "42703") {
+            const fallback = await supabaseAdmin
+              .from("users")
+              .upsert(
+                {
+                  github_id: String(p.id),
+                  github_login: p.login,
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: "github_id" }
+              )
+              .select("id")
+              .single();
+            user = fallback.data;
+            upsertError = fallback.error;
+          }
 
           if (upsertError) {
             console.error("[auth] Supabase upsert error:", upsertError);

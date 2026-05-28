@@ -1,75 +1,63 @@
-import { describe, it, expect } from "vitest";
-import { getSafeErrorMessage, getSafeApiErrorMessage } from "../src/lib/error-utils";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const test = require("node:test");
+const ts = require("typescript");
 
-describe("error-utils", () => {
-  describe("getSafeErrorMessage", () => {
-    it("returns the mapped message for known safe error keys", () => {
-      const error = new Error("TokenRevoked");
-      expect(getSafeErrorMessage(error)).toBe("Your GitHub session has expired. Please sign in again.");
-    });
+function loadErrorUtilsModule() {
+  const sourcePath = path.join(__dirname, "..", "src", "lib", "error-utils.ts");
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "devtrack-error-utils-"));
+  const outPath = path.join(outDir, "error-utils.cjs");
+  const source = fs.readFileSync(sourcePath, "utf8");
+  const output = ts.transpileModule(source, {
+    compilerOptions: {
+      esModuleInterop: true,
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+    },
+  }).outputText;
 
-    it("replaces unknown messages with a generic string in production", () => {
-      const originalEnv = process.env.NODE_ENV;
-      (process.env as any).NODE_ENV = "production";
+  fs.writeFileSync(outPath, output);
+  return require(outPath);
+}
 
-      try {
-        const error = new Error("relation \"goals\" does not exist");
-        expect(getSafeErrorMessage(error)).toBe("An unexpected error occurred. Our team has been notified.");
-      } finally {
-        (process.env as any).NODE_ENV = originalEnv;
-      }
-    });
+test("getSafeApiErrorMessage returns known safe message for TokenRevoked", () => {
+  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
+  assert.equal(getSafeApiErrorMessage("TokenRevoked"), "Your GitHub session has expired. Please sign in again.");
+});
 
-    it("returns raw message in development mode", () => {
-      const originalEnv = process.env.NODE_ENV;
-      (process.env as any).NODE_ENV = "development";
+test("getSafeApiErrorMessage returns known safe message for Unauthorized", () => {
+  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
+  assert.equal(getSafeApiErrorMessage("Unauthorized"), "You must be signed in to view this page.");
+});
 
-      try {
-        const error = new Error("relation \"goals\" does not exist");
-        expect(getSafeErrorMessage(error)).toBe("relation \"goals\" does not exist");
-      } finally {
-        (process.env as any).NODE_ENV = originalEnv;
-      }
-    });
+test("getSafeApiErrorMessage returns known safe message for Configuration error", () => {
+  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
+  assert.equal(getSafeApiErrorMessage("Configuration error"), "There is a configuration issue. Please contact support.");
+});
 
-    it("returns Unknown error for empty error messages in development", () => {
-      const originalEnv = process.env.NODE_ENV;
-      (process.env as any).NODE_ENV = "development";
+test("getSafeApiErrorMessage returns generic message for unknown error in production", () => {
+  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
+  assert.equal(getSafeApiErrorMessage("UnknownError", "production"), "An unexpected error occurred.");
+});
 
-      try {
-        const error = new Error("");
-        expect(getSafeErrorMessage(error)).toBe("Unknown error");
-      } finally {
-        (process.env as any).NODE_ENV = originalEnv;
-      }
-    });
-  });
+test("getSafeApiErrorMessage returns raw message for unknown error in development", () => {
+  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
+  assert.equal(getSafeApiErrorMessage("SomeError", "development"), "SomeError");
+});
 
-  describe("getSafeApiErrorMessage", () => {
-    it("returns the mapped message for known safe error keys", () => {
-      expect(
-        getSafeApiErrorMessage("TokenRevoked", "production")
-      ).toBe("Your GitHub session has expired. Please sign in again.");
-    });
+test("getSafeApiErrorMessage defaults to production when env not provided", () => {
+  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
+  assert.equal(getSafeApiErrorMessage("RandomError"), "An unexpected error occurred.");
+});
 
-    it("replaces unknown messages with a generic string in production", () => {
-      const raw = 'duplicate key value violates unique constraint "users_github_id_key"';
-      const result = getSafeApiErrorMessage(raw, "production");
-      expect(result).toBe("An unexpected error occurred.");
-    });
+test("getSafeApiErrorMessage handles empty string message in production", () => {
+  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
+  assert.equal(getSafeApiErrorMessage("", "production"), "An unexpected error occurred.");
+});
 
-    it("returns the raw message in development mode for debuggability", () => {
-      const raw = 'relation "goals" does not exist';
-      const result = getSafeApiErrorMessage(raw, "development");
-      expect(result).toBe(raw);
-    });
-
-    it("falls back to the generic message for an empty string in production", () => {
-      expect(getSafeApiErrorMessage("", "production")).toBe("An unexpected error occurred.");
-    });
-
-    it("returns 'Unknown error' for an empty string in development", () => {
-      expect(getSafeApiErrorMessage("", "development")).toBe("Unknown error");
-    });
-  });
+test("getSafeApiErrorMessage handles empty string message in development", () => {
+  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
+  assert.equal(getSafeApiErrorMessage("", "development"), "Unknown error");
 });

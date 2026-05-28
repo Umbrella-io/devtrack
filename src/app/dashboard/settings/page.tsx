@@ -15,6 +15,7 @@ interface UserSettings {
   github_login: string;
   is_public: boolean;
   leaderboard_opt_in: boolean;
+  weekly_digest_opt_in: boolean;
   has_wakatime_key?: boolean;
 }
 
@@ -301,6 +302,30 @@ function SettingsPageContent() {
     } catch (error) {
       console.error("Error updating leaderboard setting:", error);
       toast.error("Failed to update leaderboard setting");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleWeeklyDigest = async (value: boolean) => {
+    if (!settings) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ weekly_digest_opt_in: value }),
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+      } else {
+        console.error("Failed to update weekly digest setting");
+      }
+    } catch (error) {
+      console.error("Error updating weekly digest setting:", error);
     } finally {
       setSaving(false);
     }
@@ -609,6 +634,43 @@ function SettingsPageContent() {
               Turning this on also enables your public profile so leaderboard
               rows can link to your DevTrack stats.
             </p>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                Weekly Email Digest
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                Receive an optional weekly email digest every Monday morning summarizing your coding habits.
+              </p>
+            </div>
+
+            <label className="flex items-center cursor-pointer select-none">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={settings.weekly_digest_opt_in}
+                  onChange={(e) => handleToggleWeeklyDigest(e.target.checked)}
+                  disabled={saving}
+                  className="sr-only"
+                />
+                <div
+                  className={`block h-6 w-10 rounded-full transition-colors ${
+                    settings.weekly_digest_opt_in
+                      ? "bg-[var(--accent)]"
+                      : "bg-[var(--control)]"
+                  }`}
+                />
+                <div
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
+                    settings.weekly_digest_opt_in ? "translate-x-4" : ""
+                  }`}
+                />
+              </div>
+            </label>
           </div>
         </div>
 
