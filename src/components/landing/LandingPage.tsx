@@ -898,6 +898,7 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <FeaturesSection />
       <ContributeSection stats={repoStats} />
       <SetupSection />
+      <LandingFooter />
 
     </div>
   );

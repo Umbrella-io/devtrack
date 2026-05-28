@@ -19,6 +19,7 @@ interface UserSettings {
   has_wakatime_key?: boolean;
   discord_webhook_url?: string;
   timezone?: string;
+  pinned_repos?: string[];
 }
 
 interface LinkedAccount {
@@ -133,6 +134,11 @@ function SettingsPageContent() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
+  // Spotlight Repos States
+  const [userRepos, setUserRepos] = useState<string[]>([]);
+  const [loadingRepos, setLoadingRepos] = useState(false);
+  const [repoSearchQuery, setRepoSearchQuery] = useState("");
+
   const statusMessage = useMemo(
     () =>
       getStatusMessage(searchParams.get("success"), searchParams.get("error")),
@@ -238,6 +244,78 @@ function SettingsPageContent() {
 
     loadSettings();
   }, [session, status]);
+
+  // Load active repos for spotlight pinning
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    setLoadingRepos(true);
+    fetch("/api/metrics/repos?days=90")
+      .then((r) => r.json())
+      .then((d) => {
+        const names = (d.repos ?? []).map((r: any) => r.name);
+        setUserRepos(names);
+      })
+      .catch((err) => console.error("Failed to load user repos:", err))
+      .finally(() => setLoadingRepos(false));
+  }, [status]);
+
+  const handleUpdatePinnedRepos = async (newPins: string[]) => {
+    if (!settings) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pinned_repos: newPins }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        toast.success("Spotlight repositories updated successfully!");
+      } else {
+        toast.error("Failed to update spotlight repositories.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error updating spotlight repositories.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePinRepo = async (repoName: string) => {
+    if (!settings) return;
+    const currentPins = settings.pinned_repos || [];
+    if (currentPins.includes(repoName)) return;
+    if (currentPins.length >= 3) {
+      toast.error("Maximum 3 pinned repositories allowed!");
+      return;
+    }
+
+    const updatedPins = [...currentPins, repoName];
+    await handleUpdatePinnedRepos(updatedPins);
+  };
+
+  const handleUnpinRepo = async (repoName: string) => {
+    if (!settings) return;
+    const currentPins = settings.pinned_repos || [];
+    const updatedPins = currentPins.filter((name) => name !== repoName);
+    await handleUpdatePinnedRepos(updatedPins);
+  };
+
+  const handleMovePin = async (index: number, direction: "up" | "down") => {
+    if (!settings) return;
+    const currentPins = [...(settings.pinned_repos || [])];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= currentPins.length) return;
+
+    // Swap elements
+    const temp = currentPins[index];
+    currentPins[index] = currentPins[targetIndex];
+    currentPins[targetIndex] = temp;
+
+    await handleUpdatePinnedRepos(currentPins);
+  };
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.githubLogin) {
@@ -695,6 +773,137 @@ function SettingsPageContent() {
               rows can link to your DevTrack stats.
             </p>
           </div>
+        </div>
+
+        {/* Repository Spotlight Section */}
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+            Repository Spotlight 🚀
+          </h2>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)] mb-6">
+            Pin up to 3 repositories to showcase on your dashboard and public profile.
+          </p>
+
+          {/* Currently Pinned */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+              Pinned Repositories ({(settings.pinned_repos || []).length}/3)
+            </h3>
+            {(settings.pinned_repos || []).length === 0 ? (
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)] text-center">
+                No repositories pinned yet. Use the search below to spotlight your best projects!
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(settings.pinned_repos || []).map((repoName, index) => (
+                  <div
+                    key={repoName}
+                    className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] p-4"
+                  >
+                    <div className="min-w-0 flex-1 pr-4">
+                      <span className="text-sm font-semibold text-[var(--card-foreground)] truncate block">
+                        {repoName}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Reorder Buttons */}
+                      <button
+                        type="button"
+                        onClick={() => handleMovePin(index, "up")}
+                        disabled={index === 0}
+                        title="Move Up"
+                        aria-label={`Move ${repoName} up`}
+                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMovePin(index, "down")}
+                        disabled={index === (settings.pinned_repos || []).length - 1}
+                        title="Move Down"
+                        aria-label={`Move ${repoName} down`}
+                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
+                      >
+                        ↓
+                      </button>
+                      
+                      {/* Unpin Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleUnpinRepo(repoName)}
+                        aria-label={`Unpin ${repoName}`}
+                        className="ml-2 rounded-lg border border-[var(--destructive-muted-border)] hover:bg-[var(--destructive-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--destructive)]"
+                      >
+                        Unpin
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pin New Repos (Search) */}
+          {(settings.pinned_repos || []).length < 3 && (
+            <div className="border-t border-[var(--border)]/60 pt-6">
+              <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+                Search & Pin Repositories
+              </h3>
+              <input
+                type="text"
+                value={repoSearchQuery}
+                onChange={(e) => setRepoSearchQuery(e.target.value)}
+                placeholder="Type to search your repositories..."
+                aria-label="Search repositories to pin"
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] mb-4"
+              />
+
+              {loadingRepos ? (
+                <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
+                  Loading your repositories...
+                </div>
+              ) : (
+                <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-thin">
+                  {userRepos
+                    .filter(
+                      (repoName) =>
+                        !(settings.pinned_repos || []).includes(repoName) &&
+                        repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
+                    )
+                    .slice(0, 5)
+                    .map((repoName) => (
+                      <div
+                        key={repoName}
+                        className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)]/40 hover:bg-[var(--control)] px-4 py-2 transition-colors"
+                      >
+                        <span className="text-xs font-medium text-[var(--card-foreground)] truncate">
+                          {repoName}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handlePinRepo(repoName)}
+                          aria-label={`Pin ${repoName}`}
+                          className="rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity"
+                        >
+                          Pin
+                        </button>
+                      </div>
+                    ))}
+                  {userRepos.filter(
+                    (repoName) =>
+                      !(settings.pinned_repos || []).includes(repoName) &&
+                      repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
+                  ).length === 0 && (
+                    <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
+                      No repositories available to pin.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">

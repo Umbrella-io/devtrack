@@ -290,11 +290,11 @@ function mockMetricResponse(url) {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
       prs: {
         thisWeek: { opened: 3, merged: 2 },
-        lastWeek: { opened: 1, merged: 1 }
+        lastWeek: { opened: 1, merged: 1 },
       },
       activeDays: {
         thisWeek: 5,
-        lastWeek: 4
+        lastWeek: 4,
       },
       streak: 3,
       topRepo: "demo/repo",

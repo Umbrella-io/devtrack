@@ -1,12 +1,11 @@
-import ParticleBackground from "@/components/ParticleBackground";
-
-import { Syne, DM_Sans, JetBrains_Mono } from 'next/font/google';
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import LandingPage, { type RepoStats } from "@/components/landing/LandingPage";
 import { supabaseAdmin } from "@/lib/supabase";
+
+import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -62,7 +61,7 @@ async function fetchRepoStats(): Promise<RepoStats> {
         .eq("is_sponsor", true);
 
       if (sponsors && sponsors.length > 0) {
-        const sponsorSet = new Set(sponsors.map((s) => s.github_login));
+        const sponsorSet = new Set(sponsors.map((s: { github_login: string }) => s.github_login));
         mappedContributors = mappedContributors.map((c) => ({
           ...c,
           isSponsor: sponsorSet.has(c.login),
@@ -97,12 +96,11 @@ export default async function HomePage() {
     redirect("/dashboard");
   }
 
-  const repoStats = await fetchRepoStats();
+  const stats = await fetchRepoStats();
 
   return (
-  <div className={`relative ${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
-    <ParticleBackground />
-    <LandingPage repoStats={repoStats} />
-  </div>
-);
+    <div className={`${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
+      <LandingPage repoStats={stats} />
+    </div>
+  );
 }
