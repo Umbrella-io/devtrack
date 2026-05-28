@@ -15,8 +15,9 @@
 [![Contributors](https://img.shields.io/github/contributors/Priyanshu-byte-coder/devtrack?color=brightgreen)](https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors)
 [![Last Commit](https://img.shields.io/github/last-commit/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/commits/main)
 [![Open Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/issues)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/Priyanshu-byte-coder?label=sponsors&color=ea4aaa)](https://github.com/sponsors/Priyanshu-byte-coder)
 
-**[🌐 Live Demo](https://devtrack-delta.vercel.app)** · **[📖 Dev Guide](./DEVELOPMENT.md)** · **[🐛 Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[✨ Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)**
+**[🌐 Live Demo](https://devtrack-delta.vercel.app)** · **[📖 Dev Guide](./DEVELOPMENT.md)** · **[🐛 Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[✨ Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[💖 Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
 
 </div>
 
@@ -33,6 +34,7 @@
 - [Getting Started](#-getting-started)
 - [Roadmap](#-roadmap)
 - [Contributing](#-contributing)
+- [Sponsors](#-sponsors)
 - [License](#-license)
 
 ---
@@ -116,7 +118,8 @@ devtrack/
 
 ## 🚀 Getting Started
 
-Full setup guide with troubleshooting: **[DEVELOPMENT.md](./DEVELOPMENT.md)**
+For local development and contributing, see the **[DEVELOPMENT.md](./DEVELOPMENT.md)** guide.
+To deploy your own production instance, see the **[Self-Hosting Guide](./docs/self-hosting.md)**.
 
 ### Quick Start (< 10 minutes)
 
@@ -142,21 +145,34 @@ npm install
 
 **4. Configure environment**
 
+Copy the `.env.example` file to `.env.local`:
+
 ```bash
 cp .env.example .env.local
 ```
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+Fill in the environment variables. Below is a detailed description of each variable supported by DevTrack:
 
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=        # run: openssl rand -base64 32
+### 🔑 Environment Variables Reference
 
-GITHUB_ID=your_client_id
-GITHUB_SECRET=your_client_secret
-```
+> [!WARNING]
+> Never commit `.env` or `.env.local` files to Git. They contain sensitive security credentials. The `.gitignore` file is pre-configured to ignore these files.
+
+| Variable | Required | Description | Example / Recommendation |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | **Yes** | Your Supabase project URL | `https://your-project.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Yes** | Supabase public API anonymous key | `eyJhbGciOiJIUzI1NiIsInR...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Supabase service role key (Never expose client-side) | `eyJhbGciOiJIUzI1NiIsInR...` |
+| `NEXTAUTH_URL` | **Yes** | Fully qualified base URL of the app | `http://localhost:3000` (Local) |
+| `NEXTAUTH_SECRET` | **Yes** | NextAuth session encryption key | Generate with `openssl rand -base64 32` |
+| `GITHUB_ID` | **Yes** | GitHub OAuth Application Client ID | Obtain from GitHub Developer Settings |
+| `GITHUB_SECRET` | **Yes** | GitHub OAuth Application Client Secret | Obtain from GitHub Developer Settings |
+| `ENCRYPTION_KEY` | **Yes** | 32-byte hex key for encrypting OAuth tokens | Generate with `openssl rand -hex 32` |
+| `GITHUB_WEBHOOK_SECRET` | No | Real-time metric refresh signature validation key | Generate with `openssl rand -hex 32` |
+| `GITHUB_TOKEN` | No | Personal Access Token to avoid GitHub API rate limits | Classic or fine-grained GitHub PAT |
+| `UPSTASH_REDIS_REST_URL` | No | Upstash Redis REST endpoint for caching | `https://your-db.upstash.io` |
+| `UPSTASH_REDIS_REST_TOKEN` | No | Upstash Redis REST access token | Caching credentials from Upstash |
+| `GROQ_API_KEY` | No | Groq API Key to enable AI-powered weekly insights | `gsk_...` (From console.groq.com) |
 
 **5. Run locally**
 
@@ -223,6 +239,21 @@ DevTrack actively welcomes contributors of all skill levels, including **GSSoC 2
 See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for full guidelines, commit style, and the review process.
 
 > 💬 Questions? Open a [Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions) — we're happy to help!
+
+---
+
+## 💖 Sponsors
+
+DevTrack is free and open source. Sponsoring helps cover infrastructure costs (Supabase, Vercel, API usage) and lets me dedicate more time to new features.
+
+| Tier | Amount | Perks |
+|------|--------|-------|
+| ☕ Coffee | $5 / mo | Your name in this README |
+| 🎯 Backer | $15 / mo | Name + priority response on issues |
+| 🏆 Champion | $50 / mo | Name + logo in README + feature request priority |
+| 💝 One-time | $10+ | One-time thanks, no recurring commitment |
+
+**[→ Sponsor DevTrack on GitHub](https://github.com/sponsors/Priyanshu-byte-coder)**
 
 ---
 

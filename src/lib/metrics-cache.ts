@@ -13,7 +13,9 @@ export const METRICS_CACHE_TTL_SECONDS = {
   streak_freeze: 2 * 60,
   activity: 5 * 60,
   issues: 10 * 60,
+  languages: 21600,
   "coding-activity-insights": 5 * 60,
+  compare: 10 * 60,
 } as const;
 
 type MetricsCacheEndpoint = keyof typeof METRICS_CACHE_TTL_SECONDS;

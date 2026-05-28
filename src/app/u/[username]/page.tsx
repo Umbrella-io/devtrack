@@ -1,8 +1,16 @@
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 import BadgeSection from "@/components/BadgeSection";
+import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
 import CopyLinkButton from "@/components/CopyLinkButton";
+import ThemeToggle from "@/components/ThemeToggle"; 
 import { getUserByUsername } from "@/lib/supabase";
+import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
+
+
+
+
 import {
   fetchPublicTopRepos,
   fetchPublicContributions,
@@ -11,16 +19,32 @@ import {
 } from "@/lib/public-profile-data";
 
 async function fetchPublicProfile(
-  username: string
+  username: string,
+  options: { includeAchievements?: boolean } = {}
 ): Promise<PublicProfileData | null> {
   const user = await getUserByUsername(username);
+
   if (!user) return null;
 
+  const canonicalUsername = user.github_login.toLowerCase();
+
+  if (username !== canonicalUsername) {
+    redirect(`/u/${canonicalUsername}`);
+  }
+
   const githubToken = process.env.GITHUB_TOKEN;
-  const [repos, contributions, streak] = await Promise.all([
+
+  const [repos, contributions, streak, achievementsCache] = await Promise.all([
     fetchPublicTopRepos(user.github_login, githubToken, 30),
     fetchPublicContributions(user.github_login, githubToken, 30),
     fetchPublicStreak(user.github_login, githubToken),
+    options.includeAchievements
+      ? syncGitHubAchievementsForUser({
+          userId: user.id,
+          githubLogin: user.github_login,
+          token: githubToken,
+        })
+      : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
   ]);
 
   return {
@@ -29,6 +53,8 @@ async function fetchPublicProfile(
     repos,
     contributions,
     streak,
+    achievements: achievementsCache.achievements,
+    achievementsError: achievementsCache.error,
   };
 }
 
@@ -74,7 +100,7 @@ export default async function PublicProfilePage({
   params: { username: string };
 }) {
   const { username } = params;
-  const profile = await fetchPublicProfile(username);
+  const profile = await fetchPublicProfile(username, { includeAchievements: true });
 
   if (!profile) {
     return (
@@ -125,16 +151,18 @@ export default async function PublicProfilePage({
           </p>
         </div>
         {/* Download stats card button — client component */}
-        <StatsCard
-          username={profile.username}
-          avatarUrl={avatarUrl}
-          currentStreak={profile.streak.current}
-          longestStreak={profile.streak.longest}
-          totalCommits={profile.contributions.total}
-          topRepo={topRepo}
-        />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <StatsCard
+            username={profile.username}
+            avatarUrl={avatarUrl}
+            currentStreak={profile.streak.current}
+            longestStreak={profile.streak.longest}
+            totalCommits={profile.contributions.total}
+            topRepo={topRepo}
+          />
+        </div>
       </div>
-
       {/* Row 1: Contribution graph + Streak */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -150,7 +178,15 @@ export default async function PublicProfilePage({
         <PublicTopRepos repos={profile.repos} />
       </div>
 
-      {/* Row 3: Get your badge */}
+      {/* Row 3: GitHub achievements */}
+      <div className="mt-6">
+        <GitHubAchievements
+          achievements={profile.achievements}
+          error={profile.achievementsError}
+        />
+      </div>
+
+      {/* Row 4: Get your badge */}
       <div className="mt-6">
         <BadgeSection username={profile.username} />
       </div>

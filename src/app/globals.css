@@ -13,6 +13,7 @@
   --border: #e5e7eb;
   --accent: #3b82f6;
   --accent-secondary: #60a5fa;
+  --focus-ring: #4338ca;
   --success: #10b981;
   --warning: #f59e0b;
   --destructive: #ef4444;
@@ -40,6 +41,7 @@
   --border: #334155;
   --accent: #60a5fa;
   --accent-secondary: #3b82f6;
+  --focus-ring: #a5b4fc;
   --success: #10b981;
   --warning: #fbbf24;
   --destructive: #f87171;
@@ -96,6 +98,19 @@ body {
   border-color: color-mix(in srgb, var(--accent) 50%, var(--border) 50%);
   background: color-mix(in srgb, var(--control) 90%, white 10%);
 }
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+  border-radius: 0.375rem;
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+  }
+}
+
 /* Custom slim scrollbar for dashboard widgets */
 .scrollbar-thin {
   scrollbar-width: thin;

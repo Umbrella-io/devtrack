@@ -7,7 +7,7 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // may not be set. Create the client lazily and guard usages so the
 // build step doesn't execute runtime-only code.
 export const supabaseAdmin: any =
-  supabaseUrl && serviceRoleKey
+  supabaseUrl && serviceRoleKey && !supabaseUrl.includes("placeholder")
     ? createClient(supabaseUrl, serviceRoleKey)
     : null;
 
@@ -33,7 +33,7 @@ export async function getUserByUsername(
     const { data, error } = await supabaseAdmin
       .from("users")
       .select("id,github_id,github_login,is_public,created_at,updated_at")
-      .eq("github_login", username)
+      .ilike("github_login", username)
       .eq("is_public", true)
       .single();
 

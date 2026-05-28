@@ -4,8 +4,9 @@ const year = new Date().getFullYear();
 
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-[var(--border)] bg-[linear-gradient(180deg,rgba(59,130,246,0.08),transparent)]">
-      <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <footer className="mt-auto border-t border-[var(--border)] bg-[var(--background)] relative">
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(59,130,246,0.08),transparent)] pointer-events-none" />
+      <div className="relative mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr]">
           <div>
             <div className="inline-flex items-center rounded-full border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
@@ -102,7 +103,8 @@ export default function Footer() {
               <a
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="mailto:doshipriyanshu3@gmail.com"
-                target="_blank" rel="noreferrer"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 Email
               </a>

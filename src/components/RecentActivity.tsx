@@ -8,6 +8,7 @@ type ActivityType =
   | "pull_request"
   | "issue"
   | "release"
+  | "discussion"
   | "other";
 
 interface ActivityItem {
@@ -25,6 +26,7 @@ function getTypeBadge(type: ActivityType): string {
   if (type === "pull_request") return "PR";
   if (type === "issue") return "Issue";
   if (type === "release") return "Release";
+  if (type === "discussion") return "Discussion";
   return "Event";
 }
 
@@ -78,6 +80,20 @@ function getTypeIcon(type: ActivityType): ReactNode {
       <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
         <path
           d="M8 2l1.6 3.2L13 6l-2.5 2.4L11 12l-3-1.6L5 12l.5-3.6L3 6l3.4-.8L8 2Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  if (type === "discussion") {
+    return (
+      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+        <path
+          d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6A1.5 1.5 0 0 1 12.5 11H9l-3 2.5V11H3.5A1.5 1.5 0 0 1 2 9.5v-6Z"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.2"
@@ -167,9 +183,13 @@ export default function RecentActivity() {
         <button
           type="button"
           onClick={fetchActivity}
-          className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)]"
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Refresh
+          {loading ? (
+            <svg className="animate-spin h-3 w-3 text-[var(--muted-foreground)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          ) : null}
+          <span>Refresh</span>
         </button>
       </div>
 

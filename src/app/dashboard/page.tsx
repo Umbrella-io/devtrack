@@ -10,6 +10,7 @@ import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
+import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
 import dynamic from "next/dynamic";
 
 const SkeletonCard = () => (
@@ -88,19 +89,28 @@ import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
+import CodingTimeWidget from "@/components/CodingTimeWidget";
 import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/");
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
-      <DashboardHeader />
+    <DashboardSSEProvider>
+      <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
+        <DashboardHeader />
       <div className="mb-6 flex justify-end items-center gap-2">
+        <Link
+          href="/wrapped"
+          className="rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
+        >
+          Year in Code
+        </Link>
         <Link
           href="/dashboard/settings"
           className="secondary-button flex min-w-[140px] items-center justify-center rounded-xl px-4 py-2 text-sm font-medium"
@@ -110,6 +120,24 @@ export default async function DashboardPage() {
         <ExportButton />
       </div>
       <StreakAtRiskBanner />
+
+      <div className="mb-6 mt-6">
+        <Link href="/wrapped">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-fuchsia-600 p-6 shadow-lg transition-transform hover:scale-[1.01]">
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Your Year in Code is here! ✨</h2>
+                <p className="mt-1 text-white/90">Discover your top languages, longest streaks, and coding habits of the year.</p>
+              </div>
+              <div className="rounded-full bg-white px-6 py-2 font-bold text-purple-600">
+                View Wrapped
+              </div>
+            </div>
+            <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+            <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-black/20 blur-3xl"></div>
+          </div>
+        </Link>
+      </div>
 
       <div className="mb-6">
         <WeeklySummaryCard />
@@ -133,11 +161,17 @@ export default async function DashboardPage() {
           <div className="mt-6">
             <FriendComparison />
           </div>
+          <div className="mt-6">
+            <RepoAnalyticsExplorer />
+          </div>
         </div>
 
         <div>
           <StreakTracker />
           <LocalCodingTime />
+          <div className="mt-6">
+            <CodingTimeWidget />
+          </div>
         </div>
       </div>
 
@@ -195,5 +229,6 @@ export default async function DashboardPage() {
         <RecentActivity />
       </div>
     </div>
+    </DashboardSSEProvider>
   );
 }

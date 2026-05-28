@@ -12,7 +12,7 @@ export default function SignInPage() {
           DevTrack
         </h1>
 
-        <p className="text-[var(--muted-foreground)] mb-8">
+        <p className="text-[var(--muted-foreground)] mb-8 text-sm">
           Track your developer journey, GitHub activity, and coding consistency.
         </p>
 
@@ -22,6 +22,10 @@ export default function SignInPage() {
         >
           Sign in with GitHub
         </button>
+
+        <div className="mt-6 text-xs text-[var(--muted-foreground)] tracking-wide">
+          MIT License &middot; Self-hostable &middot; Free forever
+        </div>
       </div>
     </main>
   );

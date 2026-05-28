@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import Footer from "@/components/Footer";
+import DeferredVercelMetrics from "@/components/DeferredVercelMetrics";
 import Providers from "./providers";
 import PWARegister from "@/components/pwa-register";
 import "./globals.css";
 import { Toaster } from "sonner";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,7 +36,7 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -51,8 +50,13 @@ export default function RootLayout({
               (function() {
                 try {
                   const stored = localStorage.getItem('theme');
-
                   if (stored === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.style.colorScheme = 'dark';
+                  } else if (stored === 'light') {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.style.colorScheme = 'light';
+                  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                     document.documentElement.classList.add('dark');
                     document.documentElement.style.colorScheme = 'dark';
                   } else {
@@ -80,8 +84,7 @@ export default function RootLayout({
 
           <Toaster richColors position="top-right" />
         </div>
-        <Analytics />
-        <SpeedInsights />
+        <DeferredVercelMetrics />
       </body>
     </html>
   );
