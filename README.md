@@ -72,20 +72,10 @@ Whether you're a solo developer tracking consistency, a student building your po
 ## ✨ Features
 
 
-  
-| Feature                   | Description                                                              |
-| ------------------------- | ------------------------------------------------------------------------ |
-| **GitHub OAuth**          | Sign in with GitHub — no extra account needed                            |
-
-| Feature | Description |
-|---|---|
-| **GitHub OAuth** | Sign in with GitHub — no extra account needed |
-
 
 | Feature                   | Description                                                              |
 | ------------------------- | ------------------------------------------------------------------------ |
 | **GitHub OAuth**          | Sign in with GitHub — no extra account needed                            |
-
 | **Commit Activity Chart** | Visualize daily commit activity with 7d / 14d / 30d / 90d range selector |
 | **Commit Streak Tracker** | Current streak, longest streak, active days — stay consistent            |
 | **PR Analytics**          | Average review time, merge rate, open/closed PR count                    |
