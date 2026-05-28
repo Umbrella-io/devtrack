@@ -70,6 +70,7 @@ export default function WeeklySummaryCard() {
           aria-label={
             isCollapsed ? "Expand weekly summary" : "Collapse weekly summary"
           }
+          suppressHydrationWarning
         >
           {isCollapsed ? ">" : "v"}
         </button>

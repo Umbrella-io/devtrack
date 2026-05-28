@@ -46,6 +46,7 @@ export default function SignOutButton() {
         <button
             type="button"
             disabled={signingOut}
+            suppressHydrationWarning
             onClick={() => setConfirming(true)}
             className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--destructive)]/50 bg-[var(--destructive)]/80 px-4 text-sm font-semibold text-[var(--destructive-foreground)] transition-colors hover:bg-[var(--destructive)] disabled:cursor-not-allowed disabled:opacity-70"
         >
