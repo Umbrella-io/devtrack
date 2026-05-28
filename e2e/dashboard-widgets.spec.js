@@ -1,44 +1,61 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
-const authSecret = "playwright-placeholder-secret-that-is-long-enough";
-
 test.beforeEach(async ({ page }) => {
-  const sessionToken = await encode({
-    secret: authSecret,
+  // Create a valid NextAuth JWT and set it as the session cookie so
+  // dashboard pages render as an authenticated user in Playwright.
+  const token = await encode({
+    secret: process.env.NEXTAUTH_SECRET ?? "playwright-placeholder-secret-that-is-long-enough",
     token: {
       name: "Playwright User",
       email: "playwright@example.com",
-      sub: "12345",
       githubLogin: "playwright-user",
       githubId: "12345",
       accessToken: "test-token",
+      expires: "2099-01-01T00:00:00.000Z",
     },
-    maxAge: 60 * 60,
   });
 
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: sessionToken,
+      value: String(token ?? ""),
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
       sameSite: "Lax",
       secure: false,
-      expires: Math.floor(Date.now() / 1000) + 60 * 60,
     },
   ]);
 
-  await page.route("**/api/auth/session", async (route) => {
+  await page.route("**/api/ai-insights**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
-        user: { name: "Playwright User", email: "playwright@example.com" },
-        githubLogin: "playwright-user",
-        githubId: "12345",
-        accessToken: "test-token",
-        expires: "2099-01-01T00:00:00.000Z",
+        data: {
+          insights: [
+            {
+              id: "insight-1",
+              type: "productivity",
+              title: "High Consistency",
+              description: "You have coded 5 days this week!",
+              severity: "positive",
+            },
+          ],
+          trend: { direction: "up", percentage: 15 },
+          aiSummary: "Great job shipping features this week. Keep up the high standard!",
+          generatedAt: "2026-05-18T12:00:00.000Z",
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/notifications**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        notifications: [],
+        unreadCount: 0,
       }),
     });
   });
@@ -87,8 +104,48 @@ test.beforeEach(async ({ page }) => {
             unit: "commits",
             recurrence: "weekly",
             period_start: "2026-05-18",
+            last_synced_at: new Date().toISOString(),
           },
         ],
+      }),
+    });
+  });
+
+  await page.route("**/api/goals/sync", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ updated: 1, commitCount: 4 }),
+    });
+  });
+
+  await page.route("**/api/ai-insights**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: {
+          insights: [
+            {
+              id: "insight-1",
+              type: "productivity",
+              title: "High Consistency",
+              description: "You have coded 5 days this week!",
+              severity: "positive",
+            },
+          ],
+          trend: { direction: "up", percentage: 15 },
+          aiSummary: "Great job shipping features this week. Keep up the high standard!",
+          generatedAt: "2026-05-18T12:00:00.000Z",
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/notifications**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        notifications: [],
+        unreadCount: 0,
       }),
     });
   });
@@ -107,26 +164,43 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/ci**",
     "**/api/streak/freeze**",
     "**/api/user/github-accounts**",
+    "**/api/metrics/activity**",
+    "**/api/metrics/commit-time**",
+    "**/api/metrics/personal-records**",
+    "**/api/metrics/discussions**",
+    "**/api/metrics/pr-review-trend**",
+    "**/api/metrics/inactive-repos**",
+    "**/api/notifications**",
+    "**/api/local-coding/stats**",
+    "**/api/metrics/coding-time**",
+    "**/api/metrics/coding-activity-insights**",
   ];
 
-  for (const pattern of metricRoutes) {
-    await page.route(pattern, async (route) => {
-      await route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify(mockMetricResponse(route.request().url())),
-      });
+for (const pattern of metricRoutes) {
+  await page.route(pattern, async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(mockMetricResponse(route.request().url())),
     });
-  }
-});
+  });
+}
 
+  await page.route("**/api/stream**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: "data: {}\n\n",
+    });
+  });
+
+
+});
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
-  await page.waitForTimeout(2000);
-
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("heading", { name: "Weekly Goals" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByText("Make 10 commits")).toBeVisible({ timeout: 10000 });
 });
 
@@ -139,7 +213,7 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
   });
 
   await page.goto("/dashboard", { waitUntil: "load" });
-  await page.waitForTimeout(2000);
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await page.getByRole("button", { name: "Show 90-day range" }).click();
 
   await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
@@ -154,17 +228,17 @@ test("goal form posts a new goal", async ({ page }) => {
   });
 
   await page.goto("/dashboard", { waitUntil: "load" });
-  await page.waitForTimeout(2000);
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
-  await page.getByLabel("Unit").fill("PR");
+  await page.getByLabel("Unit").selectOption("prs");
   await page.getByRole("button", { name: "Add goal" }).click();
 
   await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);
   expect(goalPosts[0]).toMatchObject({
     title: "Ship one PR",
     target: 1,
-    unit: "PR",
+    unit: "prs",
   });
 });
 
@@ -204,8 +278,14 @@ function mockMetricResponse(url) {
   if (url.includes("/api/metrics/weekly-summary")) {
     return {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
-      prs: { opened: 3, merged: 2 },
-      activeDays: 5,
+      prs: {
+        thisWeek: { opened: 3, merged: 2 },
+        lastWeek: { opened: 1, merged: 1 }
+      },
+      activeDays: {
+        thisWeek: 5,
+        lastWeek: 4
+      },
       streak: 3,
       topRepo: "demo/repo",
     };
@@ -224,6 +304,36 @@ function mockMetricResponse(url) {
   }
   if (url.includes("/api/user/github-accounts")) {
     return { accounts: [] };
+  }
+  if (url.includes("/api/local-coding/stats")) {
+    return {
+      dailyData: [],
+      totals: { totalSeconds: 0, totalDays: 0, avgSecondsPerDay: 0 },
+      hasData: false,
+    };
+  }
+  if (url.includes("/api/metrics/coding-time")) {
+    return {
+      hasData: false,
+      not_configured: true,
+      todaysSeconds: 0,
+      totalSeconds7Days: 0,
+      chartData: [],
+      topLanguage: "",
+      topProject: "",
+    };
+  }
+  if (url.includes("/api/metrics/coding-activity-insights")) {
+    return {
+      hourlyCounts: [],
+      mostActiveHour: { hour: 0, count: 0, label: "" },
+      leastActiveHour: { hour: 0, count: 0, label: "" },
+      totalActivities: 0,
+      averageDailyCommits: 0,
+      consistencyScore: 0,
+      productivityLevel: "Low",
+      timezone: "UTC",
+    };
   }
   return {};
 }

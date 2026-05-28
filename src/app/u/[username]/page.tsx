@@ -1,47 +1,61 @@
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 import BadgeSection from "@/components/BadgeSection";
-import ContributionGraph from "@/components/ContributionGraph";
-import StreakTracker from "@/components/StreakTracker";
-import TopRepos from "@/components/TopRepos";
+import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
 import CopyLinkButton from "@/components/CopyLinkButton";
+import ThemeToggle from "@/components/ThemeToggle"; 
+import { getUserByUsername } from "@/lib/supabase";
+import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 
-interface PublicProfileData {
-  username: string;
-  userId: string;
-  repos: Array<{ name: string; commits: number; url: string }>;
-  contributions: {
-    days: number;
-    total: number;
-    data: Record<string, number>;
-  };
-  streak: {
-    current: number;
-    longest: number;
-    lastCommitDate: string | null;
-    totalActiveDays: number;
-  };
-}
+
+
+
+import {
+  fetchPublicTopRepos,
+  fetchPublicContributions,
+  fetchPublicStreak,
+  type PublicProfileData,
+} from "@/lib/public-profile-data";
 
 async function fetchPublicProfile(
-  username: string
+  username: string,
+  options: { includeAchievements?: boolean } = {}
 ): Promise<PublicProfileData | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const user = await getUserByUsername(username);
 
-  try {
-    const res = await fetch(`${baseUrl}/api/public/${username}`, {
-      cache: "no-store",
-    });
+  if (!user) return null;
 
-    if (!res.ok) {
-      return null;
-    }
+  const canonicalUsername = user.github_login.toLowerCase();
 
-    return res.json();
-  } catch (error) {
-    console.error(`Error fetching public profile for ${username}:`, error);
-    return null;
+  if (username !== canonicalUsername) {
+    redirect(`/u/${canonicalUsername}`);
   }
+
+  const githubToken = process.env.GITHUB_TOKEN;
+
+  const [repos, contributions, streak, achievementsCache] = await Promise.all([
+    fetchPublicTopRepos(user.github_login, githubToken, 30),
+    fetchPublicContributions(user.github_login, githubToken, 30),
+    fetchPublicStreak(user.github_login, githubToken),
+    options.includeAchievements
+      ? syncGitHubAchievementsForUser({
+          userId: user.id,
+          githubLogin: user.github_login,
+          token: githubToken,
+        })
+      : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
+  ]);
+
+  return {
+    username: user.github_login,
+    userId: user.id,
+    repos,
+    contributions,
+    streak,
+    achievements: achievementsCache.achievements,
+    achievementsError: achievementsCache.error,
+  };
 }
 
 export async function generateMetadata({
@@ -86,21 +100,31 @@ export default async function PublicProfilePage({
   params: { username: string };
 }) {
   const { username } = params;
-  const profile = await fetchPublicProfile(username);
+  const profile = await fetchPublicProfile(username, { includeAchievements: true });
 
   if (!profile) {
     return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors flex items-center justify-center">
-        <div className="text-center">
+        <div className="surface-card max-w-md rounded-2xl p-8 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
             Profile Not Found
           </h1>
-          <p className="text-[var(--muted-foreground)] mb-6">
-            This profile is not available or is private.
+          <p className="text-[var(--muted-foreground)] mb-2">
+            This profile is not available or has not been made public.
+          </p>
+          <p className="text-sm text-[var(--muted-foreground)] mb-6">
+            If this is your profile, go to{" "}
+            <a
+              href="/dashboard/settings"
+              className="text-[var(--accent)] underline hover:opacity-80"
+            >
+              Settings
+            </a>{" "}
+            and enable <strong>Public Profile</strong>.
           </p>
           <a
             href="/"
-            className="inline-block px-6 py-2 bg-[var(--accent)] text-[var(--accent-foreground)] rounded-lg hover:opacity-90 transition-opacity"
+            className="primary-button inline-block rounded-lg px-6 py-2"
           >
             Back to Home
           </a>
@@ -113,7 +137,7 @@ export default async function PublicProfilePage({
   const topRepo = profile.repos[0]?.name ?? "";
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
+    <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
@@ -127,16 +151,18 @@ export default async function PublicProfilePage({
           </p>
         </div>
         {/* Download stats card button — client component */}
-        <StatsCard
-          username={profile.username}
-          avatarUrl={avatarUrl}
-          currentStreak={profile.streak.current}
-          longestStreak={profile.streak.longest}
-          totalCommits={profile.contributions.total}
-          topRepo={topRepo}
-        />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <StatsCard
+            username={profile.username}
+            avatarUrl={avatarUrl}
+            currentStreak={profile.streak.current}
+            longestStreak={profile.streak.longest}
+            totalCommits={profile.contributions.total}
+            topRepo={topRepo}
+          />
+        </div>
       </div>
-
       {/* Row 1: Contribution graph + Streak */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -152,7 +178,15 @@ export default async function PublicProfilePage({
         <PublicTopRepos repos={profile.repos} />
       </div>
 
-      {/* Row 3: Get your badge */}
+      {/* Row 3: GitHub achievements */}
+      <div className="mt-6">
+        <GitHubAchievements
+          achievements={profile.achievements}
+          error={profile.achievementsError}
+        />
+      </div>
+
+      {/* Row 4: Get your badge */}
       <div className="mt-6">
         <BadgeSection username={profile.username} />
       </div>
@@ -178,7 +212,7 @@ function PublicContributionGraph({
     .map(([day, commits]) => ({ day, commits }));
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
       <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
         <div>
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
@@ -207,9 +241,11 @@ function PublicContributionGraph({
                 className="aspect-square rounded-sm"
                 style={{
                   backgroundColor:
+                    day.commits > 0 ? "var(--accent)" : "var(--control)",
+                  opacity:
                     day.commits > 0
-                      ? `hsl(var(--accent) / ${Math.min(day.commits / 10, 1)})`
-                      : "var(--control)",
+                      ? Math.max(0.2, Math.min(day.commits / 10, 1))
+                      : 1,
                 }}
                 title={`${day.day}: ${day.commits} commits`}
               />
@@ -263,7 +299,7 @@ function PublicStreakTracker({ streak }: { streak: any }) {
   ];
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
         Commit Streaks
       </h2>
@@ -307,7 +343,7 @@ function PublicTopRepos({
   const maxCommits = repos[0]?.commits ?? 1;
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
         Top Repositories
       </h2>

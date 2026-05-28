@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Star, GitFork } from "lucide-react";
 
 interface PinnedRepo {
   name: string;
@@ -60,12 +61,12 @@ export default function PinnedRepos() {
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
+        <div className="rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
             type="button"
             onClick={fetchPinnedRepos}
-            className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
+            className="mt-3 rounded-md border border-[var(--destructive-muted-border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive-muted)]"
           >
             Try again
           </button>
@@ -110,11 +111,17 @@ export default function PinnedRepos() {
                           repo.primaryLanguage.color ?? "#8b949e",
                       }}
                     />
-                    {repo.primaryLanguage.name}
+                    {repo.primaryLanguage?.name}
                   </span>
                 )}
-                <span>⭐ {repo.stargazerCount}</span>
-                <span>🍴 {repo.forkCount}</span>
+                <span className="flex items-center gap-1">
+                  <Star size={14} className="fill-yellow-400 text-yellow-400" aria-hidden="true" />
+                  {repo.stargazerCount}
+                </span>
+                <span className="flex items-center gap-1">
+                  <GitFork size={14} aria-hidden="true" />
+                  {repo.forkCount}
+                </span>
               </div>
             </a>
           ))}

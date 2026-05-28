@@ -160,7 +160,7 @@ export default function PRReviewTrendChart() {
             PR Review Time Trend
           </h2>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-            Average time from PR open to merge over the last 4 weeks.
+            Average time from PR open to merge over the last 12 weeks.
           </p>
         </div>
       </div>

@@ -6,7 +6,9 @@ create table if not exists users (
   github_login text not null,
   is_public    boolean default false,
   created_at   timestamptz default now(),
-  updated_at   timestamptz default now()
+  updated_at   timestamptz default now(),
+  wakatime_api_key_encrypted text,
+  wakatime_api_key_iv text
 );
 
 create table if not exists goals (
@@ -16,6 +18,7 @@ create table if not exists goals (
   target       integer not null,
   current      integer not null default 0,
   unit         text not null default 'commits',
+  deadline     timestamptz,
   recurrence   text not null default 'none' check (recurrence in ('none', 'weekly', 'monthly')),
   period_start timestamptz default now(),
   created_at   timestamptz default now(),
@@ -35,3 +38,41 @@ create table if not exists metric_snapshots (
 );
 
 create index if not exists snapshots_user_time on metric_snapshots(user_id, snapshot_at);
+
+-- -------------------------------------------------------
+-- AI Mentor: cached insights & Claude-generated summaries
+-- -------------------------------------------------------
+create table if not exists ai_insights (
+  id           text primary key default gen_random_uuid()::text,
+  user_id      text not null,
+  insight_type text not null check (insight_type in ('weekly_summary', 'pattern', 'recommendation')),
+  content      jsonb not null,
+  generated_at timestamptz default now(),
+  expires_at   timestamptz default now() + interval '24 hours'
+);
+
+create index if not exists idx_ai_insights_user_id on ai_insights(user_id);
+create index if not exists idx_ai_insights_type    on ai_insights(insight_type);
+
+-- Unique index required by the upsert conflict target in /api/ai-insights
+create unique index if not exists idx_ai_insights_user_type
+  on ai_insights(user_id, insight_type);
+
+create table if not exists user_github_achievements (
+  user_id      text primary key references users(id) on delete cascade,
+  github_login text not null,
+  achievements jsonb not null default '[]'::jsonb,
+  synced_at    timestamptz,
+  fetch_error  text,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+
+create index if not exists idx_user_github_achievements_login
+  on user_github_achievements(github_login);
+
+alter table user_github_achievements enable row level security;
+
+create policy "user_github_achievements_select_own"
+  on user_github_achievements for select
+  using (user_id = auth.uid()::text);
