@@ -103,4 +103,86 @@ describe("formatActivity", () => {
 
     expect(result?.title).toBe("Published release");
   });
+
+  it("returns null for unsupported event types", () => {
+    const event = {
+      type: "UnsupportedEvent",
+    };
+    expect(formatActivity(event as any)).toBeNull();
+  });
+
+  it("returns null for unsupported event types that still have repo names", () => {
+    const event = {
+      type: "RandomEvent",
+      repo: {
+        name: "test/repo",
+      },
+      payload: {},
+    };
+    expect(formatActivity(event as any)).toBeNull();
+  });
+
+  it("formats PushEvent with malformed refs correctly", () => {
+    const event = {
+      type: "PushEvent",
+      repo: {
+        name: "test/repo",
+      },
+      payload: {
+        commits: [{}],
+        ref: "refs/tags/v1.0",
+      },
+    };
+    const result = formatActivity(event as any);
+    expect(result?.title).toBe("Pushed 1 commit to refs/tags/v1.0");
+  });
+
+  it("formats ReleaseEvent edge cases (different action and missing tag)", () => {
+    const event = {
+      type: "ReleaseEvent",
+      repo: {
+        name: "test/repo",
+      },
+      payload: {
+        action: "created",
+        release: {
+          name: "Initial Release",
+        },
+      },
+    };
+    const result = formatActivity(event as any);
+    expect(result?.title).toBe("Created release");
+    expect(result?.subtitle).toBe("Initial Release");
+  });
+
+  it("formats DiscussionEvent with various action types", () => {
+    const event = {
+      type: "DiscussionEvent",
+      repo: {
+        name: "test/repo",
+      },
+      payload: {
+        action: "answered",
+        discussion: {
+          number: 10,
+          title: "How to use?",
+        },
+      },
+    };
+    const result = formatActivity(event as any);
+    expect(result?.title).toBe("Answered discussion #10");
+  });
+
+  it("is case sensitive in event type matching and returns null for lowercase types", () => {
+    const event = {
+      type: "pushevent",
+      repo: {
+        name: "test/repo",
+      },
+      payload: {
+        commits: [{}],
+      },
+    };
+    expect(formatActivity(event as any)).toBeNull();
+  });
 });
