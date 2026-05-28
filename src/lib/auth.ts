@@ -26,6 +26,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/auth/signin",
   },
+  // From PR #1334: use secure cookies on HTTPS deployments, plain cookies on HTTP (local dev).
   cookies: {
     sessionToken: {
       name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
@@ -49,6 +50,20 @@ export const authOptions: NextAuthOptions = {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {
         const p = profile as { id: number; login: string; email?: string };
+
+        // Guard: supabaseAdmin is null when Supabase env vars are missing or
+        // contain placeholder values (see src/lib/supabase.ts). Calling .from()
+        // on null throws a TypeError which NextAuth silently converts to
+        // return false → error=github redirect. Skip the upsert gracefully
+        // so authentication can still succeed with degraded functionality.
+        if (!supabaseAdmin) {
+          console.warn(
+            "signIn: supabaseAdmin is not configured; skipping DB upsert. " +
+            "Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local."
+          );
+          return true;
+        }
+
         try {
           let { data: user, error: upsertError } = await supabaseAdmin
             .from("users")

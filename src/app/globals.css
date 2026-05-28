@@ -63,6 +63,10 @@
   --shadow-medium: 0 24px 45px -28px rgba(2, 6, 23, 0.85);
 }
 
+html, body {
+  overscroll-behavior: none;
+}
+
 body {
   background:
     radial-gradient(circle at 0% 0%, rgba(96, 165, 250, 0.16), transparent 36%),
@@ -70,6 +74,7 @@ body {
     var(--background);
   color: var(--foreground);
   transition: background-color 200ms ease, color 200ms ease;
+  overscroll-behavior: none;
 }
 
 .surface-card {
@@ -160,7 +165,7 @@ body {
 .dark::-webkit-scrollbar       { width: 6px; height: 6px; }
 .dark::-webkit-scrollbar-track { background: transparent; }
 .dark::-webkit-scrollbar-thumb { background: #222; border-radius: 6px; }
-.dark::-webkit-scrollbar-thumb:hover { background: #333; }
+.dark::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
 /* ─────────────────────────────────────────
    LANDING PAGE
@@ -188,14 +193,14 @@ body {
   font-family: var(--font-jetbrains, ui-monospace, monospace);
   font-size: 12px;
   font-weight: 500;
-  color: #888;
+  color: #9ca3af;
   text-decoration: none;
   padding: 6px 14px;
   border: 1px solid #222;
   border-radius: 5px;
   transition: all 0.2s;
 }
-.lnd-nav-link:hover { color: #e0e0e0; border-color: #444; }
+.lnd-nav-link:hover { color: #e0e0e0; border-color: #6b7280; }
 
 .lnd-cta-primary {
   display: inline-flex;
@@ -244,7 +249,7 @@ body {
   font-family: var(--font-jetbrains, ui-monospace, monospace);
   font-size: 13px;
   font-weight: 500;
-  color: #555;
+  color: #9ca3af;
   background: transparent;
   padding: 11px 22px;
   border-radius: 6px;
@@ -274,7 +279,7 @@ body {
 .lnd-footer-link {
   font-family: var(--font-jetbrains, ui-monospace, monospace);
   font-size: 11px;
-  color: #333;
+  color: #9ca3af;
   text-decoration: none;
   transition: color 0.2s;
 }
