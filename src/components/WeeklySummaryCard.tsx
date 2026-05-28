@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 
 interface WeeklySummaryData {
   commits: {
@@ -19,6 +20,7 @@ interface WeeklySummaryData {
 }
 
 export default function WeeklySummaryCard() {
+  const { selectedAccount } = useAccount();
   const [summary, setSummary] = useState<WeeklySummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,11 +30,15 @@ export default function WeeklySummaryCard() {
   const maxPRs = summary ? Math.max(summary.prs.thisWeek.merged, summary.prs.lastWeek.merged, 1) : 1;
   const maxActiveDays = summary ? Math.max(summary.activeDays.thisWeek, summary.activeDays.lastWeek, 1) : 1;
 
-  useEffect(() => {
+  const fetchSummary = useCallback(() => {
     setLoading(true);
     setError(null);
 
-    fetch("/api/metrics/weekly-summary")
+    const url = selectedAccount !== null
+      ? `/api/metrics/weekly-summary?accountId=${encodeURIComponent(selectedAccount)}`
+      : "/api/metrics/weekly-summary";
+
+    fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error("API error");
         return r.json();
@@ -44,7 +50,11 @@ export default function WeeklySummaryCard() {
         )
       )
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedAccount]);
+
+  useEffect(() => {
+    fetchSummary();
+  }, [fetchSummary]);
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
