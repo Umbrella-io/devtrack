@@ -5,7 +5,6 @@ import GoalTracker from "@/components/GoalTracker";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
-import PinnedRepos from "@/components/PinnedRepos";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
 import InactiveRepositoriesCard from "@/components/InactiveRepositoriesCard";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
@@ -41,18 +40,14 @@ const SkeletonCard = () => (
 
 const ContributionGraphSkeleton = () => (
   <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-    <h2 className="text-lg font-semibold text-[var(--foreground)]">
-      Your Commits
-    </h2>
+    <h2 className="text-lg font-semibold text-[var(--foreground)]">Your Commits</h2>
     <div className="mt-3 h-40 rounded bg-[var(--card-muted)] animate-pulse" />
   </div>
 );
 
 const PRMetricsSkeleton = () => (
   <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-    <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-      PR Analytics
-    </h2>
+    <h2 className="text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
     <div className="mt-3 h-40 rounded bg-[var(--card-muted)] animate-pulse" />
   </div>
 );
@@ -92,10 +87,10 @@ const PRBreakdownChart = dynamic(
   { ssr: false, loading: () => <SkeletonCard /> }
 );
 
-const CommitTimeChart = dynamic(() => import("@/components/CommitTimeChart"), {
-  ssr: false,
-  loading: () => <SkeletonCard />,
-});
+const CommitTimeChart = dynamic(
+  () => import("@/components/CommitTimeChart"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
 
 const PRReviewTrendChart = dynamic(
   () => import("@/components/PRReviewTrendChart"),
@@ -209,7 +204,6 @@ export default async function DashboardPage() {
             <CommunityMetrics />
             <PinnedReposWidget />
             <TopRepos />
-            <PinnedRepos />
           </div>
         </div>
 
