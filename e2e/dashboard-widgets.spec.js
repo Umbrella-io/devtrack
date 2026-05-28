@@ -117,10 +117,6 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ ok: true }),
-            last_synced_at: new Date().toISOString(),
-          },
-        ],
-      }),
     });
   });
 
