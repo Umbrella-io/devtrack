@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import PRStatusDonutChart from "./PRStatusDonutChart";
 import MiniPRTrendChart from "./MiniPRTrendChart";
+
 interface ReviewMetrics {
   totalReviews: number;
   approvalRate: string;
@@ -22,6 +23,8 @@ interface PRMetricsSummary {
   staleCount: number;
   staleThresholdDays: number;
   staleSearchUrl: string | null;
+  reviewsGiven: number;
+  reviewRatio: string;
 }
 
 interface PRStat {
@@ -110,6 +113,8 @@ export default function PRMetrics() {
       avgReview: string;
       avgFirstReview: string;
       mergeRate: string;
+      reviewsGiven: string;
+      reviewRatio: string;
       stale?: string;
     },
     options: { includeStale?: boolean } = {}
@@ -134,6 +139,8 @@ export default function PRMetrics() {
       title: "Average time from PR open to first review comment or approval",
     },
     { label: labels.mergeRate, value: source.mergeRate },
+    { label: labels.reviewsGiven, value: source.reviewsGiven || 0 },
+    { label: labels.reviewRatio, value: source.reviewRatio || "0.00" },
   ];
 
   const githubStats = metrics
@@ -145,6 +152,8 @@ export default function PRMetrics() {
           avgReview: "Avg Review Time",
           avgFirstReview: "Avg First Review",
           mergeRate: "Merge Rate",
+          reviewsGiven: "Reviews Given",
+          reviewRatio: "Review Ratio",
         },
         { includeStale: true }
       )
@@ -157,6 +166,8 @@ export default function PRMetrics() {
         avgReview: "Avg Review Time",
         avgFirstReview: "Avg First Review",
         mergeRate: "Merge Rate",
+        reviewsGiven: "Reviews Given",
+        reviewRatio: "Review Ratio",
       })
     : [];
 
@@ -250,8 +261,8 @@ export default function PRMetrics() {
           className="space-y-4"
         >
           <span className="sr-only">Loading PR analytics</span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div
                 key={i}
                 aria-hidden="true"
@@ -276,7 +287,7 @@ export default function PRMetrics() {
         <div className="space-y-6">
           <div>
             <p className="text-sm font-medium text-[var(--muted-foreground)]">GitHub PRs</p>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {githubStats.map(renderStat)}
             </div>
             <MiniPRTrendChart />
@@ -298,7 +309,7 @@ export default function PRMetrics() {
           {metrics?.gitlab && (
             <div className="space-y-4 border-t border-[var(--border)] pt-4">
               <p className="text-sm font-medium text-[var(--muted-foreground)]">GitLab MRs</p>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {gitlabStats.map(renderStat)}
               </div>
               <div>
