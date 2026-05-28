@@ -30,7 +30,7 @@ function getColor(name: string): string {
 
 function LanguageDot({ color, label }: { color: string; label: string }) {
   return (
-    <svg width="0.75rem" height="0.75rem" viewBox="0 0 8 8" className="shrink-0" title={label}>
+    <svg width="0.75rem" height="0.75rem" viewBox="0 0 8 8" className="shrink-0" aria-label={label}>
       <circle cx="4" cy="4" r="4" fill={color} />
     </svg>
   );
