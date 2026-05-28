@@ -63,6 +63,31 @@ describe('metrics-cache', () => {
       });
       expect(isMetricsCacheBypassed(req)).toBe(true);
     });
+
+    it('verify non-bypass values are rejected', () => {
+      expect(isMetricsCacheBypassed(new NextRequest('http://localhost?refresh=false'))).toBe(false);
+      expect(isMetricsCacheBypassed(new NextRequest('http://localhost?refresh=0'))).toBe(false);
+      expect(isMetricsCacheBypassed(new NextRequest('http://localhost?refresh=no'))).toBe(false);
+      expect(isMetricsCacheBypassed(new NextRequest('http://localhost?bypassCache=off'))).toBe(false);
+    });
+
+    it('verify missing parameters do not bypass', () => {
+      expect(isMetricsCacheBypassed(new NextRequest('http://localhost'))).toBe(false);
+      expect(isMetricsCacheBypassed(new NextRequest('http://localhost?other=value'))).toBe(false);
+    });
+
+    it('verify case insensitive bypass values', () => {
+      expect(isMetricsCacheBypassed(new NextRequest('http://localhost?refresh=TRUE'))).toBe(true);
+      expect(isMetricsCacheBypassed(new NextRequest('http://localhost?refresh=YES'))).toBe(true);
+      expect(isMetricsCacheBypassed(new NextRequest('http://localhost?refresh=ON'))).toBe(true);
+    });
+
+    it('verify combination of query param and header bypass', () => {
+      const req = new NextRequest('http://localhost?refresh=true', {
+        headers: new Headers({ 'x-devtrack-cache-bypass': '1' })
+      });
+      expect(isMetricsCacheBypassed(req)).toBe(true);
+    });
   });
 
   describe('cacheGet/cacheSet', () => {

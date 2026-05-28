@@ -656,12 +656,12 @@ export default function ExportButton() {
   };
 
   return (
-    <div className="flex gap-3">
+    <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
       <button
         type="button"
         onClick={exportCSV}
         disabled={isExportingCSV}
-        className="px-4 py-2 bg-[var(--control)] border border-[var(--border)] text-[var(--card-foreground)] hover:border-[var(--accent)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 min-w-[140px] justify-center"
+        className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:border-[var(--accent)] disabled:opacity-50 sm:min-w-[140px] sm:flex-none"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -673,7 +673,7 @@ export default function ExportButton() {
         type="button"
         onClick={exportPDF}
         disabled={isExportingPDF}
-        className="px-4 py-2 bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 min-w-[140px] justify-center"
+        className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90 disabled:opacity-50 sm:min-w-[140px] sm:flex-none"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

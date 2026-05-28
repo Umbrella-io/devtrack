@@ -122,7 +122,10 @@ export default function ContributionHeatmap({
   const { themeConfig, theme, setTheme } = useHeatmapTheme();
   const cells = useMemo(() => buildHeatmap(days, data), [days, data]);
   const weekCount = Math.ceil(cells.length / 7);
-
+  const maxCommits = Math.max(
+  ...cells.map((cell) => cell.count),
+  1
+);
   // 100% MATHEMATICALLY PRECISE MONTH TRACKING SYSTEM
   const monthMarkers = useMemo(() => {
     const markers: Array<{ label: string; weekIndex: number }> = [];
@@ -163,6 +166,25 @@ export default function ContributionHeatmap({
   } as const;
 
   const today = new Date();
+  const getHeatmapColor = (count: number) => {
+  if (count === 0) return themeConfig.missed;
+
+  const normalized = count / maxCommits;
+
+  if (normalized <= 0.25) {
+    return themeConfig.levelOne;
+  }
+
+  if (normalized <= 0.5) {
+    return themeConfig.levelTwo;
+  }
+
+  if (normalized <= 0.75) {
+    return themeConfig.levelThree;
+  }
+
+  return themeConfig.levelFour;
+};
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -194,18 +216,15 @@ export default function ContributionHeatmap({
         <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
           <span>Less</span>
           <div className="flex items-center gap-1">
-            {[0, 1, 3, 6, 10].map((count) => {
-              const swatch =
-                count === 0
-                  ? themeConfig.missed
-                  : count < 3
-                  ? themeConfig.levelOne
-                  : count < 6
-                  ? themeConfig.levelTwo
-                  : count < 10
-                  ? themeConfig.levelThree
-                  : themeConfig.levelFour;
-
+            {[
+  0,
+  Math.ceil(maxCommits * 0.25),
+  Math.ceil(maxCommits * 0.5),
+  Math.ceil(maxCommits * 0.75),
+  maxCommits,
+].map((count) => {
+              const swatch = getHeatmapColor(count);
+                
               return (
                 <span
                   key={count}
@@ -276,6 +295,7 @@ export default function ContributionHeatmap({
                   const dayIndex = index % 7;
                   const isFuture = cell.date > today;
                   const showTooltipBelow = dayIndex < 2;
+                  const isNearRightEdge = weekIndex >= weekCount - 3;
                   const tooltip = `${cell.date.toLocaleDateString("en-US", {
                     weekday: "short",
                     month: "short",
@@ -298,23 +318,20 @@ export default function ContributionHeatmap({
                         gridColumn: weekIndex + 2,
                         backgroundColor: isFuture
                           ? "transparent"
-                          : cell.count === 0
-                          ? themeConfig.missed
-                          : cell.count < 3
-                          ? themeConfig.levelOne
-                          : cell.count < 6
-                          ? themeConfig.levelTwo
-                          : cell.count < 10
-                          ? themeConfig.levelThree
-                          : themeConfig.levelFour,
+                          : getHeatmapColor(cell.count),
+
                         borderColor: themeConfig.border,
                         ["--heatmap-focus-ring" as any]: themeConfig.accent,
                       }}
                     >
                       {!isFuture && (
                         <span
-                          className={`pointer-events-none absolute left-1/2 z-50 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--foreground)] px-2 py-1 text-[11px] text-[var(--background)] shadow-lg group-hover:block group-focus:block ${
+                          className={`pointer-events-none absolute z-50 hidden whitespace-nowrap rounded-md bg-[var(--foreground)] px-2 py-1 text-[11px] text-[var(--background)] shadow-lg group-hover:block group-focus:block ${
                             showTooltipBelow ? "top-full mt-2" : "bottom-full mb-2"
+                          } ${
+                            isNearRightEdge
+                              ? "right-0 translate-x-0"
+                              : "left-1/2 -translate-x-1/2"
                           }`}
                         >
                           {tooltip}
