@@ -98,14 +98,18 @@ export default function SignInPage() {
           style={{
             fontFamily: DISP,
             fontWeight: 800,
-            fontSize: "clamp(34px,6vw,52px)",
+            fontSize: "clamp(28px,4.5vw,40px)",
             letterSpacing: "-0.04em",
-            lineHeight: 0.95,
+            lineHeight: 1.1,
             color: "#e8e8e8",
             margin: "0 0 16px",
+            maxWidth: "100%",
+            overflow: "hidden",
+            boxSizing: "border-box",
           }}
         >
-          WELCOME<br />
+          WELCOME
+          <br />
           <span style={{ color: A }}>BACK.</span>
         </h1>
 
