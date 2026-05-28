@@ -1,4 +1,5 @@
 import Link from "next/link";
+import EmptyState from "@/components/EmptyState";
 
 type LeaderboardTab = "streak" | "commits" | "prs";
 
@@ -125,9 +126,13 @@ export default async function LeaderboardPage({
               Leaderboard data is temporarily unavailable.
             </div>
           ) : rows.length === 0 ? (
-            <div className="px-4 py-12 text-center text-sm text-[var(--muted-foreground)]">
-              No opted-in public profiles yet.
-            </div>
+            <EmptyState
+              icon="🏆"
+              title="No public profiles yet"
+              description="No public profiles yet — be the first to enable yours in Settings!"
+              actionLabel="Go to Settings"
+              actionHref="/dashboard/settings"
+            />
           ) : (
             rows.map((entry) => (
               <div
