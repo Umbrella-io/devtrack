@@ -71,7 +71,12 @@ export default function GoalTracker() {
         } else if (res.status === 502) {
           msg = "GitHub sync failed: Expired token or missing repo scope.";
         }
-        setSyncError(msg);
+        if (res.status === 429) {
+          const data = await res.json();
+          setSyncError(data.error ?? "GitHub rate limit reached. Please try again later.");
+        } else {
+          setSyncError("Failed to sync goals. Please try again.");
+        }
         return;
       }
       await loadGoals();
@@ -438,7 +443,8 @@ export default function GoalTracker() {
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
                     className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
-                    style={{ width: `${pct}%` }}
+                    style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
+                    
                   />
                 </div>
               </li>
