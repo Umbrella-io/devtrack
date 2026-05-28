@@ -11,12 +11,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // intercept all fetch calls — redirect on 401
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
       const response = await originalFetch(...args);
       if (response.status === 401) {
-        // clone so body can still be read by caller
         const cloned = response.clone();
         toast.error("Session expired. Please sign in again.");
         await signOut({ redirect: false });
