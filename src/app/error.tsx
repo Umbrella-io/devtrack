@@ -49,7 +49,7 @@ export default function Error({
             Error ID: <code className="font-mono">{error.digest}</code>
           </p>
         )}
-        <button
+        <button aria-label="Perform action"
           onClick={reset}
           className="inline-flex w-full items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
         >

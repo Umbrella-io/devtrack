@@ -101,7 +101,7 @@ export default function PrivacySettings() {
             Download all your data in JSON format. This includes your goals,
             metrics, settings, and more.
           </p>
-          <button
+          <button aria-label="Export data"
             onClick={handleExport}
             disabled={downloading}
             className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:opacity-60"
@@ -120,7 +120,7 @@ export default function PrivacySettings() {
           </p>
 
           {!showDeleteConfirm ? (
-            <button
+            <button aria-label="Perform action"
               onClick={() => setShowDeleteConfirm(true)}
               className="rounded-lg border border-[var(--destructive)]/30 px-4 py-2 text-sm font-medium text-[var(--destructive)] transition hover:bg-[var(--destructive)]/10"
             >
@@ -151,14 +151,14 @@ export default function PrivacySettings() {
                   className="w-full rounded-lg border border-[var(--destructive)]/30 bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none mb-3"
                 />
                 <div className="flex gap-2">
-                  <button
+                  <button aria-label="Delete account"
                     onClick={handleDeleteAccount}
                     disabled={deleting || deleteConfirmText !== "DELETE"}
                     className="rounded-lg bg-[var(--destructive)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:bg-[var(--destructive)]/90 disabled:opacity-60"
                   >
                     {deleting ? "Deleting..." : "Confirm Delete"}
                   </button>
-                  <button
+                  <button aria-label="Perform action"
                     onClick={() => {
                       setShowDeleteConfirm(false);
                       setDeleteConfirmText("");

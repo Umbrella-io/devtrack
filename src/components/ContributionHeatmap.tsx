@@ -342,7 +342,7 @@ export default function ContributionHeatmap({
           {/* Range buttons */}
           <div className="flex gap-1 rounded-lg border border-[var(--border)] bg-[var(--background)] p-1">
             {PRESET_RANGES.map((r) => (
-              <button
+              <button aria-label="Perform action"
                 key={r.days}
                 onClick={() => handleRangeChange(r.days)}
                 aria-label={`Show ${r.days}-day range`}
@@ -360,7 +360,7 @@ export default function ContributionHeatmap({
 
           {/* Custom date range popover */}
           <div className="relative" ref={popoverRef}>
-            <button
+            <button aria-label="Perform action"
               onClick={() => setShowPopover((v) => !v)}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-colors border border-[var(--border)] ${
                 customLabel
@@ -405,7 +405,7 @@ export default function ContributionHeatmap({
                   {customError && (
                     <p className="text-xs text-[var(--destructive)]">{customError}</p>
                   )}
-                  <button
+                  <button aria-label="Perform action"
                     onClick={handleCustomApply}
                     className="mt-2 w-full rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-[var(--background)] transition-opacity hover:opacity-90"
                   >
@@ -416,7 +416,7 @@ export default function ContributionHeatmap({
             )}
           </div>
 
-          <button
+          <button aria-label="Perform action"
             type="button"
             onClick={() => setTheme("default")}
             style={theme === "default" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}
@@ -424,7 +424,7 @@ export default function ContributionHeatmap({
           >
             Default
           </button>
-          <button
+          <button aria-label="Perform action"
             type="button"
             onClick={() => setTheme("colour-blind-friendly")}
             style={theme === "colour-blind-friendly" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}

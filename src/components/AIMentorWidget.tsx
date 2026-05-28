@@ -152,7 +152,7 @@ export function AIMentorWidget() {
           <span className="text-xs text-[var(--muted-foreground)]">
             {formattedDate}
           </span>
-          <button
+          <button aria-label="Perform action"
             type="button"
             onClick={() => setIsCollapsed((v) => !v)}
             className="text-sm text-[var(--muted-foreground)] hover:text-[var(--card-foreground)] transition-colors"

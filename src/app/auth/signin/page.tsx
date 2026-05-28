@@ -209,7 +209,7 @@ function SignInContent() {
 
         {error && <AuthErrorBanner error={error} />}
 
-        <button
+        <button aria-label="Perform action"
           onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
           style={{
             width: "100%",

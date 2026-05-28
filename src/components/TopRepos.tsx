@@ -260,7 +260,7 @@ export default function TopRepos() {
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
-          <button
+          <button aria-label="Fetch repositories"
             type="button"
             onClick={fetchRepos}
             className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
@@ -283,7 +283,7 @@ export default function TopRepos() {
           />
         )}
         <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)] mb-2 px-0">
-          <button
+          <button aria-label="Perform action"
             type="button"
             onClick={() => handleSort("name")}
             className="flex items-center gap-1 hover:text-[var(--card-foreground)] transition-colors"
@@ -294,7 +294,7 @@ export default function TopRepos() {
               {sortColumn === "name" ? (sortDirection === "asc" ? "↑" : "↓") : "↕"}
             </span>
           </button>
-          <button
+          <button aria-label="Perform action"
             type="button"
             onClick={() => handleSort("commits")}
             className="flex items-center gap-1 hover:text-[var(--card-foreground)] transition-colors"
@@ -337,7 +337,7 @@ export default function TopRepos() {
               <li key={repo.name}>
                 <div className="flex items-center justify-between text-sm mb-1">
                   <div className="flex items-center gap-2 max-w-[60%] sm:max-w-[70%]">
-                    <button
+                    <button aria-label="Perform action"
                       type="button"
                       onClick={() => setSelectedRepoForActivity(repo.name)}
                       className="truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] text-left font-medium"
@@ -366,7 +366,7 @@ export default function TopRepos() {
                     {healthLoading ? (
                       <div className="h-5 w-9 rounded bg-[var(--card-muted)] animate-pulse" />
                     ) : health ? (
-                      <button
+                      <button aria-label="Perform action"
                         type="button"
                         onClick={() => setActiveHealthRepo(repo.name)}
                         className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold cursor-pointer ${badgeClass}`}
@@ -386,7 +386,7 @@ export default function TopRepos() {
                     <span className="text-[var(--muted-foreground)]">
                       {repo.commits} commit{repo.commits !== 1 ? "s" : ""}
                     </span>
-                    <button
+                    <button aria-label="Perform action"
                       type="button"
                       onClick={() => togglePin(repo.name)}
                       className="ml-1 p-1 hover:bg-[var(--card-muted)] rounded-md transition-colors"

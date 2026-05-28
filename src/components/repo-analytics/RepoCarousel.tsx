@@ -67,7 +67,7 @@ export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] 
               <span className="text-[var(--card-foreground)]">{safePage}</span> / {totalPages}
             </span>
             <div className="flex items-center gap-2">
-              <button
+              <button aria-label="Perform action"
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={safePage === 1}
@@ -78,7 +78,7 @@ export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] 
                   <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
               </button>
-              <button
+              <button aria-label="Perform action"
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={safePage === totalPages}

@@ -114,7 +114,7 @@ export default function CIAnalytics() {
             GitHub Actions health across your top repositories
           </p>
         </div>
-        <button
+        <button aria-label="Perform action"
           type="button"
           onClick={fetchCIAnalytics}
           disabled={isRateLimited || loading}
@@ -154,7 +154,7 @@ export default function CIAnalytics() {
         >
           <p>{error}</p>
           {!isRateLimited && (
-            <button
+            <button aria-label="Perform action"
               type="button"
               onClick={fetchCIAnalytics}
               className="mt-3 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"

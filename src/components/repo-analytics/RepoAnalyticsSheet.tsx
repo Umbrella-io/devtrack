@@ -73,7 +73,7 @@ export default function RepoAnalyticsSheet({ repoFullName, open, onClose }: Repo
                 <h3 className="truncate text-lg font-semibold text-[var(--card-foreground)]">{repoFullName ?? "Repository Analytics"}</h3>
                 <p className="mt-1 text-sm text-[var(--muted-foreground)]">Advanced insights and health tracking</p>
               </div>
-              <button onClick={onClose} className="rounded-lg border border-[var(--border)] px-3 py-1 text-sm text-[var(--muted-foreground)]">Close</button>
+              <button aria-label="Close" onClick={onClose} className="rounded-lg border border-[var(--border)] px-3 py-1 text-sm text-[var(--muted-foreground)]">Close</button>
             </div>
 
             {loading ? <div className="space-y-3">{[1, 2, 3, 4].map((i) => <div key={i} className="h-20 animate-pulse rounded-xl bg-[var(--card)]" />)}</div> : null}
