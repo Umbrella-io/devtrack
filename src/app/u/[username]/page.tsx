@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import BadgeSection from "@/components/BadgeSection";
 import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
-import CopyLinkButton from "@/components/CopyLinkButton";
-import ThemeToggle from "@/components/ThemeToggle"; 
+import ShareProfileSection from "@/components/ShareProfileSection";
+import ThemeToggle from "@/components/ThemeToggle";
 import { getUserByUsername } from "@/lib/supabase";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 
@@ -58,6 +58,15 @@ async function fetchPublicProfile(
   };
 }
 
+function getProfileUrl(username: string) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
+
+  return `${baseUrl}/u/${username}`;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -65,9 +74,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { username } = params;
   const profile = await fetchPublicProfile(username);
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
-  const profileUrl = `${baseUrl}/u/${username}`;
+  const profileUrl = getProfileUrl(username);
 
   if (!profile) {
     return {
@@ -100,7 +107,8 @@ export default async function PublicProfilePage({
   params: { username: string };
 }) {
   const { username } = params;
-  const profile = await fetchPublicProfile(username, { includeAchievements: true });
+  const profile = await fetchPublicProfile(username);
+  const profileUrl = getProfileUrl(username);
 
   if (!profile) {
     return (
@@ -140,12 +148,9 @@ export default async function PublicProfilePage({
     <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
-              @{profile.username}&apos;s Profile
-            </h1>
-            <CopyLinkButton />
-          </div>
+          <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
+            @{profile.username}&apos;s Profile
+          </h1>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
           </p>
@@ -163,6 +168,15 @@ export default async function PublicProfilePage({
           />
         </div>
       </div>
+
+      <div className="mb-8">
+        <ShareProfileSection
+          username={profile.username}
+          streak={profile.streak.current}
+          profileUrl={profileUrl}
+        />
+      </div>
+
       {/* Row 1: Contribution graph + Streak */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
