@@ -93,22 +93,33 @@ export default function SignInPage() {
             <span style={{ color: A }}>▲</span> DEVTRACK
           </span>
         </div>
-
         <h1
-          style={{
-            fontFamily: DISP,
-            fontWeight: 800,
-            fontSize: "clamp(34px,6vw,52px)",
-            letterSpacing: "-0.04em",
-            lineHeight: 0.95,
-            color: "#e8e8e8",
-            margin: "0 0 16px",
-          }}
-        >
-          WELCOME<br />
-          <span style={{ color: A }}>BACK.</span>
-        </h1>
-
+  style={{
+    fontFamily: DISP,
+    fontWeight: 800,
+    fontSize: "clamp(28px,4.5vw,40px)", // reduced clamp
+    letterSpacing: "-0.04em",
+    lineHeight: 0.95,
+    color: "#e8e8e8",
+    margin: "0 0 16px",
+    maxWidth: "100%",
+    overflow: "hidden",
+    boxSizing: "border-box",
+  }}
+>
+  <span
+    style={{
+      display: "inline-block",
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      paddingRight: 6,
+    }}
+  >
+    WELCOME&nbsp;ME
+  </span>
+  <span style={{ color: A, display: "block" }}>BACK.</span>
+</h1>
         <p
           style={{
             fontSize: 14,
