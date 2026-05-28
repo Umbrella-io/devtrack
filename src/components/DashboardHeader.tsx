@@ -29,9 +29,8 @@ export default function DashboardHeader() {
         } else {
           setIsPublic(false);
         }
-      } catch (error) {
-        console.error("Failed to load settings:", error);
-        setIsPublic(false);
+      } catch {
+          setIsPublic(false);
       }
     }
 

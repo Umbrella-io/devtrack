@@ -55,6 +55,7 @@ async function fetchPublicProfile(
     streak,
     achievements: achievementsCache.achievements,
     achievementsError: achievementsCache.error,
+    is_sponsor: user.github_login === "Priyanshu-byte-coder",
   };
 }
 
@@ -143,6 +144,7 @@ export default async function PublicProfilePage({
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="flex items-center gap-2 text-3xl md:text-4xl font-bold text-[var(--foreground)]">
               @{profile.username}&apos;s Profile
+              {profile.is_sponsor && <SponsorBadge />}
             </h1>
 
             <CopyLinkButton />

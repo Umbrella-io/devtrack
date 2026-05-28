@@ -151,9 +151,14 @@ export default async function LeaderboardPage({
                     className="h-10 w-10 rounded-full border border-[var(--border)]"
                   />
                   <div className="min-w-0">
-                    <div className="flex items-center truncate font-semibold text-[var(--card-foreground)]">
-                      @{entry.username}
-                      {entry.is_sponsor && <SponsorBadge />}
+                    <div className="flex items-center gap-2">
+                      <div
+                        title={entry.username}
+                        className="block max-w-[120px] truncate font-semibold text-[var(--card-foreground)] sm:max-w-[180px] md:max-w-none"
+                      >
+                        @{entry.username}
+                        {entry.is_sponsor && <SponsorBadge />}
+                      </div>
                     </div>
                     <div className="text-xs text-[var(--muted-foreground)]">
                       {entry.commits} commits · {entry.prs} PRs · {entry.streak}d
@@ -188,4 +193,3 @@ export default async function LeaderboardPage({
     </main>
   );
 }
-
