@@ -6,6 +6,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
 import PinnedRepos from "@/components/PinnedRepos";
+import PinnedReposWidget from "@/components/PinnedReposWidget";
 import InactiveRepositoriesCard from "@/components/InactiveRepositoriesCard";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
 import CIAnalytics from "@/components/CIAnalytics";
@@ -122,9 +123,6 @@ import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/");
-  // If the JWT callback detected that the GitHub token has been revoked,
-  // redirect to the landing page so the user must re-authenticate.
-  if (session.error === "TokenRevoked") redirect("/");
 
   return (
     <DashboardSSEProvider>
@@ -207,7 +205,6 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-
         {/* Row 2: PR metrics, community metrics, PR breakdown & Time Chart */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           <PRMetrics />
@@ -218,7 +215,6 @@ export default async function DashboardPage() {
         {/* Row 2b: Activity Ring Chart */}
         <div className="mt-6">
           <ActivityRingChart />
-
         </div>
 
         <div className="mt-6">
@@ -247,6 +243,11 @@ export default async function DashboardPage() {
           <LazyWidget fallback={<SkeletonCard />}>
             <DiscussionsWidget />
           </LazyWidget>
+        </div>
+
+        {/* Row 4a: Custom Pinned Spotlight repositories */}
+        <div className="mt-6">
+          <PinnedReposWidget />
         </div>
 
         {/* Row 4: Pinned repositories */}

@@ -1,5 +1,6 @@
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 import type { GitHubAchievement } from "@/lib/github-achievements";
+import { fetchPinnedRepoDetails, type PinnedRepoDetails } from "@/lib/pinned-repos";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -25,11 +26,13 @@ export interface StreakData {
 export interface PublicProfileData {
   username: string;
   userId: string;
+  isSponsor: boolean;
   repos: TopRepo[];
   contributions: ContributionData;
   streak: StreakData;
   achievements: GitHubAchievement[];
   achievementsError?: string | null;
+  spotlightRepos?: PinnedRepoDetails[];
 }
 
 async function ghFetch(url: string, token?: string): Promise<Response> {

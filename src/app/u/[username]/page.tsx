@@ -8,8 +8,11 @@ import ShareProfileSection from "@/components/ShareProfileSection";
 import ThemeToggle from "@/components/ThemeToggle";
 import CopyLinkButton from "@/components/CopyLinkButton"; // ✅ Keeping your imported button
 
+import SponsorBadge from "@/components/SponsorBadge";
 import { getUserByUsername } from "@/lib/supabase";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
+import PinnedReposWidget from "@/components/PinnedReposWidget";
+import { fetchPinnedRepoDetails } from "@/lib/pinned-repos";
 
 import {
   fetchPublicTopRepos,
@@ -34,9 +37,9 @@ async function fetchPublicProfile(
     redirect(`/u/${canonicalUsername}`);
   }
 
-  const githubToken = process.env.GITHUB_TOKEN;
+  const githubToken = process.env.GITHUB_TOKEN || "";
 
-  const [repos, contributions, streak, achievementsCache] = await Promise.all([
+  const [repos, contributions, streak, achievementsCache, spotlight] = await Promise.all([
     fetchPublicTopRepos(user.github_login, githubToken, 30),
     fetchPublicContributions(user.github_login, githubToken, 30),
     fetchPublicStreak(user.github_login, githubToken),
@@ -47,16 +50,19 @@ async function fetchPublicProfile(
           token: githubToken,
         })
       : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
+    fetchPinnedRepoDetails(user.github_login, user.pinned_repos || [], githubToken),
   ]);
 
   return {
     username: user.github_login,
     userId: user.id,
+    isSponsor: user.is_sponsor ?? false,
     repos,
     contributions,
     streak,
     achievements: achievementsCache.achievements,
     achievementsError: achievementsCache.error,
+    spotlightRepos: spotlight,
   };
 }
 
@@ -159,12 +165,11 @@ export default async function PublicProfilePage({
     <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          {/* ✅ FIXED THE FLEX-HEADER TO FIT YOUR COPY BUTTON */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] flex items-center gap-2">
               @{profile.username}&apos;s Profile
+              {profile.isSponsor && <SponsorBadge />}
             </h1>
-            <CopyLinkButton url={profileUrl} />
           </div>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
@@ -203,7 +208,14 @@ export default async function PublicProfilePage({
         </div>
       </div>
 
-      {/* ROW 2 */}
+      {/* Custom Spotlight Repositories */}
+      {profile.spotlightRepos && profile.spotlightRepos.length > 0 && (
+        <div className="mt-6">
+          <PinnedReposWidget initialRepos={profile.spotlightRepos} isPublic={true} />
+        </div>
+      )}
+
+      {/* Row 2: Top repos */}
       <div className="mt-6">
         <PublicTopRepos repos={profile.repos} />
       </div>

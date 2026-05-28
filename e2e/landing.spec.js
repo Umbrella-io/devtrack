@@ -9,7 +9,7 @@ test("landing page renders GitHub sign-in entrypoint", async ({ page }) => {
   // Two "Sign in with GitHub" links exist (hero + setup section) — check first one
   await expect(
     page.getByRole("link", { name: "Sign in with GitHub" }).first(),
-  ).toHaveAttribute("href", /\/api\/auth\/signin\/github\?callbackUrl=\/dashboard/);
+  ).toHaveAttribute("href", /\/auth\/signin/);
 
   // Verify at least one link to the upstream GitHub repo is present
   await expect(

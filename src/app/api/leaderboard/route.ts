@@ -78,6 +78,7 @@ type LeaderboardMetric = "streak" | "commits" | "prs";
 interface PublicUser {
   id: string;
   github_login: string;
+  is_sponsor: boolean;
 }
 
 interface LeaderboardEntry {
@@ -89,6 +90,7 @@ interface LeaderboardEntry {
   commits: number;
   prs: number;
   score: number;
+  isSponsor: boolean;
 }
 
 interface LeaderboardPayload {
@@ -251,7 +253,7 @@ async function fetchPrCount(username: string, since: string): Promise<number> {
 async function buildLeaderboard(): Promise<LeaderboardPayload> {
   const { data: users, error } = await supabaseAdmin
     .from("users")
-    .select("id, github_login")
+    .select("id, github_login, is_sponsor")
     .eq("is_public", true)
     .eq("leaderboard_opt_in", true)
     .limit(50);
@@ -292,6 +294,7 @@ async function buildLeaderboard(): Promise<LeaderboardPayload> {
         commits,
         prs,
         score,
+        isSponsor: user.is_sponsor ?? false,
       };
     }
   );

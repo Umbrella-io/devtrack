@@ -173,7 +173,7 @@ describe('mergeMetrics', () => {
 
   it('returns null for empty results array', async () => {
     const { mergeMetrics } = await import('../src/lib/github-accounts');
-    const merged = mergeMetrics([], (a, b) => ({ count: a.count + b.count }));
+    const merged = mergeMetrics([], (a: { count: number }, b: { count: number }) => ({ count: a.count + b.count }));
     expect(merged).toBeNull();
   });
 

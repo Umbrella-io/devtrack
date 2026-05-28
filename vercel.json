@@ -11,6 +11,14 @@
     {
       "path": "/api/goals/sync",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/sponsors/sync",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/notifications/discord-sync",
+      "schedule": "0 20 * * *"
     }
   ]
 }
