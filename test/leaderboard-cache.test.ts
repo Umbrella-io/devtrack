@@ -13,6 +13,38 @@ describe("pruneExpiredRateLimits", () => {
     expect(buckets.has("expired")).toBe(false);
     expect(buckets.get("active")).toEqual({ count: 2, resetAt: 5_000 });
   });
+
+  it("removes buckets that expire exactly at the boundary", () => {
+    const buckets = new Map([
+      ["boundary", { count: 1, resetAt: 2_000 }],
+      ["future", { count: 1, resetAt: 2_001 }],
+    ]);
+
+    pruneExpiredRateLimits(buckets, 2_000);
+
+    expect(buckets.has("boundary")).toBe(false);
+    expect(buckets.get("future")).toEqual({ count: 1, resetAt: 2_001 });
+  });
+
+  it("handles an empty rate-limit map without mutating it", () => {
+    const buckets = new Map<string, { count: number; resetAt: number }>();
+
+    expect(() => pruneExpiredRateLimits(buckets, 2_000)).not.toThrow();
+    expect(buckets.size).toBe(0);
+  });
+
+  it("drops malformed rate-limit records instead of crashing", () => {
+    const buckets = new Map([
+      ["valid", { count: 2, resetAt: 5_000 }],
+      ["invalid", null as unknown as { count: number; resetAt: number }],
+      ["nan", { count: 1, resetAt: Number.NaN }],
+    ]);
+
+    expect(() => pruneExpiredRateLimits(buckets, 2_000)).not.toThrow();
+    expect(buckets.has("valid")).toBe(true);
+    expect(buckets.has("invalid")).toBe(false);
+    expect(buckets.has("nan")).toBe(false);
+  });
 });
 
 describe("pruneExpiredLeaderboardCache", () => {
@@ -23,6 +55,15 @@ describe("pruneExpiredLeaderboardCache", () => {
     };
 
     expect(pruneExpiredLeaderboardCache(cache, 1_001)).toBe(null);
+  });
+
+  it("treats entries expiring exactly now as stale", () => {
+    const cache = {
+      expiresAt: 1_000,
+      payload: { data: "boundary" },
+    };
+
+    expect(pruneExpiredLeaderboardCache(cache, 1_000)).toBe(null);
   });
 
   it("keeps fresh leaderboard payloads", () => {
@@ -52,9 +93,10 @@ describe("pruneExpiredLeaderboardCache", () => {
     expect(pruneExpiredLeaderboardCache(cache, 1_000)).toBe(null);
   });
 
-  it("handles null entry", () => {
+  it("handles null and undefined entries", () => {
     expect(pruneExpiredLeaderboardCache(null)).toBe(null);
     expect(pruneExpiredLeaderboardCache(null, 500)).toBe(null);
+    expect(pruneExpiredLeaderboardCache(undefined, 500)).toBe(null);
   });
 
   it("keeps entry with far future expiry", () => {
@@ -65,6 +107,15 @@ describe("pruneExpiredLeaderboardCache", () => {
     };
 
     expect(pruneExpiredLeaderboardCache(cache, now)).toEqual(cache);
+  });
+
+  it("drops malformed cache metadata instead of crashing", () => {
+    const malformed = {
+      expiresAt: Number.NaN,
+      payload: { data: "broken" },
+    };
+
+    expect(pruneExpiredLeaderboardCache(malformed, 1_000)).toBe(null);
   });
 
   it("works with different generic types", () => {

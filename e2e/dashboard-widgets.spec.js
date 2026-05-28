@@ -82,6 +82,8 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
+  const now = new Date().toISOString();
+
   await page.route("**/api/goals", async (route) => {
     if (route.request().method() === "POST") {
       await route.fulfill({
@@ -104,6 +106,17 @@ test.beforeEach(async ({ page }) => {
             unit: "commits",
             recurrence: "weekly",
             period_start: "2026-05-18",
+            last_synced_at: now,
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/goals/sync**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true }),
             last_synced_at: new Date().toISOString(),
           },
         ],
@@ -164,6 +177,7 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/ci**",
     "**/api/streak/freeze**",
     "**/api/user/github-accounts**",
+    "**/api/integrations/jira**",
     "**/api/metrics/activity**",
     "**/api/metrics/commit-time**",
     "**/api/metrics/personal-records**",
@@ -301,6 +315,9 @@ function mockMetricResponse(url) {
   }
   if (url.includes("/api/streak/freeze")) {
     return { freezes: [] };
+  }
+  if (url.includes("/api/integrations/jira")) {
+    return null;
   }
   if (url.includes("/api/user/github-accounts")) {
     return { accounts: [] };
