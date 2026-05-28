@@ -2,7 +2,24 @@
 
 # 🚀 DevTrack
 
+=
+### Dashboard Overview
+
+![DevTrack Dashboard Demo](./public/assets/gifs/dashboard-demo.gif)
+
+### UI Interactions
+
+![DevTrack UI Interactions](./public/assets/gifs/feature-hover-demo.gif)
+
+![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+![GSSoC 2025](https://img.shields.io/badge/GSSoC-2025-orange.svg)
+![Tech Stack](https://img.shields.io/badge/stack-Next.js%20%7C%20Supabase%20%7C%20TypeScript-blue)
+![Good First Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)
+
 ### Your personal developer productivity command center.
+
 
 > Stop guessing how productive you are. DevTrack pulls your GitHub activity, PR analytics, commit streaks, and coding goals into **one clean, self-hostable dashboard** — no enterprise plan, no vendor lock-in, no noise.
 
@@ -54,9 +71,21 @@ Whether you're a solo developer tracking consistency, a student building your po
 
 ## ✨ Features
 
+
+  
 | Feature                   | Description                                                              |
 | ------------------------- | ------------------------------------------------------------------------ |
 | **GitHub OAuth**          | Sign in with GitHub — no extra account needed                            |
+
+| Feature | Description |
+|---|---|
+| **GitHub OAuth** | Sign in with GitHub — no extra account needed |
+
+
+| Feature                   | Description                                                              |
+| ------------------------- | ------------------------------------------------------------------------ |
+| **GitHub OAuth**          | Sign in with GitHub — no extra account needed                            |
+
 | **Commit Activity Chart** | Visualize daily commit activity with 7d / 14d / 30d / 90d range selector |
 | **Commit Streak Tracker** | Current streak, longest streak, active days — stay consistent            |
 | **PR Analytics**          | Average review time, merge rate, open/closed PR count                    |
@@ -68,6 +97,7 @@ Whether you're a solo developer tracking consistency, a student building your po
 
 ## 🛠 Tech Stack
 
+
 | Layer      | Technology                                        |
 | ---------- | ------------------------------------------------- |
 | Frontend   | Next.js 14 (App Router), TypeScript, Tailwind CSS |
@@ -76,6 +106,18 @@ Whether you're a solo developer tracking consistency, a student building your po
 | API        | Next.js Route Handlers (`/app/api/`)              |
 | Charts     | Recharts                                          |
 | Deployment | Vercel (free, auto-deploys from GitHub)           |
+
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Auth | GitHub OAuth via NextAuth.js |
+| Database | Supabase (PostgreSQL) |
+| API | Next.js Route Handlers (`/app/api/`) |
+| Charts | Recharts |
+| Deployment | Vercel (free, auto-deploys from GitHub) |
+
+
 
 ---
 
@@ -257,7 +299,40 @@ DevTrack is free and open source. Sponsoring helps cover infrastructure costs (S
 
 ## 📄 License
 
+
+### Done
+
+- [x] GitHub OAuth sign-in
+- [x] Contribution bar chart
+- [x] PR analytics widget
+- [x] Weekly goal tracker
+- [x] Dashboard auth guard
+- [x] User avatar in header
+- [x] Commit streak tracker
+- [x] Top repositories widget
+- [x] Time range selector on contribution chart
+
+### Open for contribution
+
+- [ ] Dark mode toggle ([#1](../../issues/1))
+- [ ] Responsive mobile layout ([#14](../../issues/14))
+- [ ] Create Goal form UI ([#13](../../issues/13))
+- [ ] Chart type toggle — bar/line ([#17](../../issues/17))
+- [ ] Streak milestone badges ([#31](../../issues/31))
+- [ ] Repo filter on contribution chart ([#35](../../issues/35))
+- [ ] Improve landing page — feature showcase ([#36](../../issues/36))
+- [ ] Language breakdown widget ([#32](../../issues/32))
+- [ ] Activity feed ([#33](../../issues/33))
+- [ ] Auto-progress goals from commits ([#34](../../issues/34))
+- [ ] Streak freeze feature ([#37](../../issues/37))
+- [ ] User profile/settings page ([#15](../../issues/15))
+- [ ] Export metrics to CSV/PDF ([#16](../../issues/16))
+- [ ] Contribution heatmap calendar ([#18](../../issues/18))
+- [ ] GitLab integration ([#6](../../issues/6))
+- [ ] Slack/Discord weekly digest ([#20](../../issues/20))
+
 MIT — see [LICENSE](./LICENSE) for details.
+
 
 ---
 
