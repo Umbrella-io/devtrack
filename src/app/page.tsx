@@ -59,11 +59,11 @@ async function fetchRepoStats(): Promise<RepoStats> {
     };
   } catch {
     return {
-      stars: 40,
-      forks: 160,
-      openIssues: 307,
-      contributorCount: 30,
-      goodFirstIssues: 36,
+      stars: 0,
+      forks: 0,
+      openIssues: 0,
+      contributorCount: 0,
+      goodFirstIssues: 0,
       contributors: [],
     };
   }
