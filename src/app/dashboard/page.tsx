@@ -130,45 +130,42 @@ export default async function DashboardPage() {
     <DashboardSSEProvider>
       <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
-        <div className="mb-6 flex justify-end items-center gap-2">
+        <div className="mb-6 flex flex-wrap items-stretch justify-center gap-2 sm:justify-end">
           <Link
             href="/wrapped"
-            className="rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
+            className="flex min-w-0 flex-1 items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-center text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90 sm:min-w-[140px] sm:flex-none"
           >
             Year in Code
           </Link>
           <Link
             href="/dashboard/settings"
-            className="secondary-button flex min-w-[140px] items-center justify-center rounded-xl px-4 py-2 text-sm font-medium"
+            className="secondary-button flex min-w-0 flex-1 items-center justify-center rounded-xl px-4 py-2 text-center text-sm font-medium sm:min-w-[140px] sm:flex-none"
           >
             Settings
           </Link>
-          <ExportButton />
+          <div className="w-full sm:w-auto">
+            <ExportButton />
+          </div>
         </div>
         <StreakAtRiskBanner />
 
-        <div className="mb-6 mt-6">
-          <Link href="/wrapped">
-            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-fuchsia-600 p-6 shadow-lg transition-transform hover:scale-[1.01]">
-              <div className="relative z-10 flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-white">
-                    Your Year in Code is here! ✨
-                  </h2>
-                  <p className="mt-1 text-white/90">
-                    Discover your top languages, longest streaks, and coding
-                    habits of the year.
-                  </p>
-                </div>
-                <div className="rounded-full bg-white px-6 py-2 font-bold text-purple-600">
-                  View Wrapped
-                </div>
+      <div className="mb-6 mt-6">
+        <Link href="/wrapped">
+            <div className="overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-fuchsia-600 p-6 shadow-lg transition-transform hover:scale-[1.01] hover:-z-0"> 
+              <div className="relative flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Your Year in Code is here! ✨</h2>
+                <p className="mt-1 text-white/90">Discover your top languages, longest streaks, and coding habits of the year.</p>
+              </div>
+              <div className="rounded-full bg-white px-6 py-2 font-bold text-purple-600">
+                View Wrapped
               </div>
               <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
               <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-black/20 blur-3xl"></div>
             </div>
-          </Link>
-        </div>
+          </div>
+        </Link>
+      </div>
 
         <div className="mb-6">
           <WeeklySummaryCard />

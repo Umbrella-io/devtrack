@@ -25,7 +25,50 @@ const CACHE_REFRESH_SECONDS = 60 * 60; // 1 hour
 const CACHE_STALE_SECONDS = 6 * 60 * 60; // 6 hours
 const RATE_LIMIT_REQUESTS = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const USER_CONCURRENCY = Number(process.env.LEADERBOARD_USER_CONCURRENCY ?? 5);
+
+/**
+ * Validates and sanitizes the LEADERBOARD_USER_CONCURRENCY environment variable
+ * Ensures the value is within safe operational bounds [1, 100]
+ */
+function validateUserConcurrency(value: string | undefined): number {
+  const DEFAULT_CONCURRENCY = 5;
+  const MIN_CONCURRENCY = 1;
+  const MAX_CONCURRENCY = 100;
+
+  // No value provided: use default
+  if (!value) {
+    return DEFAULT_CONCURRENCY;
+  }
+
+  // Parse the value
+  const parsed = Number(value);
+
+  // Validate: must be a finite integer
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+    console.warn(
+      `[Leaderboard] Invalid LEADERBOARD_USER_CONCURRENCY value: "${value}". Using default: ${DEFAULT_CONCURRENCY}`
+    );
+    return DEFAULT_CONCURRENCY;
+  }
+
+  // Validate: must be within bounds
+  if (parsed < MIN_CONCURRENCY || parsed > MAX_CONCURRENCY) {
+    const clamped = Math.max(MIN_CONCURRENCY, Math.min(MAX_CONCURRENCY, parsed));
+    console.warn(
+      `[Leaderboard] LEADERBOARD_USER_CONCURRENCY ${parsed} is outside safe range [${MIN_CONCURRENCY}, ${MAX_CONCURRENCY}]. Clamping to ${clamped}`
+    );
+    return clamped;
+  }
+
+  // Log when using non-default value
+  if (parsed !== DEFAULT_CONCURRENCY) {
+    console.info(`[Leaderboard] Using custom concurrency: ${parsed}`);
+  }
+
+  return parsed;
+}
+
+const USER_CONCURRENCY = validateUserConcurrency(process.env.LEADERBOARD_USER_CONCURRENCY);
 
 const LEADERBOARD_CACHE_KEY = "leaderboard:v1";
 const LEADERBOARD_BUILD_LOCK_KEY = "leaderboard:build-lock:v1";

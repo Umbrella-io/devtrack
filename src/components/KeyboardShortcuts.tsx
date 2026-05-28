@@ -88,6 +88,7 @@ export default function KeyboardShortcuts() {
         aria-label="Show keyboard shortcuts"
         aria-expanded={isOpen}
         aria-haspopup="dialog"
+        suppressHydrationWarning
       >
         <kbd className="rounded bg-[var(--control)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--card-foreground)]">
           ?
