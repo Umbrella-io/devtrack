@@ -1,5 +1,6 @@
 import Link from "next/link";
 import SponsorBadge from "@/components/SponsorBadge";
+import EmptyState from "@/components/EmptyState";
 
 type LeaderboardTab = "streak" | "commits" | "prs";
 
@@ -131,9 +132,13 @@ export default async function LeaderboardPage({
               Leaderboard data is temporarily unavailable.
             </div>
           ) : rows.length === 0 ? (
-            <div className="px-4 py-12 text-center text-sm text-[var(--muted-foreground)]">
-              No opted-in public profiles yet.
-            </div>
+            <EmptyState
+              icon="🏆"
+              title="No public profiles yet"
+              description="No public profiles yet — be the first to enable yours in Settings!"
+              actionLabel="Go to Settings"
+              actionHref="/dashboard/settings"
+            />
           ) : (
             rows.map((entry) => (
               <div
@@ -151,14 +156,9 @@ export default async function LeaderboardPage({
                     className="h-10 w-10 rounded-full border border-[var(--border)]"
                   />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <div
-                        title={entry.username}
-                        className="block max-w-[120px] truncate font-semibold text-[var(--card-foreground)] sm:max-w-[180px] md:max-w-none"
-                      >
-                        @{entry.username}
-                        {entry.is_sponsor && <SponsorBadge />}
-                      </div>
+                    <div className="flex items-center truncate font-semibold text-[var(--card-foreground)]">
+                      <span className="truncate">@{entry.username}</span>
+                      {entry.is_sponsor && <SponsorBadge />}
                     </div>
                     <div className="text-xs text-[var(--muted-foreground)]">
                       {entry.commits} commits · {entry.prs} PRs · {entry.streak}d
