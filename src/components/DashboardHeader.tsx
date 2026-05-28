@@ -56,23 +56,24 @@ export default function DashboardHeader() {
         </div>
 
         {/* Right Section */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-center md:justify-end">
 
           {isPublic === true && session?.githubLogin && (
             <a
               href={`/u/${session.githubLogin}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="primary-button rounded-xl px-4 py-2 text-sm font-semibold"
+              className="primary-button rounded-xl px-4 py-2 text-sm font-semibold w-full sm:w-auto text-center"
+              style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", fontSize: 12 }}
               title="View your public profile"
             >
               Share Profile
             </a>
           )}
 
-          <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] px-3 py-2 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-muted)] px-2 py-1.5 sm:px-3 sm:py-2 max-w-full justify-center sm:justify-start">
 
-            <div className="hover:scale-110 transition-transform duration-200">
+            <div>
               <KeyboardShortcuts />
             </div>
 
