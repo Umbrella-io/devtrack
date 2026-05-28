@@ -1,40 +1,14 @@
 # Contributing to DevTrack
 
-Thank you for your interest in contributing to DevTrack! Whether you are a GSSoC participant or a general open-source contributor, we are thrilled to have you.
+Thank you for your interest in contributing to DevTrack! Whether you are a GSSoC (GirlScript Summer of Code) participant or a general open-source contributor, we are thrilled to have you.
 
-Following these guidelines helps ensure a smooth, efficient, and consistent development process for everyone.
-
----
-
-## Table of Contents
-
-1. [Onboarding & Claiming Issues](#1-onboarding--claiming-issues)
-2. [Local Development Setup](#2-local-development-setup)
-3. [Branching and Workflow](#3-branching-and-workflow)
-4. [Commit Guidelines](#4-commit-guidelines)
-5. [Code Style & Standards](#5-code-style--standards)
-6. [Pull Request (PR) Checklist](#6-pull-request-pr-checklist)
+Please note that this project is released with a [Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project, you agree to abide by its terms.
 
 ---
 
-## 1. Onboarding & Claiming Issues
+## ⚡ Quick Start (Setup in < 10 Steps)
 
-To keep the development queue clean and organized:
-* **Claim Before You Build:** Comment on the open issue you want to work on. Wait for a maintainer to assign it to you before writing code.
-* **Avoid Duplicates:** Check the active Pull Requests and assigned issues first to ensure someone else is not already working on the same task.
-* **Ask Questions:** If an issue's requirements are unclear, comment directly on the issue to seek clarification.
-
----
-
-## 2. Local Development Setup
-
-To run DevTrack on your machine, follow these steps:
-
-### Prerequisites
-Make sure you have [Node.js](https://nodejs.org/) (v18 or higher recommended) and npm installed.
-
-### Steps
-1. **Fork the Repository:** Click the "Fork" button at the top-right of the [DevTrack repository](https://github.com/Priyanshu-byte-coder/devtrack) to create your own copy.
+1. **Fork the Repo:** Click the "Fork" button at the top-right of the [DevTrack repository](https://github.com/Priyanshu-byte-coder/devtrack).
 2. **Clone Your Fork:**
    ```bash
    git clone https://github.com/<your-username>/devtrack.git
@@ -44,173 +18,198 @@ Make sure you have [Node.js](https://nodejs.org/) (v18 or higher recommended) an
    ```bash
    git remote add upstream https://github.com/Priyanshu-byte-coder/devtrack.git
    ```
-4. **Install Dependencies:**
+4. **Install pnpm (Package Manager):** We use `pnpm` for this project. If you don't have it installed:
    ```bash
-   npm install
+   npm install -g pnpm
    ```
-5. **Environment Configuration:**
-   * Copy the example environment file:
+5. **Install Dependencies:**
+   ```bash
+   pnpm install
+   ```
+6. **Set Up Environment:** Copy the template file:
+   ```bash
+   cp .env.example .env.local
+   ```
+7. **Configure Keys:** Open `.env.local` in your editor and add your development keys (see [Environment Variables Guide](#3-environment-variables-guide) below).
+8. **Start the Dev Server:**
+   ```bash
+   pnpm dev
+   ```
+9. **Open the App:** Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 📋 Table of Contents
+
+1. [Prerequisites](#1-prerequisites)
+2. [Local Development Setup](#2-local-development-setup)
+3. [Environment Variables Guide](#3-environment-variables-guide)
+4. [Code Style & Standards](#4-code-style--standards)
+5. [Branch Naming Conventions](#5-branch-naming-conventions)
+6. [Commit Guidelines](#6-commit-guidelines)
+7. [Issue Labels & GSSoC Levels](#7-issue-labels--gssoc-levels)
+8. [Pull Request (PR) Checklist](#8-pull-request-pr-checklist)
+9. [Self-Hosting & Deployment](#9-self-hosting--deployment)
+
+---
+
+## 1. Prerequisites
+
+Before setting up DevTrack locally, make sure you have configured the following:
+
+- **Node.js**: Version `20` or higher is required.
+- **pnpm**: Version `9` or higher is required.
+- **GitHub OAuth App**:
+  1. Go to your GitHub profile → **Settings** → **Developer Settings** → **OAuth Apps** → **New OAuth App**.
+  2. Set **Application Name** to `DevTrack Dev`.
+  3. Set **Homepage URL** to `http://localhost:3000`.
+  4. Set **Authorization callback URL** to `http://localhost:3000/api/auth/callback/github`.
+  5. Register the application, then copy the **Client ID** and generate a new **Client Secret**.
+
+---
+
+## 2. Local Development Setup
+
+To get a fully functional copy running with authentication and metrics:
+
+1. **Database Setup (Supabase)**:
+   - Create a free project on [Supabase](https://supabase.com).
+   - Retrieve your project API URL, anon key, and service role key from **Project Settings** → **API**.
+2. **Environment Variables**:
+   - Ensure you have copied `.env.example` to `.env.local` and filled in all required fields.
+3. **Run Dev Commands**:
+   - Install all project dependencies:
      ```bash
-     cp .env.example .env.local
+     pnpm install
      ```
-   * Open `.env.local` and populate any required configuration values (e.g., Supabase, NextAuth credentials).
-6. **Start the Dev Server:**
-   ```bash
-   npm run dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
+   - Run the Next.js development server:
+     ```bash
+     pnpm dev
+     ```
 
 ---
 
-## 3. Branching and Workflow
+## 3. Environment Variables Guide
 
-Always create a descriptive branch for your changes rather than committing directly to `main`.
+DevTrack relies on a set of environment variables to connect to external APIs and database services. Copy `.env.example` to `.env.local` and populate these values:
 
-### Branch Naming Conventions
-Choose a prefix matching the nature of your task:
-* **Features:** `feat/<short-description>` (e.g., `feat/add-404-page`)
-* **Bug Fixes:** `fix/<short-description>` (e.g., `fix/streak-at-risk-mobile`)
-* **Documentation:** `docs/<short-description>` (e.g., `docs/add-contributing-guidelines`)
-* **Tests:** `test/<short-description>` (e.g., `test/timezone-parsing`)
-* **Refactoring:** `refactor/<short-description>` (e.g., `refactor/webhooks-signature`)
+| Variable | Required? | Description |
+| :--- | :---: | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | **Yes** | Your Supabase project URL (e.g., `https://your-ref.supabase.co`). |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Yes** | Your Supabase public anonymous API key. |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Server-side Supabase secret key (never expose this client-side). |
+| `NEXTAUTH_URL` | **Yes** | The base URL where your app is running locally (e.g., `http://localhost:3000`). |
+| `NEXTAUTH_SECRET` | **Yes** | Used to sign NextAuth tokens. Generate with: `openssl rand -base64 32`. |
+| `GITHUB_ID` | **Yes** | The Client ID from your registered GitHub OAuth Application. |
+| `GITHUB_SECRET` | **Yes** | The Client Secret from your registered GitHub OAuth Application. |
+| `ENCRYPTION_KEY` | **Yes** | A 32-byte hex key used to encrypt OAuth tokens. Generate with: `openssl rand -hex 32`. |
+| `GITHUB_WEBHOOK_SECRET` | No | Secret key to verify incoming GitHub webhooks. Generate with: `openssl rand -hex 32`. |
+| `GITHUB_TOKEN` | No | Fine-grained or classic PAT to bypass rate limits when fetching repository metrics. |
+| `UPSTASH_REDIS_REST_URL` | No | Upstash Redis URL for API rate limiting/caching. |
+| `UPSTASH_REDIS_REST_TOKEN` | No | Upstash Redis REST Token. |
+| `GROQ_API_KEY` | No | Groq API Key to enable Llama-3 AI insights in the mentor widget. |
 
 ---
 
-## 4. Commit Guidelines
+## 4. Code Style & Standards
 
-We use **Conventional Commits** to keep our repository history structured, descriptive, and clean.
+To ensure code readability and maintainability, please adhere to our styling rules:
+
+* **Linting & Formatting**: We use ESLint and Prettier. Check your code using:
+  ```bash
+  pnpm run lint
+  ```
+* **TypeScript strict mode**: Write clean, strongly typed code. Run type checking before committing:
+  ```bash
+  pnpm run type-check
+  ```
+* **Clean Code**:
+  - Remove all unused imports and variables.
+  - Delete any debugging statements like `console.log` or temporary comments.
+  - Ensure proper semantic HTML and accessibility (a11y) standards.
+
+---
+
+## 5. Branch Naming Conventions
+
+Always create a new branch for your task. Never push directly to `main`. Use the following format:
+
+`prefix/short-descriptive-name`
+
+### Prefix Types:
+* `feat/` — A new user feature (e.g., `feat/add-achievements-tab`)
+* `fix/` — A bug fix (e.g., `fix/oauth-token-expiry`)
+* `docs/` — Documentation changes only (e.g., `docs/update-installation-guide`)
+* `test/` — Adding or updating tests (e.g., `test/visual-regression-setup`)
+* `refactor/` — Code refactoring with no behavior changes (e.g., `refactor/api-routes`)
+
+---
+
+## 6. Commit Guidelines
+
+We enforce **Conventional Commits** to keep our git history clean and understandable.
 
 ### Format
 ```text
-<type>(<scope>): <short description>
+<type>(<optional-scope>): <short, imperative description>
 ```
 
 ### Types
-* `feat`: A new feature
-* `fix`: A bug fix
-* `docs`: Documentation changes
-* `style`: Code style changes (white-space, formatting, missing semi-colons, etc.)
-* `refactor`: A code change that neither fixes a bug nor adds a feature
-* `test`: Adding missing tests or correcting existing ones
-* `chore`: Updating build tasks, package manager configs, etc.
+* `feat`: New feature
+* `fix`: Bug fix
+* `docs`: Documentation updates
+* `style`: Code style/formatting changes (spaces, semicolons, etc.)
+* `refactor`: Refactoring code structure
+* `test`: Adding or correcting tests
+* `chore`: Maintenance tasks, dependencies, lockfile updates
 
 ### Examples
-* `feat(landing): add custom 404 page for better branding`
-* `fix(dashboard): resolve mobile layout stats card overflow`
-* `docs(readme): update setup prerequisites in README`
+- `feat(auth): integrate github oauth authentication`
+- `fix(dashboard): resolve chart container responsive scaling`
+- `docs(contributing): document environment variable configuration`
 
 ---
 
-## 5. Code Style & Standards
+## 7. Issue Labels & GSSoC Levels
 
-To maintain a professional codebase:
-* **Automated Formatting:** We use ESLint and Prettier. Ensure your files are clean before committing:
+For contributors joining through GirlScript Summer of Code (GSSoC), we map issues using levels to indicate complexity and points:
+
+| Label | Level / Difficulty | Points |
+| :--- | :--- | :---: |
+| `gssoc:level1` | **Beginner** — Simple styling, documentation fixes, minor bugs | **20** |
+| `gssoc:level2` | **Intermediate** — Feature additions, routing changes, basic tests | **35** |
+| `gssoc:level3` | **Advanced** — Complex logic, API integrations, deep layout refactoring | **55** |
+
+### Guidelines:
+* **One Issue at a Time**: You can only be assigned to one issue at a time.
+* **Auto-unassignment**: If there is no progress or communication on an assigned issue within **3 days**, it will be unassigned and given to another contributor.
+* **Link Issue to PR**: Ensure your pull request description explicitly links to your assigned issue (e.g. `Closes #45`).
+
+---
+
+## 8. Pull Request (PR) Checklist
+
+Before submitting your PR, make sure you have verified the following:
+
+- [ ] **Lockfile Consistency**: Only use `pnpm` and do not commit `package-lock.json` changes. Ensure `pnpm-lock.yaml` is clean.
+- [ ] **Tests Pass**: Run unit tests and ensure they pass:
   ```bash
-  npm run lint
+  pnpm run test
   ```
-* **No Unused Code:** Remove any unused imports, commented-out dead code blocks, or active `console.log` statements prior to opening a PR.
-* **Accessibility (a11y):** Build with semantic HTML elements and include proper ARIA roles and labels for interactive components.
+- [ ] **Application Builds**: Verify that the production build compiles successfully:
+  ```bash
+  pnpm run build
+  ```
+- [ ] **No Console Errors**: Check for console warnings/errors in developer tools.
+- [ ] **Visual Validation**: If your changes involve UI edits, include mobile and desktop screenshots or a short demo GIF in the PR description.
+- [ ] **Clean History**: Ensure commits are cleanly written and follow conventional formats.
 
 ---
 
-## 6. Pull Request (PR) Checklist
+## 9. Self-Hosting & Deployment
 
-Before submitting your PR to the upstream repository, verify the following:
-
-- [ ] **Tests Pass:** All unit/integration tests run and pass without errors (`npx vitest run`).
-- [ ] **No Build Errors:** The application builds correctly (`npm run build`).
-- [ ] **No Console Errors:** Verify in the browser console that there are no warnings or runtime exceptions.
-- [ ] **Descriptive PR Details:** Fill out the PR template completely. Link the issue being closed (e.g., `Closes #123`).
-- [ ] **Screenshots Included:** If your change modifies any UI or styling, attach clear mobile and desktop screenshots or a short demo GIF in the PR description.
-- [ ] **Clean Git History:** Rebase your branch against the latest upstream `main` to resolve conflicts cleanly.
+For guides on self-hosting DevTrack or deploying it manually, please check the [Self-Hosting Documentation](./docs/self-hosting.md).
 
 ---
 
----
-
-## 7. GSSoC 2026 Contribution Guidelines
-
-We warmly welcome contributors participating in GSSoC 2026 🎉
-
-### Contribution Levels
-
-* **Level 1 (Beginner):** 20 points
-* **Level 2 (Intermediate):** 35 points
-* **Level 3 (Advanced):** 55 points
-
-### Common Labels
-
-* `gssoc26` → Issue is part of GSSoC 2026
-* `gssoc:assigned` → Issue already assigned
-* `needs-triage` → Maintainers are reviewing the issue
-
-### Important Notes
-
-* Work only on issues assigned to you.
-* Stay active after assignment to avoid unassignment.
-* Always link your PR to the issue number.
-* Follow the repository guidelines carefully before submitting PRs.
-
----
-
-## 8. Troubleshooting Common Issues
-
-### Supabase Connection Errors
-
-* Verify all Supabase keys inside `.env.local`
-* Restart the development server after updating environment variables
-* Ensure your Supabase project is active and accessible
-
-### GitHub OAuth Callback Errors
-
-* Ensure callback URLs match exactly in GitHub OAuth settings
-* Verify `NEXTAUTH_URL` is configured correctly
-* Check GitHub Client ID and Secret values
-
-### Environment Variable Issues
-
-* Ensure `.env.local` exists in the project root
-* Avoid extra spaces or quotes in environment values
-* Restart the server after modifying environment variables
-
----
-
-## 9. Testing Guidelines
-
-Before submitting your Pull Request, run the following commands:
-
-```bash
-npm run lint
-npm run build
-npx vitest run
-```
-
-### Verify the Following
-
-* Application runs without crashes
-* No console warnings or runtime errors
-* UI works correctly on mobile and desktop
-* Existing functionality remains unaffected
-
----
-
-## 10. Adding Screenshots or GIFs to PRs
-
-If your PR introduces UI or styling changes, please include screenshots or demo GIFs.
-
-### Recommended Tools
-
-* **Windows:** Snipping Tool, ShareX
-* **macOS:** Built-in Screenshot Tool
-* **GIF Recording:** ScreenToGif, LiceCap
-
-### Suggested PR Attachments
-
-* Before vs After screenshots
-* Mobile responsiveness preview
-* Short demo GIF for interactive features
-
----
-
-
-Thank you for contributing to DevTrack! 🚀
+Thank you for helping make DevTrack better! Happy coding! 🚀
