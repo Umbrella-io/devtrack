@@ -376,7 +376,7 @@ export default function ContributionGraph() {
   return (
     <div
       id="contribution-activity"
-      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
     >
       <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
         <div className="min-w-0">
@@ -490,7 +490,7 @@ export default function ContributionGraph() {
                   )}
                   <button
                     onClick={handleCustomApply}
-                    className="mt-1 w-full rounded-md bg-[var(--accent)] py-1.5 text-sm font-medium text-[var(--background)] hover:opacity-90 transition-opacity"
+                    className="mt-1 w-full rounded-md bg-[var(--accent)] py-1.5 text-sm font-medium text-[var(--background)] hover:opacity-90 transition-opacity active:scale-95"
                   >
                     Apply
                   </button>

@@ -174,9 +174,9 @@ export default function PRMetrics() {
         <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
       </>
     );
-    const className = `rounded-lg p-4 text-center min-w-0 transition-colors ${
+    const className = `rounded-lg p-4 text-center min-w-0 stat-cell ${
       stat.warning
-        ? "border border-orange-400/30 bg-orange-500/10 hover:bg-orange-500/15"
+        ? "border border-orange-400/30 bg-orange-500/10"
         : "bg-[var(--control)]"
     }`;
 
@@ -199,7 +199,7 @@ export default function PRMetrics() {
   };
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <SectionHeader title="PR Analytics" />
         <div className="flex flex-wrap items-center gap-2">
@@ -256,11 +256,11 @@ export default function PRMetrics() {
               <div
                 key={i}
                 aria-hidden="true"
-                className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
+                className="bg-[var(--card-muted)] rounded-lg p-4 h-24 skeleton-shimmer"
               />
             ))}
           </div>
-          <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
+          <div className="h-[270px] rounded-lg skeleton-shimmer" aria-hidden="true" />
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-4 text-sm text-[var(--destructive)]">
@@ -295,7 +295,7 @@ export default function PRMetrics() {
               </div>
             </div>
             
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 stagger-children">
               {githubStats
                 .filter((stat) => {
                   if (prFilter === "all") return true;
@@ -356,7 +356,7 @@ export default function PRMetrics() {
               { label: "Total Reviews Given", value: metrics?.reviews?.totalReviews ?? 0 },
               { label: "Approval Rate", value: metrics?.reviews?.approvalRate ?? "0%" },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-lg bg-[var(--control)] p-4 text-center">
+              <div key={stat.label} className="rounded-lg bg-[var(--control)] p-4 text-center stat-cell animate-fade-in-up">
                 <div className="text-2xl font-bold text-[var(--accent)]">{stat.value}</div>
                 <div className="mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
               </div>
@@ -367,7 +367,7 @@ export default function PRMetrics() {
               <p className="mb-3 text-sm font-medium text-[var(--muted-foreground)]">Most Reviewed Repos</p>
               <div className="space-y-2">
                 {metrics.reviews.topRepos.map((item) => (
-                  <div key={item.repo} className="flex items-center justify-between rounded-lg bg-[var(--control)] px-4 py-2">
+                  <div key={item.repo} className="flex items-center justify-between rounded-lg bg-[var(--control)] px-4 py-2 transition-all duration-200 hover:bg-[var(--card-muted)] hover:-translate-y-0.5">
                     <span className="truncate text-sm text-[var(--card-foreground)]">{item.repo}</span>
                     <span className="ml-4 shrink-0 text-sm font-semibold text-[var(--accent)]">
                       {item.count} review{item.count !== 1 ? "s" : ""}

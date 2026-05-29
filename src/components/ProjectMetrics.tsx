@@ -119,7 +119,7 @@ export default function ProjectMetrics() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
           Project Tracking
         </h2>
@@ -127,7 +127,7 @@ export default function ProjectMetrics() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
+              className="bg-[var(--card-muted)] rounded-lg p-4 h-24 skeleton-shimmer"
             />
           ))}
         </div>
@@ -137,7 +137,7 @@ export default function ProjectMetrics() {
 
   if (!data && !error) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
             Project Tracking
@@ -230,7 +230,7 @@ export default function ProjectMetrics() {
                   <button
                     type="submit"
                     disabled={connecting}
-                    className="flex-1 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90 disabled:opacity-50"
+                    className="flex-1 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 disabled:opacity-50 active:scale-95"
                   >
                     {connecting ? "Connecting..." : "Connect"}
                   </button>
@@ -252,7 +252,7 @@ export default function ProjectMetrics() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
             Project Tracking
@@ -347,7 +347,7 @@ export default function ProjectMetrics() {
                   <button
                     type="submit"
                     disabled={connecting}
-                    className="flex-1 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90 disabled:opacity-50"
+                    className="flex-1 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 disabled:opacity-50 active:scale-95"
                   >
                     {connecting ? "Connecting..." : "Connect"}
                   </button>
@@ -378,7 +378,7 @@ export default function ProjectMetrics() {
   ];
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           Project Tracking
@@ -391,11 +391,11 @@ export default function ProjectMetrics() {
           Disconnect
         </button>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 stagger-children">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="rounded-lg bg-[var(--control)] p-4 text-center"
+            className="rounded-lg bg-[var(--control)] p-4 text-center stat-cell animate-fade-in-up"
           >
             <div className="text-2xl font-bold text-[var(--accent)]">
               {stat.value}
@@ -411,11 +411,11 @@ export default function ProjectMetrics() {
           <h3 className="text-sm font-medium mb-3 text-[var(--muted-foreground)]">
             Recent Issues
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-2 stagger-children">
             {data.recentIssues.slice(0, 5).map((issue) => (
               <div
                 key={issue.key}
-                className="flex items-center justify-between rounded-lg bg-[var(--control)] p-3"
+                className="flex items-center justify-between rounded-lg bg-[var(--control)] p-3 stat-cell animate-fade-in-up"
               >
                 <div className="min-w-0 flex-1">
                   <span className="font-mono text-xs text-[var(--accent)]">

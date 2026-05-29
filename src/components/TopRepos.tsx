@@ -80,7 +80,7 @@ const RepoItem = memo(({
         </div>
         <span className="shrink-0 flex items-center gap-2">
           {healthLoading ? (
-            <div className="h-5 w-9 rounded bg-[var(--card-muted)] animate-pulse" />
+            <div className="h-5 w-9 rounded skeleton-shimmer" />
           ) : health ? (
             <button
               type="button"
@@ -390,7 +390,7 @@ export default function TopRepos() {
   }, [repos, sortColumn, sortDirection, pinnedRepos, searchQuery]);
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <SectionHeader
@@ -424,7 +424,7 @@ export default function TopRepos() {
             <div
               key={i}
               aria-hidden="true"
-              className="h-10 rounded bg-[var(--card-muted)] animate-pulse"
+              className="h-10 rounded skeleton-shimmer"
             />
           ))}
         </div>
@@ -490,7 +490,7 @@ export default function TopRepos() {
             </span>
           </button>
         </div>
-        <ul className="space-y-3">
+        <ul className="space-y-3 stagger-children">
           {filteredRepos.length === 0 ? (
             <p className="text-sm text-[var(--muted-foreground)] py-4 text-center">
               No repos match your search.

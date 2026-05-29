@@ -241,17 +241,17 @@ export default function GoalTracker() {
 
   if (loading) {
     return (
-      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
+      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading weekly goals</span>
           <div
             aria-hidden="true"
-            className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse"
+            className="mb-4 h-5 w-32 rounded skeleton-shimmer"
           />
           {[1, 2, 3].map((i) => (
             <div key={i} aria-hidden="true" className="mb-4">
-              <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
-              <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
+              <div className="h-4 skeleton-shimmer rounded mb-2" />
+              <div className="h-2 skeleton-shimmer rounded" />
             </div>
           ))}
         </div>
@@ -260,7 +260,7 @@ export default function GoalTracker() {
   }
 
   return (
-    <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
+    <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Goals</h2>
@@ -316,7 +316,7 @@ export default function GoalTracker() {
           No goals yet. Create one below.
         </p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="space-y-4 stagger-children">
           {goals.map((goal) => {
             const pct = Math.min((goal.current / goal.target) * 100, 100);
             const isConfirming = confirmingId === goal.id;
@@ -326,7 +326,7 @@ export default function GoalTracker() {
             const isAutoSynced = goal.unit === "commits" || goal.unit === "prs";
 
             return (
-              <li key={goal.id} className="relative">
+              <li key={goal.id} className="relative animate-fade-in-up">
                 {activeConfettiGoalId === goal.id && <ConfettiBurst />}
                 <div className="flex justify-between items-center text-sm mb-1">
                   <div className="flex flex-col gap-0.5">
@@ -571,7 +571,7 @@ export default function GoalTracker() {
         <button
           type="submit"
           disabled={creating || !title.trim()}
-          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 transition-all duration-200 active:scale-95"
         >
           {creating ? (
             <>

@@ -72,7 +72,7 @@ export default function PrivacySettings() {
   }
 
   return (
-    <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="text-xl font-semibold text-[var(--card-foreground)] mb-1">
         Privacy & Data
       </h2>
@@ -104,7 +104,7 @@ export default function PrivacySettings() {
           <button
             onClick={handleExport}
             disabled={downloading}
-            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:opacity-60"
+            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:opacity-60 transition-all duration-200 active:scale-95"
           >
             {downloading ? "Exporting..." : "Export My Data"}
           </button>

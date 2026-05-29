@@ -228,7 +228,7 @@ export default function CodingActivityInsightsCard() {
       : `${dataWindowLabel} · Commits by hour · Local timezone`;
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
@@ -251,7 +251,7 @@ export default function CodingActivityInsightsCard() {
   type="button"
   onClick={fetchInsights}
   disabled={loading}
-  className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50"
+  className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-all hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50 hover:opacity-90 active:scale-95"
 >
   {loading ? (
     <>
@@ -272,13 +272,13 @@ export default function CodingActivityInsightsCard() {
           className="space-y-4"
         >
           <span className="sr-only">Loading coding activity insights</span>
-          <div className="h-[260px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
+          <div className="h-[260px] rounded-lg skeleton-shimmer" />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((item) => (
               <div
                 key={item}
                 aria-hidden="true"
-                className="h-16 rounded-lg bg-[var(--card-muted)] animate-pulse"
+                className="h-16 rounded-lg skeleton-shimmer"
               />
             ))}
           </div>
