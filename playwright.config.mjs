@@ -22,8 +22,9 @@ export default defineConfig({
   webServer: {
     command:
       process.env.PLAYWRIGHT_SERVER_MODE === "start"
-        ? `npm run start -- --hostname 127.0.0.1 -p ${PORT}`
+        ? `HOSTNAME=127.0.0.1 PORT=${PORT} NEXTAUTH_SECRET=playwright-placeholder-secret-that-is-long-enough NEXTAUTH_URL=http://127.0.0.1:${PORT} NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key node .next/standalone/server.js`
         : `node node_modules/next/dist/bin/next dev -H 127.0.0.1 -p ${PORT}`,
+        
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
