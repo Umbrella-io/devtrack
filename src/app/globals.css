@@ -312,8 +312,8 @@ body {
   font-family: var(--font-jetbrains, ui-monospace, monospace);
   font-size: 14px;
   font-weight: 600;
-  color: #000;
-  background: #818cf8;
+  color: var(--accent-foreground);
+  background: var(--accent);
   padding: 12px 24px;
   border-radius: 6px;
   text-decoration: none;
@@ -324,9 +324,15 @@ body {
 }
 
 .lnd-cta-primary:hover {
-  background: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 0 18px rgba(129, 140, 248, 0.5);
+  box-shadow: var(--shadow-medium);
+  filter: saturate(1.02);
+}
+
+.lnd-cta-primary:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: 8px;
 }
 
 .lnd-cta-primary:active {
@@ -359,6 +365,35 @@ body {
   border: 1px solid var(--border);
   text-decoration: none;
   transition: all 0.2s;
+}
+
+.lnd-cta-secondary:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* Hero highlight tweaks for better contrast and balance */
+.lnd-hero-highlight {
+  color: var(--accent);
+  font-weight: 900;
+  text-shadow: 0 6px 20px rgba(37, 99, 235, 0.12);
+  display: inline-block;
+  transform: translateZ(0);
+  transition: text-shadow 220ms ease, transform 220ms ease;
+  font-size: 1.02em;
+}
+.lnd-hero-dot {
+  color: var(--muted-foreground);
+  opacity: 0.95;
+  margin-left: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lnd-cta-primary,
+  .lnd-cta-secondary,
+  .lnd-hero-highlight,
+  .lnd-cell { transition: none !important; }
 }
 
 

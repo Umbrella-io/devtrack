@@ -138,7 +138,9 @@ function MouseSpotlight() {
   );
 }
 
-
+          YOUR<br />CODE<br />HAS A<br />
+          <span className="lnd-hero-highlight">PULSE</span>
+          <span className="lnd-hero-dot">.</span>
 /* ═══════════════════════════════════════════════════════════
    BENTO WIDGETS
    ═══════════════════════════════════════════════════════════ */
@@ -334,8 +336,8 @@ function HeroSection() {
       style={{
         minHeight: '100vh',
         display: 'flex', alignItems: 'center',
-        padding: '80px clamp(24px,5vw,64px) 40px',
-        gap: 'clamp(32px,5vw,80px)',
+        padding: '80px clamp(20px,4vw,48px) 40px',
+        gap: 'clamp(20px,4vw,48px)',
         flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
         overflow: 'hidden',
@@ -405,9 +407,6 @@ function HeroSection() {
             textShadow: '0 4px 24px rgba(0,0,0,0.4)',
           }}
         >
-          YOUR<br />CODE<br />HAS A<br />
-          <span style={{ color: A, textShadow: '0 0 30px rgba(129,140,248,0.3)' }}>PULSE</span>
-          <span style={{ color: 'var(--foreground)' }}>.</span>
         </h1>
 
         {/* Tagline — NOW HIGH CONTRAST */}

@@ -129,6 +129,53 @@ export default function CustomCursor() {
 
   if (!mounted) return null;
 
+  const base: React.CSSProperties = {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    pointerEvents: "none",
+    zIndex: 9999,
+    willChange: "transform",
+  };
+
+  const dotStyle: React.CSSProperties = {
+    ...base,
+    width: clicking ? DOT_SIZE * CLICK_SCALE : DOT_SIZE,
+    height: clicking ? DOT_SIZE * CLICK_SCALE : DOT_SIZE,
+    marginLeft: clicking ? (DOT_SIZE - DOT_SIZE * CLICK_SCALE) / 2 : 0,
+    marginTop: clicking ? (DOT_SIZE - DOT_SIZE * CLICK_SCALE) / 2 : 0,
+    borderRadius: "50%",
+    background: "radial-gradient(circle, #a78bfa, #7c3aed)",
+    boxShadow: clicking
+      ? "0 0 6px 2px #a78bfa80, 0 0 0 2px rgba(0,0,0,0.5)"
+      : "0 0 12px 4px #7c3aedaa, 0 0 24px 8px #7c3aed44, 0 0 0 2px rgba(0,0,0,0.45)",
+    opacity: visible ? 1 : 0,
+    transition: "opacity 0.2s ease, box-shadow 0.15s ease, width 0.1s ease, height 0.1s ease",
+  };
+
+  const ringStyle: React.CSSProperties = {
+    ...base,
+    width: hovering ? RING_SIZE * HOVER_RING_SCALE : RING_SIZE,
+    height: hovering ? RING_SIZE * HOVER_RING_SCALE : RING_SIZE,
+    marginLeft: hovering ? -(RING_SIZE * (HOVER_RING_SCALE - 1)) / 2 : 0,
+    marginTop: hovering ? -(RING_SIZE * (HOVER_RING_SCALE - 1)) / 2 : 0,
+    borderRadius: "50%",
+    border: hovering ? "1.5px solid #a78bfa" : "1.5px solid rgba(109,40,217,0.66)",
+    background: hovering ? "#7c3aed18" : "transparent",
+    boxShadow: clicking && hovering
+      ? "0 0 0 4px #7c3aed22, inset 0 0 12px #7c3aed18, 0 0 0 3px rgba(0,0,0,0.35)"
+      : "0 0 0 3px rgba(0,0,0,0.28)",
+    opacity: visible ? 1 : 0,
+    transition: [
+      "opacity 0.2s ease",
+      "border-color 0.2s ease",
+      "background 0.2s ease",
+      "width 0.2s ease",
+      "height 0.2s ease",
+      "margin 0.2s ease",
+    ].join(", "),
+  };
+
   return (
     <>
       {/* 1. Glowing Cyan Dot Core */}
