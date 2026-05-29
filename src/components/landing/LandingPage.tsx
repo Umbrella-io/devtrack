@@ -219,6 +219,7 @@ function ChartWidget() {
             key={i}
             onMouseEnter={() => setHovBar(i)}
             onMouseLeave={() => setHovBar(-1)}
+            role="presentation"
             style={{
               flex: 1, borderRadius: '2px 2px 0 0',
               background: hovBar === i ? '#fff' : A,

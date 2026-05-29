@@ -247,7 +247,7 @@ export default function CodingActivityInsightsCard() {
           </p>
         </div>
 
-         <button
+         <button aria-label="Refresh"
   type="button"
   onClick={fetchInsights}
   disabled={loading}

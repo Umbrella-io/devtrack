@@ -211,14 +211,14 @@ function parseAchievementsFromProfileHtml(
     const href = match[1];
     const slug = decodeHtml(match[2]).toLowerCase();
     const anchorHtml = match[3];
-    const imgMatch = anchorHtml.match(/<img\b[^>]*src="([^"]+)"[^>]*>/i);
+    const imgMatch = anchorHtml.match(/<img alt="" aria-hidden="true"\b[^>]*src="([^"]+)"[^>]*>/i);
 
     if (!imgMatch) {
       continue;
     }
 
     const imageUrl = absoluteGitHubUrl(imgMatch[1]);
-    const altMatch = anchorHtml.match(/<img\b[^>]*alt="([^"]*)"[^>]*>/i);
+    const altMatch = anchorHtml.match(/<img alt="" aria-hidden="true"\b[^>]*alt="([^"]*)"[^>]*>/i);
     const ariaMatch = anchorHtml.match(/aria-label="([^"]+)"/i);
     const titleMatch = anchorHtml.match(/title="([^"]+)"/i);
     const rawTitle =
@@ -234,7 +234,7 @@ function parseAchievementsFromProfileHtml(
     });
   }
 
-  const achievementImagePattern = /<img\b[^>]*alt="Achievement:\s*([^"]+)"[^>]*>/gi;
+  const achievementImagePattern = /<img alt="" aria-hidden="true"\b[^>]*alt="Achievement:\s*([^"]+)"[^>]*>/gi;
 
   for (const match of html.matchAll(achievementImagePattern)) {
     const imageTag = match[0];
