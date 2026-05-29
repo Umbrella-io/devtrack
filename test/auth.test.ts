@@ -234,7 +234,7 @@ describe('auth.ts NextAuth callbacks', () => {
     it('has GitHub provider configured with correct scope', () => {
       const githubProvider = authOptions.providers?.[0] as any;
       expect(githubProvider?.id).toBe('github');
-      expect(githubProvider?.options?.authorization?.params?.scope).toBe('read:user user:email read:discussion');
+      expect(githubProvider?.options?.authorization?.params?.scope).toBe('read:user user:email repo read:discussion');
     });
 
     it('has NEXTAUTH_SECRET set', () => {

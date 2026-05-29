@@ -7,6 +7,7 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const SUPABASE_ADMIN_UNAVAILABLE_MESSAGE =
   "Supabase admin client is unavailable. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.";
 
+// eslint-disable-next-line
 type SupabaseAdminClient = SupabaseClient<any, any, any>;
 
 function createUnavailableSupabaseAdmin(): SupabaseAdminClient {
@@ -54,6 +55,23 @@ export async function getUserByUsername(
       if (error.code === "PGRST116") {
         return null;
       }
+      // Optional columns (pinned_repos, is_sponsor) may not exist yet — fall back
+      if (error.code === "42703") {
+        const { data: minimal, error: minError } = await supabaseAdmin
+          .from("users")
+          .select("id,github_id,github_login,is_public,created_at,updated_at")
+          .ilike("github_login", username)
+          .eq("is_public", true)
+          .single();
+
+        if (minError) {
+          if (minError.code === "PGRST116") return null;
+          console.error("Error fetching user (minimal):", minError);
+          return null;
+        }
+
+        return minimal as User;
+      }
       console.error("Error fetching user:", error);
       return null;
     }
@@ -61,6 +79,37 @@ export async function getUserByUsername(
     return data as User;
   } catch (err) {
     console.error("Unexpected error fetching user:", err);
+    return null;
+  }
+}
+
+/**
+ * Look up a user by GitHub id. Used for authenticated server-rendered pages
+ * where the session has an id but may not have the login claim populated.
+ */
+export async function getUserByGithubId(
+  githubId: string
+): Promise<User | null> {
+  if (!supabaseAdmin) return null;
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("users")
+      .select("id,github_id,github_login,is_public,created_at,updated_at")
+      .eq("github_id", githubId)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return null;
+      }
+      console.error("Error fetching user by GitHub id:", error);
+      return null;
+    }
+
+    return data as User;
+  } catch (err) {
+    console.error("Unexpected error fetching user by GitHub id:", err);
     return null;
   }
 }

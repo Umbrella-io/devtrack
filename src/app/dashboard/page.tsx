@@ -2,6 +2,7 @@ import LazyWidget from "@/components/LazyWidget";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
 import GoalTracker from "@/components/GoalTracker";
+import TodayFocusHero from "@/components/TodayFocusHero";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
@@ -105,6 +106,10 @@ export default async function DashboardPage() {
     <DashboardSSEProvider>
       <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
+
+        <div className="mt-6 mb-6">
+          <TodayFocusHero userName={session.user?.name ?? null} />
+        </div>
 
         {/* Action bar */}
         <div className="mb-6 flex flex-wrap items-stretch justify-center gap-2 sm:justify-end">

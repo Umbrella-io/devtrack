@@ -9,6 +9,18 @@ import "./globals.css";
 import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
+  weight: ["700", "800"],
+  display: "swap",
+});
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  weight: ["400", "500", "600", "700"],
+  display: "optional",
+});
 
 export const metadata: Metadata = {
   title: "DevTrack — Developer Productivity Dashboard",

@@ -273,6 +273,7 @@ function SettingsPageContent() {
         setSettings(updated);
       } else {
         console.error("Failed to update settings");
+        toast.error("Failed to update public profile setting");
       }
     } catch (error) {
       console.error("Error updating settings:", error);
@@ -411,7 +412,7 @@ function SettingsPageContent() {
       <div className="max-w-2xl mx-auto">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <Link href="/dashboard">
-            <button className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--accent)] md:bg-[var(--accent)] md:text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 md:h-auto md:w-auto md:rounded-lg md:px-4 md:py-2">
+            <button aria-label="Back to Dashboard" className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--accent)] md:bg-[var(--accent)] md:text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 md:h-auto md:w-auto md:rounded-lg md:px-4 md:py-2">
               <span className="text-lg items-center transition-transform duration-200 group-hover:-translate-x-1.5">
                 ←
               </span>
@@ -749,7 +750,7 @@ function SettingsPageContent() {
         <PrivacySettings />
         <div className="mt-4 flex justify-center items-center pt-6">
           <Link href="/dashboard">
-            <button className="group inline-flex items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95">
+            <button aria-label="Back to Dashboard" className="group inline-flex items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95">
               <span className="mr-2 transition-transform duration-200 group-hover:-translate-x-1.5">
                 ←
               </span>
