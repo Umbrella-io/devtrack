@@ -101,8 +101,7 @@ interface LeaderboardPayload {
 
 function getRateLimitKey(req: NextRequest): string {
   return (
-    req.ip ??
-    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     "unknown"
   );
 }

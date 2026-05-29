@@ -16,9 +16,10 @@ interface ComparePageProps {
 
 type Winner = "left" | "right" | "tie";
 
-function parseUsers(users: string): [string, string] | null {
+async function parseUsers(params: Promise<{ users: string }>): Promise<[string, string] | null> {
   let decoded: string;
   try {
+    const { users } = await params;
     decoded = decodeURIComponent(users);
   } catch {
     return null;
@@ -52,8 +53,8 @@ function repoCommitTotal(repos: TopRepo[]): number {
 
 export async function generateMetadata({
   params,
-}: ComparePageProps): Promise<Metadata> {
-  const parsed = parseUsers(params.users);
+}: { params: Promise<{ users: string }> }): Promise<Metadata> {
+  const parsed = await parseUsers(params);
   if (!parsed) {
     return {
       title: "Compare Public Profiles",
@@ -70,8 +71,9 @@ export async function generateMetadata({
 
 export default async function PublicProfileComparePage({
   params,
-}: ComparePageProps) {
-  const parsed = parseUsers(params.users);
+}: { params: Promise<{ users: string }> }) {
+  const { users } = await params;
+  const parsed = await parseUsers(params);
 
   if (!parsed) {
     return <CompareUnavailable title="Invalid compare URL" />;

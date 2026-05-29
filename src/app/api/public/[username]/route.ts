@@ -25,7 +25,7 @@ function cleanOldEntries(map: Map<string, { count: number; resetAt: number }>) {
 }
 
 function getRateLimitKey(req: NextRequest): string {
-  // req.ip is populated by the Next.js / Vercel runtime from the verified
+  // req.headers.get("x-forwarded-for") is populated by the Next.js / Vercel runtime from the verified
   // network-layer source address and cannot be spoofed by the caller.
   //
   // x-forwarded-for is intentionally excluded here: it is a plain request
@@ -33,7 +33,7 @@ function getRateLimitKey(req: NextRequest): string {
   // primary key allows an attacker to rotate the header on every request,
   // bypass the per-IP limit entirely, and exhaust the shared GITHUB_TOKEN
   // quota (5 000 req/hr), making the endpoint unavailable for all users.
-  return req.ip || req.headers.get("x-real-ip") || "unknown";
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
 }
 
 function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
@@ -61,10 +61,11 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { username: string } }
+  { params }: { params: Promise<{ username: string }> }
 ): Promise<NextResponse> {
   cleanOldEntries(ipRateLimits);
-  const { username } = params;
+  const resolvedParams = await params;
+  const username = resolvedParams.username;
   // Rate limiting
   const ip = getRateLimitKey(req);
   const rateLimit = getUpstashConfig()

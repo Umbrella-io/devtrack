@@ -59,10 +59,11 @@ function getMetricValue(entry: LeaderboardEntry, tab: LeaderboardTab): number {
 export default async function LeaderboardPage({
   searchParams,
 }: {
-  searchParams: { tab?: string };
+  searchParams: Promise<{ tab?: string }>;
 }) {
-  const activeTab = tabs.some((tab) => tab.id === searchParams.tab)
-    ? (searchParams.tab as LeaderboardTab)
+  const resolvedSearchParams = await searchParams;
+  const activeTab = tabs.some((tab) => tab.id === resolvedSearchParams.tab)
+    ? (resolvedSearchParams.tab as LeaderboardTab)
     : "streak";
   const leaderboard = await fetchLeaderboard();
   const activeMeta = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];

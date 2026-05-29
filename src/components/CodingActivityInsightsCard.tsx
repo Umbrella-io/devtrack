@@ -74,7 +74,7 @@ function TrendBadge({
 function HourTooltip({
   active,
   payload,
-}: TooltipProps<number, string>) {
+}: any) {
   if (!active || !payload || payload.length === 0) {
     return null;
   }

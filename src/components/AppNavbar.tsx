@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
@@ -102,7 +102,7 @@ export default function AppNavbar() {
                 Sign out
               </button>
             </>
-          ) : (
+          ) : pathname.startsWith("/u/") ? null : (
             <Link
               href="/api/auth/signin/github?callbackUrl=/dashboard"
               className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
@@ -161,7 +161,7 @@ export default function AppNavbar() {
                   Sign out
                 </button>
               </>
-            ) : (
+            ) : pathname.startsWith("/u/") ? null : (
               <Link
                 href="/api/auth/signin/github?callbackUrl=/dashboard"
                 className="rounded-2xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-[var(--accent-foreground)]"

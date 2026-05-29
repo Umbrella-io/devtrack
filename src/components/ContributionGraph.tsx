@@ -563,7 +563,7 @@ export default function ContributionGraph() {
         <div className="h-[220px] w-full overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === "bar" ? (
-            <BarChart data={displayData}>
+            <BarChart data={displayData as any}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis 
                 dataKey={compareMode ? "date" : "day"} 
@@ -611,7 +611,7 @@ export default function ContributionGraph() {
               )}
             </BarChart>
           ) : chartType === "line" ? (
-            <LineChart data={displayData}>
+            <LineChart data={displayData as any}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis 
                 dataKey={compareMode ? "date" : "day"} 
@@ -666,7 +666,7 @@ export default function ContributionGraph() {
               )}
             </LineChart>
           ) : (
-            <AreaChart data={displayData}>
+            <AreaChart data={displayData as any}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis 
                 dataKey={compareMode ? "date" : "day"} 
