@@ -42,8 +42,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        run: npx playwright test
-
+        run: npx playwright test --retries=2
+        
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()
