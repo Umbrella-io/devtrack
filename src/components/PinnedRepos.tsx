@@ -64,6 +64,7 @@ const RepoCard = memo(({ repo }: { repo: PinnedRepo }) => {
     prevProps.repo.primaryLanguage?.color === nextProps.repo.primaryLanguage?.color
   );
 });
+RepoCard.displayName = "RepoCard";
 
 export default function PinnedRepos() {
   const [pinnedRepos, setPinnedRepos] = useState<PinnedRepo[]>([]);

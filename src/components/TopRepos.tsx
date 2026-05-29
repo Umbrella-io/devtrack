@@ -172,6 +172,7 @@ const RepoItem = memo(({
     prevProps.health?.grade === nextProps.health?.grade
   );
 });
+RepoItem.displayName = "RepoItem";
 
 interface RepoLanguage {
   name: string;
