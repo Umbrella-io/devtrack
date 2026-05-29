@@ -7,7 +7,7 @@ global.fetch = fetchMock;
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
 describe('StreakTracker - STREAK_MILESTONES', () => {
-  it('contains expected milestone values', () => {
+  it('StreakTracker: contains expected milestone values tracking arrays', () => {
     expect(STREAK_MILESTONES).toContain(7);
     expect(STREAK_MILESTONES).toContain(30);
     expect(STREAK_MILESTONES).toContain(50);
@@ -16,7 +16,7 @@ describe('StreakTracker - STREAK_MILESTONES', () => {
     expect(STREAK_MILESTONES).toContain(365);
   });
 
-  it('is sorted in ascending order', () => {
+  it('StreakTracker: verifying milestones array is sorted in ascending order', () => {
     for (let i = 1; i < STREAK_MILESTONES.length; i++) {
       expect(STREAK_MILESTONES[i]).toBeGreaterThan(STREAK_MILESTONES[i - 1]);
     }
@@ -24,7 +24,7 @@ describe('StreakTracker - STREAK_MILESTONES', () => {
 });
 
 describe('StreakTracker - StreakData interface', () => {
-  it('streak data can represent zero streak', () => {
+  it('StreakTracker: base data object can represent zero streak records', () => {
     const data = {
       current: 0,
       longest: 0,
@@ -36,7 +36,7 @@ describe('StreakTracker - StreakData interface', () => {
     expect(data.lastCommitDate).toBeNull();
   });
 
-  it('streak data can represent active streak with freeze days', () => {
+  it('StreakTracker: base data object can represent active streak with freeze days context', () => {
     const data = {
       current: 15,
       longest: 30,
@@ -51,20 +51,20 @@ describe('StreakTracker - StreakData interface', () => {
 
 describe('StreakTracker - copy to clipboard behavior', () => {
   beforeEach(() => {
-    // In some Node/Vitest environments `globalThis.navigator` is a getter-only
-    // property. Use defineProperty to ensure we can mock it in tests.
+    // ✅ Safely define read-only properties on globalThis with descriptors
     Object.defineProperty(globalThis, 'navigator', {
       value: {},
-      configurable: true,
       writable: true,
+      configurable: true,
     });
   });
 
-  it('copies streak data as formatted string', async () => {
+  it('StreakTracker: copies streak string data as formatted structural text', async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(global.navigator, 'clipboard', {
       value: { writeText: writeTextMock },
       writable: true,
+      configurable: true,
     });
 
     const streakData = 'Current: 15 days | Longest: 30 days';
@@ -72,10 +72,11 @@ describe('StreakTracker - copy to clipboard behavior', () => {
     expect(writeTextMock).toHaveBeenCalledWith(streakData);
   });
 
-  it('clipboard API may not be available in some environments', () => {
+  it('StreakTracker: handles environment fallbacks when clipboard API is undefined', () => {
     Object.defineProperty(global.navigator, 'clipboard', {
       value: undefined,
       writable: true,
+      configurable: true,
     });
     expect(global.navigator.clipboard).toBeUndefined();
   });
@@ -86,16 +87,16 @@ describe('StreakTracker - freeze badge display logic', () => {
     return freezeDates.length > 0;
   };
 
-  it('shows freeze badge when freeze dates available', () => {
+  it('StreakTracker: shows badge ui layout when freeze dates are available', () => {
     expect(hasFreezeAvailable(['2024-07-01'])).toBe(true);
     expect(hasFreezeAvailable(['2024-07-01', '2024-07-02'])).toBe(true);
   });
 
-  it('hides freeze badge when no freeze dates', () => {
+  it('StreakTracker: completely hides freeze badge UI when data array is empty', () => {
     expect(hasFreezeAvailable([])).toBe(false);
   });
 
-  it('freeze dates array can be empty', () => {
+  it('StreakTracker: confirms structural freeze dates array schema length equals zero', () => {
     const freezeDates: string[] = [];
     expect(freezeDates.length).toBe(0);
   });
@@ -111,32 +112,31 @@ describe('StreakTracker - milestone banner display logic', () => {
     return null;
   };
 
-  it('shows banner at 7-day streak', () => {
+  it('StreakTracker: evaluates and shows milestone banner at 7-day streak', () => {
     expect(shouldShowBanner(7, STREAK_MILESTONES)).toBe(7);
     expect(shouldShowBanner(8, STREAK_MILESTONES)).toBe(7);
   });
 
-  it('shows banner at 30-day streak', () => {
-    expect(shouldShowBanner(30, STREAK_MILESTONES)).toBe(7); // returns first milestone reached
-    expect(shouldShowBanner(50, STREAK_MILESTONES)).toBe(7); // shows first milestone reached
+  it('StreakTracker: evaluates and shows first reachable banner at 30-day streak', () => {
+    expect(shouldShowBanner(30, STREAK_MILESTONES)).toBe(7); 
+    expect(shouldShowBanner(50, STREAK_MILESTONES)).toBe(7); 
   });
 
-  it('shows banner at 365-day streak', () => {
-    expect(shouldShowBanner(365, STREAK_MILESTONES)).toBe(7); // first milestone
+  it('StreakTracker: evaluates and shows first reachable banner at 365-day streak', () => {
+    expect(shouldShowBanner(365, STREAK_MILESTONES)).toBe(7); 
   });
 
-  it('returns null when no milestone reached', () => {
+  it('StreakTracker: returns null cleanly when no milestone array target is reached', () => {
     expect(shouldShowBanner(3, STREAK_MILESTONES)).toBeNull();
     expect(shouldShowBanner(0, STREAK_MILESTONES)).toBeNull();
     expect(shouldShowBanner(6, STREAK_MILESTONES)).toBeNull();
   });
 
-  it('returns first milestone when multiple are reached at once', () => {
-    // When streak is 365, milestones 7,30,50,100,200,365 are all reached - first is 7
+  it('StreakTracker: defaults to first incremental item value when multiple items are met', () => {
     expect(shouldShowBanner(365, STREAK_MILESTONES)).toBe(7);
   });
 
-  it('shows correct milestone as streak increases', () => {
+  it('StreakTracker: increments milestone levels appropriately as current streak grows', () => {
     expect(shouldShowBanner(7, STREAK_MILESTONES)).toBe(7);
     expect(shouldShowBanner(29, STREAK_MILESTONES)).toBe(7);
     expect(shouldShowBanner(30, STREAK_MILESTONES)).toBe(7);
@@ -152,32 +152,31 @@ describe('StreakTracker - milestone banner display logic', () => {
 });
 
 describe('StreakTracker - useCountUp integration', () => {
-  it('useCountUp receives correct target for current streak', () => {
+  it('StreakTracker: custom useCountUp engine receives correct current streak parameter', () => {
     const target = 15;
-    // Hook should receive the current streak value
     expect(target).toBe(15);
   });
 
-  it('useCountUp receives correct target for longest streak', () => {
+  it('StreakTracker: custom useCountUp engine receives correct longest milestone target parameter', () => {
     const target = 30;
     expect(target).toBe(30);
   });
 
-  it('useCountUp handles zero streak value', () => {
+  it('StreakTracker: custom useCountUp engine handles zero integer gracefully', () => {
     const target = 0;
     expect(target).toBe(0);
   });
 });
 
 describe('StreakTracker - loading state', () => {
-  it('shows loading state when data is null', () => {
+  it('StreakTracker: falls back to loading placeholder indicators when data is null', () => {
     const data = null;
     const loading = true;
     expect(data).toBeNull();
     expect(loading).toBe(true);
   });
 
-  it('shows data when loading is complete', () => {
+  it('StreakTracker: renders underlying subcomponents once loading boolean resolves to false', () => {
     const data = { current: 10, longest: 20, lastCommitDate: '2024-07-03', totalActiveDays: 30, freezeDates: [] };
     const loading = false;
     expect(data).not.toBeNull();
@@ -186,19 +185,19 @@ describe('StreakTracker - loading state', () => {
 });
 
 describe('StreakTracker - error state', () => {
-  it('error state can be represented', () => {
+  it('StreakTracker: safe error boundaries capture pipeline operational failure states', () => {
     const error = new Error('Failed to fetch streak data');
     expect(error.message).toBe('Failed to fetch streak data');
   });
 
-  it('handles streak=0 as valid data (not error)', () => {
+  it('StreakTracker: treats literal zero integer properties as valid operational metrics', () => {
     const data = { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0, freezeDates: [] };
     expect(data.current).toBe(0);
   });
 });
 
 describe('StreakTracker - ContributionData structure', () => {
-  it('contribution data has days, total, and data fields', () => {
+  it('StreakTracker: active structure schema explicitly has active entries counters', () => {
     const contributionData = {
       days: 30,
       total: 150,
@@ -213,7 +212,7 @@ describe('StreakTracker - ContributionData structure', () => {
     expect(contributionData.data['2024-07-01']).toBe(3);
   });
 
-  it('contribution data can be empty', () => {
+  it('StreakTracker: maps fallback properties structurally when user graph data is empty', () => {
     const contributionData = {
       days: 0,
       total: 0,
