@@ -59,7 +59,7 @@ export default function FriendComparison() {
     if (persisted) {
       runCompare(persisted);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   // Debounce search input for suggestions
