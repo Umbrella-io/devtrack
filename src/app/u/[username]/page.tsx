@@ -2,32 +2,28 @@ export const dynamic = "force-dynamic";
 
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
 import BadgeSection from "@/components/BadgeSection";
 import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
 import ShareProfileSection from "@/components/ShareProfileSection";
 import ThemeToggle from "@/components/ThemeToggle";
 import SponsorBadge from "@/components/SponsorBadge";
+import { getUserByUsername } from "@/lib/supabase";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
-import CopyLinkButton from "@/components/CopyLinkButton";
-import { authOptions } from "@/lib/auth";
 import { fetchPublicProfile } from "@/lib/public-profile-data";
-import { getUserByGithubId, getUserByUsername } from "@/lib/supabase";
 
-async function getLoggedInGitHubUsername() {
-  const session = await getServerSession(authOptions);
+async function fetchPublicProfileForPage(
+  username: string
+) {
+  const user = await getUserByUsername(username);
+  if (!user) return null;
 
-  if (typeof session?.githubLogin === "string" && session.githubLogin.trim()) {
-    return session.githubLogin;
+  const canonicalUsername = user.github_login.toLowerCase();
+  if (username !== canonicalUsername) {
+    redirect(`/u/${canonicalUsername}`);
   }
 
-  if (typeof session?.githubId === "string" && session.githubId.trim()) {
-    const user = await getUserByGithubId(session.githubId);
-    return user?.github_login ?? null;
-  }
-
-  return null;
+  return fetchPublicProfile(username, { includeAchievements: true });
 }
 
 function getProfileUrl(username: string) {
@@ -42,9 +38,9 @@ function getProfileUrl(username: string) {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ username: string }>;
+  params: { username: string };
 }): Promise<Metadata> {
-  const { username } = await params;
+  const { username } = params;
   // Minimal lookup — avoids duplicating 3 GitHub API calls that the page already makes
   const user = await getUserByUsername(username);
   const profileUrl = getProfileUrl(username);
@@ -77,13 +73,10 @@ export async function generateMetadata({
 export default async function PublicProfilePage({
   params,
 }: {
-  params: Promise<{ username: string }>;
+  params: { username: string };
 }) {
-  const { username } = await params;
-  const [profile, loggedInUsername] = await Promise.all([
-    fetchPublicProfile(username, { includeAchievements: true }),
-    getLoggedInGitHubUsername(),
-  ]);
+  const { username } = params;
+  const profile = await fetchPublicProfileForPage(username);
   const profileUrl = getProfileUrl(username);
 
   if (!profile) {
@@ -117,22 +110,8 @@ export default async function PublicProfilePage({
     );
   }
 
-  const canonicalUsername = profile.username.toLowerCase();
-  if (username !== canonicalUsername) {
-    redirect(`/u/${canonicalUsername}`);
-  }
-
   const avatarUrl = `https://avatars.githubusercontent.com/${profile.username}`;
   const topRepo = profile.repos[0]?.name ?? "";
-  const showCompareButton =
-    loggedInUsername !== null &&
-    loggedInUsername.toLowerCase() !== profile.username.toLowerCase();
-  const compareHref = showCompareButton
-    ? `/compare/${encodeURIComponent(loggedInUsername)}-vs-${encodeURIComponent(profile.username)}`
-    : null;
-  const signInToCompareHref = `/auth/signin?callbackUrl=${encodeURIComponent(
-    `/u/${profile.username}`
-  )}`;
 
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
@@ -143,30 +122,13 @@ export default async function PublicProfilePage({
               @{profile.username}&apos;s Profile
               {profile.isSponsor && <SponsorBadge />}
             </h1>
-            <CopyLinkButton url={profileUrl} />
           </div>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
           </p>
-          {compareHref && (
-            <a
-              href={compareHref}
-              className="primary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
-            >
-              Compare with me
-            </a>
-          )}
-          {!loggedInUsername && (
-            <a
-              href={signInToCompareHref}
-              className="secondary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
-            >
-              Log in to compare
-            </a>
-          )}
         </div>
         {/* Download stats card button — client component */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-3">
           <ThemeToggle />
           <StatsCard
             username={profile.username}
