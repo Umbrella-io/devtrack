@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { safeCompare } from "./safe-compare";
 import { logError } from "@/lib/error-handler";
+import { sendSSEEvent } from "@/lib/sse";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,6 @@ interface GitHubPushPayload {
 function getExpectedSignature(secret: string, body: string): string {
   return `sha256=${createHmac("sha256", secret).update(body).digest("hex")}`;
 }
-
 
 function verifyGitHubSignature(
   body: string,
@@ -55,9 +55,7 @@ async function markUserMetricsStale(githubLogin: string) {
     .select("id")
     .maybeSingle();
 
-  if (primaryError) {
-    throw primaryError;
-  }
+  if (primaryError) throw primaryError;
 
   if (primaryUser) {
     return { userId: primaryUser.id as string, accountType: "primary" };
@@ -69,22 +67,16 @@ async function markUserMetricsStale(githubLogin: string) {
     .eq("github_login", githubLogin)
     .maybeSingle();
 
-  if (linkedError) {
-    throw linkedError;
-  }
+  if (linkedError) throw linkedError;
 
-  if (!linkedAccount?.user_id) {
-    return null;
-  }
+  if (!linkedAccount?.user_id) return null;
 
   const { error: updateError } = await supabaseAdmin
     .from("users")
     .update({ updated_at: updatedAt })
     .eq("id", linkedAccount.user_id);
 
-  if (updateError) {
-    throw updateError;
-  }
+  if (updateError) throw updateError;
 
   return { userId: linkedAccount.user_id as string, accountType: "linked" };
 }
@@ -135,7 +127,7 @@ export async function POST(req: NextRequest) {
       operation: "mark_metrics_stale",
       userId: githubLogin,
       additionalContext: {
-        repository: (payload.repository?.full_name),
+        repository: payload.repository?.full_name,
         commitCount: payload.commits?.length,
       },
     });
@@ -146,6 +138,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (staleResult) {
+    sendSSEEvent(githubLogin, "commit", {
+      repo: payload.repository?.full_name,
+      timestamp: new Date().toISOString(),
+    });
     revalidatePath(`/u/${githubLogin}`);
     revalidatePath("/dashboard");
   }

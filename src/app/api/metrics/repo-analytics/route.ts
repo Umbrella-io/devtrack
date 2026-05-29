@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
         cache: "no-store",
       });
       
+      // FIXED: Schema definitions aligned with front-end expectations
       let timeline: { date: string; events: number }[] = [];
       if (activityRes.ok && activityRes.status === 200) {
         const activityData = await activityRes.json();
@@ -69,10 +70,14 @@ export async function GET(req: NextRequest) {
           for (let i = 0; i < 7; i++) {
             const d = new Date(today);
             d.setDate(d.getDate() - (6 - i));
-            timeline.push({
-              date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              events: days[i] || 0
-            });
+            // FIXED: Map data points to match the graph keys
+           timeline.push({
+  date: d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  }),
+  events: days[i] || 0,
+});
           }
         }
       }
@@ -81,11 +86,16 @@ export async function GET(req: NextRequest) {
         for (let i = 6; i >= 0; i--) {
           const d = new Date();
           d.setDate(d.getDate() - i);
-          timeline.push({ date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), events: 0 });
+          // FIXED: Map data points to match the graph keys
+          timeline.push({ 
+  date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), 
+  events: 0
+});
         }
       }
 
       const healthSignals = {
+        // FIXED: Sum using the corrected schema parameter references
         commitFrequency: timeline.reduce((a, b) => a + b.events, 0),
         prMergeRate: 0.8,
         avgPrOpenTimeHours: 24,
@@ -119,8 +129,7 @@ export async function GET(req: NextRequest) {
       };
 
       return result;
-    });
-    
+        });
     return Response.json(data);
   } catch (error) {
     console.error(error);

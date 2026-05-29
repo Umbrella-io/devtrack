@@ -87,7 +87,7 @@ export default function StreakAtRiskBanner({
           </p>
         </div>
       </div>
-      <button
+      <button aria-label="Perform action"
         onClick={() => setDismissed(true)}
         className="ml-4 rounded-md p-1.5 opacity-70 hover:bg-[var(--warning)]/20 hover:opacity-100 transition-all"
         aria-label="Dismiss banner"

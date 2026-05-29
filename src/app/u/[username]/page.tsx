@@ -9,61 +9,21 @@ import ShareProfileSection from "@/components/ShareProfileSection";
 import ThemeToggle from "@/components/ThemeToggle";
 import SponsorBadge from "@/components/SponsorBadge";
 import { getUserByUsername } from "@/lib/supabase";
-import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
-import { fetchPinnedRepoDetails } from "@/lib/pinned-repos";
+import { fetchPublicProfile } from "@/lib/public-profile-data";
 
-
-
-
-import {
-  fetchPublicTopRepos,
-  fetchPublicContributions,
-  fetchPublicStreak,
-  type PublicProfileData,
-} from "@/lib/public-profile-data";
-
-async function fetchPublicProfile(
-  username: string,
-  options: { includeAchievements?: boolean } = {}
-): Promise<PublicProfileData | null> {
+async function fetchPublicProfileForPage(
+  username: string
+) {
   const user = await getUserByUsername(username);
-
   if (!user) return null;
 
   const canonicalUsername = user.github_login.toLowerCase();
-
   if (username !== canonicalUsername) {
     redirect(`/u/${canonicalUsername}`);
   }
 
-  const githubToken = process.env.GITHUB_TOKEN || "";
-
-  const [repos, contributions, streak, achievementsCache, spotlight] = await Promise.all([
-    fetchPublicTopRepos(user.github_login, githubToken, 30),
-    fetchPublicContributions(user.github_login, githubToken, 30),
-    fetchPublicStreak(user.github_login, githubToken),
-    options.includeAchievements
-      ? syncGitHubAchievementsForUser({
-          userId: user.id,
-          githubLogin: user.github_login,
-          token: githubToken,
-        })
-      : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
-    fetchPinnedRepoDetails(user.github_login, user.pinned_repos || [], githubToken),
-  ]);
-
-  return {
-    username: user.github_login,
-    userId: user.id,
-    isSponsor: user.is_sponsor ?? false,
-    repos,
-    contributions,
-    streak,
-    achievements: achievementsCache.achievements,
-    achievementsError: achievementsCache.error,
-    spotlightRepos: spotlight,
-  };
+  return fetchPublicProfile(username, { includeAchievements: true });
 }
 
 function getProfileUrl(username: string) {
@@ -116,7 +76,7 @@ export default async function PublicProfilePage({
   params: { username: string };
 }) {
   const { username } = params;
-  const profile = await fetchPublicProfile(username, { includeAchievements: true });
+  const profile = await fetchPublicProfileForPage(username);
   const profileUrl = getProfileUrl(username);
 
   if (!profile) {

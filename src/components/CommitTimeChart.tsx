@@ -139,7 +139,7 @@ export default function CommitTimeChart() {
           <div className="flex h-full items-center justify-center">
             <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)] text-center">
               <p>{error}</p>
-              <button
+              <button aria-label="Perform action"
                 type="button"
                 onClick={fetchContributions}
                 className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
