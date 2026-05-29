@@ -51,6 +51,9 @@ describe("User Settings API Endpoints", () => {
         pinned_repos: ["repo-1"],
         wakatime_api_key_encrypted: "encrypted-key",
         wakatime_api_key_iv: "iv",
+        weekly_digest_opt_in: false,
+        discord_webhook_url: null,
+        timezone: "UTC",
       },
       error: null,
     });
@@ -76,6 +79,9 @@ describe("User Settings API Endpoints", () => {
                 pinned_repos: updatesObj.pinned_repos !== undefined ? updatesObj.pinned_repos : ["repo-1"],
                 wakatime_api_key_encrypted: updatesObj.wakatime_api_key_encrypted !== undefined ? updatesObj.wakatime_api_key_encrypted : "encrypted-key",
                 wakatime_api_key_iv: updatesObj.wakatime_api_key_iv !== undefined ? updatesObj.wakatime_api_key_iv : "iv",
+                weekly_digest_opt_in: updatesObj.weekly_digest_opt_in !== undefined ? updatesObj.weekly_digest_opt_in : false,
+                discord_webhook_url: updatesObj.discord_webhook_url !== undefined ? updatesObj.discord_webhook_url : null,
+                timezone: updatesObj.timezone !== undefined ? updatesObj.timezone : "UTC",
               },
               error: null,
             }),
@@ -134,8 +140,11 @@ describe("User Settings API Endpoints", () => {
         github_login: "test-user",
         is_public: true,
         leaderboard_opt_in: true,
+        weekly_digest_opt_in: false,
         pinned_repos: ["repo-1"],
         has_wakatime_key: true,
+        discord_webhook_url: null,
+        timezone: "UTC",
       });
     });
   });
@@ -215,8 +224,11 @@ describe("User Settings API Endpoints", () => {
         github_login: "test-user",
         is_public: true,
         leaderboard_opt_in: true,
+        weekly_digest_opt_in: false,
         pinned_repos: ["repo-1"],
         has_wakatime_key: true,
+        discord_webhook_url: null,
+        timezone: "UTC",
       });
 
       // Verify that no database updates were triggered (mockUpdate not called because updates is empty)
@@ -238,8 +250,11 @@ describe("User Settings API Endpoints", () => {
         github_login: "test-user",
         is_public: false,
         leaderboard_opt_in: true,
+        weekly_digest_opt_in: false,
         pinned_repos: ["repo-2", "repo-3"],
         has_wakatime_key: true,
+        discord_webhook_url: null,
+        timezone: "UTC",
       });
 
       // Verify update database query was called with the updates object
