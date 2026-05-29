@@ -224,7 +224,10 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
 
   await page.goto("/dashboard", { waitUntil: "load" });
   await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
-  await page.getByRole("button", { name: "Show 90-day range" }).click();
+  await page
+    .locator("#contribution-activity")
+    .getByRole("button", { name: "Show 90-day range" })
+    .click();
 
   await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
 });
