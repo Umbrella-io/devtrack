@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
 import RepoHealthPanel from "@/components/RepoHealthPanel";
+import RepoActivityDrawer from "@/components/RepoActivityDrawer";
 
 interface RepoLanguage {
   name: string;
@@ -87,6 +88,7 @@ export default function TopRepos() {
   const [pinnedRepos, setPinnedRepos] = useState<string[]>([]);
   const [pinError, setPinError] = useState<string | null>(null);
   const [activeHealthRepo, setActiveHealthRepo] = useState<string | null>(null);
+  const [selectedRepoForActivity, setSelectedRepoForActivity] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   useEffect(() => {
     fetch("/api/user/settings")
@@ -334,29 +336,32 @@ export default function TopRepos() {
             return (
               <li key={repo.name}>
                 <div className="flex items-center justify-between text-sm mb-1">
-                  <a
-                    href={repo.url || `https://github.com/${repo.name}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="max-w-[60%] sm:max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
-                    title={repo.description || undefined}
-                  >
-                    <span className="mr-1 text-[var(--muted-foreground)]">#{idx + 1}</span>
-                    <span className="inline-flex items-center gap-1">
+                  <div className="flex items-center gap-2 max-w-[60%] sm:max-w-[70%]">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRepoForActivity(repo.name)}
+                      className="truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] text-left font-medium"
+                      title={repo.description || `View activity for ${repo.name}`}
+                    >
+                      <span className="mr-1 text-[var(--muted-foreground)] font-normal">#{idx + 1}</span>
                       {shortName}
-                      <span
-                        aria-hidden="true"
-                        className="text-xs text-[var(--muted-foreground)]"
-                      >
-                        ↗
-                      </span>
-                    </span>
-                    {isPinned && (
-                      <span className="ml-2 inline-flex items-center rounded-md bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--accent)_20%,transparent)] align-middle">
-                        Pinned
-                      </span>
-                    )}
-                  </a>
+                      {isPinned && (
+                        <span className="ml-2 inline-flex items-center rounded-md bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--accent)_20%,transparent)] align-middle">
+                          Pinned
+                        </span>
+                      )}
+                    </button>
+                    <a
+                      href={repo.url || `https://github.com/${repo.name}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors shrink-0"
+                      title="Open in GitHub"
+                      aria-label={`Open ${repo.name} in GitHub`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                    </a>
+                  </div>
                   <span className="shrink-0 flex items-center gap-2">
                     {healthLoading ? (
                       <div className="h-5 w-9 rounded bg-[var(--card-muted)] animate-pulse" />
@@ -454,6 +459,11 @@ export default function TopRepos() {
           onClose={() => setActiveHealthRepo(null)}
         />
       )}
+      <RepoActivityDrawer
+        repoName={selectedRepoForActivity || ""}
+        isOpen={!!selectedRepoForActivity}
+        onClose={() => setSelectedRepoForActivity(null)}
+      />
     </div>
   );
 }

@@ -47,11 +47,9 @@ export default function DashboardHeader() {
           <h1 className="bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-3xl font-extrabold text-transparent md:text-4xl">
             Dashboard
           </h1>
-          <p
-            className="mt-2 text-xs text-[var(--muted-foreground)]"
-            style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", letterSpacing: "0.06em" }}
-          >
-            coding activity at a glance
+
+          <p className="mt-2 text-sm md:text-base text-[var(--muted-foreground)]">
+            Your coding activity at a glance 🚀
           </p>
         </div>
 
@@ -71,9 +69,9 @@ export default function DashboardHeader() {
             </a>
           )}
 
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-muted)] px-2 py-1.5 sm:px-3 sm:py-2 max-w-full justify-center sm:justify-start">
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] px-2 py-1.5 sm:px-3 sm:py-2 max-w-full justify-center sm:justify-start">
 
-            <div>
+            <div className="hover:scale-110 transition-transform duration-200">
               <KeyboardShortcuts />
             </div>
 

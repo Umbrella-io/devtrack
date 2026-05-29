@@ -24,6 +24,7 @@ describe("weeklyProductivityPrompt", () => {
     expect(prompt).toContain("Write a warm, concise 3-sentence weekly summary.");
   });
 
+ docs/funding-yml-1235
   // Edge case: Zero values
   it("handles zero active days", () => {
     const prompt = weeklyProductivityPrompt({
@@ -34,10 +35,22 @@ describe("weeklyProductivityPrompt", () => {
       prsOpen: 0,
       avgMergeTimeDays: 1.0,
       topRepoName: "repo",
+
+  it("handles zero values correctly", () => {
+    const prompt = weeklyProductivityPrompt({
+      activeDays: 0,
+      currentStreak: 0,
+      totalCommits: 0,
+      prsMerged: 0,
+      prsOpen: 0,
+      avgMergeTimeDays: 0,
+      topRepoName: "none",
+ main
       trendLabel: "0%",
     });
 
     expect(prompt).toContain("Active coding days: 0");
+ docs/funding-yml-1235
     expect(prompt).toContain("Current streak: 0 days");
     expect(prompt).toContain("PRs merged: 0, open: 0");
     expect(prompt).toMatch(/Avg PR merge time: 1\.0 days/);
@@ -152,10 +165,53 @@ describe("weeklyProductivityPrompt", () => {
       activeDays: 4,
       currentStreak: 3,
       totalCommits: 25,
+
+    expect(prompt).toContain("Total commits (90d): 0");
+    expect(prompt).toContain("PRs merged: 0, open: 0");
+  });
+
+  it("handles large numbers correctly", () => {
+    const prompt = weeklyProductivityPrompt({
+      activeDays: 30,
+      currentStreak: 365,
+      totalCommits: 99999,
+      prsMerged: 500,
+      prsOpen: 50,
+      avgMergeTimeDays: 0.5,
+      topRepoName: "massive-repo",
+      trendLabel: "+999%",
+    });
+
+    expect(prompt).toContain("Total commits (90d): 99999");
+    expect(prompt).toContain("PRs merged: 500");
+  });
+
+  it("handles negative streak values", () => {
+    const prompt = weeklyProductivityPrompt({
+      activeDays: 2,
+      currentStreak: -5,
+      totalCommits: 15,
+      prsMerged: 1,
+      prsOpen: 2,
+      avgMergeTimeDays: 1.0,
+      topRepoName: "test-repo",
+      trendLabel: "-10%",
+    });
+
+    expect(prompt).toContain("Current streak: -5 days");
+  });
+
+  it("handles empty string for topRepoName", () => {
+    const prompt = weeklyProductivityPrompt({
+      activeDays: 3,
+      currentStreak: 5,
+      totalCommits: 20,
+ main
       prsMerged: 2,
       prsOpen: 1,
       avgMergeTimeDays: 1.5,
       topRepoName: "",
+ docs/funding-yml-1235
       trendLabel: "+20%",
     });
 
@@ -290,5 +346,11 @@ describe("weeklyProductivityPrompt", () => {
     expect(prompt).toContain("Top repository:");
     expect(prompt).toContain("Activity trend:");
     expect(prompt).toContain("Write a warm, concise 3-sentence weekly summary");
+
+      trendLabel: "+5%",
+    });
+
+    expect(prompt).toContain("Top repository: ");
+ main
   });
 });
