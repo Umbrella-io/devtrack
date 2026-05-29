@@ -1,6 +1,6 @@
 import CustomCursor from "@/components/CustomCursor";
 import type { Metadata, Viewport } from "next";
-import { Inter, Syne, JetBrains_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import Footer from "@/components/Footer";
 import DeferredVercelMetrics from "@/components/DeferredVercelMetrics";
 import Providers from "./providers";
