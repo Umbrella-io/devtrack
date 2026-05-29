@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
     .insert({
       user_id: user.id,
       api_key: apiKeyHash,
+      api_key_hash: apiKeyHash,
       name,
     })
     .select("id, name, last_used_at, created_at")
