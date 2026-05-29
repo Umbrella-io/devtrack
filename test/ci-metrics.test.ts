@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchCIAnalyticsForAccount, mergeCIAnalytics, CIAnalyticsResponse } from "../src/app/api/metrics/ci/route";
+import { fetchCIAnalyticsForAccount, mergeCIAnalytics, CIAnalyticsResponse } from "../src/lib/ci-analytics";
 
 // Mock the route's dependencies to prevent resolution failures during import
 vi.mock("@/lib/supabase", () => ({ supabaseAdmin: {} as any }));
