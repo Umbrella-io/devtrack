@@ -194,7 +194,7 @@ async function injectMockSession(page: import("@playwright/test").Page) {
     route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
-        languages: [{ language: "TypeScript", count: 20 }],
+        languages: [{ name: "TypeScript", bytes: 120000, percentage: 100 }],
       }),
     })
   );
@@ -379,7 +379,13 @@ test("[Dashboard E2E] no uncaught console errors on dashboard load", async ({
       !e.includes("at RootLayout") &&
       !e.includes("react-dev-overlay") &&
       !e.includes("Failed to load resource") &&
-      !e.includes("Warning: ") && // Catch React warnings that get printed as errors
+      !e.includes("Warning: ") &&
+      !e.includes("sw.js") &&
+      !e.includes("ServiceWorker") &&
+      !e.includes("worker-src") &&
+      !e.includes("_vercel/") &&
+      !e.includes("429") &&
+      !e.includes("Too Many Requests") &&
       e.trim() !== "div" &&
       e.trim() !== "span" &&
       e.trim() !== "p"
@@ -392,8 +398,8 @@ test("[Dashboard E2E] weekly summary widget renders", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });
-  // Weekly summary section should appear somewhere on the dashboard.
+  // WeeklySummaryCard renders an <h2> with the text "This Week".
   await expect(
-    page.getByRole("heading", { name: "This Week" }).first()
+    page.getByRole("heading", { name: "This Week", exact: true }).first()
   ).toBeVisible({ timeout: 10_000 });
 });

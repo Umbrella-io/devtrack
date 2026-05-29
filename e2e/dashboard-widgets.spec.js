@@ -308,7 +308,7 @@ function mockMetricResponse(url) {
     };
   }
   if (url.includes("/api/metrics/languages")) {
-    return { languages: [{ language: "TypeScript", count: 12 }] };
+    return { languages: [{ name: "TypeScript", bytes: 12000, percentage: 100 }] };
   }
   if (url.includes("/api/metrics/streak")) {
     return {
