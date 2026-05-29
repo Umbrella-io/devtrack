@@ -72,7 +72,7 @@ export default function CommunityMetrics() {
             GitHub Discussions activity across the selected account
           </p>
         </div>
-        <button
+        <button aria-label="Fetch metrics"
           type="button"
           onClick={fetchMetrics}
           disabled={loading}
@@ -106,7 +106,7 @@ export default function CommunityMetrics() {
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
-          <button
+          <button aria-label="Fetch metrics"
             type="button"
             onClick={fetchMetrics}
             className="mt-3 rounded-md border border-[var(--border)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)]/90 transition-colors hover:bg-[var(--destructive)]/10"
