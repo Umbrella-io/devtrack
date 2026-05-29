@@ -23,6 +23,7 @@ async function fetchUserSettings(userId: string) {
       hasPinnedRepos: true,
       hasWakatimeKey: true,
       hasWeeklyDigestOptIn: true,
+      hasDiscordSettings: true,
       leaderboard_opt_in: (res1.data as any).leaderboard_opt_in ?? false,
       weekly_digest_opt_in: (res1.data as any).weekly_digest_opt_in ?? false,
       pinned_repos: (res1.data as any).pinned_repos || [],
@@ -41,6 +42,7 @@ async function fetchUserSettings(userId: string) {
       hasPinnedRepos: false,
       hasWakatimeKey: false,
       hasWeeklyDigestOptIn: false,
+      hasDiscordSettings: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -66,11 +68,14 @@ async function fetchUserSettings(userId: string) {
       hasPinnedRepos: false,
       hasWakatimeKey: false,
       hasWeeklyDigestOptIn: false,
+      hasDiscordSettings: false,
       leaderboard_opt_in: (res2.data as any).leaderboard_opt_in ?? false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
       wakatime_api_key_encrypted: null,
       wakatime_api_key_iv: null,
+      discord_webhook_url: null,
+      timezone: "UTC",
     };
   }
 
@@ -82,11 +87,14 @@ async function fetchUserSettings(userId: string) {
       hasPinnedRepos: false,
       hasWakatimeKey: false,
       hasWeeklyDigestOptIn: false,
+      hasDiscordSettings: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
       wakatime_api_key_encrypted: null,
       wakatime_api_key_iv: null,
+      discord_webhook_url: null,
+      timezone: "UTC",
     };
   }
 
@@ -105,11 +113,14 @@ async function fetchUserSettings(userId: string) {
       hasPinnedRepos: false,
       hasWakatimeKey: false,
       hasWeeklyDigestOptIn: false,
+      hasDiscordSettings: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
       wakatime_api_key_encrypted: null,
       wakatime_api_key_iv: null,
+      discord_webhook_url: null,
+      timezone: "UTC",
     };
   }
 
@@ -120,11 +131,14 @@ async function fetchUserSettings(userId: string) {
     hasPinnedRepos: false,
     hasWakatimeKey: false,
     hasWeeklyDigestOptIn: false,
+    hasDiscordSettings: false,
     leaderboard_opt_in: false,
     weekly_digest_opt_in: false,
     pinned_repos: [] as string[],
     wakatime_api_key_encrypted: null,
     wakatime_api_key_iv: null,
+    discord_webhook_url: null,
+    timezone: "UTC",
   };
 }
 
@@ -195,7 +209,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
 
-  const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey, hasWeeklyDigestOptIn } = settingsResult;
+  const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey, hasWeeklyDigestOptIn, hasDiscordSettings } = settingsResult;
   const updates: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key_encrypted?: string | null; wakatime_api_key_iv?: string | null; discord_webhook_url?: string | null; timezone?: string } = {};
 
   if (is_public !== undefined && is_public !== null && typeof is_public === "boolean") {
@@ -251,8 +265,8 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  // Handle Discord settings
-  if (discord_webhook_url !== undefined) {
+  // Handle Discord settings (only if the discord columns exist in the schema)
+  if (hasDiscordSettings && discord_webhook_url !== undefined) {
     if (discord_webhook_url === "") {
       updates.discord_webhook_url = null;
     } else if (typeof discord_webhook_url === "string" && (discord_webhook_url.startsWith("https://discord.com/api/webhooks/") || discord_webhook_url.startsWith("https://discordapp.com/api/webhooks/"))) {
@@ -264,7 +278,7 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  if (timezone !== undefined && typeof timezone === "string") {
+  if (hasDiscordSettings && timezone !== undefined && typeof timezone === "string") {
     try {
       Intl.DateTimeFormat(undefined, { timeZone: timezone });
       updates.timezone = timezone;
@@ -297,7 +311,7 @@ export async function PATCH(req: NextRequest) {
     selectCols.push("wakatime_api_key_encrypted");
     selectCols.push("wakatime_api_key_iv");
   }
-  selectCols.push("discord_webhook_url", "timezone");
+  if (hasDiscordSettings) selectCols.push("discord_webhook_url", "timezone");
 
   const { data: updated, error: updateError } = await supabaseAdmin
     .from("users")

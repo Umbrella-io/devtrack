@@ -221,6 +221,18 @@ export async function middleware(req: NextRequest) {
 
   const response = NextResponse.next();
   headers.forEach((value, key) => response.headers.set(key, value));
+
+  // Cache GET metric responses in the browser for 5 minutes.
+  // This eliminates redundant function invocations on every dashboard
+  // tab-switch or soft navigation, directly cutting Vercel Active CPU usage.
+  // Responses are private (user-specific) so CDN caching is disabled.
+  if (req.method === "GET") {
+    response.headers.set(
+      "Cache-Control",
+      "private, max-age=300, stale-while-revalidate=600"
+    );
+  }
+
   return response;
 }
 

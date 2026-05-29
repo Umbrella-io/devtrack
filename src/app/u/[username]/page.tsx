@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Metadata } from "next";
 import { cache } from "react"; // 💡 Fix 1: Added for request memoization
 import { redirect } from "next/navigation";
@@ -87,10 +89,11 @@ export async function generateMetadata({
   params: { username: string };
 }): Promise<Metadata> {
   const { username } = params;
-  const profile = await fetchPublicProfile(username);
+  // Minimal lookup — avoids duplicating 3 GitHub API calls that the page already makes
+  const user = await getUserByUsername(username);
   const profileUrl = getProfileUrl(username);
 
-  if (!profile) {
+  if (!user) {
     return {
       title: "Profile Not Found",
       description: "This profile is not available or is private.",
