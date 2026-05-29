@@ -315,9 +315,9 @@ export default function PRMetrics() {
                 PR Status Distribution
               </p>
               <PRStatusDonutChart
-                open={prFilter === "merged" ? 0 : metrics.open}
-                merged={prFilter === "open" ? 0 : metrics.merged}
-                closed={prFilter === "all" ? metrics.closed : 0}
+                open={prFilter === "merged" ? 0 : (metrics.open || 0)}
+                merged={prFilter === "open" ? 0 : (metrics.merged || 0)}
+                closed={prFilter === "all" ? (metrics.closed || 0) : 0}
               />
             </div>
           )}
@@ -341,9 +341,9 @@ export default function PRMetrics() {
                   MR Status Distribution
                 </p>
                 <PRStatusDonutChart
-                  open={prFilter === "merged" ? 0 : metrics.gitlab.open}
-                  merged={prFilter === "open" ? 0 : metrics.gitlab.merged}
-                  closed={prFilter === "all" ? metrics.gitlab.closed : 0}
+                  open={prFilter === "merged" ? 0 : (metrics.gitlab.open || 0)}
+                  merged={prFilter === "open" ? 0 : (metrics.gitlab.merged || 0)}
+                  closed={prFilter === "all" ? (metrics.gitlab.closed || 0) : 0}
                 />
               </div>
             </div>
