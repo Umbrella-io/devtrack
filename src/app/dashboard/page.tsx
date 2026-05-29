@@ -25,7 +25,6 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
-import NotificationBell from "@/components/NotificationBell";
 import SSEListener from "@/components/SSEListener";
 
 const SkeletonCard = () => (
@@ -107,7 +106,6 @@ export default async function DashboardPage() {
     <DashboardSSEProvider>
       <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
-        <NotificationBell />
         <SSEListener userId={session?.githubId ?? ""} />
 
         {/* Action bar */}
