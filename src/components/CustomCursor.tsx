@@ -14,6 +14,7 @@ export default function CustomCursor() {
   const mouse = useRef({ x: -100, y: -100 });
   const ring  = useRef({ x: -100, y: -100 });
   const rafId = useRef<number>(0);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [visible,  setVisible]  = useState(false);
   const [clicking, setClicking] = useState(false);
@@ -72,6 +73,22 @@ export default function CustomCursor() {
 
     rafId.current = requestAnimationFrame(tick);
 
+    const handleResize = () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      resizeTimeoutRef.current = setTimeout(() => {
+        if (window.matchMedia("(pointer: coarse)").matches) {
+          document.documentElement.style.cursor = "";
+          setVisible(false);
+        } else {
+          document.documentElement.style.cursor = "none";
+        }
+      }, 150);
+    };
+
+    window.addEventListener("resize", handleResize);
+
     return () => {
       document.documentElement.style.cursor = "";
       document.removeEventListener("mousemove",  onMove);
@@ -80,6 +97,10 @@ export default function CustomCursor() {
       document.removeEventListener("mousedown",  onDown);
       document.removeEventListener("mouseup",    onUp);
       document.removeEventListener("mouseover",  onOver);
+      window.removeEventListener("resize", handleResize);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
       cancelAnimationFrame(rafId.current);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
