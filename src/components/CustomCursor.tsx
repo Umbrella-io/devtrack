@@ -13,11 +13,20 @@ export default function CustomCursor() {
   // Interpolated ring coordinates
   const ringRef = useRef({ x: -100, y: -100 });
 
+  // Debounce resize timeout
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const dotDomRef = useRef<HTMLDivElement>(null);
   const ringDomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
+
+    if (window.matchMedia("(pointer: coarse)").matches) {
+      setIsHidden(true);
+      return;
+    }
+    document.documentElement.style.cursor = "none";
 
     const onMouseMove = (e: MouseEvent) => {
       mouseRef.current.x = e.clientX;
@@ -88,11 +97,32 @@ export default function CustomCursor() {
 
     rafId = requestAnimationFrame(render);
 
+    const handleResize = () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      resizeTimeoutRef.current = setTimeout(() => {
+        if (window.matchMedia("(pointer: coarse)").matches) {
+          document.documentElement.style.cursor = "";
+          setIsHidden(true);
+        } else {
+          document.documentElement.style.cursor = "none";
+        }
+      }, 150);
+    };
+
+    window.addEventListener("resize", handleResize);
+
     return () => {
+      document.documentElement.style.cursor = "";
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseleave", onMouseLeave);
       window.removeEventListener("mouseenter", onMouseEnter);
       window.removeEventListener("mouseover", onMouseOver);
+      window.removeEventListener("resize", handleResize);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
       cancelAnimationFrame(rafId);
     };
   }, []);
