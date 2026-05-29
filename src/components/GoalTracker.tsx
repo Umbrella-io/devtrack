@@ -576,10 +576,10 @@ export default function GoalTracker() {
           {creating ? (
             <>
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              Creating...
+              Creating Goal...
             </>
           ) : (
-            "Add goal"
+            "Create goal"
           )}
         </button>
         {createError && (
