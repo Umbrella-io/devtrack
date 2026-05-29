@@ -200,27 +200,26 @@ async function checkRateLimit(identifier: string, limit: number) {
 }
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-
-  // Protect dashboard and settings routes
   const pathname = req.nextUrl.pathname;
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   const protectedRoutes = ["/dashboard", "/settings"];
-
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
-  if (isProtectedRoute && !token) {
-    return NextResponse.redirect(new URL("/", req.url));
+  if (isProtectedRoute) {
+    if (!token) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    return NextResponse.next();
   }
 
-  const githubId =
-    typeof token?.githubId === "string" ? token.githubId : null;
-
+  const githubId = typeof token?.githubId === "string" ? token.githubId : null;
   const identifier = githubId ? `user:${githubId}` : `ip:${getIp(req)}`;
 
   const limit = githubId
@@ -266,9 +265,10 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/dashboard",
     "/dashboard/:path*",
+    "/settings",
     "/settings/:path*",
     "/api/metrics/:path*",
   ],
 };
-
