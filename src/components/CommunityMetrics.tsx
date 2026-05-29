@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { toast } from "sonner";
 
 interface CommunityData {
   discussionsStarted: number;
@@ -32,11 +33,13 @@ export default function CommunityMetrics() {
         return response.json();
       })
       .then((data: CommunityData) => setMetrics(data))
-      .catch(() =>
+      .catch((err) => {
+        console.error("Failed to fetch community metrics:", err);
         setError(
           "We couldn't load your discussion analytics right now. Please try again in a moment."
-        )
-      )
+        );
+        toast.error("Failed to load community metrics");
+      })
       .finally(() => setLoading(false));
   }, [selectedAccount]);
 
@@ -69,7 +72,7 @@ export default function CommunityMetrics() {
             GitHub Discussions activity across the selected account
           </p>
         </div>
-        <button
+        <button aria-label="Fetch metrics"
           type="button"
           onClick={fetchMetrics}
           disabled={loading}
@@ -103,7 +106,7 @@ export default function CommunityMetrics() {
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
-          <button
+          <button aria-label="Fetch metrics"
             type="button"
             onClick={fetchMetrics}
             className="mt-3 rounded-md border border-[var(--border)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)]/90 transition-colors hover:bg-[var(--destructive)]/10"

@@ -1,48 +1,38 @@
+export const dynamic = "force-dynamic";
+
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 import BadgeSection from "@/components/BadgeSection";
 import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
-import CopyLinkButton from "@/components/CopyLinkButton";
-import ThemeToggle from "@/components/ThemeToggle"; 
+import ShareProfileSection from "@/components/ShareProfileSection";
+import ThemeToggle from "@/components/ThemeToggle";
+import SponsorBadge from "@/components/SponsorBadge";
 import { getUserByUsername } from "@/lib/supabase";
-import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
-import {
-  fetchPublicTopRepos,
-  fetchPublicContributions,
-  fetchPublicStreak,
-  type PublicProfileData,
-} from "@/lib/public-profile-data";
+import PinnedReposWidget from "@/components/PinnedReposWidget";
+import { fetchPublicProfile } from "@/lib/public-profile-data";
 
-async function fetchPublicProfile(
-  username: string,
-  options: { includeAchievements?: boolean } = {}
-): Promise<PublicProfileData | null> {
+async function fetchPublicProfileForPage(
+  username: string
+) {
   const user = await getUserByUsername(username);
   if (!user) return null;
 
-  const githubToken = process.env.GITHUB_TOKEN;
-  const [repos, contributions, streak, achievementsCache] = await Promise.all([
-    fetchPublicTopRepos(user.github_login, githubToken, 30),
-    fetchPublicContributions(user.github_login, githubToken, 30),
-    fetchPublicStreak(user.github_login, githubToken),
-    options.includeAchievements
-      ? syncGitHubAchievementsForUser({
-          userId: user.id,
-          githubLogin: user.github_login,
-          token: githubToken,
-        })
-      : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
-  ]);
+  const canonicalUsername = user.github_login.toLowerCase();
+  if (username !== canonicalUsername) {
+    redirect(`/u/${canonicalUsername}`);
+  }
 
-  return {
-    username: user.github_login,
-    userId: user.id,
-    repos,
-    contributions,
-    streak,
-    achievements: achievementsCache.achievements,
-    achievementsError: achievementsCache.error,
-  };
+  return fetchPublicProfile(username, { includeAchievements: true });
+}
+
+function getProfileUrl(username: string) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
+
+  return `${baseUrl}/u/${username}`;
 }
 
 export async function generateMetadata({
@@ -51,12 +41,11 @@ export async function generateMetadata({
   params: { username: string };
 }): Promise<Metadata> {
   const { username } = params;
-  const profile = await fetchPublicProfile(username);
+  // Minimal lookup — avoids duplicating 3 GitHub API calls that the page already makes
+  const user = await getUserByUsername(username);
+  const profileUrl = getProfileUrl(username);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
-  const profileUrl = `${baseUrl}/u/${username}`;
-
-  if (!profile) {
+  if (!user) {
     return {
       title: "Profile Not Found",
       description: "This profile is not available or is private.",
@@ -87,7 +76,8 @@ export default async function PublicProfilePage({
   params: { username: string };
 }) {
   const { username } = params;
-  const profile = await fetchPublicProfile(username, { includeAchievements: true });
+  const profile = await fetchPublicProfileForPage(username);
+  const profileUrl = getProfileUrl(username);
 
   if (!profile) {
     return (
@@ -128,10 +118,10 @@ export default async function PublicProfilePage({
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">
+            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] flex items-center gap-2">
               @{profile.username}&apos;s Profile
+              {profile.isSponsor && <SponsorBadge />}
             </h1>
-            <CopyLinkButton />
           </div>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
@@ -150,6 +140,15 @@ export default async function PublicProfilePage({
           />
         </div>
       </div>
+
+      <div className="mb-8">
+        <ShareProfileSection
+          username={profile.username}
+          streak={profile.streak.current}
+          profileUrl={profileUrl}
+        />
+      </div>
+
       {/* Row 1: Contribution graph + Streak */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -159,6 +158,13 @@ export default async function PublicProfilePage({
           <PublicStreakTracker streak={profile.streak} />
         </div>
       </div>
+
+      {/* Custom Spotlight Repositories */}
+      {profile.spotlightRepos && profile.spotlightRepos.length > 0 && (
+        <div className="mt-6">
+          <PinnedReposWidget initialRepos={profile.spotlightRepos} isPublic={true} />
+        </div>
+      )}
 
       {/* Row 2: Top repos */}
       <div className="mt-6">

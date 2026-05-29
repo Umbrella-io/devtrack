@@ -2,36 +2,36 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 export type RepoStats = {
   stars: number;
   forks: number;
   openIssues: number;
   contributorCount: number;
   goodFirstIssues: number;
-  contributors: Array<{ login: string; avatar_url: string; html_url: string }>;
+  contributors: Array<{ login: string; avatar_url: string; html_url: string; isSponsor?: boolean }>;
 };
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    CONSTANTS
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const A = '#818cf8';                  // accent — indigo
 const BG = 'transparent'
 const SURF = '#0e0e0e';
-const BORDER = '#1a1a1a';
+const BORDER = '#2a2a2a';             // was #1a1a1a — now more visible
 const TEXT = '#e0e0e0';
-const MUTED = '#555';
+const MUTED = '#a0aec0';              // was #555 — now bright gray for contrast
 const HC = ['#111', '#1e1b4b', '#3730a3', '#4f46e5', A]; // heatmap levels
 const MC = ['#111', '#1e1b4b', '#3730a3', A];             // mini heatmap
 
 const MONO = 'var(--font-jetbrains, ui-monospace, monospace)';
 const DISP = 'var(--font-syne, system-ui, sans-serif)';
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    PRE-SEEDED DATA  (deterministic → no hydration mismatch)
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function heatLvl(i: number): 0 | 1 | 2 | 3 | 4 {
   const d = i % 7;
   const w = Math.floor(i / 7);
@@ -61,9 +61,9 @@ const COMMITS = [
   'feat(leaderboard): weekly ranking system',
 ];
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    HOOKS
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function useScrollReveal(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
   const [vis, setVis] = useState(false);
@@ -100,16 +100,15 @@ function Counter({ end, active }: { end: number; active: boolean }) {
   return <>{val.toLocaleString()}</>;
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    MOUSE SPOTLIGHT
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function MouseSpotlight() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (ref.current) {
-        ref.current.style.left = e.clientX + 'px';
-        ref.current.style.top = e.clientY + 'px';
+        ref.current.style.transform = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
       }
     };
     window.addEventListener('mousemove', fn, { passive: true });
@@ -121,18 +120,19 @@ function MouseSpotlight() {
       aria-hidden
       style={{
         position: 'fixed', pointerEvents: 'none', zIndex: 0,
+        left: 0, top: 0,
         width: 700, height: 700,
         background: 'radial-gradient(circle, rgba(129,140,248,0.05) 0%, transparent 70%)',
-        transform: 'translate(-50%,-50%)',
-        transition: 'left 0.15s ease-out, top 0.15s ease-out',
+        transform: 'translate3d(-50%, -50%, 0)',
+        willChange: 'transform',
       }}
     />
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    NAV
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -156,19 +156,19 @@ function LandingNav() {
       <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: TEXT, letterSpacing: '-0.02em' }}>
         <span style={{ color: A }}>▲</span> DEVTRACK
       </span>
-      <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-nav-link">
+      <a href="/auth/signin" className="lnd-nav-link">
         SIGN IN →
       </a>
     </nav>
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    BENTO WIDGETS
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const wLabel: React.CSSProperties = {
   fontFamily: MONO, fontSize: 10, fontWeight: 500,
-  color: '#444', textTransform: 'uppercase', letterSpacing: '0.1em',
+  color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em',
 };
 const wValue: React.CSSProperties = {
   fontFamily: MONO, fontWeight: 600, color: TEXT,
@@ -273,7 +273,7 @@ function MergeWidget() {
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>merge rate</span>
         <span style={{ ...wValue, fontSize: 26, marginTop: 4, color: A }}>
-          87<span style={{ color: '#333', fontSize: 14 }}>%</span>
+          87<span style={{ color: '#9ca3af', fontSize: 14 }}>%</span>
         </span>
         <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
           <div style={{
@@ -294,7 +294,7 @@ function GoalWidget() {
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>weekly goal</span>
         <span style={{ ...wValue, fontSize: 26, marginTop: 4 }}>
-          84<span style={{ color: '#333', fontSize: 14 }}>%</span>
+          84<span style={{ color: '#9ca3af', fontSize: 14 }}>%</span>
         </span>
         <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
           <div style={{
@@ -348,9 +348,9 @@ function BentoGrid() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    HERO
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function HeroSection() {
   return (
     <section
@@ -388,12 +388,12 @@ function HeroSection() {
         >
           YOUR<br />CODE<br />HAS A<br />
           <span style={{ color: A }}>PULSE</span>
-          <span style={{ color: '#222' }}>.</span>
+          <span style={{ color: '#9ca3af' }}>.</span>
         </h1>
 
-        {/* Tagline */}
+        {/* Tagline — NOW HIGH CONTRAST */}
         <p style={{
-          fontSize: 'clamp(15px,1.8vw,17px)', color: MUTED,
+          fontSize: 'clamp(15px,1.8vw,17px)', color: MUTED,   // was #555
           lineHeight: 1.65, maxWidth: 400, margin: '0 0 32px',
         }}>
           Open-source developer productivity dashboard. Track GitHub streaks,
@@ -402,7 +402,7 @@ function HeroSection() {
 
         {/* CTAs */}
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary">
+          <a href="/auth/signin" className="lnd-cta-primary">
             <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
             </svg>
@@ -427,9 +427,9 @@ function HeroSection() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    COMMIT TICKER
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function CommitTicker() {
   const doubled = [...COMMITS, ...COMMITS];
   return (
@@ -442,7 +442,7 @@ function CommitTicker() {
           <span
             key={i}
             style={{
-              fontFamily: MONO, fontSize: 12, color: '#333',
+              fontFamily: MONO, fontSize: 12, color: '#9ca3af',
               display: 'inline-flex', alignItems: 'center', gap: 10,
             }}
           >
@@ -455,23 +455,23 @@ function CommitTicker() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    HEATMAP SECTION
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function HeatmapSection() {
   const [ref, vis] = useScrollReveal(0.05);
   return (
     <section ref={ref} style={{ padding: '64px clamp(20px,4vw,48px)', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: '#333', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           52 weeks of contributions
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>less</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af' }}>less</span>
           {HC.map((c, i) => (
             <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: c, border: `1px solid ${BORDER}` }} />
           ))}
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>more</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af' }}>more</span>
         </div>
       </div>
       <div style={{
@@ -497,14 +497,14 @@ function HeatmapSection() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    STATS ROW
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const STATS = [
   { value: 847, label: 'COMMITS TRACKED' },
-  { value: 43,  label: 'PRS MERGED' },
-  { value: 89,  label: 'DAY BEST STREAK' },
-  { value: 67,  label: 'REVIEWS GIVEN' },
+  { value: 43, label: 'PRS MERGED' },
+  { value: 89, label: 'DAY BEST STREAK' },
+  { value: 67, label: 'REVIEWS GIVEN' },
 ];
 
 function StatItem({ value, label, delay }: { value: number; label: string; delay: number }) {
@@ -524,9 +524,9 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
         lineHeight: 1, letterSpacing: '-0.03em',
       }}>
         <Counter end={value} active={vis} />
-        <span style={{ color: '#222', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
+        <span style={{ color: '#9ca3af', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', marginTop: 8 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', marginTop: 8 }}>
         {label}
       </div>
     </div>
@@ -538,7 +538,7 @@ function StatsSection() {
     <section style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
-      gap: 24, borderTop: '1px solid #111',
+      gap: 24, borderTop: `1px solid ${BORDER}`,   // was '#111'
     }}>
       {STATS.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
@@ -547,9 +547,9 @@ function StatsSection() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    FEATURES LIST
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const FEATURES = [
   {
     num: '01', title: 'STREAK TRACKING',
@@ -584,7 +584,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
       ref={ref}
       style={{
         display: 'flex', gap: 'clamp(16px,3vw,32px)',
-        padding: '24px 0', borderBottom: '1px solid #111',
+        padding: '24px 0', borderBottom: `1px solid ${BORDER}`,   // was '#111'
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateX(0)' : 'translateX(-12px)',
         transition: `all 0.5s ease ${index * 50}ms`,
@@ -601,7 +601,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         }}>
           {f.title}
         </h3>
-        <p style={{ fontSize: 14, color: '#444', lineHeight: 1.65, margin: 0 }}>
+        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>   {/* was '#444' */}
           {f.desc}
         </p>
       </div>
@@ -613,10 +613,10 @@ function FeaturesSection() {
   return (
     <section style={{
       padding: '64px clamp(20px,4vw,48px) 80px',
-      borderTop: '1px solid #111',
+      borderTop: `1px solid ${BORDER}`,   // was '#111'
       maxWidth: 720, margin: '0 auto',
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         FEATURES
       </div>
       {FEATURES.map((f, i) => (
@@ -626,9 +626,9 @@ function FeaturesSection() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    SETUP SECTION
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function SetupSection() {
   const [ref, vis] = useScrollReveal(0.2);
   return (
@@ -642,7 +642,7 @@ function SetupSection() {
         transition: 'all 0.7s ease',
       }}
     >
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', marginBottom: 24 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', marginBottom: 24 }}>
         SETUP
       </div>
 
@@ -652,22 +652,22 @@ function SetupSection() {
         textAlign: 'left', marginBottom: 32,
         fontFamily: MONO, fontSize: 13, lineHeight: 1.8,
       }}>
-        <div style={{ color: '#333' }}># start tracking in 30 seconds</div>
+        <div style={{ color: '#9ca3af' }}># start tracking in 30 seconds</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>→</span> sign in at{' '}
           <span style={{ color: A }}>devtrack.vercel.app</span>
         </div>
-        <div style={{ color: '#333', marginTop: 4 }}># or self-host</div>
+        <div style={{ color: '#9ca3af', marginTop: 4 }}># or self-host</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>$</span> git clone github.com/…/devtrack
         </div>
         <div style={{ color: TEXT }}>
-          <span style={{ color: A }}>$</span> npm install &amp;&amp; npm run dev
+          <span style={{ color: A }}>$</span> npm install && npm run dev
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary">
+        <a href="/auth/signin" className="lnd-cta-primary">
           Sign in with GitHub
         </a>
         <a
@@ -680,24 +680,24 @@ function SetupSection() {
         </a>
       </div>
 
-      <div style={{ fontFamily: MONO, fontSize: 11, color: '#222', marginTop: 20, letterSpacing: '0.06em' }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: '#9ca3af', marginTop: 20, letterSpacing: '0.06em' }}>
         MIT License · Self-hostable · Free forever · Zero vendor lock-in
       </div>
     </section>
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    OPEN SOURCE / CONTRIBUTE SECTION
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function ContributeSection({ stats }: { stats: RepoStats }) {
   const [ref, vis] = useScrollReveal(0.08);
 
   const statTiles = [
-    { icon: '★', value: stats.stars,          suffix: '',  label: 'GITHUB STARS' },
-    { icon: '⑂', value: stats.forks,          suffix: '',  label: 'FORKS' },
-    { icon: '◎', value: stats.contributorCount, suffix: '+', label: 'CONTRIBUTORS' },
-    { icon: '◈', value: stats.goodFirstIssues, suffix: '',  label: 'GOOD FIRST ISSUES' },
+    { icon: '★', value: stats.stars, suffix: '', label: 'GITHUB STARS' },
+    { icon: '⑂', value: stats.forks, suffix: '', label: 'FORKS' },
+    { icon: '◉', value: stats.contributorCount, suffix: '+', label: 'CONTRIBUTORS' },
+    { icon: '◈', value: stats.goodFirstIssues, suffix: '', label: 'GOOD FIRST ISSUES' },
   ];
 
   return (
@@ -705,14 +705,14 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
-        borderTop: '1px solid #111',
+        borderTop: `1px solid ${BORDER}`,   // was '#111'
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(24px)',
         transition: 'all 0.7s ease',
       }}
     >
       {/* Label */}
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         OPEN SOURCE
       </div>
 
@@ -726,7 +726,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#444', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.1em', marginBottom: 10 }}>
               {s.icon} {s.label}
             </div>
             <div style={{
@@ -735,7 +735,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               lineHeight: 1, letterSpacing: '-0.03em',
             }}>
               <Counter end={s.value} active={vis} />
-              {s.suffix && <span style={{ color: '#444', fontSize: '0.55em' }}>{s.suffix}</span>}
+              {s.suffix && <span style={{ color: '#9ca3af', fontSize: '0.55em' }}>{s.suffix}</span>}
             </div>
           </div>
         ))}
@@ -752,7 +752,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           BUILT IN PUBLIC.<br />
           <span style={{ color: A }}>SHIP WITH US.</span>
         </h2>
-        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>
+        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>   {/* was '#555' */}
           DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
           who actually use it. Every widget, every metric, every API was contributed by
           someone in this list. {stats.goodFirstIssues > 0 && (
@@ -772,10 +772,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               href={c.html_url}
               target="_blank"
               rel="noopener noreferrer"
-              title={`@${c.login}`}
+              title={c.isSponsor ? `@${c.login} (Sponsor 💎)` : `@${c.login}`}
               style={{
                 width: 38, height: 38, borderRadius: '50%',
-                border: `2px solid ${BG}`,
+                border: `2px solid ${c.isSponsor ? '#ec4899' : BG}`,
                 marginLeft: i > 0 ? -11 : 0,
                 overflow: 'hidden', display: 'block',
                 position: 'relative', zIndex: stats.contributors.length - i,
@@ -849,18 +849,20 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    LANDING FOOTER  (above global Footer)
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function LandingFooter() {
   return (
-    <footer style={{
-      borderTop: `1px solid #111`,
-      padding: '24px clamp(20px,4vw,48px)',
-      display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
-      justifyContent: 'space-between', alignItems: 'center',
-    }}>
-      <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
+    <footer
+      data-testid="landing-footer"
+      style={{
+        borderTop: `1px solid ${BORDER}`,   // was '#111'
+        padding: '24px clamp(20px,4vw,48px)',
+        display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
+        justifyContent: 'space-between', alignItems: 'center',
+      }}>
+      <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>   {/* was '#222' */}
         © {new Date().getFullYear()} DEVTRACK
       </span>
       <div style={{ display: 'flex', gap: 20 }}>
@@ -878,9 +880,9 @@ function LandingFooter() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    MAIN EXPORT
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
   return (
     <div
@@ -897,6 +899,7 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <ContributeSection stats={repoStats} />
       <SetupSection />
       <LandingFooter />
+
     </div>
   );
 }

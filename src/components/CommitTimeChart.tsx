@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Sun, Cloud, Sunset, Moon } from "lucide-react";
+import { toast } from "sonner";
   
 interface TimeBlocks {
   morning: number;
@@ -83,9 +84,11 @@ export default function CommitTimeChart() {
         setData(chartData);
         setPeakTime(peak.commits > 0 ? peak.name : null);
       })
-      .catch(() =>
-        setError("We couldn't load your time-of-day data right now."),
-      )
+      .catch((err) => {
+        console.error("Failed to fetch commit time data:", err);
+        setError("We couldn't load your time-of-day data right now.");
+        toast.error("Failed to load time-of-day data");
+      })
       .finally(() => setLoading(false));
   }, [days]);
 
@@ -136,7 +139,7 @@ export default function CommitTimeChart() {
           <div className="flex h-full items-center justify-center">
             <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)] text-center">
               <p>{error}</p>
-              <button
+              <button aria-label="Perform action"
                 type="button"
                 onClick={fetchContributions}
                 className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
