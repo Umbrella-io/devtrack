@@ -292,7 +292,7 @@ export default function GoalTracker() {
       {syncError && (
         <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-3 py-2 text-xs text-[var(--destructive)]">
           <span>⚠️ {syncError}</span>
-          <button aria-label="Perform action"
+          <button
             type="button"
             onClick={() => setSyncError(null)}
             className="text-[var(--destructive)] hover:opacity-70 font-semibold"
@@ -307,7 +307,7 @@ export default function GoalTracker() {
       {deleteError && (
         <div className="mb-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-3 text-sm text-[var(--destructive)] flex justify-between items-center">
           <p>{deleteError}</p>
-          <button aria-label="Perform action" onClick={() => setDeleteError(null)} className="text-[var(--destructive)] hover:opacity-80 ml-2" aria-label="Dismiss error">✕</button>
+          <button onClick={() => setDeleteError(null)} className="text-[var(--destructive)] hover:opacity-80 ml-2" aria-label="Dismiss error">✕</button>
         </div>
       )}
 
@@ -381,7 +381,7 @@ export default function GoalTracker() {
 
                     {/* Manual +1 only for non-auto-synced goals */}
                     {!isAutoSynced && (
-                      <button aria-label="Perform action"
+                      <button
                         onClick={async () => {
                           const newCurrent = goal.current + 1;
                           if (newCurrent > goal.target) return;
@@ -408,7 +408,7 @@ export default function GoalTracker() {
                     {isConfirming ? (
                       <span className="flex items-center gap-1 text-xs">
                         <span className="text-[var(--muted-foreground)]">Delete?</span>
-                        <button aria-label="Perform action"
+                        <button
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
                           className="text-[var(--destructive)] hover:opacity-80 font-semibold transition-colors disabled:opacity-50"
@@ -417,7 +417,7 @@ export default function GoalTracker() {
                           Yes
                         </button>
                         <span className="text-[var(--muted-foreground)]">/</span>
-                        <button aria-label="Perform action"
+                        <button
                           onClick={() => setConfirmingId(null)}
                           className="text-[var(--muted-foreground)] hover:text-[var(--card-foreground)] transition-colors"
                           aria-label="Cancel delete"
@@ -426,7 +426,7 @@ export default function GoalTracker() {
                         </button>
                       </span>
                     ) : (
-                      <button aria-label="Perform action"
+                      <button
                         onClick={() => setConfirmingId(goal.id)}
                         disabled={isDeleting}
                         className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors disabled:opacity-50"
@@ -539,7 +539,7 @@ export default function GoalTracker() {
           </label>
           <div className="flex gap-2">
             {(["none", "weekly", "monthly"] as Recurrence[]).map((r) => (
-              <button aria-label="Perform action"
+              <button
                 key={r}
                 type="button"
                 onClick={() => setRecurrence(r)}
@@ -567,7 +567,7 @@ export default function GoalTracker() {
           </p>
         )}
 
-        <button aria-label="Perform action"
+        <button
           type="submit"
           disabled={creating || !title.trim()}
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"

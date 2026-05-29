@@ -62,7 +62,7 @@ export default function WeeklySummaryCard() {
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           This Week
         </h2>
-        <button aria-label="Perform action"
+        <button
           type="button"
           onClick={() => setIsCollapsed((value) => !value)}
           className="text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--card-foreground)]"

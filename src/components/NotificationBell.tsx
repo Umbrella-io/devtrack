@@ -148,7 +148,7 @@ export default function NotificationBell() {
                   All caught up
                 </span>
               )}
-              <button aria-label="Perform action"
+              <button
                 type="button"
                 onClick={() => setOpen(false)}
                 className="rounded-md p-1 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-colors"

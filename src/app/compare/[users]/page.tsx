@@ -43,7 +43,7 @@ function compareNumbers(left: number, right: number): Winner {
 }
 
 function topLanguage(languages: PublicLanguage[]): string {
-  return languages[0]?.name ?? "No public data";
+  return languages[0]?.language ?? "No public data";
 }
 
 function repoCommitTotal(repos: TopRepo[]): number {
@@ -341,10 +341,10 @@ function LanguageCard({
       ) : (
         <ul className="space-y-3">
           {languages.map((language) => (
-            <li key={language.name}>
+            <li key={language.language}>
               <div className="mb-1 flex items-center justify-between text-sm">
                 <span className="font-medium text-[var(--card-foreground)]">
-                  {language.name}
+                  {language.language}
                 </span>
                 <span className="text-[var(--muted-foreground)]">
                   {language.count} repo{language.count !== 1 ? "s" : ""}
