@@ -51,9 +51,12 @@ describe('StreakTracker - StreakData interface', () => {
 
 describe('StreakTracker - copy to clipboard behavior', () => {
   beforeEach(() => {
+    // In some Node/Vitest environments `globalThis.navigator` is a getter-only
+    // property. Use defineProperty to ensure we can mock it in tests.
     Object.defineProperty(globalThis, 'navigator', {
       value: {},
       configurable: true,
+      writable: true,
     });
   });
 
