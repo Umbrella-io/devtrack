@@ -43,7 +43,10 @@ jobs:
 
       - name: Run Playwright tests
         run: npx playwright test
-
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()

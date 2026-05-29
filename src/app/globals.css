@@ -310,3 +310,30 @@ body {
 @media (max-width: 640px) {
   .lnd-ticker { animation-duration: 20s !important; }
 }
+
+/* --- Accessibility Fix: Respect prefers-reduced-motion (WCAG 2.3.3) --- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .lnd-ticker {
+    animation: none !important;
+  }
+
+  .fade-up {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .hover\:scale-105:hover,
+  .hover\:-translate-y-1:hover {
+    transform: none !important;
+  }
+}
