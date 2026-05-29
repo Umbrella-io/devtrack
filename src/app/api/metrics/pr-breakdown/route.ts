@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
+import { getAccountToken } from "@/lib/github-accounts";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 const GITHUB_API = "https://api.github.com";
@@ -12,13 +14,34 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
-  const key = metricsCacheKey(session.githubId ?? "unknown", "pr-breakdown" as any);
+
+  let token = session.accessToken;
+  let userId = session.githubId ?? "unknown";
+
+  if (accountId && accountId !== session.githubId) {
+    if (!session.githubId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userRow = await resolveAppUser(session.githubId, session.githubLogin);
+    if (!userRow) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const accountToken = await getAccountToken(userRow.id, accountId);
+    if (!accountToken) {
+      return Response.json({ error: "Account not found" }, { status: 404 });
+    }
+    token = accountToken;
+    userId = accountId;
+  }
+
+  const key = metricsCacheKey(userId, "pr-breakdown" as any);
 
   try {
     const data = await withMetricsCache({ bypass, key, ttlSeconds: 10 * 60 }, async () => {
       const res = await fetch(`${GITHUB_API}/search/issues?q=type:pr+author:@me&per_page=100`, {
-        headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });
       if (!res.ok) throw new Error("API Error");
