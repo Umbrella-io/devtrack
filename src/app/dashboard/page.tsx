@@ -107,8 +107,6 @@ export default async function DashboardPage() {
     <DashboardSSEProvider>
       <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
-
-        <DashboardHeader />
         <NotificationBell />
         <SSEListener userId={session?.githubId ?? ""} />
 
