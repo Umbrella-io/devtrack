@@ -443,16 +443,29 @@ export default function TopRepos() {
         <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
       ) : (
       <>
-        {repos.length > 10 && (
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search repositories…"
-            aria-label="Search repositories"
-            className="mb-3 w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
-          />
-        )}
+      {repos.length > 10 && (
+  <div className="relative mb-3">
+    <input
+      type="text"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      placeholder="Search repositories…"
+      aria-label="Search repositories"
+      className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
+    />
+
+    {searchQuery.length > 0 && (
+      <button
+        type="button"
+        onClick={() => setSearchQuery("")}
+        aria-label="Clear search"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
+      >
+        ✕
+      </button>
+    )}
+  </div>
+)}
         <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)] mb-2 px-0">
           <button
             type="button"

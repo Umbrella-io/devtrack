@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/local-coding/sync/route";
 import { NextRequest } from "next/server";
+import { createHash } from "crypto";
 
 // Mock Supabase admin client methods
 const mockRpc = vi.fn();
 const mockSingle = vi.fn();
 const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
 const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
-const mockUpdate = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+const mockKeyLookupOr = vi.fn().mockReturnValue({ single: mockSingle });
+const mockUpdateOr = vi.fn().mockResolvedValue({ error: null });
+const mockUpdate = vi.fn().mockReturnValue({ or: mockUpdateOr });
 const mockFrom = vi.fn().mockReturnValue({
   select: mockSelect,
   update: mockUpdate,
@@ -34,12 +37,10 @@ describe("Local Coding Sync POST API Endpoint", () => {
       if (table === "local_coding_api_keys") {
         return {
           select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: mockSingle,
-            }),
+            or: mockKeyLookupOr,
           }),
           update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
+            or: mockUpdateOr,
           }),
         };
       }
@@ -164,7 +165,7 @@ describe("Local Coding Sync POST API Endpoint", () => {
       if (table === "local_coding_api_keys") {
         return {
           select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
+            or: vi.fn().mockReturnValue({
               single: mockSingle.mockResolvedValue({
                 data: { user_id: "test-user-id" },
                 error: null,
@@ -172,7 +173,7 @@ describe("Local Coding Sync POST API Endpoint", () => {
             }),
           }),
           update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
+            or: vi.fn().mockResolvedValue({ error: null }),
           }),
         };
       }
@@ -237,6 +238,25 @@ describe("Local Coding Sync POST API Endpoint", () => {
         },
       ],
     });
+  });
+
+  it("authenticates against both api_key_hash and legacy api_key columns", async () => {
+    const sessions = [{ date: "2026-05-27", totalSeconds: 3600, fileCount: 2, projectCount: 1 }];
+    const req = new NextRequest("http://localhost/api/local-coding/sync", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer test-key",
+      },
+      body: JSON.stringify({ sessions }),
+    });
+
+    const res = await POST(req);
+    const keyHash = createHash("sha256").update("test-key").digest("hex");
+    const expectedFilter = `api_key_hash.eq.${keyHash},api_key.eq.${keyHash}`;
+
+    expect(res.status).toBe(200);
+    expect(mockKeyLookupOr).toHaveBeenCalledWith(expectedFilter);
+    expect(mockUpdateOr).toHaveBeenCalledWith(expectedFilter);
   });
 
   it("returns 500 error if batch_upsert_sessions RPC fails", async () => {
