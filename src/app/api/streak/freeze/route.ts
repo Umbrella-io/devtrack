@@ -107,10 +107,11 @@ export async function POST() {
   }
 
   const alreadyExisted = existing !== null;
+  const statusCode = alreadyExisted ? 200 : 201;
 
   return Response.json(
     { freeze, already_existed: alreadyExisted },
-    { status: 201 }
+    { status: statusCode }
   );
 }
 
