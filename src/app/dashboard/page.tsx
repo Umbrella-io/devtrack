@@ -1,4 +1,4 @@
-import LazyWidget from "@/components/LazyWidget";
+﻿import LazyWidget from "@/components/LazyWidget";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
 import GoalTracker from "@/components/GoalTracker";
@@ -25,6 +25,8 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
+import NotificationBell from "@/components/NotificationBell";
+import SSEListener from "@/components/SSEListener";
 
 const SkeletonCard = () => (
   <div
@@ -105,6 +107,10 @@ export default async function DashboardPage() {
     <DashboardSSEProvider>
       <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
+
+        <DashboardHeader />
+        <NotificationBell />
+        <SSEListener userId={session?.githubId ?? ""} />
 
         {/* Action bar */}
         <div className="mb-6 flex flex-wrap items-stretch justify-center gap-2 sm:justify-end">
