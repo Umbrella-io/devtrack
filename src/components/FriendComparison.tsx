@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 
 const ComparisonChart = dynamic(() => import("./ComparisonChart"), { ssr: false });
@@ -265,10 +266,11 @@ export default function FriendComparison() {
                         : "hover:bg-[var(--control)]",
                     ].join(" ")}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={u.avatarUrl}
-                      alt=""
+                      alt={`${u.username} avatar`}
+                      width={20}
+                      height={20}
                       className="h-5 w-5 rounded-full"
                       loading="lazy"
                     />
