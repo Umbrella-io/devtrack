@@ -22,7 +22,7 @@ export default function StreakMilestoneBanner({
         🎉 You reached a {streak}-day streak! Keep it up!
       </div>
 
-      <button aria-label="Perform action"
+      <button
         type="button"
         onClick={() => onDismiss?.()}
         aria-label="Dismiss milestone banner"
