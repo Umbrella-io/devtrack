@@ -19,6 +19,31 @@ interface WeeklySummaryData {
   topRepo: string | null;
 }
 
+function isWeeklySummaryData(value: unknown): value is WeeklySummaryData {
+  if (!value || typeof value !== "object") return false;
+
+  const summary = value as Partial<WeeklySummaryData>;
+
+  return Boolean(
+    summary.commits &&
+      typeof summary.commits.current === "number" &&
+      typeof summary.commits.previous === "number" &&
+      typeof summary.commits.delta === "number" &&
+      typeof summary.commits.trend === "string" &&
+      summary.prs?.thisWeek &&
+      typeof summary.prs.thisWeek.opened === "number" &&
+      typeof summary.prs.thisWeek.merged === "number" &&
+      summary.prs?.lastWeek &&
+      typeof summary.prs.lastWeek.opened === "number" &&
+      typeof summary.prs.lastWeek.merged === "number" &&
+      summary.activeDays &&
+      typeof summary.activeDays.thisWeek === "number" &&
+      typeof summary.activeDays.lastWeek === "number" &&
+      typeof summary.streak === "number" &&
+      (typeof summary.topRepo === "string" || summary.topRepo === null)
+  );
+}
+
 export default function WeeklySummaryCard() {
   const { selectedAccount } = useAccount();
   const [summary, setSummary] = useState<WeeklySummaryData | null>(null);
@@ -43,7 +68,13 @@ export default function WeeklySummaryCard() {
         if (!r.ok) throw new Error("API error");
         return r.json();
       })
-      .then((data: WeeklySummaryData) => setSummary(data))
+      .then((data: unknown) => {
+        if (!isWeeklySummaryData(data)) {
+          throw new Error("Invalid weekly summary payload");
+        }
+
+        setSummary(data);
+      })
       .catch(() =>
         setError(
           "We couldn't load your weekly summary right now. Please try again in a moment."

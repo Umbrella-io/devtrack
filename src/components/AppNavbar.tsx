@@ -27,6 +27,7 @@ export default function AppNavbar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const isPublicProfileRoute = pathname.startsWith("/u/");
 
   useEffect(() => {
     setMobileOpen(false);
@@ -102,14 +103,14 @@ export default function AppNavbar() {
                 Sign out
               </button>
             </>
-          ) : (
+          ) : !isPublicProfileRoute ? (
             <Link
               href="/api/auth/signin/github?callbackUrl=/dashboard"
               className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
             >
               Sign in with GitHub
             </Link>
-          )}
+          ) : null}
         </div>
 
         <button
@@ -161,14 +162,14 @@ export default function AppNavbar() {
                   Sign out
                 </button>
               </>
-            ) : (
+            ) : !isPublicProfileRoute ? (
               <Link
                 href="/api/auth/signin/github?callbackUrl=/dashboard"
                 className="rounded-2xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-[var(--accent-foreground)]"
               >
                 Sign in with GitHub
               </Link>
-            )}
+            ) : null}
           </div>
         </div>
       ) : null}
