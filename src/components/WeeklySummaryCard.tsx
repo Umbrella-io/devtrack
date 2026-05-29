@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface WeeklySummaryData {
   commits: {
@@ -57,15 +60,14 @@ export default function WeeklySummaryCard() {
   }, [fetchSummary]);
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-          This Week
-        </h2>
-        <button
-          type="button"
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle>This Week</CardTitle>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setIsCollapsed((value) => !value)}
-          className="text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--card-foreground)]"
+          className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
           aria-expanded={!isCollapsed}
           aria-label={
             isCollapsed ? "Expand weekly summary" : "Collapse weekly summary"
@@ -73,32 +75,33 @@ export default function WeeklySummaryCard() {
           suppressHydrationWarning
         >
           {isCollapsed ? ">" : "v"}
-        </button>
-      </div>
+        </Button>
+      </CardHeader>
 
       {!isCollapsed &&
         (loading ? (
-          <div
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-            className="mt-4 space-y-3"
-          >
-            <span className="sr-only">Loading weekly summary</span>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                aria-hidden="true"
-                className="h-14 rounded-lg bg-[var(--card-muted)] animate-pulse"
-              />
-            ))}
-          </div>
+          <CardContent>
+            <div
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+              className="space-y-3 pt-4"
+            >
+              <span className="sr-only">Loading weekly summary</span>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} aria-hidden="true" className="h-14 rounded-lg" />
+              ))}
+            </div>
+          </CardContent>
         ) : error ? (
-          <div className="mt-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
-            {error}
-          </div>
+          <CardContent>
+            <div className="mt-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
+              {error}
+            </div>
+          </CardContent>
         ) : summary && summary.commits && summary.prs && summary.activeDays ? (
-          <div className="mt-4 space-y-4">
+          <CardContent>
+            <div className="space-y-4 pt-2">
             {/* Commits Comparison */}
             <div className="rounded-lg bg-[var(--control)] p-4">
               <div className="mb-3 flex items-center justify-between">
@@ -259,8 +262,9 @@ export default function WeeklySummaryCard() {
                 </span>
               </div>
             </div>
-          </div>
+            </div>
+          </CardContent>
         ) : null)}
-    </div>
+    </Card>
   );
 }

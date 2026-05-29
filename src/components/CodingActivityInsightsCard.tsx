@@ -13,6 +13,9 @@ import {
   type TooltipProps,
 } from "recharts";
 import { useAccount } from "@/components/AccountContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   formatHourRange,
   type CodingActivityInsight,
@@ -228,41 +231,41 @@ export default function CodingActivityInsightsCard() {
       : `${dataWindowLabel} · Commits by hour · Local timezone`;
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="mb-4 flex items-start justify-between gap-3">
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between pb-4">
         <div>
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-            Coding Activity Insights
-          </h2>
+          <CardTitle>Coding Activity Insights</CardTitle>
           {data?.weeklyTrend ? (
-            <div className="mt-2">
+            <div className="mt-2 mb-1">
               <TrendBadge
                 direction={data.weeklyTrend.direction}
                 percentage={data.weeklyTrend.percentage}
               />
             </div>
           ) : null}
-          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+          <CardDescription className="mt-1">
             {subtitle}
-          </p>
+          </CardDescription>
         </div>
 
-         <button
-  type="button"
-  onClick={fetchInsights}
-  disabled={loading}
-  className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50"
->
-  {loading ? (
-    <>
-      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-      Refreshing
-    </>
-  ) : (
-    "Refresh"
-  )}
-</button> 
-      </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchInsights}
+          disabled={loading}
+          className="flex items-center gap-2 text-[var(--muted-foreground)]"
+        >
+          {loading ? (
+            <>
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              Refreshing
+            </>
+          ) : (
+            "Refresh"
+          )}
+        </Button> 
+      </CardHeader>
+      <CardContent>
 
       {loading ? (
         <div
@@ -272,27 +275,24 @@ export default function CodingActivityInsightsCard() {
           className="space-y-4"
         >
           <span className="sr-only">Loading coding activity insights</span>
-          <div className="h-[260px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
+          <Skeleton className="h-[260px] rounded-lg" />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                aria-hidden="true"
-                className="h-16 rounded-lg bg-[var(--card-muted)] animate-pulse"
-              />
+              <Skeleton key={item} aria-hidden="true" className="h-16 rounded-lg" />
             ))}
           </div>
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={fetchInsights}
-            className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
+            className="mt-3 border-[var(--destructive)]/30 text-[var(--destructive)] hover:bg-[var(--destructive)]/10"
           >
             Try again
-          </button>
+          </Button>
         </div>
       ) : !hasData ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card-muted)] px-4 text-center">
@@ -401,6 +401,7 @@ export default function CodingActivityInsightsCard() {
     )}
         </div>
       )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
