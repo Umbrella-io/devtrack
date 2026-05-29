@@ -83,6 +83,37 @@ export async function getUserByUsername(
 }
 
 /**
+ * Look up a user by GitHub id. Used for authenticated server-rendered pages
+ * where the session has an id but may not have the login claim populated.
+ */
+export async function getUserByGithubId(
+  githubId: string
+): Promise<User | null> {
+  if (!supabaseAdmin) return null;
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("users")
+      .select("id,github_id,github_login,is_public,created_at,updated_at")
+      .eq("github_id", githubId)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return null;
+      }
+      console.error("Error fetching user by GitHub id:", error);
+      return null;
+    }
+
+    return data as User;
+  } catch (err) {
+    console.error("Unexpected error fetching user by GitHub id:", err);
+    return null;
+  }
+}
+
+/**
  * Update the is_public flag for a user.
  */
 export async function updateUserPublicFlag(

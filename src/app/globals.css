@@ -67,6 +67,12 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* Strip body background on landing page so the dark bg is visible */
+body:has(.lnd-root) {
+  background: #050505 !important;
+  background-color: #050505 !important;
+}
+
 body {
   background:
     radial-gradient(circle at 0% 0%, rgba(96, 165, 250, 0.16), transparent 36%),
@@ -260,13 +266,29 @@ body {
 
 
 .lnd-cell {
-  background: #0e0e0e;
-  border: 1px solid #1a1a1a;
-  border-radius: 8px;
-  padding: 14px 16px;
-  transition: background 0.2s, border-color 0.2s;
+  background: rgba(8, 8, 10, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.035);
+  border-radius: 12px;
+  padding: 18px 20px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 4px 20px rgba(0, 0, 0, 0.35);
+  transition: 
+    background 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.lnd-cell:hover { background: #141414; border-color: #2a2a2a; }
+.lnd-cell:hover {
+  background: rgba(12, 12, 16, 0.75);
+  border-color: rgba(129, 140, 248, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 30px rgba(129, 140, 248, 0.12);
+}
 
 .lnd-heatmap-cell { cursor: crosshair; }
 .lnd-heatmap-cell:hover {

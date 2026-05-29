@@ -22,7 +22,7 @@ export default defineConfig({
   webServer: {
     command:
       process.env.PLAYWRIGHT_SERVER_MODE === "start"
-        ? `npm run start -- --hostname 127.0.0.1 -p ${PORT}`
+        ? `node .next/standalone/server.js --port ${PORT}`
         : `node node_modules/next/dist/bin/next dev -H 127.0.0.1 -p ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
