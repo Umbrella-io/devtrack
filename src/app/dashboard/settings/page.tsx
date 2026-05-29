@@ -359,6 +359,7 @@ function SettingsPageContent() {
         setSettings(updated);
       } else {
         console.error("Failed to update settings");
+        toast.error("Failed to update public profile setting");
       }
     } catch (error) {
       console.error("Error updating settings:", error);
