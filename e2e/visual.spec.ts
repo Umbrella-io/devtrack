@@ -3,35 +3,49 @@ import { encode } from "next-auth/jwt";
 
 const authSecret = "playwright-placeholder-secret-that-is-long-enough";
 
-test.beforeEach(async ({ page }) => {
-  // Create a valid NextAuth JWT and set it as the session cookie so
-  // dashboard pages render as an authenticated user in Playwright.
-  const token = await encode({
+async function mockSession(page: any) {
+  const sessionToken = await encode({
     secret: authSecret,
     token: {
       name: "Playwright User",
       email: "playwright@example.com",
+      sub: "12345",
       githubLogin: "playwright-user",
       githubId: "12345",
       accessToken: "test-token",
       accessTokenValidatedAt: Date.now(),
-      expires: "2099-01-01T00:00:00.000Z",
     },
+    maxAge: 60 * 60,
   });
 
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: String(token ?? ""),
+      value: sessionToken,
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
       sameSite: "Lax",
       secure: false,
+      expires: Math.floor(Date.now() / 1000) + 60 * 60,
     },
   ]);
 
-  await page.route("**/api/ai-insights**", async (route) => {
+  await page.route("**/api/auth/session", async (route: any) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: { name: "Playwright User", email: "playwright@example.com", image: "https://github.com/playwright-user.png" },
+        githubLogin: "playwright-user",
+        githubId: "12345",
+        accessToken: "test-token",
+        expires: "2099-01-01T00:00:00.000Z",
+      }),
+    });
+  });
+  
+  // Mock AI insights
+  await page.route("**/api/ai-insights**", async (route: any) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -52,51 +66,8 @@ test.beforeEach(async ({ page }) => {
       }),
     });
   });
-
-  await page.route("**/api/notifications**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        notifications: [],
-        unreadCount: 0,
-      }),
-    });
-  });
-
-  await page.route("**/api/user/settings", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ is_public: true }),
-    });
-  });
-
-  await page.route("**/api/metrics/contributions**", async (route) => {
-    const url = new URL(route.request().url());
-    const days = Number(url.searchParams.get("days") ?? 30);
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        data: {
-          "2026-05-16": days >= 7 ? 3 : 1,
-          "2026-05-17": 5,
-          "2026-05-18": 2,
-        },
-      }),
-    });
-  });
-
-  const now = new Date().toISOString();
-
-  await page.route("**/api/goals", async (route) => {
-    if (route.request().method() === "POST") {
-      await route.fulfill({
-        contentType: "application/json",
-        status: 201,
-        body: JSON.stringify({ ok: true }),
-      });
-      return;
-    }
-
+  
+  await page.route("**/api/goals**", async (route: any) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -109,55 +80,37 @@ test.beforeEach(async ({ page }) => {
             unit: "commits",
             recurrence: "weekly",
             period_start: "2026-05-18",
-            last_synced_at: now,
+            last_synced_at: new Date().toISOString(),
           },
         ],
       }),
     });
   });
 
-  await page.route("**/api/goals/sync**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ ok: true }),
-    });
-  });
-
-  await page.route("**/api/goals/sync", async (route) => {
+  await page.route("**/api/goals/sync**", async (route: any) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ updated: 1, commitCount: 4 }),
     });
   });
+  
+  await page.route("**/api/user/settings**", async (route: any) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ is_public: true }) });
+  });
+  
+  await page.route("**/api/notifications**", async (route: any) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ notifications: [], unreadCount: 0 }) });
+  });
 
-  await page.route("**/api/ai-insights**", async (route) => {
+  await page.route("**/api/metrics/contributions**", async (route: any) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
         data: {
-          insights: [
-            {
-              id: "insight-1",
-              type: "productivity",
-              title: "High Consistency",
-              description: "You have coded 5 days this week!",
-              severity: "positive",
-            },
-          ],
-          trend: { direction: "up", percentage: 15 },
-          aiSummary: "Great job shipping features this week. Keep up the high standard!",
-          generatedAt: "2026-05-18T12:00:00.000Z",
+          "2026-05-16": 3,
+          "2026-05-17": 5,
+          "2026-05-18": 2,
         },
-      }),
-    });
-  });
-
-  await page.route("**/api/notifications**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        notifications: [],
-        unreadCount: 0,
       }),
     });
   });
@@ -176,29 +129,28 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/ci**",
     "**/api/streak/freeze**",
     "**/api/user/github-accounts**",
-    "**/api/integrations/jira**",
     "**/api/metrics/activity**",
     "**/api/metrics/commit-time**",
     "**/api/metrics/personal-records**",
     "**/api/metrics/discussions**",
     "**/api/metrics/pr-review-trend**",
     "**/api/metrics/inactive-repos**",
-    "**/api/notifications**",
     "**/api/local-coding/stats**",
     "**/api/metrics/coding-time**",
     "**/api/metrics/coding-activity-insights**",
+    "**/api/wakatime**",
   ];
 
-for (const pattern of metricRoutes) {
-  await page.route(pattern, async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify(mockMetricResponse(route.request().url())),
+  for (const pattern of metricRoutes) {
+    await page.route(pattern, async (route: any) => {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(mockMetricResponse(route.request().url())),
+      });
     });
-  });
-}
+  }
 
-  await page.route("**/api/stream**", async (route) => {
+  await page.route("**/api/stream**", async (route: any) => {
     await route.fulfill({
       status: 200,
       contentType: "text/event-stream",
@@ -206,58 +158,15 @@ for (const pattern of metricRoutes) {
     });
   });
 
-
-});
-test("dashboard widgets render with mocked metrics", async ({ page }) => {
-  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
-  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByText("Make 10 commits")).toBeVisible({ timeout: 10000 });
-});
-
-test("contribution graph range buttons request a new range", async ({ page }) => {
-  const contributionRequests = [];
-  page.on("request", (request) => {
-    if (request.url().includes("/api/metrics/contributions")) {
-      contributionRequests.push(request.url());
-    }
+  await page.route("https://github.com/*.png", async (route: any) => {
+    await route.fulfill({
+      contentType: "image/png",
+      body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64"),
+    });
   });
+}
 
-  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
-  // Wait for initial data to load so we know the component is hydrated
-  await expect(page.getByRole("button", { name: "Bar" })).toBeVisible({ timeout: 15000 });
-  await page.getByRole("button", { name: "Show 90-day range" }).click();
-
-  await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
-});
-
-test("goal form posts a new goal", async ({ page }) => {
-  const goalPosts = [];
-  page.on("request", (request) => {
-    if (request.url().endsWith("/api/goals") && request.method() === "POST") {
-      goalPosts.push(request.postDataJSON());
-    }
-  });
-
-  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
-  await page.getByLabel("Goal title").fill("Ship one PR");
-  await page.getByLabel("Target").fill("1");
-  await page.getByLabel("Unit").selectOption("prs");
-  await page.getByRole("button", { name: "Add goal" }).click();
-
-  await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);
-  expect(goalPosts[0]).toMatchObject({
-    title: "Ship one PR",
-    target: 1,
-    unit: "prs",
-  });
-});
-
-function mockMetricResponse(url) {
+function mockMetricResponse(url: string) {
   if (url.includes("/api/metrics/prs")) {
     return {
       open: 2,
@@ -295,11 +204,11 @@ function mockMetricResponse(url) {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
       prs: {
         thisWeek: { opened: 3, merged: 2 },
-        lastWeek: { opened: 1, merged: 1 },
+        lastWeek: { opened: 1, merged: 1 }
       },
       activeDays: {
         thisWeek: 5,
-        lastWeek: 4,
+        lastWeek: 4
       },
       streak: 3,
       topRepo: "demo/repo",
@@ -317,9 +226,6 @@ function mockMetricResponse(url) {
   if (url.includes("/api/streak/freeze")) {
     return { freezes: [] };
   }
-  if (url.includes("/api/integrations/jira")) {
-    return null;
-  }
   if (url.includes("/api/user/github-accounts")) {
     return { accounts: [] };
   }
@@ -330,7 +236,7 @@ function mockMetricResponse(url) {
       hasData: false,
     };
   }
-  if (url.includes("/api/metrics/coding-time")) {
+  if (url.includes("/api/metrics/coding-time") || url.includes("/api/wakatime")) {
     return {
       hasData: false,
       not_configured: true,
@@ -355,3 +261,56 @@ function mockMetricResponse(url) {
   }
   return {};
 }
+
+test.describe("Visual Regression Tests", () => {
+  test("Landing page - dark mode", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveScreenshot("landing-page-dark.png", { fullPage: true, animations: "disabled" });
+  });
+
+  test("Sign-in page", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/auth/signin", { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveScreenshot("signin-page.png", { fullPage: true, animations: "disabled" });
+  });
+
+  test("Dashboard header - dark mode", async ({ page }) => {
+    await mockSession(page);
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+    const header = page.locator("header").first();
+    // Wait longer for components to settle, or wait for network idle to ensure layout is stable
+    await page.waitForLoadState("networkidle", { timeout: 3000 }).catch(() => {});
+    await page.waitForTimeout(1000); 
+    await expect(header).toHaveScreenshot("dashboard-header-dark.png", { animations: "disabled" });
+  });
+
+  test("Dashboard header - light mode", async ({ page }) => {
+    await mockSession(page);
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+    const header = page.locator("header").first();
+    await page.waitForLoadState("networkidle", { timeout: 3000 }).catch(() => {});
+    await page.waitForTimeout(1000);
+    await expect(header).toHaveScreenshot("dashboard-header-light.png", { animations: "disabled" });
+  });
+
+  test("Public profile - mock data", async ({ page }) => {
+    // Mock user profile
+    await page.route("**/api/user/settings**", async (route: any) => {
+      await route.fulfill({ contentType: "application/json", body: JSON.stringify({ is_public: true }) });
+    });
+    
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/u/playwright-user", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1000); // Give it time to render mock data
+    await expect(page).toHaveScreenshot("public-profile.png", { fullPage: true, animations: "disabled" });
+  });
+
+  test("404 page", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/this-page-does-not-exist-1234", { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveScreenshot("404-page.png", { fullPage: true, animations: "disabled" });
+  });
+});

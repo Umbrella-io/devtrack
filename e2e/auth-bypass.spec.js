@@ -16,7 +16,7 @@ import { expect, test } from "@playwright/test";
 test("unauthenticated request to /dashboard redirects to landing page", async ({
   page,
 }) => {
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/$/, { timeout: 10_000 });
   await expect(
     page.getByRole("link", { name: "Sign in with GitHub" }).first()
@@ -26,7 +26,7 @@ test("unauthenticated request to /dashboard redirects to landing page", async ({
 test("dashboard heading is not visible without a valid session", async ({
   page,
 }) => {
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: /dashboard/i })
   ).not.toBeVisible({ timeout: 5_000 });
@@ -48,7 +48,7 @@ test("setting playwright-dashboard-auth=1 cookie does not bypass authentication"
     },
   ]);
 
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
 
   // The cookie alone must never grant dashboard access.
   await expect(page).toHaveURL(/\/$/, { timeout: 10_000 });
@@ -82,7 +82,7 @@ test("multiple attacker-controlled cookies combined do not bypass authentication
     },
   ]);
 
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
 
   // A forged session token must not be accepted.
   await expect(page).toHaveURL(/\/$/, { timeout: 10_000 });

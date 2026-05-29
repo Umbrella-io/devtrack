@@ -253,7 +253,18 @@ Setup takes under 10 minutes — see [DEVELOPMENT.md](./DEVELOPMENT.md) for the 
 3. Fork → branch (`feat/issue-42-description`) → PR against `main`
 4. Ensure CI passes: `npm run lint && npm run type-check`
 
-See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for commit style, branch naming, and the review process.
+### Testing
+
+When modifying UI components, ensure visual regression tests pass:
+```bash
+# Run all tests
+npm run test:e2e
+
+# If you made intentional UI changes, update the baselines:
+npx playwright test e2e/visual.spec.ts --update-snapshots
+```
+
+See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for full guidelines, commit style, and the review process.
 
 Questions? Open a [Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions).
 

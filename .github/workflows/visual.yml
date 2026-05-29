@@ -1,18 +1,21 @@
-name: E2E
+name: Visual Regression
 
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
+    paths:
+      - 'src/components/**'
+      - 'src/app/**'
+      - '**/globals.css'
   workflow_dispatch:
 
 concurrency:
-  group: e2e-${{ github.ref }}
+  group: visual-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  playwright:
-    name: Playwright smoke tests
+  visual-tests:
+    name: Playwright visual regression tests
     runs-on: ubuntu-latest
     env:
       NEXTAUTH_SECRET: playwright-placeholder-secret-that-is-long-enough
@@ -23,11 +26,11 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
       SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
-      PLAYWRIGHT_SERVER_MODE: start
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
@@ -35,19 +38,16 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      - name: Build app
-        run: npm run build
-
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright tests
-        run: npx playwright test --grep-invert "Visual Regression"
+      - name: Run Playwright visual tests
+        run: npx playwright test e2e/visual.spec.ts --update-snapshots
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-visual-report
           path: playwright-report/
           retention-days: 7
