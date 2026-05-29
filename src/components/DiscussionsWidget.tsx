@@ -53,17 +53,17 @@ export default function DiscussionsWidget() {
     : [];
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm w-full min-w-0">
+      <h2 className="mb-4 break-words text-lg font-semibold text-[var(--card-foreground)]">
         Discussion Activity
       </h2>
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-20 rounded-lg skeleton-shimmer"
+              className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
             />
           ))}
         </div>
@@ -79,17 +79,17 @@ export default function DiscussionsWidget() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 stagger-children">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="rounded-lg bg-[var(--control)] p-4 text-center stat-cell animate-fade-in-up"
+              className="rounded-lg bg-[var(--control)] p-4 text-center"
               title={stat.title}
             >
-              <div className="text-2xl font-bold text-[var(--accent)]">
+              <div className="text-xl sm:text-2xl font-bold text-[var(--accent)] break-words">
                 {stat.value}
               </div>
-              <div className="mt-1 text-sm text-[var(--muted-foreground)]">
+              <div className="mt-1 text-sm text-[var(--muted-foreground)] break-words">
                 {stat.label}
               </div>
             </div>

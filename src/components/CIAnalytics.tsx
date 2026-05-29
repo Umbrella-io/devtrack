@@ -104,13 +104,13 @@ export default function CIAnalytics() {
     : "Refresh";
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm w-full min-w-0">
+      <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full min-w-0">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)] break-words">
             CI Analytics
           </h2>
-          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+          <p className="mt-1 text-sm text-[var(--muted-foreground)] break-words">
             GitHub Actions health across your top repositories
           </p>
         </div>
@@ -119,7 +119,7 @@ export default function CIAnalytics() {
           onClick={fetchCIAnalytics}
           disabled={isRateLimited || loading}
           title={isRateLimited ? "GitHub API rate limit reached" : "Refresh CI data"}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-all hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50 hover:opacity-90 active:scale-95"
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50 flex-shrink-0"
         >
           {loading ? (
             <svg className="animate-spin h-3 w-3 text-[var(--muted-foreground)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -133,26 +133,26 @@ export default function CIAnalytics() {
           role="status"
           aria-live="polite"
           aria-busy="true"
-          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full"
         >
           <span className="sr-only">Loading CI analytics</span>
           {[1, 2, 3, 4].map((item) => (
             <div
               key={item}
               aria-hidden="true"
-              className="h-20 rounded-lg skeleton-shimmer"
+              className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse w-full"
             />
           ))}
         </div>
       ) : error ? (
         <div
-          className={`rounded-lg border p-4 text-sm ${
+          className={`rounded-lg border p-4 text-sm w-full ${
             isRateLimited
               ? "border-[var(--border)] bg-[var(--control)] text-[var(--warning)]"
               : "border-[var(--destructive)]/20 bg-[var(--destructive)]/10 text-[var(--destructive)]"
           }`}
         >
-          <p>{error}</p>
+          <p className="break-words">{error}</p>
           {!isRateLimited && (
             <button
               type="button"
@@ -164,29 +164,30 @@ export default function CIAnalytics() {
           )}
         </div>
       ) : data ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 stagger-children">
+        <div className="space-y-4 w-full min-w-0">
+          {/* FIXED GRID: Set grid-cols-1 by default for 320px screens, upgrading to sm:grid-cols-2 for wider mobile frames */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-lg bg-[var(--control)] p-4 text-center stat-cell animate-fade-in-up"
+                className="rounded-lg bg-[var(--control)] p-4 text-center min-w-0 w-full"
               >
-                <div className="text-2xl font-bold text-[var(--accent)]">
+                <div className="text-xl sm:text-2xl font-bold text-[var(--accent)] break-words">
                   {stat.value}
                 </div>
-                <div className="mt-1 text-sm text-[var(--muted-foreground)]">
+                <div className="mt-1 text-sm text-[var(--muted-foreground)] break-words">
                   {stat.label}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="rounded-lg bg-[var(--control)] p-4 stat-cell">
-            <p className="text-sm font-medium text-[var(--card-foreground)]">
+          <div className="rounded-lg bg-[var(--control)] p-4 w-full min-w-0">
+            <p className="text-sm font-medium text-[var(--card-foreground)] truncate">
               Flakiest workflow
             </p>
             <p
-              className="mt-1 truncate text-sm text-[var(--muted-foreground)]"
+              className="mt-1 break-words text-sm text-[var(--muted-foreground)]"
               title={data.flakiestWorkflow ?? undefined}
             >
               {data.flakiestWorkflow ?? "No failing workflows in this window"}
