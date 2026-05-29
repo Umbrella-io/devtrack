@@ -54,6 +54,23 @@ export async function getUserByUsername(
       if (error.code === "PGRST116") {
         return null;
       }
+      // Optional columns (pinned_repos, is_sponsor) may not exist yet — fall back
+      if (error.code === "42703") {
+        const { data: minimal, error: minError } = await supabaseAdmin
+          .from("users")
+          .select("id,github_id,github_login,is_public,created_at,updated_at")
+          .ilike("github_login", username)
+          .eq("is_public", true)
+          .single();
+
+        if (minError) {
+          if (minError.code === "PGRST116") return null;
+          console.error("Error fetching user (minimal):", minError);
+          return null;
+        }
+
+        return minimal as User;
+      }
       console.error("Error fetching user:", error);
       return null;
     }
