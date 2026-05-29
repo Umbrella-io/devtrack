@@ -657,7 +657,7 @@ export default function ExportButton() {
 
   return (
     <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
-      <button
+      <button aria-label="Perform action"
         type="button"
         onClick={exportCSV}
         disabled={isExportingCSV}
@@ -670,7 +670,7 @@ export default function ExportButton() {
         {isExportingCSV ? "Exporting..." : "Export CSV"}
       </button>
 
-      <button
+      <button aria-label="Perform action"
         type="button"
         onClick={exportPDF}
         disabled={isExportingPDF}

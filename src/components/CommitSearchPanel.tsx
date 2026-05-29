@@ -241,7 +241,7 @@ export default function CommitSearchPanel({ commits, loading }: CommitSearchPane
               {/* Load more */}
               {hasMore && (
                 <div className="mt-2 flex justify-center">
-                  <button
+                  <button aria-label="Perform action"
                     onClick={handleLoadMore}
                     className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-1.5 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--control-hover)] transition-colors"
                   >

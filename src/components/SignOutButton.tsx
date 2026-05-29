@@ -21,7 +21,7 @@ export default function SignOutButton() {
     if (confirming) {
         return (
             <div className="flex items-center gap-2">
-                <button
+                <button aria-label="Sign out"
                     type="button"
                     onClick={handleSignOut}
                     disabled={signingOut}
@@ -30,7 +30,7 @@ export default function SignOutButton() {
                     {signingOut ? "Signing out..." : "Confirm"}
                 </button>
 
-                <button
+                <button aria-label="Perform action"
                     type="button"
                     onClick={() => setConfirming(false)}
                     disabled={signingOut}
@@ -43,7 +43,7 @@ export default function SignOutButton() {
     }
 
     return (
-        <button
+        <button aria-label="Perform action"
             type="button"
             disabled={signingOut}
             suppressHydrationWarning

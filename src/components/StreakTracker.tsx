@@ -260,7 +260,7 @@ export default function StreakTracker() {
         <SectionHeader title="Commit Streaks" />
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
-          <button
+          <button aria-label="Fetch streak"
             type="button"
             onClick={fetchStreak}
             className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
@@ -594,7 +594,7 @@ export default function StreakTracker() {
           {confirmCancel ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--muted-foreground)]">Remove freeze?</span>
-              <button
+              <button aria-label="Cancel streak freeze"
                 type="button"
                 onClick={handleCancelFreeze}
                 disabled={cancelling}
@@ -602,7 +602,7 @@ export default function StreakTracker() {
               >
                 {cancelling ? "Removing..." : "Yes, remove"}
               </button>
-              <button
+              <button aria-label="Perform action"
                 type="button"
                 onClick={() => setConfirmCancel(false)}
                 disabled={cancelling}
@@ -612,7 +612,7 @@ export default function StreakTracker() {
               </button>
             </div>
           ) : (
-            <button
+            <button aria-label="Cancel streak freeze"
               type="button"
               onClick={handleCancelFreeze}
               className="rounded-md border border-[var(--border)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)]"
@@ -641,7 +641,7 @@ export default function StreakTracker() {
               </div>
             </div>
           </div>
-          <button
+          <button aria-label="Apply streak freeze"
             type="button"
             onClick={handleApplyFreeze}
             disabled={freezeLoading || freeze?.hasFreeze}

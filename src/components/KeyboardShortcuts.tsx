@@ -81,7 +81,7 @@ export default function KeyboardShortcuts() {
         {announcement}
       </div>
 
-      <button
+      <button aria-label="Perform action"
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] hover:text-[var(--card-foreground)]"

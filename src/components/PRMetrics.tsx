@@ -204,7 +204,7 @@ export default function PRMetrics() {
         <SectionHeader title="PR Analytics" />
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex gap-2">
-            <button
+            <button aria-label="Perform action"
               type="button"
               onClick={() => setActiveTab("authored")}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -215,7 +215,7 @@ export default function PRMetrics() {
             >
               PRs Authored
             </button>
-            <button
+            <button aria-label="Perform action"
               type="button"
               onClick={() => setActiveTab("reviews")}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -265,7 +265,7 @@ export default function PRMetrics() {
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
-          <button
+          <button aria-label="Fetch metrics"
             type="button"
             onClick={fetchMetrics}
             className="mt-3 rounded-md border border-[var(--destructive-muted-border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive-muted)]"
