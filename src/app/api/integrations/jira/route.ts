@@ -11,6 +11,7 @@ interface JiraCredentials {
   id: string;
   jira_domain: string;
   email: string;
+  api_token: string;
   token_iv: string;
   project_key: string | null;
 }
