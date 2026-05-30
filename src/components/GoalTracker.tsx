@@ -249,7 +249,7 @@ export default function GoalTracker() {
 
   if (loading) {
     return (
-      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading weekly goals</span>
           <div
@@ -273,6 +273,38 @@ export default function GoalTracker() {
         {/* ── Header ── */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Goals</h2>
+    <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Goals</h2>
+        <button
+          onClick={handleSync}
+          disabled={syncing}
+          title="Refresh commit-based goals from GitHub"
+          aria-label="Refresh commit goals"
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-1 text-xs text-[var(--muted-foreground)] transition hover:text-[var(--card-foreground)] hover:border-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`}
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              d="M15.312 3.312a.75.75 0 011.06 1.06l-1.43 1.43A8 8 0 1118 10a.75.75 0 01-1.5 0 6.5 6.5 0 10-1.923 4.596l-1.43-1.43a.75.75 0 011.06-1.06l2.75 2.75a.75.75 0 010 1.06l-2.75 2.75a.75.75 0 01-1.06-1.06l1.43-1.43A8 8 0 012 10 8 8 0 0115.312 3.312z"
+              clipRule="evenodd"
+            />
+          </svg>
+          {syncing ? "Syncing…" : "Refresh"}
+        </button>
+      </div>
+
+      {/* Sync Error */}
+      {syncError && (
+        <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-3 py-2 text-xs text-[var(--destructive)]">
+          <span>⚠️ {syncError}</span>
           <button
             onClick={handleSync}
             disabled={syncing}
@@ -418,6 +450,41 @@ export default function GoalTracker() {
                       </span>
 
                       {!isAutoSynced && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[var(--muted-foreground)]">
+                      {goal.current}/{goal.target} {goal.unit}
+                    </span>
+
+                    {/* Manual +1 only for non-auto-synced goals */}
+                    {!isAutoSynced && (
+                      <button
+                        onClick={async () => {
+                          const newCurrent = goal.current + 1;
+                          if (newCurrent > goal.target) return;
+                          const res = await fetch(`/api/goals/${goal.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ current: newCurrent }),
+                          });
+                          if (res.ok) {
+                            setGoals((prevGoals) =>
+                              prevGoals.map((g) =>
+                                g.id === goal.id ? { ...g, current: newCurrent } : g
+                              )
+                            );
+                          }
+                        }}
+                        disabled={goal.current >= goal.target}
+                        aria-label={`Increment "${goal.title}" progress by 1`}
+                        className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        +1
+                      </button>
+                    )}
+
+                    {isConfirming ? (
+                      <span className="flex items-center gap-1 text-xs">
+                        <span className="text-[var(--muted-foreground)]">Delete?</span>
                         <button
                           onClick={async () => {
                             const newCurrent = goal.current + 1;
