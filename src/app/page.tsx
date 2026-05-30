@@ -1,12 +1,11 @@
-import ParticleBackground from "@/components/ParticleBackground";
-
-import { Syne, DM_Sans, JetBrains_Mono } from 'next/font/google';
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import LandingPage, { type RepoStats } from "@/components/landing/LandingPage";
 import { supabaseAdmin } from "@/lib/supabase";
+
+import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -28,7 +27,11 @@ const jetbrains = JetBrains_Mono({
 });
 
 async function fetchRepoStats(): Promise<RepoStats> {
-  const GH_HEADERS = { Accept: "application/vnd.github.v3+json" };
+  const token = process.env.GITHUB_TOKEN;
+  const GH_HEADERS: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   const OPTS = (ttl: number) => ({ next: { revalidate: ttl }, headers: GH_HEADERS });
 
   try {
@@ -54,19 +57,23 @@ async function fetchRepoStats(): Promise<RepoStats> {
       : [];
 
     if (mappedContributors.length > 0 && supabaseAdmin) {
-      const logins = mappedContributors.map((c) => c.login);
-      const { data: sponsors } = await supabaseAdmin
-        .from("users")
-        .select("github_login")
-        .in("github_login", logins)
-        .eq("is_sponsor", true);
+      try {
+        const logins = mappedContributors.map((c) => c.login);
+        const { data: sponsors } = await supabaseAdmin
+          .from("users")
+          .select("github_login")
+          .in("github_login", logins)
+          .eq("is_sponsor", true);
 
-      if (sponsors && sponsors.length > 0) {
-        const sponsorSet = new Set(sponsors.map((s) => s.github_login));
-        mappedContributors = mappedContributors.map((c) => ({
-          ...c,
-          isSponsor: sponsorSet.has(c.login),
-        }));
+        if (sponsors && sponsors.length > 0) {
+          const sponsorSet = new Set(sponsors.map((s: { github_login: string }) => s.github_login));
+          mappedContributors = mappedContributors.map((c) => ({
+            ...c,
+            isSponsor: sponsorSet.has(c.login),
+          }));
+        }
+      } catch {
+        // Supabase not configured locally — skip sponsor enrichment, show contributors as-is
       }
     }
 
@@ -97,12 +104,11 @@ export default async function HomePage() {
     redirect("/dashboard");
   }
 
-  const repoStats = await fetchRepoStats();
+  const stats = await fetchRepoStats();
 
   return (
-  <div className={`relative ${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
-    <ParticleBackground />
-    <LandingPage repoStats={repoStats} />
-  </div>
-);
+    <div className={`${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
+      <LandingPage repoStats={stats} />
+    </div>
+  );
 }

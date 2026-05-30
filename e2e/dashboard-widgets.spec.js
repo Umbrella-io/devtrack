@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => {
   // Create a valid NextAuth JWT and set it as the session cookie so
   // dashboard pages render as an authenticated user in Playwright.
   const token = await encode({
-    secret: process.env.NEXTAUTH_SECRET ?? "playwright-placeholder-secret-that-is-long-enough",
+    secret: process.env.NEXTAUTH_SECRET || "playwright-placeholder-secret-that-is-long-enough",
     token: {
       name: "Playwright User",
       email: "playwright@example.com",
@@ -113,12 +113,14 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
+ await page.route("**/api/goals/sync**", async (route) => {
   await route.fulfill({
-  contentType: "application/json",
-  body: JSON.stringify({
-    ok: true,
-    last_synced_at: new Date().toISOString(),
-  }),
+    contentType: "application/json",
+    body: JSON.stringify({
+      ok: true,
+      last_synced_at: new Date().toISOString(),
+    }),
+  });
 });
 
   await page.route("**/api/goals/sync", async (route) => {
@@ -291,11 +293,11 @@ function mockMetricResponse(url) {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
       prs: {
         thisWeek: { opened: 3, merged: 2 },
-        lastWeek: { opened: 1, merged: 1 }
+        lastWeek: { opened: 1, merged: 1 },
       },
       activeDays: {
         thisWeek: 5,
-        lastWeek: 4
+        lastWeek: 4,
       },
       streak: 3,
       topRepo: "demo/repo",

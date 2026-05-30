@@ -6,6 +6,7 @@ import { redirect, useSearchParams } from "next/navigation";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import PrivacySettings from "@/components/PrivacySettings";
 import ConfirmModal from "@/components/ConfirmModal";
+import MarkdownBio from "@/components/MarkdownBio";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,10 +14,14 @@ import { useRouter } from "next/navigation";
 interface UserSettings {
   id: string;
   github_login: string;
+  bio: string;
   is_public: boolean;
   leaderboard_opt_in: boolean;
   weekly_digest_opt_in: boolean;
   has_wakatime_key?: boolean;
+  discord_webhook_url?: string;
+  timezone?: string;
+  pinned_repos?: string[];
 }
 
 interface LinkedAccount {
@@ -122,10 +127,22 @@ function SettingsPageContent() {
     null
   );
   const [wakatimeKey, setWakatimeKey] = useState("");
+  const [bioDraft, setBioDraft] = useState("");
+  const [showBioPreview, setShowBioPreview] = useState(false);
+  const [savingBio, setSavingBio] = useState(false);
   const [savingWakatime, setSavingWakatime] = useState(false);
+  const [discordWebhook, setDiscordWebhook] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [savingDiscord, setSavingDiscord] = useState(false);
+  const [testingDiscord, setTestingDiscord] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
+
+  // Spotlight Repos States
+  const [userRepos, setUserRepos] = useState<string[]>([]);
+  const [loadingRepos, setLoadingRepos] = useState(false);
+  const [repoSearchQuery, setRepoSearchQuery] = useState("");
 
   const statusMessage = useMemo(
     () =>
@@ -220,6 +237,9 @@ function SettingsPageContent() {
         if (res.ok) {
           const data = await res.json();
           setSettings(data);
+          setBioDraft(data.bio ?? "");
+          setDiscordWebhook(data.discord_webhook_url || "");
+          setTimezone(data.timezone || "UTC");
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -230,6 +250,78 @@ function SettingsPageContent() {
 
     loadSettings();
   }, [session, status]);
+
+  // Load active repos for spotlight pinning
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    setLoadingRepos(true);
+    fetch("/api/metrics/repos?days=90")
+      .then((r) => r.json())
+      .then((d) => {
+        const names = (d.repos ?? []).map((r: any) => r.name);
+        setUserRepos(names);
+      })
+      .catch((err) => console.error("Failed to load user repos:", err))
+      .finally(() => setLoadingRepos(false));
+  }, [status]);
+
+  const handleUpdatePinnedRepos = async (newPins: string[]) => {
+    if (!settings) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pinned_repos: newPins }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        toast.success("Spotlight repositories updated successfully!");
+      } else {
+        toast.error("Failed to update spotlight repositories.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error updating spotlight repositories.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePinRepo = async (repoName: string) => {
+    if (!settings) return;
+    const currentPins = settings.pinned_repos || [];
+    if (currentPins.includes(repoName)) return;
+    if (currentPins.length >= 3) {
+      toast.error("Maximum 3 pinned repositories allowed!");
+      return;
+    }
+
+    const updatedPins = [...currentPins, repoName];
+    await handleUpdatePinnedRepos(updatedPins);
+  };
+
+  const handleUnpinRepo = async (repoName: string) => {
+    if (!settings) return;
+    const currentPins = settings.pinned_repos || [];
+    const updatedPins = currentPins.filter((name) => name !== repoName);
+    await handleUpdatePinnedRepos(updatedPins);
+  };
+
+  const handleMovePin = async (index: number, direction: "up" | "down") => {
+    if (!settings) return;
+    const currentPins = [...(settings.pinned_repos || [])];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= currentPins.length) return;
+
+    // Swap elements
+    const temp = currentPins[index];
+    currentPins[index] = currentPins[targetIndex];
+    currentPins[targetIndex] = temp;
+
+    await handleUpdatePinnedRepos(currentPins);
+  };
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.githubLogin) {
@@ -273,6 +365,7 @@ function SettingsPageContent() {
         setSettings(updated);
       } else {
         console.error("Failed to update settings");
+        toast.error("Failed to update public profile setting");
       }
     } catch (error) {
       console.error("Error updating settings:", error);
@@ -358,6 +451,87 @@ function SettingsPageContent() {
     }
   };
 
+  const handleSaveBio = async () => {
+    if (!settings || bioDraft.length > 500) return;
+
+    setSavingBio(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bio: bioDraft }),
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setBioDraft(updated.bio ?? "");
+        setIsDirty(false);
+        toast.success("Bio saved successfully!");
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to update bio");
+      }
+    } catch (error) {
+      console.error("Error updating bio:", error);
+      toast.error("Failed to update bio");
+    } finally {
+      setSavingBio(false);
+    }
+  };
+
+  const handleSaveDiscord = async () => {
+    if (!settings) return;
+    setSavingDiscord(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ discord_webhook_url: discordWebhook, timezone }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setIsDirty(false);
+        toast.success(discordWebhook === "" ? "Discord Webhook removed" : "Discord settings saved successfully!");
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to update Discord settings");
+      }
+    } catch (error) {
+      console.error("Error updating Discord settings:", error);
+      toast.error("Failed to update Discord settings");
+    } finally {
+      setSavingDiscord(false);
+    }
+  };
+
+  const handleTestDiscord = async () => {
+    if (!discordWebhook) {
+      toast.error("Please enter a Webhook URL first");
+      return;
+    }
+    setTestingDiscord(true);
+    try {
+      const res = await fetch("/api/user/settings/discord-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhookUrl: discordWebhook }),
+      });
+      if (res.ok) {
+        toast.success("Test notification sent! Check your Discord server.");
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to send test notification");
+      }
+    } catch (error) {
+      console.error("Error sending test notification:", error);
+      toast.error("Failed to send test notification");
+    } finally {
+      setTestingDiscord(false);
+    }
+  };
+
   const copyShareLink = () => {
     if (!settings) return;
     const link = `${window.location.origin}/u/${settings.github_login}`;
@@ -435,7 +609,7 @@ function SettingsPageContent() {
       <div className="max-w-2xl mx-auto">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <Link href="/dashboard">
-            <button className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--accent)] md:bg-[var(--accent)] md:text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 md:h-auto md:w-auto md:rounded-lg md:px-4 md:py-2">
+            <button aria-label="Back to Dashboard" className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--accent)] md:bg-[var(--accent)] md:text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 md:h-auto md:w-auto md:rounded-lg md:px-4 md:py-2">
               <span className="text-lg items-center transition-transform duration-200 group-hover:-translate-x-1.5">
                 ←
               </span>
@@ -525,6 +699,77 @@ function SettingsPageContent() {
               </div>
             </div>
           )}
+
+          <div className="mt-6 pt-6 border-t border-[var(--border)]">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+                  Profile Bio
+                </h3>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  Add a short Markdown bio for your public profile.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBioPreview((value) => !value)}
+                className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]"
+              >
+                {showBioPreview ? "Hide Preview" : "Show Preview"}
+              </button>
+            </div>
+
+            <textarea
+              value={bioDraft}
+              onChange={(e) => {
+                setBioDraft(e.target.value);
+                setIsDirty(true);
+              }}
+              maxLength={500}
+              rows={5}
+              placeholder="Write a short bio with **bold**, _italic_, `code`, or links."
+              className="w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            />
+
+            {showBioPreview && (
+              <div className="mt-3 min-h-[128px] rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-[var(--card-foreground)]">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+                  Live Preview
+                </p>
+                {bioDraft.trim() ? (
+                  <MarkdownBio bio={bioDraft} />
+                ) : (
+                  <p className="text-sm text-[var(--muted-foreground)]">
+                    Nothing to preview yet.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <span
+                className={`text-xs ${
+                  bioDraft.length > 500
+                    ? "text-[var(--error)]"
+                    : "text-[var(--muted-foreground)]"
+                }`}
+              >
+                {bioDraft.length}/500 characters
+              </span>
+              <button
+                type="button"
+                onClick={handleSaveBio}
+                disabled={
+                  savingBio ||
+                  bioDraft.length > 500 ||
+                  bioDraft === (settings.bio ?? "")
+                }
+                className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {savingBio ? "Saving..." : "Save Bio"}
+              </button>
+            </div>
+          </div>
 
           <div className="mt-6 pt-6 border-t border-[var(--border)]">
             <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
@@ -635,6 +880,137 @@ function SettingsPageContent() {
               rows can link to your DevTrack stats.
             </p>
           </div>
+        </div>
+
+        {/* Repository Spotlight Section */}
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+            Repository Spotlight 🚀
+          </h2>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)] mb-6">
+            Pin up to 3 repositories to showcase on your dashboard and public profile.
+          </p>
+
+          {/* Currently Pinned */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+              Pinned Repositories ({(settings.pinned_repos || []).length}/3)
+            </h3>
+            {(settings.pinned_repos || []).length === 0 ? (
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)] text-center">
+                No repositories pinned yet. Use the search below to spotlight your best projects!
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(settings.pinned_repos || []).map((repoName, index) => (
+                  <div
+                    key={repoName}
+                    className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] p-4"
+                  >
+                    <div className="min-w-0 flex-1 pr-4">
+                      <span className="text-sm font-semibold text-[var(--card-foreground)] truncate block">
+                        {repoName}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Reorder Buttons */}
+                      <button
+                        type="button"
+                        onClick={() => handleMovePin(index, "up")}
+                        disabled={index === 0}
+                        title="Move Up"
+                        aria-label={`Move ${repoName} up`}
+                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMovePin(index, "down")}
+                        disabled={index === (settings.pinned_repos || []).length - 1}
+                        title="Move Down"
+                        aria-label={`Move ${repoName} down`}
+                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
+                      >
+                        ↓
+                      </button>
+                      
+                      {/* Unpin Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleUnpinRepo(repoName)}
+                        aria-label={`Unpin ${repoName}`}
+                        className="ml-2 rounded-lg border border-[var(--destructive-muted-border)] hover:bg-[var(--destructive-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--destructive)]"
+                      >
+                        Unpin
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pin New Repos (Search) */}
+          {(settings.pinned_repos || []).length < 3 && (
+            <div className="border-t border-[var(--border)]/60 pt-6">
+              <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+                Search & Pin Repositories
+              </h3>
+              <input
+                type="text"
+                value={repoSearchQuery}
+                onChange={(e) => setRepoSearchQuery(e.target.value)}
+                placeholder="Type to search your repositories..."
+                aria-label="Search repositories to pin"
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] mb-4"
+              />
+
+              {loadingRepos ? (
+                <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
+                  Loading your repositories...
+                </div>
+              ) : (
+                <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-thin">
+                  {userRepos
+                    .filter(
+                      (repoName) =>
+                        !(settings.pinned_repos || []).includes(repoName) &&
+                        repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
+                    )
+                    .slice(0, 5)
+                    .map((repoName) => (
+                      <div
+                        key={repoName}
+                        className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)]/40 hover:bg-[var(--control)] px-4 py-2 transition-colors"
+                      >
+                        <span className="text-xs font-medium text-[var(--card-foreground)] truncate">
+                          {repoName}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handlePinRepo(repoName)}
+                          aria-label={`Pin ${repoName}`}
+                          className="rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity"
+                        >
+                          Pin
+                        </button>
+                      </div>
+                    ))}
+                  {userRepos.filter(
+                    (repoName) =>
+                      !(settings.pinned_repos || []).includes(repoName) &&
+                      repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
+                  ).length === 0 && (
+                    <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
+                      No repositories available to pin.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -794,10 +1170,96 @@ function SettingsPageContent() {
           </div>
         </div>
 
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                Discord Integration
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                Receive streak reminders and milestone alerts in your Discord server.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="discord-webhook" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
+                Webhook URL
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="discord-webhook"
+                  type="text"
+                  value={discordWebhook}
+                  onChange={(e) => {
+                    setDiscordWebhook(e.target.value);
+                    setIsDirty(true);
+                  }}
+                  placeholder="https://discord.com/api/webhooks/..."
+                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="timezone-select" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
+                Timezone (For 8 PM reminders)
+              </label>
+              <select
+                id="timezone-select"
+                value={timezone}
+                onChange={(e) => {
+                  setTimezone(e.target.value);
+                  setIsDirty(true);
+                }}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              >
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">Eastern Time (ET)</option>
+                <option value="America/Chicago">Central Time (CT)</option>
+                <option value="America/Denver">Mountain Time (MT)</option>
+                <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                <option value="Europe/London">London (GMT/BST)</option>
+                <option value="Europe/Paris">Central European Time (CET)</option>
+                <option value="Asia/Kolkata">India Standard Time (IST)</option>
+                <option value="Asia/Tokyo">Japan Standard Time (JST)</option>
+                <option value="Australia/Sydney">Australian Eastern Time (AET)</option>
+                {/* Additional common timezones */}
+                <option value="America/Sao_Paulo">Brasilia Time (BRT)</option>
+                <option value="Asia/Dubai">Gulf Standard Time (GST)</option>
+                <option value="Asia/Singapore">Singapore Standard Time (SGT)</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={handleSaveDiscord}
+                disabled={savingDiscord}
+                className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {savingDiscord ? "Saving..." : "Save Discord Settings"}
+              </button>
+              <button
+                type="button"
+                onClick={handleTestDiscord}
+                disabled={testingDiscord || !discordWebhook}
+                className="px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--card-muted)] transition-colors disabled:opacity-60"
+              >
+                {testingDiscord ? "Testing..." : "Test Notification"}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+              Leave Webhook URL blank and click Save to unlink Discord.
+            </p>
+          </div>
+        </div>
+
         <PrivacySettings />
         <div className="mt-4 flex justify-center items-center pt-6">
           <Link href="/dashboard">
-            <button className="group inline-flex items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95">
+            <button aria-label="Back to Dashboard" className="group inline-flex items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95">
               <span className="mr-2 transition-transform duration-200 group-hover:-translate-x-1.5">
                 ←
               </span>

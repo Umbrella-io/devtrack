@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByUsername } from "@/lib/supabase";
-import {
-  fetchPublicTopRepos,
-  fetchPublicContributions,
-  fetchPublicStreak,
-} from "@/lib/public-profile-data";
+import { fetchPublicProfile } from "@/lib/public-profile-data";
 import { getUpstashConfig, upstashRateLimitFixedWindow } from "@/lib/upstash-rest";
 
 export const dynamic = "force-dynamic";
@@ -92,31 +87,14 @@ export async function GET(
     );
   }
 
-  // Look up user in Supabase
-  const user = await getUserByUsername(username);
+  const profile = await fetchPublicProfile(username);
 
-  if (!user) {
+  if (!profile) {
     return NextResponse.json(
       { error: "User not found or profile is not public" },
       { status: 404 }
     );
   }
 
-  // Use GITHUB_TOKEN env var if available for higher rate limits
-  const githubToken = process.env.GITHUB_TOKEN;
-
-  // Fetch all metrics in parallel
-  const [repos, contributions, streak] = await Promise.all([
-    fetchPublicTopRepos(user.github_login, githubToken, 30),
-    fetchPublicContributions(user.github_login, githubToken, 30),
-    fetchPublicStreak(user.github_login, githubToken),
-  ]);
-
-  return NextResponse.json({
-    username: user.github_login,
-    userId: user.id,
-    repos,
-    contributions,
-    streak,
-  });
+  return NextResponse.json(profile);
 }

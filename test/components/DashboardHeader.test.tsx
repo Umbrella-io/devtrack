@@ -1,7 +1,8 @@
+import React from "react";
 import "@testing-library/jest-dom";
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import DashboardHeader from "../DashboardHeader";
+import DashboardHeader from "../../src/components/DashboardHeader";
 import { useSession } from "next-auth/react";
 
 vi.mock("next-auth/react");
