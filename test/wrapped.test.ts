@@ -64,6 +64,35 @@ describe("wrapped helpers", () => {
     ]);
   });
 
+  it("returns empty array when total bytes is zero", () => {
+    expect(calculateLanguagePercentages({})).toEqual([]);
+  });
+
+  it("respects the limit parameter", () => {
+    expect(
+      calculateLanguagePercentages(
+        {
+          TypeScript: 300,
+          Python: 100,
+          CSS: 100,
+          HTML: 50,
+        },
+        2
+      )
+    ).toEqual([
+      { name: "TypeScript", bytes: 300, percentage: 54.5 },
+      { name: "Python", bytes: 100, percentage: 18.2 },
+    ]);
+  });
+
+  it("handles single language as 100 percent", () => {
+    expect(
+      calculateLanguagePercentages({
+        JavaScript: 500,
+      })
+    ).toEqual([{ name: "JavaScript", bytes: 500, percentage: 100 }]);
+  });
+
   it("marks future year ranges as partial", () => {
     expect(getYearRange(2026, new Date("2026-05-25T00:00:00Z"))).toMatchObject({
       startDate: "2026-01-01",

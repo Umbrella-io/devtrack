@@ -29,6 +29,7 @@ export default function GlobalKeyboardShortcuts() {
   }, []);
 
   useEffect(() => {
+    let gPressed = false;
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
       if (activeElement) {
@@ -60,6 +61,57 @@ export default function GlobalKeyboardShortcuts() {
       }
 
       // Reload page
+      // G + D -> Dashboard
+if (e.key.toLowerCase() === "g") {
+  gPressed = true;
+
+  setTimeout(() => {
+    gPressed = false;
+  }, 1000);
+
+  return;
+}
+
+if (gPressed && e.key.toLowerCase() === "d") {
+  window.location.href = "/dashboard";
+  e.preventDefault();
+  return;
+}
+
+// G + P -> Goals
+console.log("G pressed state:", gPressed);
+if (gPressed && e.key.toLowerCase() === "p") {
+  if (gPressed && e.key.toLowerCase() === "p") {
+  console.log("G + P detected");
+
+  const goalSection = document.getElementById("goals-section");
+
+  console.log("Goal section:", goalSection);
+
+  
+}
+  const goalSection = document.getElementById("goals-section");
+
+  if (goalSection) {
+    goalSection.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+
+  e.preventDefault();
+  return;
+}
+
+// ESC -> close modal
+if (e.key === "Escape") {
+  setIsOpen(false);
+
+  window.dispatchEvent(new Event("closeModal"));
+
+  e.preventDefault();
+  return;
+}
       if (e.key.toLowerCase() === "r") {
         window.location.reload();
         e.preventDefault();
