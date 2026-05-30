@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { AlertTriangle, X } from "lucide-react";
 
 interface StreakAtRiskBannerProps {
   lastCommitDate?: string | null;
@@ -76,9 +77,7 @@ export default function StreakAtRiskBanner({
   return (
     <div className="mb-6 flex items-center justify-between rounded-lg border border-[var(--warning)]/30 bg-[var(--warning)]/10 p-4 text-[var(--warning)] shadow-sm transition-all animate-in fade-in slide-in-from-top-4">
       <div className="flex items-center gap-3">
-        <span className="text-xl" role="img" aria-label="Warning">
-          ⚠️
-        </span>
+        <AlertTriangle size={20} className="flex-shrink-0" aria-hidden="true" />
         <div>
           <p className="font-semibold">
             No commit yet today — your streak is at risk!
@@ -93,7 +92,7 @@ export default function StreakAtRiskBanner({
         className="ml-4 rounded-md p-1.5 opacity-70 hover:bg-[var(--warning)]/20 hover:opacity-100 transition-all"
         aria-label="Dismiss banner"
       >
-        ✕
+        <X size={18} aria-hidden="true" />
       </button>
     </div>
   );

@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useState } from "react";
 
 function getInitial(name?: string | null) {
-  return name?.trim().charAt(0).toUpperCase() || "?";
+  return name ? Array.from(name)[0]?.toUpperCase() ?? '?' : '?';;
 }
 
 export default function UserAvatar() {
@@ -17,7 +17,14 @@ export default function UserAvatar() {
   const showImage = image && !imageFailed;
 
   return (
-    <div className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 text-sm text-[var(--card-foreground)]">
+    <a
+      href={session?.githubLogin ? `https://github.com/${session.githubLogin}` : "#"}
+      aria-label={`Open GitHub profile for ${name}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      tabIndex={0}
+      className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 text-sm text-[var(--card-foreground)] hover:bg-[var(--control)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+    >
       <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[var(--control)] text-sm font-semibold text-[var(--card-foreground)]">
         {showImage ? (
           <Image
@@ -35,6 +42,6 @@ export default function UserAvatar() {
       <span className="max-w-32 truncate text-sm font-medium leading-none text-[var(--card-foreground)]">
         {name}
       </span>
-    </div>
+    </a>
   );
 }

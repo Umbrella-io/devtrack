@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
@@ -13,25 +13,23 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const STORAGE_KEY = "theme";
 
+const useSafeLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [theme, setTheme] = useState<Theme | undefined>(undefined);
+  const [theme, setTheme] = useState<Theme>(() => "dark");
 
   useEffect(() => {
     const storedTheme = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    if (storedTheme) {
+    if (storedTheme === "dark" || storedTheme === "light") {
       setTheme(storedTheme);
-    } else {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-      setTheme(systemTheme);
+      return;
     }
+    // No stored preference — keep dark as default.
   }, []);
 
-  useEffect(() => {
+  useSafeLayoutEffect(() => {
     if (theme) {
       document.documentElement.classList.toggle("dark", theme === "dark");
       document.documentElement.style.colorScheme = theme;

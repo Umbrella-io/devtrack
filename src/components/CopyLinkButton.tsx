@@ -2,13 +2,18 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { Link, CheckCircle } from "lucide-react";
 
-export default function CopyLinkButton() {
+interface CopyLinkButtonProps {
+  url?: string;
+}
+
+export default function CopyLinkButton({ url }: CopyLinkButtonProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(url ?? window.location.href);
       setCopied(true);
       toast.success("Link copied successfully!");
       setTimeout(() => {
@@ -29,12 +34,12 @@ export default function CopyLinkButton() {
     >
       {copied ? (
         <>
-          <span className="text-[var(--success)] font-semibold">✓</span>
+          <CheckCircle size={16} className="text-[var(--success)]" aria-hidden="true" />
           <span>Copied!</span>
         </>
       ) : (
         <>
-          <span>🔗</span>
+          <Link size={16} aria-hidden="true" />
           <span>Copy link</span>
         </>
       )}

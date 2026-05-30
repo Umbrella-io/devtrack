@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 
 interface Language {
   name: string;
@@ -27,18 +28,37 @@ function getColor(name: string): string {
   return LANG_COLORS[name] ?? FALLBACK_COLOR;
 }
 
+function LanguageDot({ color, label }: { color: string; label: string }) {
+  return (
+    <svg
+      width="0.75rem"
+      height="0.75rem"
+      viewBox="0 0 8 8"
+      className="shrink-0"
+      role="img"
+      aria-label={label}
+    >
+      <circle cx="4" cy="4" r="4" fill={color} />
+    </svg>
+  );
+}
+
 export default function LanguageBreakdown() {
+  const { selectedAccount } = useAccount();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/metrics/languages")
+    const url = selectedAccount !== null
+      ? `/api/metrics/languages?accountId=${encodeURIComponent(selectedAccount)}`
+      : "/api/metrics/languages";
+    fetch(url)
       .then((r) => r.json())
       .then((d: { languages: Language[] }) => setLanguages(d.languages ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedAccount]);
 
   const totalPercentage = languages.reduce((sum, lang) => sum + lang.percentage, 0);
   const roundedTotal = Math.round(totalPercentage * 10) / 10;
@@ -102,9 +122,9 @@ export default function LanguageBreakdown() {
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
             {displayLanguages.map((lang) => (
               <div key={lang.name} className="flex items-center gap-2 text-sm">
-                <span
-                  className="inline-block h-3 w-3 shrink-0 rounded-full"
-                  style={{ backgroundColor: lang.name === "Other" ? "var(--control)" : getColor(lang.name) }}
+                <LanguageDot 
+                  color={lang.name === "Other" ? "var(--control)" : getColor(lang.name)}
+                  label={`${lang.name}: ${lang.percentage}%`}
                 />
                 <span className="truncate text-[var(--card-foreground)]">
                   {lang.name}

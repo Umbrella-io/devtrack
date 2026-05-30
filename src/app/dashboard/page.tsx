@@ -1,143 +1,268 @@
+﻿import LazyWidget from "@/components/LazyWidget";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
-import ActivityRingChart from "@/components/ActivityRingChart";
-import ContributionGraph from "@/components/ContributionGraph";
-import ContributionHeatmap from "@/components/ContributionHeatmap";
-import PRMetrics from "@/components/PRMetrics";
 import CommunityMetrics from "@/components/CommunityMetrics";
-import PRBreakdownChart from "@/components/PRBreakdownChart";
 import GoalTracker from "@/components/GoalTracker";
+import TodayFocusHero from "@/components/TodayFocusHero";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
-import PinnedRepos from "@/components/PinnedRepos";
+import PinnedReposWidget from "@/components/PinnedReposWidget";
 import InactiveRepositoriesCard from "@/components/InactiveRepositoriesCard";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
-import CommitTimeChart from "@/components/CommitTimeChart";
-import CodingActivityInsightsCard from "@/components/CodingActivityInsightsCard";
-import PRReviewTrendChart from "@/components/PRReviewTrendChart";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
-import FriendComparison from "@/components/FriendComparison";
+import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
+import dynamic from "next/dynamic";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import { AIMentorWidget } from "@/components/AIMentorWidget";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
-import CodingTimeCard from "@/components/CodingTimeCard";
+import CodingTimeWidget from "@/components/CodingTimeWidget";
 import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import DashboardSSEProvider from "@/components/DashboardSSEProvider";
+
+const SkeletonCard = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-live="polite"
+    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+  >
+    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-4 animate-pulse" />
+    <div className="h-40 bg-[var(--card-muted)] rounded animate-pulse" />
+  </div>
+);
+
+const ContributionGraphSkeleton = () => (
+  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <h2 className="text-lg font-semibold text-[var(--foreground)]">Your Commits</h2>
+    <div className="mt-3 h-40 rounded bg-[var(--card-muted)] animate-pulse" />
+  </div>
+);
+
+const PRMetricsSkeleton = () => (
+  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <h2 className="text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
+    <div className="mt-3 h-40 rounded bg-[var(--card-muted)] animate-pulse" />
+  </div>
+);
+
+const CodingActivityInsightsCard = dynamic(
+  () => import("@/components/CodingActivityInsightsCard"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const FriendComparison = dynamic(
+  () => import("@/components/FriendComparison"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const ActivityRingChart = dynamic(
+  () => import("@/components/ActivityRingChart"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const ContributionGraph = dynamic(
+  () => import("@/components/ContributionGraph"),
+  { ssr: false, loading: () => <ContributionGraphSkeleton /> },
+);
+
+const ContributionHeatmap = dynamic(
+  () => import("@/components/ContributionHeatmap"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const PRMetrics = dynamic(() => import("@/components/PRMetrics"), {
+  ssr: false,
+  loading: () => <PRMetricsSkeleton />,
+});
+
+const PRBreakdownChart = dynamic(
+  () => import("@/components/PRBreakdownChart"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const CommitTimeChart = dynamic(
+  () => import("@/components/CommitTimeChart"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const PRReviewTrendChart = dynamic(
+  () => import("@/components/PRReviewTrendChart"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/");
-  // If the JWT callback detected that the GitHub token has been revoked,
-  // redirect to the landing page so the user must re-authenticate.
-  if (session.error === "TokenRevoked") redirect("/");
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-      <DashboardHeader />
-      <div className="mb-6 flex justify-end items-center gap-2">
-        <Link
-          href="/dashboard/settings"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
-        >
-          Settings
-        </Link>
-        <ExportButton />
-      </div>
-      <StreakAtRiskBanner />
+    <DashboardSSEProvider>
+      <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
+        <DashboardHeader />
 
-      <div className="mb-6">
-        <WeeklySummaryCard />
-      </div>
+        {/* Quick actions */}
+        <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-3">
+          <Link
+            href="/wrapped"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90"
+          >
+            ✨ Year in Code
+          </Link>
+          <Link
+            href="/dashboard/settings"
+            className="secondary-button inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium"
+          >
+            Settings
+          </Link>
+          <div className="sm:ml-auto">
+            <ExportButton />
+          </div>
+        </div>
 
-      <div className="mb-6">
-        <AIMentorWidget />
-      </div>
+        <div className="mt-4">
+          <StreakAtRiskBanner />
+        </div>
 
-      <div className="mb-6">
-        <PersonalRecords />
-      </div>
+        <div className="mt-6 mb-6">
+          <TodayFocusHero userName={session.user?.name ?? null} />
+        </div>
 
-      {/* Row 1: Contribution graph + Streak + Local Coding Time */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <ContributionGraph />
-          <div className="mt-6">
+        {/* Weekly summary — full width */}
+        <div className="mt-6">
+          <WeeklySummaryCard />
+        </div>
+
+        {/* Personal records + AI mentor side by side */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <PersonalRecords />
+          <AIMentorWidget />
+        </div>
+
+        {/* -- Row 1: Contribution graph (2/3) + Streak sidebar (1/3) -- */}
+        <div id="streaks" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 lg:grid-cols-3">
+          {/* Left: contribution graph + heatmap */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            <ContributionGraph />
             <ContributionHeatmap />
           </div>
-          <div className="mt-6">
+
+          {/* Right: streak + coding time */}
+          <div className="flex flex-col gap-6">
+            <StreakTracker />
+            <LocalCodingTime />
+            <CodingTimeWidget />
+          </div>
+        </div>
+
+        {/* Friend comparison — full width, below the fold */}
+        <div className="mt-6">
+          <LazyWidget fallback={<SkeletonCard />}>
             <FriendComparison />
+          </LazyWidget>
+        </div>
+
+        {/* Repo analytics explorer — full width */}
+        <div className="mt-6">
+          <LazyWidget fallback={<SkeletonCard />}>
+            <RepoAnalyticsExplorer />
+          </LazyWidget>
+        </div>
+
+        {/* -- Row 2: PR metrics + Community metrics -- */}
+        <div id="pull-requests" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 md:grid-cols-2">
+          <PRMetrics />
+          <CommunityMetrics />
+        </div>
+
+        {/* PR breakdown + commit time — 2-col so charts have room */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <LazyWidget fallback={<SkeletonCard />}>
+            <PRBreakdownChart />
+          </LazyWidget>
+          <LazyWidget fallback={<SkeletonCard />}>
+            <CommitTimeChart />
+          </LazyWidget>
+        </div>
+
+        {/* Activity ring — full width */}
+        <div className="mt-6">
+          <LazyWidget fallback={<SkeletonCard />}>
+            <ActivityRingChart />
+          </LazyWidget>
+        </div>
+
+        {/* Coding activity insights — full width */}
+        <div className="mt-6">
+          <LazyWidget fallback={<SkeletonCard />}>
+            <CodingActivityInsightsCard />
+          </LazyWidget>
+        </div>
+
+        {/* PR review trend — full width */}
+        <div className="mt-6">
+          <LazyWidget fallback={<SkeletonCard />}>
+            <PRReviewTrendChart />
+          </LazyWidget>
+        </div>
+
+        {/* -- Row 3: Issues (2/3) + CI analytics (1/3) -- */}
+        <div id="goals" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <LazyWidget fallback={<SkeletonCard />}>
+              <IssueMetrics />
+            </LazyWidget>
           </div>
+          <LazyWidget fallback={<SkeletonCard />}>
+            <CIAnalytics />
+          </LazyWidget>
         </div>
 
-        <div>
-          <StreakTracker />
-          <LocalCodingTime />
-          <div className="mt-6">
-            <CodingTimeCard />
-          </div>
+        {/* Discussions — full width */}
+        <div className="mt-6">
+          <LazyWidget fallback={<SkeletonCard />}>
+            <DiscussionsWidget />
+          </LazyWidget>
+        </div>
+
+        {/* Pinned spotlight repos — full width */}
+        <div className="mt-6">
+          <LazyWidget fallback={<SkeletonCard />}>
+            <PinnedReposWidget />
+          </LazyWidget>
+        </div>
+
+        {/* Inactive repo reminder — full width */}
+        <div className="mt-6">
+          <LazyWidget fallback={<SkeletonCard />}>
+            <InactiveRepositoriesCard />
+          </LazyWidget>
+        </div>
+
+        {/* -- Row 4: Top repos + Language breakdown + Goal tracker -- */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <LazyWidget fallback={<SkeletonCard />}>
+            <TopRepos />
+          </LazyWidget>
+          <LazyWidget fallback={<SkeletonCard />}>
+            <LanguageBreakdown />
+          </LazyWidget>
+          <GoalTracker />
+        </div>
+
+        {/* Recent activity — full width */}
+        <div className="mt-6">
+          <LazyWidget fallback={<SkeletonCard />}>
+            <RecentActivity />
+          </LazyWidget>
         </div>
       </div>
-
-      {/* Row 2: PR metrics, community metrics, PR breakdown & Time Chart */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <PRMetrics />
-        <CommunityMetrics />
-        <PRBreakdownChart />
-        <CommitTimeChart />
-      </div>
-      {/* Row 2b: Activity Ring Chart */}
-      <div className="mt-6">
-        <ActivityRingChart />
-      </div>
-
-      <div className="mt-6">
-        <CodingActivityInsightsCard />
-      </div>
-
-      <div className="mt-6">
-        <PRReviewTrendChart />
-      </div>
-
-      {/* Row 3: Issue metrics + CI analytics */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <IssueMetrics />
-        </div>
-        <CIAnalytics />
-      </div>
-      {/* Row 3b: Discussion activity */}
-      <div className="mt-6">
-        <DiscussionsWidget />
-      </div>
-
-      {/* Row 4: Pinned repositories */}
-      <div className="mt-6">
-        <PinnedRepos />
-      </div>
-
-      {/* Row 5: Inactive repository reminder */}
-      <div className="mt-6">
-        <InactiveRepositoriesCard />
-      </div>
-
-      {/* Row 6: Top repos + Language breakdown + Goal tracker */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <TopRepos />
-        <LanguageBreakdown />
-        <GoalTracker />
-      </div>
-
-      {/* Row 7: Recent GitHub activity */}
-      <div className="mt-6">
-        <RecentActivity />
-      </div>
-    </div>
+    </DashboardSSEProvider>
   );
 }

@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByUsername } from "@/lib/supabase";
-import {
-  fetchPublicTopRepos,
-  fetchPublicContributions,
-  fetchPublicStreak,
-} from "@/lib/public-profile-data";
+import { fetchPublicProfile } from "@/lib/public-profile-data";
 import { getUpstashConfig, upstashRateLimitFixedWindow } from "@/lib/upstash-rest";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +16,13 @@ const ipRateLimits = new Map<
 
 const RATE_LIMIT_REQUESTS = 30;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+
+function cleanOldEntries(map: Map<string, { count: number; resetAt: number }>) {
+  const now = Date.now();
+  for (const [key, val] of map.entries()) {
+    if (val.resetAt <= now) map.delete(key);
+  }
+}
 
 function getRateLimitKey(req: NextRequest): string {
   // req.ip is populated by the Next.js / Vercel runtime from the verified
@@ -61,8 +63,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { username: string } }
 ): Promise<NextResponse> {
+  cleanOldEntries(ipRateLimits);
   const { username } = params;
-
   // Rate limiting
   const ip = getRateLimitKey(req);
   const rateLimit = getUpstashConfig()
@@ -85,31 +87,14 @@ export async function GET(
     );
   }
 
-  // Look up user in Supabase
-  const user = await getUserByUsername(username);
+  const profile = await fetchPublicProfile(username);
 
-  if (!user) {
+  if (!profile) {
     return NextResponse.json(
       { error: "User not found or profile is not public" },
       { status: 404 }
     );
   }
 
-  // Use GITHUB_TOKEN env var if available for higher rate limits
-  const githubToken = process.env.GITHUB_TOKEN;
-
-  // Fetch all metrics in parallel
-  const [repos, contributions, streak] = await Promise.all([
-    fetchPublicTopRepos(user.github_login, githubToken, 30),
-    fetchPublicContributions(user.github_login, githubToken, 30),
-    fetchPublicStreak(user.github_login, githubToken),
-  ]);
-
-  return NextResponse.json({
-    username: user.github_login,
-    userId: user.id,
-    repos,
-    contributions,
-    streak,
-  });
+  return NextResponse.json(profile);
 }
