@@ -89,7 +89,7 @@ describe('calculateStreakFromDates', () => {
     vi.useRealTimers();
   });
 
-  it('returns 0 for empty array', () => {
+  it('calculateStreak: returns 0 for empty array strings', () => {
     const result = calculateStreakFromDates(new Set(), new Set());
     expect(result.current).toBe(0);
     expect(result.longest).toBe(0);
@@ -97,7 +97,7 @@ describe('calculateStreakFromDates', () => {
     expect(result.lastCommitDate).toBeNull();
   });
 
-  it('returns 1 for single contribution today', () => {
+  it('calculateStreak: returns 1 for single contribution today date', () => {
     const result = calculateStreakFromDates(new Set(['2026-05-23']), new Set());
     expect(result.current).toBe(1);
     expect(result.longest).toBe(1);
@@ -105,19 +105,19 @@ describe('calculateStreakFromDates', () => {
     expect(result.lastCommitDate).toBe('2026-05-23');
   });
 
-  it('returns 1 for single contribution yesterday', () => {
+  it('calculateStreak: returns 1 for single contribution yesterday date', () => {
     const result = calculateStreakFromDates(new Set(['2026-05-22']), new Set());
     expect(result.current).toBe(1);
     expect(result.longest).toBe(1);
   });
 
-  it('returns 0 when last contribution older than yesterday', () => {
+  it('calculateStreak: returns 0 when last contribution older than yesterday', () => {
     const result = calculateStreakFromDates(new Set(['2026-05-20']), new Set());
     expect(result.current).toBe(0);
     expect(result.longest).toBe(1);
   });
 
-  it('calculates longest streak correctly', () => {
+  it('calculateStreak: computes longest milestone streak range correctly', () => {
     const activeDates = new Set([
       '2026-05-01',
       '2026-05-02',
@@ -131,7 +131,7 @@ describe('calculateStreakFromDates', () => {
     expect(result.longest).toBe(4);
   });
 
-  it('respects freeze dates in combined calculation', () => {
+  it('calculateStreak: respects freeze dates in combined evaluation map', () => {
     const activeDates = new Set(['2026-05-01', '2026-05-02', '2026-05-04']);
     const freezeDates = new Set(['2026-05-03']);
     const result = calculateStreakFromDates(activeDates, freezeDates);
@@ -140,7 +140,7 @@ describe('calculateStreakFromDates', () => {
     expect(result.freezeDates).toContain('2026-05-03');
   });
 
-  it('counts total active days correctly', () => {
+  it('calculateStreak: counts total active days properly across gaps', () => {
     const activeDates = new Set([
       '2026-05-01',
       '2026-05-02',
@@ -152,7 +152,7 @@ describe('calculateStreakFromDates', () => {
     expect(result.totalActiveDays).toBe(5);
   });
 
-  it('handles empty active dates with freeze dates', () => {
+  it('calculateStreak: handles empty active dates with valid freeze dates', () => {
     const freezeDates = new Set(['2026-05-01', '2026-05-02']);
     const result = calculateStreakFromDates(new Set(), freezeDates);
     expect(result.current).toBe(0);
@@ -160,13 +160,13 @@ describe('calculateStreakFromDates', () => {
     expect(result.totalActiveDays).toBe(2);
   });
 
-  it('returns streak starting today', () => {
+  it('calculateStreak: returns ongoing streak starting today date', () => {
     const activeDates = new Set(['2026-05-21', '2026-05-22', '2026-05-23']);
     const result = calculateStreakFromDates(activeDates, new Set());
     expect(result.current).toBe(3);
   });
 
-  it('handles gaps in dates', () => {
+  it('calculateStreak: handles intermediate structural gaps in dates array', () => {
     const activeDates = new Set(['2026-05-01', '2026-05-05', '2026-05-06']);
     const result = calculateStreakFromDates(activeDates, new Set());
     expect(result.longest).toBe(2);

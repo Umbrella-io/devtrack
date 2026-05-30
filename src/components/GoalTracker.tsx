@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useRef } from "react";
+import { submitGoalWithRefresh } from "@/lib/goal-tracker";
 
 type Recurrence = "none" | "weekly" | "monthly";
 
@@ -71,7 +72,12 @@ export default function GoalTracker() {
         } else if (res.status === 502) {
           msg = "GitHub sync failed: Expired token or missing repo scope.";
         }
-        setSyncError(msg);
+        if (res.status === 429) {
+          const data = await res.json();
+          setSyncError(data.error ?? "GitHub rate limit reached. Please try again later.");
+        } else {
+          setSyncError("Failed to sync goals. Please try again.");
+        }
         return;
       }
       await loadGoals();
@@ -125,34 +131,34 @@ export default function GoalTracker() {
     setCreateError(null);
 
     try {
-      const response = await fetch("/api/goals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, target, unit, recurrence, deadline: deadline || null }),
+      const result = await submitGoalWithRefresh({
+        payload: { title, target, unit, recurrence, deadline: deadline || null },
+        handleSync,
+        loadGoals,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create goal");
+      if (!result.created) {
+        setCreateError(result.error);
+        return;
+      }
+
+      setTitle("");
+      setTarget(7);
+      setUnit("commits");
+      setRecurrence("none");
+      setDeadline("");
+
+      // Immediately sync if it was a commit-based goal or prs
+      if (unit === "commits" || unit === "prs") {
+        await handleSync();
+      } else {
+        await loadGoals().catch(() => { });
       }
     } catch {
       setCreateError("Failed to create goal. Please try again.");
-      setCreating(false);
-      return;
+    } finally {
+      setCreating(false);  
     }
-
-    setTitle("");
-    setTarget(7);
-    setUnit("commits");
-    setRecurrence("none");
-    setDeadline("");
-
-    // Immediately sync if it was a commit-based goal or prs
-    if (unit === "commits" || unit === "prs") {
-      await handleSync();
-    } else {
-      await loadGoals().catch(() => {});
-    }
-    setCreating(false);
   }
 
   async function handleDelete(id: string) {
@@ -235,7 +241,7 @@ export default function GoalTracker() {
 
   if (loading) {
     return (
-      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading weekly goals</span>
           <div
@@ -254,7 +260,7 @@ export default function GoalTracker() {
   }
 
   return (
-    <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Goals</h2>
@@ -393,6 +399,7 @@ export default function GoalTracker() {
                           }
                         }}
                         disabled={goal.current >= goal.target}
+                        aria-label={`Increment "${goal.title}" progress by 1`}
                         className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
                       >
                         +1

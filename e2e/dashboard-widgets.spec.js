@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => {
   // Create a valid NextAuth JWT and set it as the session cookie so
   // dashboard pages render as an authenticated user in Playwright.
   const token = await encode({
-    secret: process.env.NEXTAUTH_SECRET ?? "playwright-placeholder-secret-that-is-long-enough",
+    secret: process.env.NEXTAUTH_SECRET || "playwright-placeholder-secret-that-is-long-enough",
     token: {
       name: "Playwright User",
       email: "playwright@example.com",
@@ -82,6 +82,8 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
+  const now = new Date().toISOString();
+
   await page.route("**/api/goals", async (route) => {
     if (route.request().method() === "POST") {
       await route.fulfill({
@@ -104,10 +106,17 @@ test.beforeEach(async ({ page }) => {
             unit: "commits",
             recurrence: "weekly",
             period_start: "2026-05-18",
-            last_synced_at: new Date().toISOString(),
+            last_synced_at: now,
           },
         ],
       }),
+    });
+  });
+
+  await page.route("**/api/goals/sync**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true }),
     });
   });
 
@@ -164,6 +173,7 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/ci**",
     "**/api/streak/freeze**",
     "**/api/user/github-accounts**",
+    "**/api/integrations/jira**",
     "**/api/metrics/activity**",
     "**/api/metrics/commit-time**",
     "**/api/metrics/personal-records**",
@@ -280,11 +290,11 @@ function mockMetricResponse(url) {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
       prs: {
         thisWeek: { opened: 3, merged: 2 },
-        lastWeek: { opened: 1, merged: 1 }
+        lastWeek: { opened: 1, merged: 1 },
       },
       activeDays: {
         thisWeek: 5,
-        lastWeek: 4
+        lastWeek: 4,
       },
       streak: 3,
       topRepo: "demo/repo",
@@ -301,6 +311,9 @@ function mockMetricResponse(url) {
   }
   if (url.includes("/api/streak/freeze")) {
     return { freezes: [] };
+  }
+  if (url.includes("/api/integrations/jira")) {
+    return null;
   }
   if (url.includes("/api/user/github-accounts")) {
     return { accounts: [] };

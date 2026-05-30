@@ -77,7 +77,7 @@ export default function AccountToggle() {
             className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
               isActive
                 ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
-                : "border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
+                : "border-[var(--card-muted)] bg-[var(--card-muted)] text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
             }`}
           >
             {option.label}
