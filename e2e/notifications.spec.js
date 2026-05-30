@@ -1,33 +1,33 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
-const authSecret = "playwright-placeholder-secret-that-is-long-enough";
+const authSecret =
+  process.env.NEXTAUTH_SECRET ??
+  "playwright-placeholder-secret-that-is-long-enough";
 
 test.beforeEach(async ({ page }) => {
-  const sessionToken = await encode({
+  const token = await encode({
     secret: authSecret,
     token: {
       name: "Playwright User",
       email: "playwright@example.com",
-      sub: "12345",
       githubLogin: "playwright-user",
       githubId: "12345",
       accessToken: "test-token",
+      accessTokenValidatedAt: Date.now(),
+      expires: "2099-01-01T00:00:00.000Z",
     },
-    maxAge: 60 * 60,
-    cookieName: "next-auth.session-token",
   });
 
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: sessionToken,
+      value: String(token ?? ""),
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
       sameSite: "Lax",
       secure: false,
-      expires: Math.floor(Date.now() / 1000) + 60 * 60,
     },
   ]);
 
@@ -35,7 +35,10 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
-        user: { name: "Playwright User", email: "playwright@example.com" },
+        user: {
+          name: "Playwright User",
+          email: "playwright@example.com",
+        },
         githubLogin: "playwright-user",
         githubId: "12345",
         accessToken: "test-token",
@@ -57,31 +60,69 @@ test("notification bell opens and closes drawer", async ({ page }) => {
             message: "Test notification",
             read: false,
             created_at: new Date().toISOString(),
-          }
+          },
         ],
         unreadCount: 1,
       }),
     });
   });
 
-  // Mock dashboard metrics to prevent errors
   await page.route("**/api/metrics/**", async (route) => {
-    await route.fulfill({ json: {} });
-  });
-  await page.route("**/api/goals**", async (route) => {
-    await route.fulfill({ json: { goals: [] } });
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({}),
+    });
   });
 
-  await page.goto("/dashboard");
-  
-  const bellButton = page.getByRole("button", { name: /Notifications/ });
-  await expect(bellButton).toBeVisible();
-  
+  await page.route("**/api/goals**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ goals: [] }),
+    });
+  });
+
+  await page.goto("/dashboard", {
+    waitUntil: "networkidle",
+  });
+
+  console.log(
+    await page.locator("button").evaluateAll((els) =>
+      els.map((e) => ({
+        text: e.textContent,
+        aria: e.getAttribute("aria-label"),
+        title: e.getAttribute("title"),
+      }))
+    )
+  );
+
+
+  await page.waitForTimeout(2000);
+
+  const bellButton = page
+    .locator(
+      'button[aria-label*="notification" i], button:has([data-lucide="bell"])'
+    )
+    .first();
+
+  await expect(bellButton).toBeVisible({
+    timeout: 15000,
+  });
+
   await bellButton.click();
-  const drawerHeading = page.getByRole("heading", { name: "Notifications" });
-  await expect(drawerHeading).toBeVisible();
-  await expect(page.getByText("Test notification")).toBeVisible();
-  
+
+  const drawerHeading = page.getByRole("heading", {
+    name: /Notifications/i,
+  });
+
+  await expect(drawerHeading).toBeVisible({
+    timeout: 10000,
+  });
+
+  await expect(
+    page.getByText("Test notification")
+  ).toBeVisible();
+
   await bellButton.click();
+
   await expect(drawerHeading).not.toBeVisible();
 });

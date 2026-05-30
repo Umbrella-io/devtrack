@@ -6,13 +6,14 @@ describe("supabase admin guard", () => {
     vi.resetModules();
   });
 
-  it("throws a clear configuration error instead of exposing a null client", async () => {
+  it("returns a clear configuration error instead of exposing a null client", async () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "");
 
     const { supabaseAdmin, SUPABASE_ADMIN_UNAVAILABLE_MESSAGE } = await import("@/lib/supabase");
 
-    expect(() => supabaseAdmin.from("users")).toThrow(SUPABASE_ADMIN_UNAVAILABLE_MESSAGE);
+    const result = await supabaseAdmin.from("users");
+    expect(result.error?.message).toBe(SUPABASE_ADMIN_UNAVAILABLE_MESSAGE);
   });
 
   it("lets helper functions fail safely when the admin client is unavailable", async () => {

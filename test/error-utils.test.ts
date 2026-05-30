@@ -1,63 +1,55 @@
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const os = require("node:os");
-const path = require("node:path");
-const test = require("node:test");
-const ts = require("typescript");
+import { describe, it, expect, vi } from "vitest";
+import { getSafeApiErrorMessage } from "../src/lib/error-utils";
 
-function loadErrorUtilsModule() {
-  const sourcePath = path.join(__dirname, "..", "src", "lib", "error-utils.ts");
-  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "devtrack-error-utils-"));
-  const outPath = path.join(outDir, "error-utils.cjs");
-  const source = fs.readFileSync(sourcePath, "utf8");
-  const output = ts.transpileModule(source, {
-    compilerOptions: {
-      esModuleInterop: true,
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2020,
-    },
-  }).outputText;
+describe("getSafeApiErrorMessage", () => {
+  it("returns known safe message for TokenRevoked", () => {
+    expect(getSafeApiErrorMessage("TokenRevoked")).toBe(
+      "Your GitHub session has expired. Please sign in again."
+    );
+  });
 
-  fs.writeFileSync(outPath, output);
-  return require(outPath);
-}
+  it("returns known safe message for Unauthorized", () => {
+    expect(getSafeApiErrorMessage("Unauthorized")).toBe(
+      "You must be signed in to view this page."
+    );
+  });
 
-test("getSafeApiErrorMessage returns known safe message for TokenRevoked", () => {
-  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
-  assert.equal(getSafeApiErrorMessage("TokenRevoked"), "Your GitHub session has expired. Please sign in again.");
-});
+  it("returns known safe message for Configuration error", () => {
+    expect(getSafeApiErrorMessage("Configuration error")).toBe(
+      "There is a configuration issue. Please contact support."
+    );
+  });
 
-test("getSafeApiErrorMessage returns known safe message for Unauthorized", () => {
-  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
-  assert.equal(getSafeApiErrorMessage("Unauthorized"), "You must be signed in to view this page.");
-});
+  it("returns generic message for unknown error in production", () => {
+    expect(getSafeApiErrorMessage("UnknownError", "production")).toBe(
+      "An unexpected error occurred."
+    );
+  });
 
-test("getSafeApiErrorMessage returns known safe message for Configuration error", () => {
-  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
-  assert.equal(getSafeApiErrorMessage("Configuration error"), "There is a configuration issue. Please contact support.");
-});
+  it("returns raw message for unknown error in development", () => {
+    expect(getSafeApiErrorMessage("SomeError", "development")).toBe("SomeError");
+  });
 
-test("getSafeApiErrorMessage returns generic message for unknown error in production", () => {
-  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
-  assert.equal(getSafeApiErrorMessage("UnknownError", "production"), "An unexpected error occurred.");
-});
+  it("defaults to production when env not provided and process.env.NODE_ENV is empty", () => {
+    const originalEnv = process.env.NODE_ENV;
+    // @ts-ignore
+    delete process.env.NODE_ENV;
+    try {
+      expect(getSafeApiErrorMessage("RandomError")).toBe(
+        "An unexpected error occurred."
+      );
+    } finally {
+      process.env.NODE_ENV = originalEnv;
+    }
+  });
 
-test("getSafeApiErrorMessage returns raw message for unknown error in development", () => {
-  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
-  assert.equal(getSafeApiErrorMessage("SomeError", "development"), "SomeError");
-});
+  it("handles empty string message in production", () => {
+    expect(getSafeApiErrorMessage("", "production")).toBe(
+      "An unexpected error occurred."
+    );
+  });
 
-test("getSafeApiErrorMessage defaults to production when env not provided", () => {
-  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
-  assert.equal(getSafeApiErrorMessage("RandomError"), "An unexpected error occurred.");
-});
-
-test("getSafeApiErrorMessage handles empty string message in production", () => {
-  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
-  assert.equal(getSafeApiErrorMessage("", "production"), "An unexpected error occurred.");
-});
-
-test("getSafeApiErrorMessage handles empty string message in development", () => {
-  const { getSafeApiErrorMessage } = loadErrorUtilsModule();
-  assert.equal(getSafeApiErrorMessage("", "development"), "Unknown error");
+  it("handles empty string message in development", () => {
+    expect(getSafeApiErrorMessage("", "development")).toBe("Unknown error");
+  });
 });
