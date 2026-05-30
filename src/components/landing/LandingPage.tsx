@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Image from "next/image";
 
 /* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
@@ -11,7 +12,7 @@ export type RepoStats = {
   openIssues: number;
   contributorCount: number;
   goodFirstIssues: number;
-  contributors: Array<{ login: string; avatar_url: string; html_url: string; isSponsor?: boolean }>;
+  contributors: Array<{ login: string; avatar_url: string; html_url: string }>;
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -86,6 +87,13 @@ function Counter({ end, active }: { end: number; active: boolean }) {
   const [val, setVal] = useState(0);
   useEffect(() => {
     if (!active) return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      setVal(end);
+      return;
+    }
+
     const dur = 1500;
     const t0 = performance.now();
     let raf: number;
@@ -108,7 +116,8 @@ function MouseSpotlight() {
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (ref.current) {
-        ref.current.style.transform = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
+        ref.current.style.left = e.clientX + 'px';
+        ref.current.style.top = e.clientY + 'px';
       }
     };
     window.addEventListener('mousemove', fn, { passive: true });
@@ -120,11 +129,10 @@ function MouseSpotlight() {
       aria-hidden
       style={{
         position: 'fixed', pointerEvents: 'none', zIndex: 0,
-        left: 0, top: 0,
         width: 700, height: 700,
         background: 'radial-gradient(circle, rgba(129,140,248,0.05) 0%, transparent 70%)',
-        transform: 'translate3d(-50%, -50%, 0)',
-        willChange: 'transform',
+        transform: 'translate(-50%,-50%)',
+        transition: 'left 0.15s ease-out, top 0.15s ease-out',
       }}
     />
   );
@@ -156,9 +164,12 @@ function LandingNav() {
       <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: TEXT, letterSpacing: '-0.02em' }}>
         <span style={{ color: A }}>▲</span> DEVTRACK
       </span>
-      <a href="/auth/signin" className="lnd-nav-link">
-        SIGN IN →
-      </a>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+        <a href="/dashboard" className="lnd-nav-link">Dashboard</a>
+        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-nav-link">
+          SIGN IN →
+        </a>
+      </div>
     </nav>
   );
 }
@@ -168,7 +179,7 @@ function LandingNav() {
    ═══════════════════════════════════════════════════════════ */
 const wLabel: React.CSSProperties = {
   fontFamily: MONO, fontSize: 10, fontWeight: 500,
-  color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em',
+  color: '#444', textTransform: 'uppercase', letterSpacing: '0.1em',
 };
 const wValue: React.CSSProperties = {
   fontFamily: MONO, fontWeight: 600, color: TEXT,
@@ -273,7 +284,7 @@ function MergeWidget() {
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>merge rate</span>
         <span style={{ ...wValue, fontSize: 26, marginTop: 4, color: A }}>
-          87<span style={{ color: '#9ca3af', fontSize: 14 }}>%</span>
+          87<span style={{ color: '#333', fontSize: 14 }}>%</span>
         </span>
         <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
           <div style={{
@@ -294,7 +305,7 @@ function GoalWidget() {
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>weekly goal</span>
         <span style={{ ...wValue, fontSize: 26, marginTop: 4 }}>
-          84<span style={{ color: '#9ca3af', fontSize: 14 }}>%</span>
+          84<span style={{ color: '#333', fontSize: 14 }}>%</span>
         </span>
         <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
           <div style={{
@@ -388,7 +399,7 @@ function HeroSection() {
         >
           YOUR<br />CODE<br />HAS A<br />
           <span style={{ color: A }}>PULSE</span>
-          <span style={{ color: '#9ca3af' }}>.</span>
+          <span style={{ color: '#222' }}>.</span>
         </h1>
 
         {/* Tagline — NOW HIGH CONTRAST */}
@@ -402,7 +413,7 @@ function HeroSection() {
 
         {/* CTAs */}
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <a href="/auth/signin" className="lnd-cta-primary">
+          <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary">
             <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
             </svg>
@@ -442,7 +453,7 @@ function CommitTicker() {
           <span
             key={i}
             style={{
-              fontFamily: MONO, fontSize: 12, color: '#9ca3af',
+              fontFamily: MONO, fontSize: 12, color: '#333',
               display: 'inline-flex', alignItems: 'center', gap: 10,
             }}
           >
@@ -463,15 +474,15 @@ function HeatmapSection() {
   return (
     <section ref={ref} style={{ padding: '64px clamp(20px,4vw,48px)', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: '#333', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           52 weeks of contributions
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af' }}>less</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>less</span>
           {HC.map((c, i) => (
             <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: c, border: `1px solid ${BORDER}` }} />
           ))}
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af' }}>more</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>more</span>
         </div>
       </div>
       <div style={{
@@ -502,9 +513,9 @@ function HeatmapSection() {
    ═══════════════════════════════════════════════════════════ */
 const STATS = [
   { value: 847, label: 'COMMITS TRACKED' },
-  { value: 43, label: 'PRS MERGED' },
-  { value: 89, label: 'DAY BEST STREAK' },
-  { value: 67, label: 'REVIEWS GIVEN' },
+  { value: 43,  label: 'PRS MERGED' },
+  { value: 89,  label: 'DAY BEST STREAK' },
+  { value: 67,  label: 'REVIEWS GIVEN' },
 ];
 
 function StatItem({ value, label, delay }: { value: number; label: string; delay: number }) {
@@ -524,9 +535,9 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
         lineHeight: 1, letterSpacing: '-0.03em',
       }}>
         <Counter end={value} active={vis} />
-        <span style={{ color: '#9ca3af', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
+        <span style={{ color: '#222', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', marginTop: 8 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', marginTop: 8 }}>
         {label}
       </div>
     </div>
@@ -535,7 +546,7 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
 
 function StatsSection() {
   return (
-    <section style={{
+    <section id="features" style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
       gap: 24, borderTop: `1px solid ${BORDER}`,   // was '#111'
@@ -616,7 +627,7 @@ function FeaturesSection() {
       borderTop: `1px solid ${BORDER}`,   // was '#111'
       maxWidth: 720, margin: '0 auto',
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         FEATURES
       </div>
       {FEATURES.map((f, i) => (
@@ -633,6 +644,7 @@ function SetupSection() {
   const [ref, vis] = useScrollReveal(0.2);
   return (
     <section
+      id="open-source"
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
@@ -642,22 +654,29 @@ function SetupSection() {
         transition: 'all 0.7s ease',
       }}
     >
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', marginBottom: 24 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', marginBottom: 24 }}>
         SETUP
       </div>
 
       <div style={{
-        background: SURF, border: `1px solid ${BORDER}`,
-        borderRadius: 8, padding: '20px 28px', maxWidth: 480, width: '100%',
+        background: '#0a0a0c', border: `1px solid #1e293b`,
+        borderRadius: 8, padding: '24px 28px', maxWidth: 480, width: '100%',
         textAlign: 'left', marginBottom: 32,
         fontFamily: MONO, fontSize: 13, lineHeight: 1.8,
+        boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
       }}>
-        <div style={{ color: '#9ca3af' }}># start tracking in 30 seconds</div>
+        {/* Terminal Header Mock */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }} />
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981' }} />
+        </div>
+        <div style={{ color: '#10b981', fontWeight: 500 }}># start tracking in 30 seconds</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>→</span> sign in at{' '}
           <span style={{ color: A }}>devtrack.vercel.app</span>
         </div>
-        <div style={{ color: '#9ca3af', marginTop: 4 }}># or self-host</div>
+        <div style={{ color: '#10b981', marginTop: 8, fontWeight: 500 }}># or self-host</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>$</span> git clone github.com/…/devtrack
         </div>
@@ -667,7 +686,7 @@ function SetupSection() {
       </div>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <a href="/auth/signin" className="lnd-cta-primary">
+        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary">
           Sign in with GitHub
         </a>
         <a
@@ -680,7 +699,7 @@ function SetupSection() {
         </a>
       </div>
 
-      <div style={{ fontFamily: MONO, fontSize: 11, color: '#9ca3af', marginTop: 20, letterSpacing: '0.06em' }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: '#222', marginTop: 20, letterSpacing: '0.06em' }}>
         MIT License · Self-hostable · Free forever · Zero vendor lock-in
       </div>
     </section>
@@ -712,7 +731,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
       }}
     >
       {/* Label */}
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         OPEN SOURCE
       </div>
 
@@ -722,11 +741,11 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           <div
             key={s.label}
             style={{
-              background: SURF, border: `1px solid ${BORDER}`,
+              background: '#0a0a0c', border: `1px solid #1e293b`,
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#9ca3af', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: '#94a3b8', letterSpacing: '0.1em', marginBottom: 10 }}>
               {s.icon} {s.label}
             </div>
             <div style={{
@@ -735,7 +754,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               lineHeight: 1, letterSpacing: '-0.03em',
             }}>
               <Counter end={s.value} active={vis} />
-              {s.suffix && <span style={{ color: '#9ca3af', fontSize: '0.55em' }}>{s.suffix}</span>}
+              {s.suffix && <span style={{ color: A, fontSize: '0.75em' }}>{s.suffix}</span>}
             </div>
           </div>
         ))}
@@ -772,10 +791,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               href={c.html_url}
               target="_blank"
               rel="noopener noreferrer"
-              title={c.isSponsor ? `@${c.login} (Sponsor 💎)` : `@${c.login}`}
+              title={`@${c.login}`}
               style={{
                 width: 38, height: 38, borderRadius: '50%',
-                border: `2px solid ${c.isSponsor ? '#ec4899' : BG}`,
+                border: `2px solid ${BG}`,
                 marginLeft: i > 0 ? -11 : 0,
                 overflow: 'hidden', display: 'block',
                 position: 'relative', zIndex: stats.contributors.length - i,
@@ -793,9 +812,8 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
                 el.style.zIndex = String(stats.contributors.length - i);
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`${c.avatar_url}&s=76`}
+              <Image
+                src={c.avatar_url}
                 alt={c.login}
                 width={38}
                 height={38}
@@ -807,10 +825,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           {stats.contributorCount > stats.contributors.length && (
             <div style={{
               width: 38, height: 38, borderRadius: '50%',
-              border: `2px solid ${BG}`,
-              background: '#181818', marginLeft: -11,
+              border: `2px solid #000000`,
+              background: '#1e293b', marginLeft: -11,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: MONO, fontSize: 9, color: '#555', flexShrink: 0,
+              fontFamily: MONO, fontSize: 10, color: '#cbd5e1', flexShrink: 0,
             }}>
               +{stats.contributorCount - stats.contributors.length}
             </div>
@@ -854,7 +872,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
    ═══════════════════════════════════════════════════════════ */
 function LandingFooter() {
   return (
-    <footer
+    <footer 
       data-testid="landing-footer"
       style={{
         borderTop: `1px solid ${BORDER}`,   // was '#111'
@@ -890,7 +908,6 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}
     >
       <MouseSpotlight />
-      <LandingNav />
       <HeroSection />
       <CommitTicker />
       <HeatmapSection />
@@ -899,7 +916,6 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <ContributeSection stats={repoStats} />
       <SetupSection />
       <LandingFooter />
-
     </div>
   );
 }
