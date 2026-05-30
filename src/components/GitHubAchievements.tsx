@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { GitHubAchievement } from "@/lib/github-achievements";
 
 interface GitHubAchievementsProps {
@@ -52,10 +53,11 @@ export default function GitHubAchievements({
               title={achievement.description}
               className="group rounded-lg border border-[var(--border)] bg-[var(--control)] p-3 text-center transition-colors hover:border-[var(--accent)]"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={achievement.imageUrl}
                 alt={`${achievement.title} GitHub achievement badge`}
+                width={56}
+                height={56}
                 className="mx-auto h-14 w-14 object-contain"
                 loading="lazy"
               />

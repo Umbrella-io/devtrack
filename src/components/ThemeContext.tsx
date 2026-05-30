@@ -18,14 +18,18 @@ const useSafeLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : us
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [theme, setTheme] = useState<Theme | undefined>(undefined);
+  const [theme, setTheme] = useState<Theme>(() => "light");
 
   useEffect(() => {
     const storedTheme = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    if (storedTheme) {
+    if (storedTheme === "dark" || storedTheme === "light") {
       setTheme(storedTheme);
-    } else {
-      setTheme("light");
+      return;
+    }
+
+    // Fallback to whatever the pre-hydration bootstrap script applied.
+    if (document.documentElement.classList.contains("dark")) {
+      setTheme("dark");
     }
   }, []);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 
 interface BadgeSectionProps {
   username: string;
@@ -49,8 +50,7 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Streak Badge
           </h3>
           <div className="mb-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={streakBadgePreviewUrl} alt="DevTrack Streak" />
+            <Image src={streakBadgePreviewUrl} alt="DevTrack Streak" width={150} height={20} className="w-auto h-auto" unoptimized />
           </div>
           <CopyableCodeBlock code={streakMarkdown} />
         </div>
@@ -61,8 +61,7 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Commits Badge
           </h3>
           <div className="mb-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={commitsBadgePreviewUrl} alt="DevTrack Commits" />
+            <Image src={commitsBadgePreviewUrl} alt="DevTrack Commits" width={150} height={20} className="w-auto h-auto" unoptimized />
           </div>
           <CopyableCodeBlock code={commitsMarkdown} />
         </div>
@@ -73,10 +72,8 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
             Combined (Both Badges)
           </h3>
           <div className="mb-2 flex gap-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={streakBadgePreviewUrl} alt="DevTrack Streak" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={commitsBadgePreviewUrl} alt="DevTrack Commits" />
+            <Image src={streakBadgePreviewUrl} alt="DevTrack Streak" width={150} height={20} className="w-auto h-auto" unoptimized />
+            <Image src={commitsBadgePreviewUrl} alt="DevTrack Commits" width={150} height={20} className="w-auto h-auto" unoptimized />
           </div>
           <CopyableCodeBlock code={combinedMarkdown} />
         </div>

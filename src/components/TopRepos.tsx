@@ -211,17 +211,19 @@ function getVisibleLanguages(languages: RepoLanguage[]): RepoLanguage[] {
   const sorted = [...languages].sort((a, b) => b.percentage - a.percentage);
 
   if (sorted.length <= 3) {
-    const total = sorted.reduce((sum, lang) => sum + lang.percentage, 0);
-    if (total < 100 && sorted.length > 0) {
-      return [
-        ...sorted,
-        {
-          name: "Other",
-          bytes: 0,
-          percentage: Math.round((100 - total) * 10) / 10,
-        },
-      ];
-    }
+   const total = sorted.reduce((sum, lang) => sum + lang.percentage, 0);
+const otherPercentage = Math.round((100 - total) * 10) / 10;
+
+if (total < 100 && sorted.length > 0 && otherPercentage > 0) {
+  return [
+    ...sorted,
+    {
+      name: "Other",
+      bytes: 0,
+      percentage: otherPercentage,
+    },
+  ];
+}
     return sorted;
   }
 

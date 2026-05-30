@@ -627,6 +627,7 @@ export default function StreakTracker() {
         <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-[var(--foreground)]">Streak Freeze</span>
+            <span className="text-xs text-[var(--muted-foreground)]">❄️ 1 available</span>
             <div className="group relative cursor-help">
               <span 
                 className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--card-muted)] text-[10px] font-bold text-[var(--muted-foreground)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] transition-colors"
