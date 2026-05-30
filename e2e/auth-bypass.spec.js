@@ -72,13 +72,13 @@ test("multiple attacker-controlled cookies combined do not bypass authentication
       secure: false,
     },
     {
-      name: "next-auth.session-token",
+      name: "__Secure-next-auth.session-token",
       value: "forged-token",
       domain: "127.0.0.1",
       path: "/",
-      httpOnly: true,
+      httpOnly: false,
       sameSite: "Lax",
-      secure: false,
+      secure: true,
     },
   ]);
 
