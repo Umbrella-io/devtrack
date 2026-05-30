@@ -152,6 +152,7 @@ export default function DashboardHeader() {
     : null;
 
   return (
+<<<<<<< HEAD
     <header className="relative mb-8 overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]/95 p-5 shadow-[var(--shadow-soft)] backdrop-blur-md transition-all duration-300 hover:shadow-[var(--shadow-medium)] md:p-6">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/40 to-transparent" />
       <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[var(--accent)]/10 blur-3xl" />
@@ -230,6 +231,37 @@ export default function DashboardHeader() {
       <div className="mt-5">
         <AccountToggle />
       </div>
+=======
+    <header
+      className="flex flex-wrap items-center justify-between p-4 mb-8 gap-3 border-b border-[var(--border)] pb-6"
+      role="banner"
+    >
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
+          Dashboard
+        </h1>
+        <p className="mt-1 text-[var(--muted-foreground)]">
+          Your coding activity at a glance
+        </p>
+      </div>
+
+      <nav aria-label="User actions" className="flex flex-wrap items-center gap-3">
+        {settings?.is_public && session?.githubLogin && (
+          <a
+            href={`/u/${session.githubLogin}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="View your public profile (opens in new tab)"
+            className="px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors"
+          >
+            Share Profile
+          </a>
+        )}
+        <UserAvatar />
+        <ThemeToggle />
+        <SignOutButton />
+      </nav>
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
     </header>
   );
 }

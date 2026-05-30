@@ -1,6 +1,10 @@
 "use client";
 
+<<<<<<< HEAD
 import { Suspense, useEffect, useMemo, useState } from "react";
+=======
+import { useEffect, useRef, useState } from "react";
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
@@ -128,6 +132,7 @@ function SettingsPageContent() {
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+<<<<<<< HEAD
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [removingAccountId, setRemovingAccountId] = useState<string | null>(
     null
@@ -223,19 +228,18 @@ function SettingsPageContent() {
     setShowConfirmModal(false);
     setPendingPath(null);
   };
+=======
+  const statusRef = useRef<HTMLDivElement>(null);
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
 
-  // Redirect to signin if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
       redirect("/");
     }
   }, [status]);
 
-  // Load settings on mount
   useEffect(() => {
-    if (status !== "authenticated" || !session?.githubLogin) {
-      return;
-    }
+    if (status !== "authenticated" || !session?.githubLogin) return;
 
     async function loadSettings() {
       try {
@@ -369,9 +373,20 @@ function SettingsPageContent() {
       if (res.ok) {
         const updated = await res.json();
         setSettings(updated);
+        if (statusRef.current) {
+          statusRef.current.textContent = value
+            ? "Public profile enabled. Your stats are now shareable."
+            : "Public profile disabled. Your stats are now private.";
+        }
       } else {
         console.error("Failed to update settings");
+<<<<<<< HEAD
         toast.error("Failed to update public profile setting");
+=======
+        if (statusRef.current) {
+          statusRef.current.textContent = "Failed to update settings. Please try again.";
+        }
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
       }
     } catch (error) {
       console.error("Error updating settings:", error);
@@ -541,6 +556,7 @@ function SettingsPageContent() {
   const copyShareLink = () => {
     if (!settings) return;
     const link = `${window.location.origin}/u/${settings.github_login}`;
+<<<<<<< HEAD
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
       toast.success("Link copied successfully!");
@@ -576,20 +592,29 @@ function SettingsPageContent() {
     } finally {
       setRemovingAccountId(null);
     }
+=======
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    if (statusRef.current) {
+      statusRef.current.textContent = "Profile link copied to clipboard.";
+    }
+    setTimeout(() => setCopied(false), 2000);
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
   };
 
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
         <div className="max-w-2xl mx-auto">
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div
+            className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6"
+            role="status"
+            aria-label="Loading settings"
+          >
             <div className="h-8 w-48 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-20 bg-[var(--card-muted)] rounded animate-pulse"
-                />
+                <div key={i} className="h-20 bg-[var(--card-muted)] rounded animate-pulse" />
               ))}
             </div>
           </div>
@@ -602,7 +627,7 @@ function SettingsPageContent() {
     return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
         <div className="max-w-2xl mx-auto">
-          <p className="text-[var(--muted-foreground)]">
+          <p role="alert" className="text-[var(--muted-foreground)]">
             Failed to load settings.
           </p>
         </div>
@@ -610,9 +635,21 @@ function SettingsPageContent() {
     );
   }
 
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/u/${settings.github_login}`
+      : `/u/${settings.github_login}`;
+
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
+    <div
+      id="main-content"
+      className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors"
+    >
+      {/* Live region for status announcements */}
+      <div ref={statusRef} aria-live="polite" aria-atomic="true" className="sr-only" />
+
       <div className="max-w-2xl mx-auto">
+<<<<<<< HEAD
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <Link href="/dashboard">
             <button aria-label="Back to Dashboard" className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--accent)] md:bg-[var(--accent)] md:text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 md:h-auto md:w-auto md:rounded-lg md:px-4 md:py-2">
@@ -632,6 +669,13 @@ function SettingsPageContent() {
               Manage your profile and preferences
             </p>
           </div>
+=======
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-[var(--foreground)]">Settings</h1>
+          <p className="mt-2 text-[var(--muted-foreground)]">
+            Manage your profile and preferences
+          </p>
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
         </div>
 
         {statusMessage && (
@@ -647,17 +691,27 @@ function SettingsPageContent() {
         )}
 
         {/* Public Profile Section */}
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+        <section
+          aria-labelledby="public-profile-heading"
+          className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+        >
           <div className="flex items-start justify-between mb-6 gap-4">
             <div>
-              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+              <h2
+                id="public-profile-heading"
+                className="text-xl font-semibold text-[var(--card-foreground)]"
+              >
                 Public Profile
               </h2>
-              <p className="text-sm text-[var(--muted-foreground)] mt-1">
+              <p
+                id="public-profile-desc"
+                className="text-sm text-[var(--muted-foreground)] mt-1"
+              >
                 Share your GitHub stats with a public profile link
               </p>
             </div>
 
+<<<<<<< HEAD
             {/* Toggle Switch */}
             <label className="flex items-center cursor-pointer select-none">
               <div className="relative">
@@ -681,6 +735,40 @@ function SettingsPageContent() {
                 />
               </div>
             </label>
+=======
+            {/* Accessible Toggle Switch */}
+            <div className="flex items-center gap-3">
+              <span
+                id="public-toggle-label"
+                className="text-sm text-[var(--muted-foreground)] select-none"
+              >
+                {settings.is_public ? "On" : "Off"}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={settings.is_public}
+                aria-labelledby="public-toggle-label"
+                aria-describedby="public-profile-desc"
+                disabled={saving}
+                aria-busy={saving}
+                onClick={() => handleTogglePublic(!settings.is_public)}
+                className={`relative inline-flex h-6 w-10 cursor-pointer items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-60 ${
+                  settings.is_public ? "bg-[var(--accent)]" : "bg-[var(--control)]"
+                }`}
+              >
+                <span className="sr-only">
+                  {settings.is_public ? "Disable public profile" : "Enable public profile"}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                    settings.is_public ? "translate-x-5" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
           </div>
 
           {/* Share Link Section */}
@@ -690,16 +778,25 @@ function SettingsPageContent() {
                 Share Your Profile
               </h3>
               <div className="flex gap-2">
+                <label htmlFor="share-url" className="sr-only">
+                  Your public profile URL
+                </label>
                 <input
+                  id="share-url"
                   type="text"
-                  value={`${window.location.origin}/u/${settings.github_login}`}
+                  value={shareUrl}
                   readOnly
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none"
+                  aria-label="Your public profile URL"
+                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
                 />
                 <button
                   type="button"
                   onClick={copyShareLink}
+<<<<<<< HEAD
                   aria-label="Copy profile URL"
+=======
+                  aria-label={copied ? "Link copied to clipboard" : "Copy profile link to clipboard"}
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
                   className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
                 >
                   {copied ? "Copied!" : "Copy"}
@@ -878,6 +975,7 @@ function SettingsPageContent() {
               </p>
             </div>
           )}
+<<<<<<< HEAD
 
           {isDirty && (
             <div className="mt-6 pt-6 border-t border-[var(--border)] flex justify-end">
@@ -1353,3 +1451,10 @@ export default function SettingsPage() {
     </Suspense>
   );
 }
+=======
+        </section>
+      </div>
+    </div>
+  );
+}
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))

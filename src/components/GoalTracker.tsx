@@ -1,9 +1,14 @@
 "use client";
 
+<<<<<<< HEAD
 import { useCallback, useEffect, useState, useRef } from "react";
 import { submitGoalWithRefresh } from "@/lib/goal-tracker";
 
 type Recurrence = "none" | "weekly" | "monthly";
+=======
+import { useCallback, useEffect, useRef, useState } from "react";
+import { stripHtml } from "@/lib/sanitize";
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
 
 interface Goal {
   id: string;
@@ -36,6 +41,7 @@ export default function GoalTracker() {
   const [recurrence, setRecurrence] = useState<Recurrence>("none");
   const [deadline, setDeadline] = useState("");
   const [creating, setCreating] = useState(false);
+<<<<<<< HEAD
   const [createError, setCreateError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -44,6 +50,9 @@ export default function GoalTracker() {
   const [activeConfettiGoalId, setActiveConfettiGoalId] = useState<string | null>(null);
   const prevGoalsRef = useRef<Map<string, boolean>>(new Map());
   const initialLoadDoneRef = useRef<boolean>(false);
+=======
+  const statusRef = useRef<HTMLDivElement>(null);
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
 
   const loadGoals = useCallback(async () => {
     const response = await fetch("/api/goals");
@@ -128,7 +137,16 @@ export default function GoalTracker() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
+<<<<<<< HEAD
     setCreateError(null);
+=======
+
+    const sanitizedLabel = stripHtml(label).slice(0, 100);
+    if (!sanitizedLabel) {
+      setCreating(false);
+      return;
+    }
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
 
     try {
       const result = await submitGoalWithRefresh({
@@ -144,6 +162,7 @@ export default function GoalTracker() {
 
       setTitle("");
       setTarget(7);
+<<<<<<< HEAD
       setUnit("commits");
       setRecurrence("none");
       setDeadline("");
@@ -156,6 +175,13 @@ export default function GoalTracker() {
       }
     } catch {
       setCreateError("Failed to create goal. Please try again.");
+=======
+      await loadGoals();
+
+      if (statusRef.current) {
+        statusRef.current.textContent = `Goal "${sanitizedLabel}" added successfully.`;
+      }
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
     } finally {
       setCreating(false);  
     }
@@ -241,6 +267,7 @@ export default function GoalTracker() {
 
   if (loading) {
     return (
+<<<<<<< HEAD
       <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading weekly goals</span>
@@ -255,11 +282,26 @@ export default function GoalTracker() {
             </div>
           ))}
         </div>
+=======
+      <div
+        className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6"
+        role="status"
+        aria-label="Loading weekly goals"
+      >
+        <div className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse" />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="mb-4">
+            <div className="mb-2 h-3 rounded bg-[var(--card-muted)] animate-pulse" />
+            <div className="h-2 rounded bg-[var(--card-muted)] animate-pulse" />
+          </div>
+        ))}
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
       </div>
     );
   }
 
   return (
+<<<<<<< HEAD
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-4">
@@ -314,11 +356,31 @@ export default function GoalTracker() {
       {goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No goals yet. Create one below.
+=======
+    <section
+      aria-labelledby="weekly-goals-heading"
+      className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+    >
+      {/* Live region for goal creation feedback */}
+      <div ref={statusRef} aria-live="polite" aria-atomic="true" className="sr-only" />
+
+      <h2
+        id="weekly-goals-heading"
+        className="mb-4 text-lg font-semibold text-[var(--card-foreground)]"
+      >
+        Weekly Goals
+      </h2>
+
+      {goals.length === 0 ? (
+        <p className="text-sm text-[var(--muted-foreground)]">
+          No goals yet. Add one using the form below.
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
         </p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="space-y-4" aria-label="Your weekly goals">
           {goals.map((goal) => {
             const pct = Math.min((goal.current / goal.target) * 100, 100);
+<<<<<<< HEAD
             const isConfirming = confirmingId === goal.id;
             const isDeleting = deletingId === goal.id;
             const completed = goal.current >= goal.target;
@@ -443,6 +505,35 @@ export default function GoalTracker() {
                 </div>
 
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
+=======
+            const safeLabel = stripHtml(goal.label);
+            const progressId = `progress-${goal.id}`;
+            return (
+              <li key={goal.id}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span
+                    id={progressId}
+                    className="text-[var(--card-foreground)]"
+                  >
+                    {safeLabel}
+                  </span>
+                  <span
+                    className="text-[var(--muted-foreground)]"
+                    aria-label={`${goal.current} of ${goal.target} completed`}
+                  >
+                    {goal.current}/{goal.target}
+                  </span>
+                </div>
+                <div
+                  role="progressbar"
+                  aria-valuenow={Math.round(pct)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-labelledby={progressId}
+                  aria-label={`${safeLabel}: ${Math.round(pct)}% complete`}
+                  className="h-2 overflow-hidden rounded-full bg-[var(--control)]"
+                >
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
                   <div
                     className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
                     style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
@@ -455,6 +546,7 @@ export default function GoalTracker() {
         </ul>
       )}
 
+<<<<<<< HEAD
       {lastUpdated && (
         <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
           {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
@@ -466,6 +558,20 @@ export default function GoalTracker() {
         <div>
           <label htmlFor="goal-title" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
             Goal title
+=======
+      <form
+        onSubmit={handleCreate}
+        className="mt-6 space-y-3 border-t border-[var(--border)] pt-4"
+        aria-label="Add a new weekly goal"
+        noValidate
+      >
+        <div>
+          <label
+            htmlFor="goal-label"
+            className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
+          >
+            Goal label
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
           </label>
           <input
             id="goal-title"
@@ -475,9 +581,15 @@ export default function GoalTracker() {
             placeholder="Make 10 commits"
             required
             disabled={creating}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)]"
+            aria-required="true"
+            aria-describedby="goal-label-hint"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
           />
+          <p id="goal-label-hint" className="sr-only">
+            Enter a short description for your goal, up to 100 characters.
+          </p>
         </div>
+<<<<<<< HEAD
 
         <div className="flex gap-3">
           <div className="flex-1">
@@ -513,6 +625,30 @@ export default function GoalTracker() {
               <option value="language">Lines of Code</option>
             </select>
           </div>
+=======
+        <div>
+          <label
+            htmlFor="goal-target"
+            className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
+          >
+            Weekly target (days)
+          </label>
+          <input
+            id="goal-target"
+            type="number"
+            min={1}
+            max={365}
+            value={target}
+            onChange={(event) => setTarget(Number(event.target.value))}
+            disabled={creating}
+            aria-required="true"
+            aria-describedby="goal-target-hint"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+          />
+          <p id="goal-target-hint" className="sr-only">
+            Enter a number between 1 and 365 for how many days per week to target.
+          </p>
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
         </div>
 
         {/* Deadline Picker for one-time goals */}
@@ -570,12 +706,22 @@ export default function GoalTracker() {
 
         <button
           type="submit"
+<<<<<<< HEAD
           disabled={creating || !title.trim()}
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+=======
+          disabled={creating || !label.trim()}
+          aria-disabled={creating || !label.trim()}
+          aria-busy={creating}
+          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
         >
           {creating ? (
             <>
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              <span
+                className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                aria-hidden="true"
+              />
               Creating...
             </>
           ) : (
@@ -586,7 +732,7 @@ export default function GoalTracker() {
           <p className="text-sm text-[var(--destructive)]">{createError}</p>
         )}
       </form>
-    </div>
+    </section>
   );
 }
 

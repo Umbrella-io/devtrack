@@ -65,6 +65,7 @@ export default function PRMetrics() {
     setLoading(true);
     setError(null);
 
+<<<<<<< HEAD
     const params = new URLSearchParams({
       staleThresholdDays: String(staleThresholdDays),
     });
@@ -84,6 +85,16 @@ export default function PRMetrics() {
         setMinutesAgo(0);
       })
       .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
+=======
+    fetch("/api/metrics/prs")
+      .then((r) => r.json())
+      .then((data: PRData) => setMetrics(data))
+      .catch(() =>
+        setError(
+          "We couldn't load your PR analytics right now. Please try again in a moment."
+        )
+      )
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
       .finally(() => setLoading(false));
   }, [selectedAccount, staleThresholdDays]);
 
@@ -91,6 +102,7 @@ export default function PRMetrics() {
     fetchMetrics();
   }, [fetchMetrics]);
 
+<<<<<<< HEAD
   useEffect(() => {
     if (!lastUpdated) {
       return;
@@ -150,6 +162,15 @@ export default function PRMetrics() {
         },
         { includeStale: true }
       )
+=======
+  const stats = metrics
+    ? [
+        { label: "Open PRs", value: metrics.open, description: `${metrics.open} open pull requests` },
+        { label: "Merged (30d)", value: metrics.merged, description: `${metrics.merged} pull requests merged in the last 30 days` },
+        { label: "Avg Review Time", value: `${metrics.avgReviewHours}h`, description: `Average review time of ${metrics.avgReviewHours} hours` },
+        { label: "Merge Rate", value: metrics.mergeRate, description: `Merge rate of ${metrics.mergeRate}` },
+      ]
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
     : [];
 
   const gitlabStats = metrics?.gitlab
@@ -202,6 +223,7 @@ export default function PRMetrics() {
   };
 
   return (
+<<<<<<< HEAD
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <SectionHeader title="PR Analytics" />
@@ -267,15 +289,52 @@ export default function PRMetrics() {
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-4 text-sm text-[var(--destructive)]">
+=======
+    <section
+      aria-labelledby="pr-analytics-heading"
+      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+    >
+      <h2
+        id="pr-analytics-heading"
+        className="mb-4 text-lg font-semibold text-[var(--card-foreground)]"
+      >
+        PR Analytics
+      </h2>
+
+      {loading ? (
+        <div
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+          role="status"
+          aria-label="Loading PR analytics"
+        >
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-20 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : error ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400"
+        >
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
           <p>{error}</p>
           <button
             type="button"
             onClick={fetchMetrics}
+<<<<<<< HEAD
             className="mt-3 rounded-md border border-[var(--destructive-muted-border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive-muted)]"
+=======
+            aria-label="Retry loading PR analytics"
+            className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
           >
             Try again
           </button>
         </div>
+<<<<<<< HEAD
       ) : activeTab === "authored" ? (
         <div className="space-y-6">
           <div>
@@ -392,7 +451,28 @@ export default function PRMetrics() {
         <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
           {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
         </p>
+=======
+      ) : (
+        <dl className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-lg bg-[var(--control)] p-4 text-center"
+            >
+              <dt className="mt-1 text-sm text-[var(--muted-foreground)]">
+                {stat.label}
+              </dt>
+              <dd
+                className="text-2xl font-bold text-[var(--accent)]"
+                aria-label={stat.description}
+              >
+                {stat.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
       )}
-    </div>
+    </section>
   );
 }

@@ -56,6 +56,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+<<<<<<< HEAD
     <html lang="en" suppressHydrationWarning>
       <head>
         <script
@@ -97,6 +98,15 @@ export default async function RootLayout({
           <Toaster richColors position="top-right" />
         </div>
         <DeferredVercelMetrics />
+=======
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body className={inter.className}>
+        {/* Skip-to-content link for keyboard/screen-reader users */}
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+        <Providers>{children}</Providers>
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
       </body>
     </html>
   );

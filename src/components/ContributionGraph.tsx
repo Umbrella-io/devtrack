@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+<<<<<<< HEAD
 import { useAccount } from "@/components/AccountContext";
 import CommitSearchPanel from "@/components/CommitSearchPanel";
 import type { CommitItem } from "@/lib/github";
+=======
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
 import {
   BarChart,
   Bar,
@@ -110,6 +113,7 @@ export default function ContributionGraph() {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
   const [chartType, setChartType] = useState<ViewMode>("bar");
+<<<<<<< HEAD
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -174,6 +178,9 @@ export default function ContributionGraph() {
       } catch { }
     }
   };
+=======
+  const announcerRef = useRef<HTMLDivElement>(null);
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
 
   useEffect(() => {
     setLoading(true);
@@ -249,7 +256,15 @@ export default function ContributionGraph() {
         const sorted = Object.entries(res.data ?? {})
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([day, commits]) => ({ day, commits }));
+<<<<<<< HEAD
         setFriendData(sorted);
+=======
+        setData(sorted);
+        if (announcerRef.current) {
+          const total = sorted.reduce((sum, d) => sum + d.commits, 0);
+          announcerRef.current.textContent = `Commit activity chart updated: ${total} commits over the last ${days} days.`;
+        }
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
       })
       .catch(() => {
         setCompareError("Failed to load friend data");
@@ -378,7 +393,10 @@ export default function ContributionGraph() {
   const hasFriendData = compareMode && friendData.length > 0 && !compareError;
   const tooltipTrigger = usesTouchTooltip ? "click" : "hover";
 
+  const totalCommits = data.reduce((sum, d) => sum + d.commits, 0);
+
   return (
+<<<<<<< HEAD
     <div
       id="contribution-activity"
       className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
@@ -423,12 +441,48 @@ export default function ContributionGraph() {
                   ? "bg-[var(--accent)] text-[var(--background)]"
                   : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                   }`}
+=======
+    <section
+      aria-labelledby="commit-activity-heading"
+      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+    >
+      {/* Live region for dynamic updates */}
+      <div ref={announcerRef} aria-live="polite" aria-atomic="true" className="sr-only" />
+
+      <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
+        <h2
+          id="commit-activity-heading"
+          className="text-lg font-semibold text-[var(--card-foreground)]"
+        >
+          Commit Activity
+        </h2>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Range selector */}
+          <div
+            className="flex gap-1 rounded-lg bg-[var(--control)] p-1"
+            role="group"
+            aria-label="Select date range"
+          >
+            {RANGES.map((r) => (
+              <button
+                key={r.days}
+                onClick={() => setDays(r.days)}
+                aria-pressed={days === r.days}
+                aria-label={`Show last ${r.label}`}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  days === r.days
+                    ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                    : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
+                }`}
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
               >
                 {r.label}
               </button>
             ))}
           </div>
 
+<<<<<<< HEAD
           {/* Custom date range */}
           <div className="relative" ref={popoverRef}>
             <button
@@ -508,6 +562,14 @@ export default function ContributionGraph() {
               role="group"
               aria-label="Chart type"
               className="flex gap-1 rounded-lg border border-[var(--border)] bg-[var(--background)] p-1 text-sm"
+=======
+          {/* Chart type toggle */}
+          {data.length > 0 && (
+            <div
+              className="flex gap-1 rounded-lg bg-[var(--control)] p-1 text-sm"
+              role="group"
+              aria-label="Select chart type"
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
             >
               {charts.map((chart) => (
                 <button
@@ -515,10 +577,19 @@ export default function ContributionGraph() {
                   type="button"
                   onClick={() => setChartType(chart.key)}
                   aria-pressed={chartType === chart.key}
+<<<<<<< HEAD
                   className={`px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${chartType === chart.key
                     ? "bg-[var(--accent)] text-[var(--background)]"
                     : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                     }`}
+=======
+                  aria-label={`${chart.label} chart`}
+                  className={`px-3 py-1 rounded-md transition-colors duration-200 ${
+                    chartType === chart.key
+                      ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
+                  }`}
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
                 >
                   {chart.label}
                 </button>
@@ -541,6 +612,7 @@ export default function ContributionGraph() {
 
       {loading ? (
         <div
+<<<<<<< HEAD
           role="status"
           aria-live="polite"
           aria-busy="true"
@@ -577,10 +649,41 @@ export default function ContributionGraph() {
                   contentStyle={{
                     background: "var(--card)",
                     color: "var(--foreground)",
+=======
+          className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse"
+          role="status"
+          aria-label="Loading commit activity chart"
+        />
+      ) : data.length === 0 ? (
+        <p
+          className="flex h-[200px] items-center text-sm text-[var(--muted-foreground)]"
+          role="status"
+        >
+          No commits in the last {days} days.
+        </p>
+      ) : (
+        <>
+          {/* Accessible text summary for screen readers */}
+          <p className="sr-only">
+            {chartType === "bar" ? "Bar" : "Line"} chart showing {totalCommits} total
+            commits over the last {days} days.
+          </p>
+          <ResponsiveContainer width="100%" height={200}>
+            {chartType === "bar" ? (
+              <BarChart data={data} aria-label={`Bar chart: ${totalCommits} commits in last ${days} days`}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="day" hide />
+                <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--tooltip)",
+                    color: "var(--tooltip-foreground)",
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
                     border: "1px solid var(--border)",
                     borderRadius: "8px",
                   }}
                   labelStyle={{
+<<<<<<< HEAD
                     color: "var(--foreground)",
                     fontSize: "12px",
                   }}
@@ -679,10 +782,34 @@ export default function ContributionGraph() {
                   contentStyle={{
                     background: "var(--card)",
                     color: "var(--foreground)",
+=======
+                    color: "var(--tooltip-foreground)",
+                    fontSize: "12px",
+                  }}
+                  cursor={{ fill: "var(--card-muted)" }}
+                />
+                <Bar
+                  dataKey="commits"
+                  fill="var(--accent)"
+                  radius={[4, 4, 0, 0]}
+                  name="Commits"
+                />
+              </BarChart>
+            ) : (
+              <LineChart data={data} aria-label={`Line chart: ${totalCommits} commits in last ${days} days`}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="day" hide />
+                <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--tooltip)",
+                    color: "var(--tooltip-foreground)",
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
                     border: "1px solid var(--border)",
                     borderRadius: "8px",
                   }}
                   labelStyle={{
+<<<<<<< HEAD
                     color: "var(--foreground)",
                     fontSize: "12px",
                   }}
@@ -741,7 +868,26 @@ export default function ContributionGraph() {
 
       {!compareMode && (
         <CommitSearchPanel commits={commits} loading={loading} />
+=======
+                    color: "var(--tooltip-foreground)",
+                    fontSize: "12px",
+                  }}
+                  cursor={{ fill: "var(--card-muted)" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="commits"
+                  stroke="var(--accent)"
+                  strokeWidth={2}
+                  dot={false}
+                  name="Commits"
+                />
+              </LineChart>
+            )}
+          </ResponsiveContainer>
+        </>
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
       )}
-    </div>
+    </section>
   );
 }

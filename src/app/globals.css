@@ -22,12 +22,17 @@
   --control: #f1f5f9;
   --control-hover: #e2e8f0;
   --tooltip: #ffffff;
+<<<<<<< HEAD
   --tooltip-foreground: #111827;
   --destructive-muted: rgba(239, 68, 68, 0.1);
   --destructive-muted-border: rgba(239, 68, 68, 0.3);
   --destructive-foreground: #ffffff;
   --shadow-soft: 0 12px 30px -20px rgba(37, 99, 235, 0.35);
   --shadow-medium: 0 18px 35px -24px rgba(37, 99, 235, 0.4);
+=======
+  --tooltip-foreground: #0f172a;
+  --focus-ring: #6366f1;
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
 }
 
 .dark {
@@ -56,6 +61,7 @@
   --control-hover: #344a67;
   --tooltip: #1a2538;
   --tooltip-foreground: #f8fafc;
+<<<<<<< HEAD
   --destructive-muted: rgba(248, 113, 113, 0.1);
   --destructive-muted-border: rgba(248, 113, 113, 0.3);
   --destructive-foreground: #ffffff;
@@ -77,6 +83,9 @@ body:has(.lnd-root) {
 body:has(.wrapped-root) {
   background: #020817 !important;
   background-color: #020817 !important;
+=======
+  --focus-ring: #818cf8;
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
 }
 
 body {
@@ -352,4 +361,29 @@ body {
 
 .animate-shimmer {
   animation: shimmer 1.5s infinite;
+}
+
+/* ── Global focus styles (WCAG 2.1 AA) ── */
+/* Visible focus ring for all interactive elements */
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Skip-to-content link – visually hidden until focused */
+.skip-link {
+  position: absolute;
+  top: -999px;
+  left: 0;
+  z-index: 9999;
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 600;
+  border-radius: 0 0 4px 0;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 0;
 }

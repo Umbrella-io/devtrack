@@ -83,13 +83,20 @@ export default function LanguageBreakdown() {
   }
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-[var(--card-foreground)] mb-4">
+    <section
+      aria-labelledby="language-breakdown-heading"
+      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+    >
+      <h2
+        id="language-breakdown-heading"
+        className="text-lg font-semibold text-[var(--card-foreground)] mb-4"
+      >
         Language Breakdown
       </h2>
 
       {loading ? (
         <div
+<<<<<<< HEAD
           role="status"
           aria-live="polite"
           aria-busy="true"
@@ -101,6 +108,14 @@ export default function LanguageBreakdown() {
             className="h-6 rounded-full bg-[var(--card-muted)] animate-pulse"
           />
           <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+=======
+          className="space-y-3"
+          role="status"
+          aria-label="Loading language breakdown"
+        >
+          <div className="h-6 rounded-full bg-[var(--card-muted)] animate-pulse" />
+          <div className="grid grid-cols-2 gap-2 mt-3">
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-5 rounded bg-[var(--card-muted)] animate-pulse" />
             ))}
@@ -111,14 +126,24 @@ export default function LanguageBreakdown() {
           {error}
         </p>
       ) : languages.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">
+        <p className="text-sm text-[var(--muted-foreground)]" role="status">
           No language data available.
         </p>
       ) : (
         <>
+<<<<<<< HEAD
           {/* Stacked bar */}
           <div className="flex h-6 w-full overflow-hidden rounded-full bg-[var(--control)]">
             {displayLanguages.map((lang) => (
+=======
+          {/* Stacked bar — decorative; described by the list below */}
+          <div
+            className="flex h-6 w-full overflow-hidden rounded-full bg-[var(--control)]"
+            aria-hidden="true"
+            role="presentation"
+          >
+            {languages.map((lang) => (
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
               <div
                 key={lang.name}
                 className="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full"
@@ -127,11 +152,11 @@ export default function LanguageBreakdown() {
                   backgroundColor: lang.name === "Other" ? "var(--control)" : getColor(lang.name),
                   minWidth: lang.percentage > 0 ? "4px" : "0px",
                 }}
-                title={`${lang.name}: ${lang.percentage}%`}
               />
             ))}
           </div>
 
+<<<<<<< HEAD
           {/* Legend */}
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
             {displayLanguages.map((lang) => (
@@ -139,18 +164,34 @@ export default function LanguageBreakdown() {
                 <LanguageDot 
                   color={lang.name === "Other" ? "var(--control)" : getColor(lang.name)}
                   label={`${lang.name}: ${lang.percentage}%`}
+=======
+          {/* Accessible legend */}
+          <ul
+            className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2"
+            aria-label="Language usage percentages"
+          >
+            {languages.map((lang) => (
+              <li key={lang.name} className="flex items-center gap-2 text-sm">
+                <span
+                  className="inline-block h-3 w-3 shrink-0 rounded-full"
+                  style={{ backgroundColor: getColor(lang.name) }}
+                  aria-hidden="true"
+>>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
                 />
                 <span className="truncate text-[var(--card-foreground)]">
                   {lang.name}
                 </span>
-                <span className="ml-auto shrink-0 text-[var(--muted-foreground)]">
+                <span
+                  className="ml-auto shrink-0 text-[var(--muted-foreground)]"
+                  aria-label={`${lang.percentage} percent`}
+                >
                   {lang.percentage}%
                 </span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </>
       )}
-    </div>
+    </section>
   );
 }
