@@ -168,7 +168,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <StreakAtRiskBanner />
+        
 
         {/* Weekly summary — full width */}
         <div className="mt-6">
