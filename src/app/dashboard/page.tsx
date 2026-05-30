@@ -16,6 +16,8 @@ import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExpl
 import dynamic from "next/dynamic";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import { AIMentorWidget } from "@/components/AIMentorWidget";
+import ExportButton from "@/components/ExportButton";
+import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
 import CodingTimeWidget from "@/components/CodingTimeWidget";
@@ -105,7 +107,28 @@ export default async function DashboardPage() {
       <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
 
-        <StreakAtRiskBanner />
+        {/* Quick actions */}
+        <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-3">
+          <Link
+            href="/wrapped"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90"
+          >
+            ✨ Year in Code
+          </Link>
+          <Link
+            href="/dashboard/settings"
+            className="secondary-button inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium"
+          >
+            Settings
+          </Link>
+          <div className="sm:ml-auto">
+            <ExportButton />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <StreakAtRiskBanner />
+        </div>
 
         <div className="mt-6 mb-6">
           <TodayFocusHero userName={session.user?.name ?? null} />
