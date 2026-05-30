@@ -25,6 +25,7 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
+import { WidgetErrorBoundary } from "@/components/WidgetErrorBoundary"; // 🛡️ Added boundary
 
 const SkeletonCard = () => (
   <div
@@ -129,132 +130,130 @@ export default async function DashboardPage() {
 
         {/* Weekly summary — full width */}
         <div className="mt-6">
-          <WeeklySummaryCard />
+          <WidgetErrorBoundary><WeeklySummaryCard /></WidgetErrorBoundary>
         </div>
 
         {/* Personal records + AI mentor side by side */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <PersonalRecords />
-          <AIMentorWidget />
+          <WidgetErrorBoundary><PersonalRecords /></WidgetErrorBoundary>
+          <WidgetErrorBoundary><AIMentorWidget /></WidgetErrorBoundary>
         </div>
 
         {/* ── Row 1: Contribution graph (2/3) + Streak sidebar (1/3) ── */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: contribution graph + heatmap */}
           <div className="lg:col-span-2 flex flex-col gap-6">
-            <ContributionGraph />
+            <WidgetErrorBoundary><ContributionGraph /></WidgetErrorBoundary>
             <LazyWidget fallback={<SkeletonCard />}>
-              <ContributionHeatmap />
+              <WidgetErrorBoundary><ContributionHeatmap /></WidgetErrorBoundary>
             </LazyWidget>
           </div>
 
-          {/* Right: streak + coding time */}
           <div className="flex flex-col gap-6">
-            <StreakTracker />
-            <LocalCodingTime />
-            <CodingTimeWidget />
+            <WidgetErrorBoundary><StreakTracker /></WidgetErrorBoundary>
+            <WidgetErrorBoundary><LocalCodingTime /></WidgetErrorBoundary>
+            <WidgetErrorBoundary><CodingTimeWidget /></WidgetErrorBoundary>
           </div>
         </div>
 
-        {/* Friend comparison — full width, below the fold */}
+        {/* Friend comparison */}
         <div className="mt-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <FriendComparison />
+            <WidgetErrorBoundary><FriendComparison /></WidgetErrorBoundary>
           </LazyWidget>
         </div>
 
-        {/* Repo analytics explorer — full width */}
+        {/* Repo analytics explorer */}
         <div className="mt-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <RepoAnalyticsExplorer />
+            <WidgetErrorBoundary><RepoAnalyticsExplorer /></WidgetErrorBoundary>
           </LazyWidget>
         </div>
 
         {/* ── Row 2: PR metrics + Community metrics ── */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <PRMetrics />
-          <CommunityMetrics />
+          <WidgetErrorBoundary><PRMetrics /></WidgetErrorBoundary>
+          <WidgetErrorBoundary><CommunityMetrics /></WidgetErrorBoundary>
         </div>
 
-        {/* PR breakdown + commit time — 2-col so charts have room */}
+        {/* PR breakdown + commit time */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <PRBreakdownChart />
+            <WidgetErrorBoundary><PRBreakdownChart /></WidgetErrorBoundary>
           </LazyWidget>
           <LazyWidget fallback={<SkeletonCard />}>
-            <CommitTimeChart />
+            <WidgetErrorBoundary><CommitTimeChart /></WidgetErrorBoundary>
           </LazyWidget>
         </div>
 
-        {/* Activity ring — full width */}
+        {/* Activity ring */}
         <div className="mt-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <ActivityRingChart />
+            <WidgetErrorBoundary><ActivityRingChart /></WidgetErrorBoundary>
           </LazyWidget>
         </div>
 
-        {/* Coding activity insights — full width */}
+        {/* Coding activity insights */}
         <div className="mt-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <CodingActivityInsightsCard />
+            <WidgetErrorBoundary><CodingActivityInsightsCard /></WidgetErrorBoundary>
           </LazyWidget>
         </div>
 
-        {/* PR review trend — full width */}
+        {/* PR review trend */}
         <div className="mt-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <PRReviewTrendChart />
+            <WidgetErrorBoundary><PRReviewTrendChart /></WidgetErrorBoundary>
           </LazyWidget>
         </div>
 
-        {/* ── Row 3: Issues (2/3) + CI analytics (1/3) ── */}
+        {/* ── Row 3: Issues + CI analytics ── */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <LazyWidget fallback={<SkeletonCard />}>
-              <IssueMetrics />
+              <WidgetErrorBoundary><IssueMetrics /></WidgetErrorBoundary>
             </LazyWidget>
           </div>
           <LazyWidget fallback={<SkeletonCard />}>
-            <CIAnalytics />
+            <WidgetErrorBoundary><CIAnalytics /></WidgetErrorBoundary>
           </LazyWidget>
         </div>
 
-        {/* Discussions — full width */}
+        {/* Discussions */}
         <div className="mt-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <DiscussionsWidget />
+            <WidgetErrorBoundary><DiscussionsWidget /></WidgetErrorBoundary>
           </LazyWidget>
         </div>
 
-        {/* Pinned spotlight repos — full width */}
+        {/* Pinned spotlight repos */}
         <div className="mt-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <PinnedReposWidget />
+            <WidgetErrorBoundary><PinnedReposWidget /></WidgetErrorBoundary>
           </LazyWidget>
         </div>
 
-        {/* Inactive repo reminder — full width */}
+        {/* Inactive repo reminder */}
         <div className="mt-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <InactiveRepositoriesCard />
+            <WidgetErrorBoundary><InactiveRepositoriesCard /></WidgetErrorBoundary>
           </LazyWidget>
         </div>
 
         {/* ── Row 4: Top repos + Language breakdown + Goal tracker ── */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <TopRepos />
+            <WidgetErrorBoundary><TopRepos /></WidgetErrorBoundary>
           </LazyWidget>
           <LazyWidget fallback={<SkeletonCard />}>
-            <LanguageBreakdown />
+            <WidgetErrorBoundary><LanguageBreakdown /></WidgetErrorBoundary>
           </LazyWidget>
-          <GoalTracker />
+          <WidgetErrorBoundary><GoalTracker /></WidgetErrorBoundary>
         </div>
 
-        {/* Recent activity — full width */}
+        {/* Recent activity */}
         <div className="mt-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <RecentActivity />
+            <WidgetErrorBoundary><RecentActivity /></WidgetErrorBoundary>
           </LazyWidget>
         </div>
       </div>
