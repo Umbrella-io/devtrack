@@ -30,3 +30,24 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Claude Code local settings
+.claude/
+
+desktop.ini
+
+test-results/
+
+.vercel
+.env*
+
+# PWA artifacts
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+public/fallback-*.js
+public/worker-*.js
+public/swe-worker-*.js
+worker/
+

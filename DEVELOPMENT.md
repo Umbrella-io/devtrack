@@ -15,6 +15,7 @@ Everything you need to run DevTrack locally from scratch in under 10 minutes.
 You also need free accounts on:
 - [Supabase](https://supabase.com) — for the database
 - GitHub — for OAuth (you already have this)
+- [Resend](https://resend.com) — for the contact form backend
 
 ---
 
@@ -78,6 +79,11 @@ NEXTAUTH_SECRET=generate_with_openssl_rand_base64_32
 # GitHub OAuth
 GITHUB_ID=Ov23...
 GITHUB_SECRET=your_github_client_secret
+
+# Contact form email delivery
+RESEND_API_KEY=re_xxx...
+RESEND_FROM_EMAIL="DevTrack <contact@your-domain.com>"
+CONTACT_TO_EMAIL=you@example.com
 ```
 
 Generate `NEXTAUTH_SECRET`:
@@ -107,29 +113,102 @@ Open [http://localhost:3000](http://localhost:3000). Click **Sign in with GitHub
 src/
 ├── app/
 │   ├── api/
-│   │   ├── auth/[...nextauth]/   # GitHub OAuth via NextAuth
+│   │   ├── auth/
+│   │   │   ├── [...nextauth]/        # GitHub OAuth via NextAuth
+│   │   │   └── link-github/          # Link additional GitHub accounts
+│   │   │       └── callback/
+│   │   ├── badge/
+│   │   │   ├── badge-utils.ts        # Shared badge helpers
+│   │   │   ├── commits/              # GET commit-count badge
+│   │   │   └── streak-shield/        # GET streak shield (shields.io)
+│   │   ├── goals/
+│   │   │   ├── route.ts              # GET + POST /api/goals
+│   │   │   └── [id]/route.ts         # DELETE /api/goals/:id
+│   │   ├── leaderboard/route.ts      # GET public leaderboard data
 │   │   ├── metrics/
-│   │   │   ├── contributions/    # GET /api/metrics/contributions?days=30
-│   │   │   ├── prs/              # GET /api/metrics/prs
-│   │   │   ├── streak/           # GET /api/metrics/streak
-│   │   │   └── repos/            # GET /api/metrics/repos?days=30
-│   │   └── goals/                # GET + POST /api/goals
+│   │   │   ├── ci/                   # GET CI build analytics
+│   │   │   ├── compare/              # GET side-by-side user comparison
+│   │   │   ├── contributions/        # GET /api/metrics/contributions?days=30
+│   │   │   ├── issues/               # GET issue open/close metrics
+│   │   │   ├── languages/            # GET language breakdown
+│   │   │   ├── pinned-repos/         # GET pinned repositories
+│   │   │   ├── pr-breakdown/         # GET PR open/merged/closed counts
+│   │   │   ├── pr-review-time/       # GET PR review time trend
+│   │   │   ├── prs/                  # GET /api/metrics/prs
+│   │   │   ├── repo-health/          # GET repository health score
+│   │   │   ├── repos/                # GET /api/metrics/repos?days=30
+│   │   │   ├── streak/               # GET /api/metrics/streak
+│   │   │   └── weekly-summary/       # GET weekly activity digest
+│   │   ├── public/[username]/        # GET public profile data
+│   │   ├── streak/
+│   │   │   └── freeze/route.ts       # POST streak freeze
+│   │   ├── user/
+│   │   │   ├── github-accounts/      # GET + POST linked accounts
+│   │   │   │   └── [githubId]/       # DELETE a linked account
+│   │   │   └── settings/route.ts     # GET + PATCH user settings
+│   │   └── webhooks/github/route.ts  # GitHub push webhook receiver
 │   ├── dashboard/
-│   │   └── page.tsx              # Dashboard layout — add new widgets here
-│   └── page.tsx                  # Landing page
+│   │   ├── page.tsx                  # Dashboard layout — add new widgets here
+│   │   └── settings/page.tsx         # User settings page
+│   ├── leaderboard/page.tsx          # Public leaderboard page
+│   ├── u/[username]/page.tsx         # Public profile page
+│   ├── error.tsx                     # Global error boundary
+│   ├── layout.tsx                    # Root layout
+│   ├── not-found.tsx                 # 404 page
+│   ├── page.tsx                      # Landing page
+│   └── providers.tsx                 # Session + theme providers
 ├── components/
-│   ├── ContributionGraph.tsx     # Bar chart with time range selector
-│   ├── PRMetrics.tsx             # PR stats card grid
-│   ├── GoalTracker.tsx           # Weekly goals progress bars
-│   ├── StreakTracker.tsx         # Current + longest commit streak
-│   ├── TopRepos.tsx              # Most active repos ranked list
-│   ├── DashboardHeader.tsx       # Top bar with user avatar + sign out
-│   └── SignOutButton.tsx
+│   ├── AccountContext.tsx            # Multi-account state context
+│   ├── AccountToggle.tsx             # Switch between linked accounts
+│   ├── BackToTopButton.tsx           # Scroll-to-top button
+│   ├── BadgeSection.tsx              # Embeddable badge display
+│   ├── CIAnalytics.tsx               # CI build success/failure chart
+│   ├── CommitTimeChart.tsx           # Commits by hour-of-day bar chart
+│   ├── ContributionGraph.tsx         # Bar chart with time range selector
+│   ├── ContributionHeatmap.tsx       # GitHub-style activity heatmap
+│   ├── CopyLinkButton.tsx            # Copy-to-clipboard helper
+│   ├── DashboardHeader.tsx           # Top bar with user avatar + sign out
+│   ├── ExportButton.tsx              # Export metrics to PDF
+│   ├── FriendComparison.tsx          # Side-by-side user comparison
+│   ├── GoalTracker.tsx               # Weekly goals progress bars
+│   ├── IssueMetrics.tsx              # Issue open/close stats
+│   ├── KeyboardShortcuts.tsx         # Global keyboard shortcut handler
+│   ├── LanguageBreakdown.tsx         # Language usage breakdown chart
+│   ├── PRBreakdownChart.tsx          # PR status pie chart
+│   ├── PRMetrics.tsx                 # PR stats card grid
+│   ├── PRReviewTrendChart.tsx        # PR review time trend line chart
+│   ├── PRStatusDonutChart.tsx        # PR open/merged/closed donut
+│   ├── PersonalRecords.tsx           # All-time personal bests widget
+│   ├── PinnedRepos.tsx               # User's pinned repositories list
+│   ├── ShortcutsModal.tsx            # Keyboard shortcuts reference modal
+│   ├── SignOutButton.tsx             # Sign-out button
+│   ├── StatsCard.tsx                 # Shareable stats card (PNG export)
+│   ├── StreakAtRiskBanner.tsx        # Warning banner when streak is at risk
+│   ├── StreakTracker.tsx             # Current + longest commit streak
+│   ├── ThemeContext.tsx              # Light/dark theme context
+│   ├── ThemeToggle.tsx               # Light/dark mode toggle button
+│   ├── TopRepos.tsx                  # Most active repos ranked list
+│   ├── UserAvatar.tsx                # User avatar image
+│   └── WeeklySummaryCard.tsx         # Weekly activity digest card
+├── hooks/
+│   ├── useCountUp.ts                 # Animated number count-up hook
+│   └── useHeatmapTheme.ts            # Heatmap colour theme hook
 ├── lib/
-│   ├── auth.ts                   # NextAuth config, GitHub scopes, Supabase upsert
-│   └── supabase.ts               # Supabase admin client (server-only)
+│   ├── auth.ts                       # NextAuth config, GitHub scopes, Supabase upsert
+│   ├── crypto.ts                     # HMAC/signature utilities
+│   ├── dateUtils.ts                  # Shared date helpers
+│   ├── github-accounts.ts            # Multi-account GitHub API helpers
+│   ├── github.ts                     # GitHub REST API client
+│   ├── metrics-cache.ts              # Server-side metrics cache layer
+│   ├── repo-health.ts                # Repository health score logic
+│   ├── resolve-user.ts               # Resolve session to Supabase user
+│   └── supabase.ts                   # Supabase admin client (server-only)
+├── middleware.ts                     # Auth middleware (route protection)
+└── types/
+    ├── next-auth.d.ts                # NextAuth session type extensions
+    └── repo-health.ts                # RepoHealth type definitions
 supabase/
-└── schema.sql                    # DB schema — run once in Supabase SQL Editor
+└── schema.sql                        # DB schema — run once in Supabase SQL Editor
 ```
 
 ### How data flows
@@ -190,11 +269,83 @@ export async function GET() {
 ```
 [next-auth][error][NO_SECRET]
 ```
-Add `NEXTAUTH_SECRET` to `.env.local`.
+Add `NEXTAUTH_SECRET` to `.env.local`. Generate one with:
+```bash
+# macOS / Linux
+openssl rand -base64 32
+# Windows PowerShell
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
+```
 
 ---
 
-### GitHub OAuth callback mismatch
+### GitHub OAuth `error=github` Redirect Loop
+
+**Symptom:** After clicking "Sign in with GitHub" and completing the GitHub flow, the browser redirects back to `/auth/signin?error=github` instead of the dashboard.
+
+Work through this checklist in order:
+
+#### 1. Missing or placeholder env vars (most common cause)
+
+Open `.env.local` and confirm these four are set to real values (not `your_...` placeholders):
+
+```env
+GITHUB_ID=Ov23...            # from github.com/settings/developers
+GITHUB_SECRET=ghp_...        # generated in the same OAuth App
+NEXTAUTH_SECRET=<32-byte>    # run: openssl rand -base64 32
+NEXTAUTH_URL=http://localhost:3000
+```
+
+Also required for the database upsert on sign-in:
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+```
+
+If `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` are missing, the server log will print:
+```
+signIn: supabaseAdmin is not configured; skipping DB upsert.
+```
+Authentication will still succeed, but no user record will be written to Supabase.
+
+#### 2. Callback URL mismatch in the GitHub OAuth App
+
+The **Authorization callback URL** in your GitHub OAuth App must be **exactly**:
+
+```
+http://localhost:3000/api/auth/callback/github
+```
+
+Any trailing slash, different port, or HTTPS vs HTTP mismatch will cause `error=github`. Verify at [github.com/settings/developers](https://github.com/settings/developers) → your OAuth App → **Authorization callback URL**.
+
+#### 3. `ENCRYPTION_KEY` not set
+
+The `ENCRYPTION_KEY` is required for OAuth token encryption:
+
+```env
+ENCRYPTION_KEY=<64 hex chars>   # run: openssl rand -hex 32
+```
+
+On Windows PowerShell:
+```powershell
+-join ((1..32) | ForEach-Object { "{0:x2}" -f (Get-Random -Maximum 256) })
+```
+
+#### 4. Restart the dev server after changing env vars
+
+Next.js reads `.env.local` only at startup. After any change, stop and restart:
+
+```bash
+npm run dev
+```
+
+#### 5. Check the server console for the real error
+
+The browser only shows `error=github` — the actual error is printed to the **terminal running `npm run dev`**. Look for lines starting with `[next-auth]` or `signIn:`.
+
+---
+
+### GitHub OAuth callback URL mismatch
 ```
 The redirect_uri is not associated with this application
 ```

@@ -1,0 +1,105 @@
+name: Issue Assignment Bot
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+
+jobs:
+  assign:
+    name: Auto-assign contributor
+    runs-on: ubuntu-latest
+    # Only issues — not PR comments
+    if: github.event.issue.pull_request == null
+    steps:
+      - name: Handle assignment request
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const comment = context.payload.comment.body.toLowerCase().trim();
+            const KEYWORDS = [
+              "i'd like to work on this",
+              "i would like to work on this",
+              "i want to work on this",
+              "i'll work on this",
+              "i'll take this",
+              "i can work on this",
+              "i will work on this",
+              "assign me",
+              "please assign me",
+              "can i work on this",
+              "can i take this",
+            ];
+
+            if (!KEYWORDS.some(kw => comment.includes(kw))) return;
+
+            // Skip bots
+            if (context.payload.comment.user.type === 'Bot') return;
+
+            const { owner, repo } = context.repo;
+            const issueNumber = context.payload.issue.number;
+            const commenter = context.payload.comment.user.login;
+
+            // Fetch live issue state — do NOT use context.payload.issue which
+            // is a stale webhook snapshot and causes a race condition where
+            // concurrent comments both see 0 assignees and both get assigned.
+            const { data: issue } = await github.rest.issues.get({
+              owner, repo, issue_number: issueNumber,
+            });
+
+            // Re-check: skip if issue is now closed (may have changed since comment)
+            if (issue.state !== 'open') return;
+
+            // Check if issue is already assigned
+            if (issue.assignees && issue.assignees.length > 0) {
+              const assignees = issue.assignees.map(a => a.login);
+              if (assignees.includes(commenter)) {
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: issueNumber,
+                  body: `@${commenter} You are already assigned to this issue. Open a PR when ready.`,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: issueNumber,
+                  body: `@${commenter} This issue is already taken by @${assignees.join(', @')}. Check other open issues!`,
+                });
+              }
+              return;
+            }
+
+            // Limit: max 2 open issues assigned per contributor
+            const allAssigned = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, assignee: commenter, state: 'open', per_page: 50,
+            });
+            const openIssueCount = allAssigned.filter(i => !i.pull_request).length;
+
+            if (openIssueCount >= 2) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issueNumber,
+                body: `@${commenter} You already have ${openIssueCount} open issue(s) assigned. Complete those first before picking up more.`,
+              });
+              return;
+            }
+
+            // Assign
+            await github.rest.issues.addAssignees({
+              owner, repo, issue_number: issueNumber,
+              assignees: [commenter],
+            });
+
+            // Add gssoc:assigned label if not already present
+            const currentLabels = issue.labels.map(l => l.name);
+            if (!currentLabels.includes('gssoc:assigned')) {
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number: issueNumber,
+                labels: ['gssoc:assigned'],
+              });
+            }
+
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: issueNumber,
+              body: `Assigned to @${commenter}! You have **7 days** to open a PR. No PR after 7 days = auto-unassigned so others can pick it up. Good luck!`,
+            });
