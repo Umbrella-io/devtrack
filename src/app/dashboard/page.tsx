@@ -1,7 +1,8 @@
-import LazyWidget from "@/components/LazyWidget";
+﻿import LazyWidget from "@/components/LazyWidget";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
 import GoalTracker from "@/components/GoalTracker";
+import TodayFocusHero from "@/components/TodayFocusHero";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
@@ -103,11 +104,52 @@ export default async function DashboardPage() {
 
   return (
     <DashboardSSEProvider>
-      <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
+      <div className="min-h-screen overflow-x-hidden bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
+      <div className="mb-6 rounded-2xl border border-[var(--border)] bg-[var(--card)]/80 p-3 shadow-sm backdrop-blur-sm sm:p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p
+              className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-foreground)]"
+              style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)" }}
+            >
+              Quick actions
+            </p>
+            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+              Common dashboard tasks and exports
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Link
+            href="/wrapped"
+            className="flex min-h-11 items-center justify-center rounded-xl border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90"
+          >
+            Year in Code
+          </Link>
+          <Link
+            href="/dashboard/settings"
+            className="secondary-button flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-medium"
+          >
+            Settings
+          </Link>
+          <div className="col-span-2">
+            <ExportButton />
+          </div>
+        </div>
+      </div>
+      <StreakAtRiskBanner />
+
+        <div className="mt-6 mb-6">
+          <TodayFocusHero userName={session.user?.name ?? null} />
+        </div>
 
         {/* Action bar */}
-        <div className="mb-6 flex flex-wrap items-stretch justify-center gap-2 sm:justify-end">
+        <div
+          id="overview"
+          className="mb-6 flex flex-wrap items-stretch justify-center gap-2 scroll-mt-24 sm:justify-end"
+        >
           <Link
             href="/wrapped"
             className="flex min-w-0 flex-1 items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-center text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90 sm:min-w-[140px] sm:flex-none"
@@ -138,8 +180,8 @@ export default async function DashboardPage() {
           <AIMentorWidget />
         </div>
 
-        {/* ── Row 1: Contribution graph (2/3) + Streak sidebar (1/3) ── */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* -- Row 1: Contribution graph (2/3) + Streak sidebar (1/3) -- */}
+        <div id="streaks" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 lg:grid-cols-3">
           {/* Left: contribution graph + heatmap */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             <ContributionGraph />
@@ -170,8 +212,8 @@ export default async function DashboardPage() {
           </LazyWidget>
         </div>
 
-        {/* ── Row 2: PR metrics + Community metrics ── */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* -- Row 2: PR metrics + Community metrics -- */}
+        <div id="pull-requests" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 md:grid-cols-2">
           <PRMetrics />
           <CommunityMetrics />
         </div>
@@ -207,8 +249,8 @@ export default async function DashboardPage() {
           </LazyWidget>
         </div>
 
-        {/* ── Row 3: Issues (2/3) + CI analytics (1/3) ── */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* -- Row 3: Issues (2/3) + CI analytics (1/3) -- */}
+        <div id="goals" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <LazyWidget fallback={<SkeletonCard />}>
               <IssueMetrics />
@@ -240,7 +282,7 @@ export default async function DashboardPage() {
           </LazyWidget>
         </div>
 
-        {/* ── Row 4: Top repos + Language breakdown + Goal tracker ── */}
+        {/* -- Row 4: Top repos + Language breakdown + Goal tracker -- */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <LazyWidget fallback={<SkeletonCard />}>
             <TopRepos />
