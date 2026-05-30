@@ -232,14 +232,19 @@ export async function middleware(req: NextRequest) {
   const headers = buildHeaders(result);
 
   if (!result.allowed) {
-    console.warn("metrics_rate_limit_hit", {
+    const isContact = req.nextUrl.pathname.startsWith("/api/contact");
+    console.warn(isContact ? "contact_rate_limit_hit" : "metrics_rate_limit_hit", {
       identifier,
       path: req.nextUrl.pathname,
       limit,
     });
 
     return NextResponse.json(
-      { error: "Too many metrics requests. Please retry shortly." },
+      {
+        error: isContact
+          ? "Too many submissions. Please retry shortly."
+          : "Too many metrics requests. Please retry shortly.",
+      },
       { status: 429, headers }
     );
   }
@@ -269,6 +274,7 @@ export const config = {
     "/dashboard/:path*",
     "/settings/:path*",
     "/api/metrics/:path*",
+    "/api/contact",
   ],
 };
 
