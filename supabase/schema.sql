@@ -4,11 +4,18 @@ create table if not exists users (
   id           text primary key default gen_random_uuid()::text,
   github_id    text unique not null,
   github_login text not null,
+  bio          text default '' check (char_length(bio) <= 500),
   is_public    boolean default false,
+  leaderboard_opt_in boolean default false,
+  pinned_repos text[] default '{}',
   created_at   timestamptz default now(),
   updated_at   timestamptz default now(),
   wakatime_api_key_encrypted text,
-  wakatime_api_key_iv text
+  wakatime_api_key_iv text,
+  is_sponsor   boolean default false,
+  discord_webhook_url text,
+  timezone text default 'UTC',
+  last_discord_notification_at timestamptz
 );
 
 create table if not exists goals (
@@ -21,6 +28,7 @@ create table if not exists goals (
   deadline     timestamptz,
   recurrence   text not null default 'none' check (recurrence in ('none', 'weekly', 'monthly')),
   period_start timestamptz default now(),
+  last_synced_at timestamptz,
   created_at   timestamptz default now(),
   updated_at   timestamptz default now()
 );
@@ -38,6 +46,83 @@ create table if not exists metric_snapshots (
 );
 
 create index if not exists snapshots_user_time on metric_snapshots(user_id, snapshot_at);
+
+-- -------------------------------------------------------
+-- GitHub Accounts: multiple GitHub accounts per user
+-- -------------------------------------------------------
+create table if not exists user_github_accounts (
+  id                     text primary key default gen_random_uuid()::text,
+  user_id                text not null references users(id) on delete cascade,
+  github_id              text not null,
+  github_login           text not null,
+  access_token_encrypted text not null,
+  access_token_iv        text not null,
+  added_at               timestamptz default now(),
+  unique (user_id, github_id)
+);
+
+create index if not exists user_github_accounts_user_id_idx
+  on user_github_accounts(user_id);
+
+-- -------------------------------------------------------
+-- Streak Freezes: protect a streak day
+-- -------------------------------------------------------
+create table if not exists streak_freezes (
+  id          text primary key default gen_random_uuid()::text,
+  user_id     text not null references users(id) on delete cascade,
+  freeze_date date not null,
+  created_at  timestamptz default now()
+);
+
+create index if not exists streak_freezes_user on streak_freezes(user_id);
+
+create unique index if not exists streak_freezes_user_date_uniq
+  on streak_freezes(user_id, freeze_date);
+
+-- -------------------------------------------------------
+-- Notifications
+-- -------------------------------------------------------
+create table if not exists notifications (
+  id         text primary key default gen_random_uuid()::text,
+  user_id    text not null references users(id) on delete cascade,
+  type       text not null,
+  message    text not null,
+  read       boolean not null default false,
+  created_at timestamptz default now()
+);
+
+create index if not exists notifications_user_time
+  on notifications(user_id, created_at desc);
+
+-- -------------------------------------------------------
+-- Local Coding Sessions & API Keys
+-- -------------------------------------------------------
+create table if not exists local_coding_sessions (
+  id           text primary key default gen_random_uuid()::text,
+  user_id      text not null references users(id) on delete cascade,
+  date         date not null,
+  total_seconds integer not null default 0,
+  file_count   integer not null default 0,
+  project_count integer not null default 0,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now(),
+  unique(user_id, date)
+);
+
+create index if not exists local_coding_sessions_user_date on local_coding_sessions(user_id, date);
+
+create table if not exists local_coding_api_keys (
+  id           text primary key default gen_random_uuid()::text,
+  user_id      text not null references users(id) on delete cascade,
+  api_key      text not null unique,
+  name         text not null,
+  last_used_at  timestamptz,
+  api_key_hash text unique,
+  created_at   timestamptz default now()
+);
+
+create index if not exists local_coding_api_keys_user on local_coding_api_keys(user_id);
+create index if not exists local_coding_api_keys_key on local_coding_api_keys(api_key);
 
 -- -------------------------------------------------------
 -- AI Mentor: cached insights & Claude-generated summaries
@@ -76,3 +161,28 @@ alter table user_github_achievements enable row level security;
 create policy "user_github_achievements_select_own"
   on user_github_achievements for select
   using (user_id = auth.uid()::text);
+
+-- Refactor local coding sessions sync to use a database transaction function
+create or replace function batch_upsert_sessions(sessions jsonb)
+returns void as $$
+declare
+  session_record jsonb;
+begin
+  for session_record in select * from jsonb_array_elements(sessions) loop
+    insert into local_coding_sessions (user_id, date, total_seconds, file_count, project_count)
+    values (
+      (session_record->>'user_id'),
+      (session_record->>'date')::date,
+      (session_record->>'total_seconds')::integer,
+      coalesce((session_record->>'file_count')::integer, 0),
+      coalesce((session_record->>'project_count')::integer, 0)
+    )
+    on conflict (user_id, date) do update set
+      total_seconds = excluded.total_seconds,
+      file_count = excluded.file_count,
+      project_count = excluded.project_count,
+      updated_at = now();
+  end loop;
+end;
+$$ language plpgsql security definer;
+

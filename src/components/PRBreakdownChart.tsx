@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { useAccount } from "@/components/AccountContext";
 
 interface PRBreakdown {
   draft: number;
@@ -11,13 +12,14 @@ interface PRBreakdown {
 }
 
 const SLICES: { key: keyof PRBreakdown; label: string; color: string }[] = [
-  { key: "open",   label: "Open",   color: "#6366f1" },
-  { key: "merged", label: "Merged", color: "#34d399" },
-  { key: "closed", label: "Closed", color: "#fb923c" },
-  { key: "draft",  label: "Draft",  color: "#94a3b8" },
+  { key: "open",   label: "Open",   color: "var(--accent)" },
+  { key: "merged", label: "Merged", color: "var(--success)" },
+  { key: "closed", label: "Closed", color: "var(--warning)" },
+  { key: "draft",  label: "Draft",  color: "var(--muted-foreground)" },
 ];
 
 export default function PRBreakdownChart() {
+  const { selectedAccount } = useAccount();
   const [breakdown, setBreakdown] = useState<PRBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,22 +31,26 @@ export default function PRBreakdownChart() {
       .trim();
   };
 
-  const fetchBreakdown = () => {
+  const fetchBreakdown = useCallback(() => {
     setLoading(true);
     setError(null);
 
-    fetch("/api/metrics/pr-breakdown")
+    const url = selectedAccount !== null
+      ? `/api/metrics/pr-breakdown?accountId=${encodeURIComponent(selectedAccount)}`
+      : "/api/metrics/pr-breakdown";
+
+    fetch(url)
       .then((r) => r.json())
       .then((d: PRBreakdown) => setBreakdown(d))
       .catch(() =>
         setError("We couldn't load your PR breakdown right now. Please try again in a moment.")
       )
       .finally(() => setLoading(false));
-  };
+  }, [selectedAccount]);
 
   useEffect(() => {
     fetchBreakdown();
-  }, []);
+  }, [fetchBreakdown]);
 
   if (loading) {
     return (
@@ -82,9 +88,9 @@ export default function PRBreakdownChart() {
     );
   }
 
-  const total = breakdown ? SLICES.reduce((sum, s) => sum + breakdown[s.key], 0) : 0;
+  const total = breakdown ? SLICES.reduce((sum, s) => sum + (breakdown[s.key] ?? 0), 0) : 0;
   const chartData = breakdown
-    ? SLICES.map((s) => ({ name: s.label, value: breakdown[s.key], color: s.color })).filter(
+    ? SLICES.map((s) => ({ name: s.label, value: breakdown[s.key] ?? 0, color: s.color })).filter(
         (d) => d.value > 0
       )
     : [];

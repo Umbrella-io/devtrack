@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useAccount } from "@/components/AccountContext";
 
-interface IssueMetricsData {
+interface IssueData {
   stats: {
     totalOpen: number;
     openedThisWeek: number;
@@ -17,28 +18,36 @@ interface IssueMetricsData {
 }
 
 export default function IssueMetrics() {
-  const [data, setData] = useState<IssueMetricsData | null>(null);
+  const { selectedAccount } = useAccount();
+  const [metrics, setMetrics] = useState<IssueData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function fetchMetrics() {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch(`/api/metrics/issues`);
-      if (!res.ok) throw new Error("Failed to load metrics");
-      const result = (await res.json()) as IssueMetricsData;
-      setData(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load issue metrics");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const fetchMetrics = useCallback(() => {
+    setLoading(true);
+    setError(null);
+
+    const url = selectedAccount !== null
+      ? `/api/metrics/issues?accountId=${encodeURIComponent(selectedAccount)}`
+      : "/api/metrics/issues";
+
+    fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load metrics");
+        return r.json();
+      })
+      .then((data: IssueData) => setMetrics(data))
+      .catch(() =>
+        setError(
+          "We couldn't load your Issues analytics right now. Please try again in a moment."
+        )
+      )
+      .finally(() => setLoading(false));
+  }, [selectedAccount]);
 
   useEffect(() => {
     fetchMetrics();
-  }, []);
+  }, [fetchMetrics]);
 
   if (loading) {
     return (
@@ -54,7 +63,7 @@ export default function IssueMetrics() {
     );
   }
 
-  if (error || !data) {
+  if (error || !metrics) {
     return (
       <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)] text-center">
         <p>{error || "Error loading issue metrics"}</p>
@@ -69,17 +78,17 @@ export default function IssueMetrics() {
     );
   }
 
-  // Map incoming data safely into semantic arrays to reuse clean main components
+  // Map incoming metrics safely into semantic arrays for your custom visual template
   const statsDisplay = [
-    { label: "Open Issues", value: data.stats.totalOpen },
-    { label: "Opened This Week", value: data.stats.openedThisWeek },
-    { label: "Closed This Week", value: data.stats.closedThisWeek },
-    { label: "Avg Days to Close", value: `${data.stats.avgDaysToClose}d` },
+    { label: "Open Issues", value: metrics.stats.totalOpen },
+    { label: "Opened This Week", value: metrics.stats.openedThisWeek },
+    { label: "Closed This Week", value: metrics.stats.closedThisWeek },
+    { label: "Avg Days to Close", value: `${metrics.stats.avgDaysToClose}d` },
   ];
 
   // Dynamic status evaluation strictly using theme tokens instead of raw color definitions
-  const trendLabel = data.stats.openedThisWeek > data.stats.closedThisWeek ? "+ Velocity increase" : "Stable velocity";
-  const trendColor = data.stats.openedThisWeek > data.stats.closedThisWeek ? "text-[var(--destructive)]" : "text-[var(--success)]";
+  const trendLabel = metrics.stats.openedThisWeek > metrics.stats.closedThisWeek ? "+ Velocity increase" : "Stable velocity";
+  const trendColor = metrics.stats.openedThisWeek > metrics.stats.closedThisWeek ? "text-[var(--destructive)]" : "text-[var(--success)]";
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-6 text-[var(--foreground)]">
@@ -115,7 +124,7 @@ export default function IssueMetrics() {
         <p className="text-sm font-medium text-[var(--muted-foreground)]">12-Week Open Issues Trend</p>
         <div className="h-[250px] w-full pt-4">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <LineChart data={metrics.chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
               <XAxis dataKey="week" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} />
               <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} allowDecimals={false} />
@@ -128,5 +137,3 @@ export default function IssueMetrics() {
     </div>
   );
 }
-
-

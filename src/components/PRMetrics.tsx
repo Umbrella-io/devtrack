@@ -15,17 +15,18 @@ interface PRData {
   mergeRate: string;
   reviewsGiven: number;
   reviewRatio: number;
+  gitlab?: {
+    open: number;
+    merged: number;
+    closed: number;
+    avgReviewHours: number;
+    mergeRate: string;
+  };
 }
 
 function formatReviewCycle(hours: number | null): string {
-  if (hours === null) {
-    return "—";
-  }
-
-  if (hours < 24) {
-    return `${hours}h`;
-  }
-
+  if (hours === null) return "—";
+  if (hours < 24) return `${hours}h`;
   return `${Math.round((hours / 24) * 10) / 10}d`;
 }
 
@@ -34,6 +35,8 @@ export default function PRMetrics() {
   const [metrics, setMetrics] = useState<PRData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"authored" | "reviews">("authored");
+  const [prFilter, setPrFilter] = useState<"all" | "merged" | "open">("all");
 
   const fetchMetrics = useCallback(() => {
     setLoading(true);
@@ -58,7 +61,8 @@ export default function PRMetrics() {
     fetchMetrics();
   }, [fetchMetrics]);
 
-  const stats = metrics
+  // Combined stats calculation mapping metrics for rendering cards cleanly
+  const githubStats = metrics
     ? [
         { label: "Open PRs", value: metrics.open },
         { label: "Merged (30d)", value: metrics.merged },
@@ -72,27 +76,41 @@ export default function PRMetrics() {
       ]
     : [];
 
+  const gitlabStats = metrics?.gitlab
+    ? [
+        { label: "Open MRs", value: metrics.gitlab.open },
+        { label: "Merged MRs", value: metrics.gitlab.merged },
+        { label: "Avg Review Time", value: `${metrics.gitlab.avgReviewHours}h` },
+        { label: "Merge Rate", value: metrics.gitlab.mergeRate },
+      ]
+    : [];
+
+  const renderStat = (stat: { label: string; value: string | number; title?: string }) => (
+    <div
+      key={stat.label}
+      className="rounded-lg bg-[var(--control)] p-4 text-center min-w-0 border border-[var(--border)]"
+      title={stat.title}
+    >
+      <div className="truncate text-2xl font-bold text-[var(--accent)]">
+        {stat.value}
+      </div>
+      <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
+    </div>
+  );
+
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-6">
+      <h2 className="text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
+      
       {loading ? (
-        <div
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-          className="space-y-4"
-        >
+        <div role="status" aria-live="polite" aria-busy="true" className="space-y-4">
           <span className="sr-only">Loading PR analytics</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                aria-hidden="true"
-                className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
-              />
+              <div key={i} className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse" />
             ))}
           </div>
-          <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
+          <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
@@ -107,21 +125,6 @@ export default function PRMetrics() {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-lg bg-[var(--control)] p-4 text-center min-w-0"
-                title={stat.title}
-              >
-                <div className="truncate text-2xl font-bold text-[var(--accent)]">
-                  {stat.value}
-                </div>
-                <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="bg-[var(--control)] border-[var(--border)] text-[var(--card-foreground)]">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -146,16 +149,76 @@ export default function PRMetrics() {
             </Card>
           </div>
 
+          <div className="border-t border-[var(--border)] pt-4">
+            <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
+              <p className="text-sm font-medium text-[var(--muted-foreground)]">GitHub PRs</p>
+              <div className="flex items-center gap-2">
+                {(["all", "merged", "open"] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setPrFilter(filter)}
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold capitalize transition-colors ${
+                      prFilter === filter
+                        ? "bg-[var(--accent)] text-white"
+                        : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {githubStats
+                .filter((stat) => {
+                  if (prFilter === "all") return true;
+                  const lbl = stat.label.toLowerCase();
+                  if (prFilter === "open") return lbl.includes("open") || lbl.includes("stale");
+                  if (prFilter === "merged") return lbl.includes("merged") || lbl.includes("review") || lbl.includes("merge rate");
+                  return true;
+                })
+                .map(renderStat)}
+            </div>
+          </div>
+
           {metrics && (
-            <div>
-              <p className="mb-2 text-sm font-medium text-[var(--muted-foreground)]">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[var(--muted-foreground)]">
                 PR Status Distribution
               </p>
               <PRStatusDonutChart
-                open={metrics.open}
-                merged={metrics.merged}
-                closed={metrics.closed}
+                open={prFilter === "merged" ? 0 : (metrics.open || 0)}
+                merged={prFilter === "open" ? 0 : (metrics.merged || 0)}
+                closed={prFilter === "all" ? (metrics.closed || 0) : 0}
               />
+            </div>
+          )}
+
+          {metrics?.gitlab && (
+            <div className="space-y-4 border-t border-[var(--border)] pt-4">
+              <p className="text-sm font-medium text-[var(--muted-foreground)]">GitLab MRs</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {gitlabStats
+                  .filter((stat) => {
+                    if (prFilter === "all") return true;
+                    const lbl = stat.label.toLowerCase();
+                    if (prFilter === "open") return lbl.includes("open") || lbl.includes("stale");
+                    if (prFilter === "merged") return lbl.includes("merged") || lbl.includes("review") || lbl.includes("merge rate");
+                    return true;
+                  })
+                  .map(renderStat)}
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-[var(--muted-foreground)]">
+                  MR Status Distribution
+                </p>
+                <PRStatusDonutChart
+                  open={prFilter === "merged" ? 0 : (metrics.gitlab.open || 0)}
+                  merged={prFilter === "open" ? 0 : (metrics.gitlab.merged || 0)}
+                  closed={prFilter === "all" ? (metrics.gitlab.closed || 0) : 0}
+                />
+              </div>
             </div>
           )}
         </div>

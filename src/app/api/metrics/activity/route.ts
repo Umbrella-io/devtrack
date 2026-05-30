@@ -1,10 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
-import {
-  getAccountToken,
-  getAllAccounts,
-} from "@/lib/github-accounts";
+import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
 import { GITHUB_API, fetchUserEvents } from "@/lib/github";
 import {
   isMetricsCacheBypassed,
@@ -14,15 +11,13 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-
-export const dynamic = "force-dynamic";
-
 import {
   type ActivityItem,
   type RawEvent,
   formatActivity,
 } from "@/lib/activity-formatter";
 
+export const dynamic = "force-dynamic";
 
 async function fetchFormattedActivity(token: string): Promise<ActivityItem[]> {
   const events = (await fetchUserEvents(token)) as RawEvent[];
@@ -136,19 +131,34 @@ export async function GET(req: NextRequest) {
 
           const results = await Promise.allSettled(
             accounts.map((account) =>
-              fetchFormattedActivityWithFallback(account.token, account.githubLogin)
+              fetchFormattedActivityWithFallback(
+                account.token,
+                account.githubLogin
+              )
             )
           );
 
-          const merged = results
+          const mergedActivities = results
             .filter(
               (result): result is PromiseFulfilledResult<ActivityItem[]> =>
                 result.status === "fulfilled"
             )
-            .flatMap((result) => result.value)
+            .flatMap((result) => result.value);
+
+          const uniqueActivities = Array.from(
+            new Map(
+              mergedActivities.map((item) => [
+                `${item.type}-${item.repo}-${item.createdAt}-${item.title}`,
+                item,
+              ])
+            ).values()
+          );
+
+          const merged = uniqueActivities
             .sort(
               (a, b) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
             )
             .slice(0, 15);
 

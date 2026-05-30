@@ -7,6 +7,8 @@ import {
   metricsCacheKey,
   withMetricsCache,
 } from "@/lib/metrics-cache";
+import { getAccountToken } from "@/lib/github-accounts";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
@@ -26,16 +28,34 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const username = session.githubLogin;
-
-  // 1. Check if the user is forcing a refresh
+  // 1. Core multi-account parameters from main branch (using correct 'request' object)
+  const accountId = request.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(request);
-  
-  // 2. Generate a unique cache key for this user's issues
-  const key = metricsCacheKey(session.githubId ?? session.githubLogin, "issues");
+
+  let token = session.accessToken;
+  let userId = session.githubId ?? session.githubLogin;
+
+  // 2. Main branch multi-account routing safety checks
+  if (accountId && accountId !== session.githubId) {
+    if (!session.githubId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userRow = await resolveAppUser(session.githubId, session.githubLogin);
+    if (!userRow) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const accountToken = await getAccountToken(userRow.id, accountId);
+    if (!accountToken) {
+      return NextResponse.json({ error: "Account not found" }, { status: 404 });
+    }
+    token = accountToken;
+    userId = accountId;
+  }
+
+  // 3. Keep your custom metrics logic cache setup using the verified userId
+  const key = metricsCacheKey(userId, "issues");
 
   try {
-    // 3. Wrap your custom processing logic inside the bulletproof cache function!
     const metrics = await withMetricsCache(
       { bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.issues },
       async () => {
@@ -47,10 +67,11 @@ export async function GET(request: NextRequest) {
         sinceDate.setDate(sinceDate.getDate() - daysLimit);
         const sinceIso = sinceDate.toISOString().split("T")[0];
 
-        const githubUrl = `https://api.github.com/search/issues?q=author:${username}+type:issue+created:>=${sinceIso}&per_page=100`;
+        // Fetching metrics with the correct multi-account token
+        const githubUrl = `https://api.github.com/search/issues?q=author:${session.githubLogin}+type:issue+created:>=${sinceIso}&per_page=100`;
 
         const res = await fetch(githubUrl, {
-          headers: { Authorization: `Bearer ${session.accessToken}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
         
         if (!res.ok) throw new Error("GitHub API error");
@@ -118,4 +139,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

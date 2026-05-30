@@ -15,7 +15,7 @@ jobs:
     name: Playwright smoke tests
     runs-on: ubuntu-latest
     env:
-      NEXTAUTH_SECRET: playwright-placeholder-secret-that-is-long-enough
+      NEXTAUTH_SECRET: test-nextauth-secret-for-playwright-tests
       NEXTAUTH_URL: http://127.0.0.1:3000
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
       GITHUB_ID: playwright-github-id
@@ -23,6 +23,8 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
       SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+      PLAYWRIGHT_SERVER_MODE: start
+      CI: true
     steps:
       - uses: actions/checkout@v4
 
@@ -34,12 +36,14 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
+      - name: Build Next.js app
+        run: npm run build
+
       - name: Install Playwright browsers
-        run: npx -y @playwright/test@1.49.1 install --with-deps chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        run: npx -y @playwright/test@1.49.1 test
-
+        run: npx playwright test
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()

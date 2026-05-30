@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { stripHtml } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -123,7 +124,11 @@ try {
   if (typeof title !== "string" || title.trim().length === 0) {
     return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
   }
-  if (title.length > MAX_TITLE_LEN) {
+  const sanitizedTitle = stripHtml(title);
+  if (sanitizedTitle.length === 0) {
+    return Response.json({ error: "title must not be empty" }, { status: 400 });
+  }
+  if (sanitizedTitle.length > MAX_TITLE_LEN) {
     return Response.json({ error: `title must be ${MAX_TITLE_LEN} characters or fewer` }, { status: 400 });
   }
   if (
@@ -176,7 +181,7 @@ try {
     .from("goals")
     .insert({
       user_id: user.id,
-      title: title.trim(),
+      title: sanitizedTitle,
       target,
       unit: safeUnit,
       recurrence: safeRecurrence,

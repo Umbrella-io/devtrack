@@ -1,12 +1,13 @@
+import CustomCursor from "@/components/CustomCursor";
 import type { Metadata, Viewport } from "next";
 import { Inter, Syne, JetBrains_Mono } from "next/font/google";
+import AppNavbar from "@/components/AppNavbar";
 import Footer from "@/components/Footer";
+import DeferredVercelMetrics from "@/components/DeferredVercelMetrics";
 import Providers from "./providers";
-import PWARegister from "@/components/pwa-register";
+import OfflineBanner from "@/components/OfflineBanner";
 import "./globals.css";
 import { Toaster } from "sonner";
-// Load Vercel integrations dynamically so build doesn't fail when packages
-// aren't installed in CI/environments where they're optional.
 
 const inter = Inter({ subsets: ["latin"] });
 const syne = Syne({
@@ -19,7 +20,7 @@ const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
   weight: ["400", "500", "600", "700"],
-  display: "swap",
+  display: "optional",
 });
 
 export const metadata: Metadata = {
@@ -54,18 +55,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let Analytics: any = null;
-  let SpeedInsights: any = null;
-
-  try {
-    const a = await import("@vercel/analytics/next");
-    Analytics = a?.Analytics ?? a?.default ?? null;
-  } catch (e) {}
-
-  try {
-    const s = await import("@vercel/speed-insights/next");
-    SpeedInsights = s?.SpeedInsights ?? s?.default ?? null;
-  } catch (e) {}
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -75,18 +64,12 @@ export default async function RootLayout({
               (function() {
                 try {
                   const stored = localStorage.getItem('theme');
-                  if (stored === 'dark') {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.style.colorScheme = 'dark';
-                  } else if (stored === 'light') {
+                  if (stored === 'light') {
                     document.documentElement.classList.remove('dark');
                     document.documentElement.style.colorScheme = 'light';
-                  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.style.colorScheme = 'dark';
                   } else {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.style.colorScheme = 'light';
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.style.colorScheme = 'dark';
                   }
                 } catch (e) {}
               })();
@@ -96,21 +79,24 @@ export default async function RootLayout({
       </head>
 
       <body
-        className={`${inter.className} ${syne.variable} ${jetbrains.variable} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
+        className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
-        <PWARegister />
+        <CustomCursor />
+        <OfflineBanner />
 
         <div className="flex min-h-screen flex-col">
           <div className="flex-1">
-            <Providers>{children}</Providers>
+            <Providers>
+              <AppNavbar />
+              {children}
+            </Providers>
           </div>
 
           <Footer />
 
           <Toaster richColors position="top-right" />
         </div>
-        {Analytics ? <Analytics /> : null}
-        {SpeedInsights ? <SpeedInsights /> : null}
+        <DeferredVercelMetrics />
       </body>
     </html>
   );
