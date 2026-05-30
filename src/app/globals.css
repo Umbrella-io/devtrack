@@ -33,15 +33,15 @@
 .dark {
   color-scheme: dark;
 
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --muted-foreground: #94a3b8;
+  --background: #060b18;
+  --foreground: #f0f6ff;
+  --muted-foreground: #8a9ab5;
 
-  --card: #202b3f;
-  --card-foreground: #f8fafc;
+  --card: #0c1525;
+  --card-foreground: #f0f6ff;
 
-  --card-muted: #2a3a52;
-  --border: #475569;
+  --card-muted: #122035;
+  --border: #1c2d44;
 
   --accent: #60a5fa;
   --accent-secondary: #3b82f6;
