@@ -96,6 +96,19 @@ export default function TopRepos() {
       .then((d) => setPinnedRepos(d.pinned_repos || []))
       .catch((err) => console.error("Failed to load pinned repos", err));
   }, []);
+  // --- PERSISTENCE LOGIC ---
+  // 1. Load initial preference from localStorage on mount
+  useEffect(() => {
+    const savedDays = localStorage.getItem("devtrack_dashboard_range");
+    if (savedDays) {
+      setDays(Number(savedDays));
+    }
+  }, []);
+
+  // 2. Save preference to localStorage whenever 'days' state changes
+  useEffect(() => {
+    localStorage.setItem("devtrack_dashboard_range", String(days));
+  }, [days]);
 
   const togglePin = async (repoFullName: string) => {
     const isPinned = pinnedRepos.includes(repoFullName);
