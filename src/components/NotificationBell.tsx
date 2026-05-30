@@ -14,14 +14,26 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
     try {
       const res = await fetch("/api/notifications");
-      if (!res.ok) return;
+      if (!res.ok) {
+        throw new Error("Failed to load notifications");
+      }
 
       const data = await res.json();
+
+      if (!data || !Array.isArray(data.notifications)) {
+        throw new Error("Invalid notifications response");
+      }
+
       setNotifications(data.notifications ?? []);
       const count = data.unreadCount ?? 0;
       setUnreadCount(count);
@@ -29,7 +41,9 @@ export default function NotificationBell() {
         localStorage.setItem("devtrack:unread-notification-count", count.toString());
       }
     } catch {
-      // silent fail
+      setError("Failed to load notifications. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -74,7 +88,9 @@ export default function NotificationBell() {
       const next = !prev;
 
       if (!prev && unreadCount > 0) {
-        fetch("/api/notifications", { method: "PATCH" }).catch(() => {});
+        const previousUnreadCount = unreadCount;
+        const previousNotifications = notifications;
+
         setUnreadCount(0);
         if (typeof window !== "undefined") {
           localStorage.setItem("devtrack:unread-notification-count", "0");
@@ -82,11 +98,23 @@ export default function NotificationBell() {
         setNotifications((prev) =>
           prev.map((n) => ({ ...n, read: true }))
         );
+
+        fetch("/api/notifications", { method: "PATCH" }).catch(() => {
+          setUnreadCount(previousUnreadCount);
+          setNotifications(previousNotifications);
+          setError("Failed to update notifications. Please try again later.");
+          if (typeof window !== "undefined") {
+            localStorage.setItem(
+              "devtrack:unread-notification-count",
+              previousUnreadCount.toString()
+            );
+          }
+        });
       }
 
       return next;
     });
-  }, [unreadCount]);
+  }, [notifications, unreadCount]);
 
   function timeAgo(iso: string): string {
     const mins = Math.floor(
@@ -173,7 +201,15 @@ export default function NotificationBell() {
           </div>
 
           <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--border)]  scrollbar-thin">
-            {notifications.length === 0 ? (
+            {loading ? (
+              <li className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
+                Loading notifications…
+              </li>
+            ) : error ? (
+              <li className="px-4 py-6 text-center text-sm text-[var(--destructive)]">
+                {error}
+              </li>
+            ) : notifications.length === 0 ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
                 No notifications yet
               </li>
