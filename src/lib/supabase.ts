@@ -45,6 +45,9 @@ interface User {
 export async function getUserByUsername(
   username: string
 ): Promise<User | null> {
+  if (!username || !username.trim()) {
+    return null;
+  }
   try {
     const { data, error } = await supabaseAdmin
       .from("users")

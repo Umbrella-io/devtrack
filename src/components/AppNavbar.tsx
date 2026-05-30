@@ -33,6 +33,7 @@ export default function AppNavbar() {
   }, [pathname]);
 
   const isAuthenticated = status === "authenticated" && Boolean(session);
+  const isPublicProfileRoute = pathname.startsWith("/u/");
   const identityLabel =
     session?.user?.name ?? session?.githubLogin ?? session?.user?.email ?? "GitHub user";
 
