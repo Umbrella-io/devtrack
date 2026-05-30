@@ -33,6 +33,7 @@ export default function AppNavbar() {
   }, [pathname]);
 
   const isAuthenticated = status === "authenticated" && Boolean(session);
+  const isPublicProfileRoute = pathname.startsWith("/u/");
   const identityLabel =
     session?.user?.name ?? session?.githubLogin ?? session?.user?.email ?? "GitHub user";
 
@@ -103,12 +104,14 @@ export default function AppNavbar() {
               </button>
             </>
           ) : (
-            <Link
-              href="/api/auth/signin/github?callbackUrl=/dashboard"
-              className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
-            >
-              Sign in with GitHub
-            </Link>
+            !isPublicProfileRoute && (
+              <Link
+                href="/api/auth/signin/github?callbackUrl=/dashboard"
+                className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
+              >
+                Sign in with GitHub
+              </Link>
+            )
           )}
         </div>
 
@@ -162,12 +165,14 @@ export default function AppNavbar() {
                 </button>
               </>
             ) : (
-              <Link
-                href="/api/auth/signin/github?callbackUrl=/dashboard"
-                className="rounded-2xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-[var(--accent-foreground)]"
-              >
-                Sign in with GitHub
-              </Link>
+              !isPublicProfileRoute && (
+                <Link
+                  href="/api/auth/signin/github?callbackUrl=/dashboard"
+                  className="rounded-2xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-[var(--accent-foreground)]"
+                >
+                  Sign in with GitHub
+                </Link>
+              )
             )}
           </div>
         </div>

@@ -138,6 +138,7 @@ describe("User Settings API Endpoints", () => {
       expect(await res.json()).toEqual({
         id: "user-uuid-123",
         github_login: "test-user",
+        bio: "",
         is_public: true,
         leaderboard_opt_in: true,
         weekly_digest_opt_in: false,
@@ -222,6 +223,7 @@ describe("User Settings API Endpoints", () => {
       expect(await res.json()).toEqual({
         id: "user-uuid-123",
         github_login: "test-user",
+        bio: "",
         is_public: true,
         leaderboard_opt_in: true,
         weekly_digest_opt_in: false,
@@ -248,6 +250,7 @@ describe("User Settings API Endpoints", () => {
       expect(await res.json()).toEqual({
         id: "user-uuid-123",
         github_login: "test-user",
+        bio: "",
         is_public: false,
         leaderboard_opt_in: true,
         weekly_digest_opt_in: false,

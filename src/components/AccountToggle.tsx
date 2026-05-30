@@ -73,6 +73,7 @@ export default function AccountToggle() {
           <button
             key={`${option.label}-${option.value ?? "primary"}`}
             type="button"
+            aria-pressed={isActive}
             onClick={() => setSelectedAccount(option.value)}
             className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
               isActive

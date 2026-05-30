@@ -97,7 +97,9 @@ function SettingsPageFallback() {
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <div className="max-w-2xl mx-auto">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
-          <div className="h-8 w-48 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
+          <h1 className="mb-4 text-3xl font-bold text-[var(--foreground)]">
+            Settings
+          </h1>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div

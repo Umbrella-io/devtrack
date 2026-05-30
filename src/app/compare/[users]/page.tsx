@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { Scale, Trophy } from "lucide-react";
+import Image from "next/image";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 import {
   fetchPublicProfile,
@@ -224,10 +225,11 @@ function ProfileHeader({
           align === "right" ? "md:flex-row-reverse" : ""
         }`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={`https://avatars.githubusercontent.com/${profile.username}`}
-          alt=""
+          alt={`${profile.username} avatar`}
+          width={56}
+          height={56}
           className="h-14 w-14 rounded-full border border-[var(--border)]"
         />
         <div className="min-w-0">

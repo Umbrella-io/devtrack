@@ -3,6 +3,10 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+export const isSupabaseAdminAvailable =
+  !!supabaseUrl &&
+  !!serviceRoleKey &&
+  !supabaseUrl.includes("placeholder");
 
 export const SUPABASE_ADMIN_UNAVAILABLE_MESSAGE =
   "Supabase admin client is unavailable. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.";
@@ -21,8 +25,8 @@ function createUnavailableSupabaseAdmin(): SupabaseAdminClient {
 // Do not throw here - build-time rendering can touch this module before
 // runtime environment variables are present. Guard call sites instead.
 export const supabaseAdmin: SupabaseAdminClient =
-  supabaseUrl && serviceRoleKey && !supabaseUrl.includes("placeholder")
-    ? createClient(supabaseUrl, serviceRoleKey)
+  isSupabaseAdminAvailable
+? createClient(supabaseUrl!, serviceRoleKey!)
     : createUnavailableSupabaseAdmin();
 
 
@@ -45,6 +49,9 @@ interface User {
 export async function getUserByUsername(
   username: string
 ): Promise<User | null> {
+  if (!username || !username.trim()) {
+    return null;
+  }
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
