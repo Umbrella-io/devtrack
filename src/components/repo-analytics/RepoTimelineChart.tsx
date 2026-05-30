@@ -48,14 +48,14 @@ export default function RepoTimelineChart({ timeline }: { timeline: TimelinePoin
             <Line 
               type="monotone" 
               dataKey="prs" 
-              stroke="var(--chart-cyan)" 
+              stroke="var(--accent-secondary)" 
               strokeWidth={2} 
               dot={false}
             />
             <Line 
               type="monotone" 
               dataKey="issues" 
-              stroke="var(--chart-orange)" 
+              stroke="var(--warning)" 
               strokeWidth={2} 
               dot={false}
             />
