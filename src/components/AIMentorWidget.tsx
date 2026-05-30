@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 
 interface Insight {
   id: string;
@@ -171,9 +172,12 @@ export function AIMentorWidget() {
               <p className="text-xs font-semibold text-purple-400 mb-1.5 uppercase tracking-wide">
                 Weekly summary · AI
               </p>
-              <p className="text-sm text-[var(--card-foreground)] leading-relaxed">
-                {data.aiSummary}
-              </p>
+              <p 
+                className="text-sm text-[var(--card-foreground)] leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: mounted && typeof window !== "undefined" ? DOMPurify.sanitize(data.aiSummary) : ""
+                }}
+              />
             </div>
           )}
 
