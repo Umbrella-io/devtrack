@@ -136,9 +136,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.commits.previous / (summary.commits.current + summary.commits.previous || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
@@ -152,9 +149,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.commits.current / (summary.commits.current + summary.commits.previous || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
               </div>
             </div>
@@ -180,9 +174,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.prs.lastWeek.merged / (summary.prs.thisWeek.merged + summary.prs.lastWeek.merged || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
@@ -196,9 +187,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.prs.thisWeek.merged / (summary.prs.thisWeek.merged + summary.prs.lastWeek.merged || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
               </div>
             </div>
@@ -224,9 +212,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.activeDays.lastWeek / (summary.activeDays.thisWeek + summary.activeDays.lastWeek || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
@@ -240,9 +225,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.activeDays.thisWeek / (summary.activeDays.thisWeek + summary.activeDays.lastWeek || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
               </div>
             </div>
