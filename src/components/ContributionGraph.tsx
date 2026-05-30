@@ -429,6 +429,8 @@ export default function ContributionGraph() {
           <div className="relative" ref={popoverRef}>
             <button
               onClick={() => setShowPopover((v) => !v)}
+              aria-label={customLabel ? `Custom date range: ${customLabel}` : "Select custom date range"}
+              aria-expanded={showPopover}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-colors border border-[var(--border)] ${
                 customLabel
                   ? "bg-[var(--accent)] text-[var(--background)]"
@@ -526,6 +528,7 @@ export default function ContributionGraph() {
           {compareMode && (
             <button
               onClick={handleClearCompare}
+              aria-label="Clear comparison mode"
               className="px-3 py-1 rounded-md text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors border border-[var(--border)]"
             >
               Clear
