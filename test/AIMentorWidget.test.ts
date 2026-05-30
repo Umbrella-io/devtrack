@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { AIMentorWidget } from "@/components/AIMentorWidget";
