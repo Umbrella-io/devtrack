@@ -200,11 +200,35 @@ async function checkRateLimit(identifier: string, limit: number) {
 }
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  const githubId = typeof token?.githubId === "string" ? token.githubId : null;
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  // Protect dashboard and settings routes
+  const pathname = req.nextUrl.pathname;
+
+  const protectedRoutes = ["/dashboard", "/settings"];
+
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  if (isProtectedRoute && !token) {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+
+  const githubId =
+    typeof token?.githubId === "string" ? token.githubId : null;
+
   const identifier = githubId ? `user:${githubId}` : `ip:${getIp(req)}`;
-  const limit = githubId ? AUTHENTICATED_LIMIT : ANONYMOUS_LIMIT;
+
+  const limit = githubId
+    ? AUTHENTICATED_LIMIT
+    : ANONYMOUS_LIMIT;
+
   const result = await checkRateLimit(identifier, limit);
+
   const headers = buildHeaders(result);
 
   if (!result.allowed) {
@@ -221,7 +245,10 @@ export async function middleware(req: NextRequest) {
   }
 
   const response = NextResponse.next();
-  headers.forEach((value, key) => response.headers.set(key, value));
+
+  headers.forEach((value, key) =>
+    response.headers.set(key, value)
+  );
 
   // Cache GET metric responses in the browser for 5 minutes.
   // This eliminates redundant function invocations on every dashboard
@@ -238,5 +265,10 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: "/api/metrics/:path*",
+  matcher: [
+    "/dashboard/:path*",
+    "/settings/:path*",
+    "/api/metrics/:path*",
+  ],
 };
+
