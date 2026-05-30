@@ -19,6 +19,7 @@ import { AIMentorWidget } from "@/components/AIMentorWidget";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
+import DeveloperPersonaWidget from "@/components/DeveloperPersonaWidget";
 import LocalCodingTime from "@/components/LocalCodingTime";
 import CodingTimeWidget from "@/components/CodingTimeWidget";
 import RecentActivity from "@/components/RecentActivity";
@@ -174,11 +175,19 @@ export default async function DashboardPage() {
           <WeeklySummaryCard />
         </div>
 
-        {/* Personal records + AI mentor side by side */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <PersonalRecords />
-          <AIMentorWidget />
+
+        {/* Developer Persona */}
+        <div className="mt-6">
+          <DeveloperPersonaWidget />
         </div>
+
+        {/* Personal records + AI mentor */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+           <PersonalRecords />
+           <AIMentorWidget />
+        </div>
+
+
 
         {/* -- Row 1: Contribution graph (2/3) + Streak sidebar (1/3) -- */}
         <div id="streaks" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 lg:grid-cols-3">
