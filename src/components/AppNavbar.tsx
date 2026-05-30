@@ -25,6 +25,17 @@ export default function AppNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    const hashIndex = href.indexOf("#");
+    if (hashIndex === -1) return;
+    const id = href.slice(hashIndex + 1);
+    const el = document.getElementById(id);
+    if (el) {
+      e.preventDefault();
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   useEffect(() => {
@@ -90,6 +101,7 @@ export default function AppNavbar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={(e) => handleAnchorClick(e, item.href)}
                 className="relative px-3 py-2 text-[12px] font-medium transition-colors duration-150"
                 style={{
                   fontFamily: MONO,
@@ -173,6 +185,7 @@ export default function AppNavbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={(e) => handleAnchorClick(e, item.href)}
                   className="rounded-lg px-4 py-3 text-sm font-medium transition-colors"
                   style={{
                     fontFamily: MONO,

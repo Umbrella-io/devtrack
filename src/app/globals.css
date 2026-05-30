@@ -63,6 +63,10 @@
   --shadow-medium: 0 24px 45px -28px rgba(2, 6, 23, 0.85);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html, body {
   overscroll-behavior: none;
 }
