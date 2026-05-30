@@ -63,7 +63,7 @@ export default function PinnedRepos() {
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
-          <button
+          <button aria-label="Interactive element"
             type="button"
             onClick={fetchPinnedRepos}
             className="mt-3 rounded-md border border-[var(--destructive-muted-border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive-muted)]"
@@ -74,7 +74,7 @@ export default function PinnedRepos() {
       ) : pinnedRepos.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No pinned repositories.{" "}
-          <a
+          <a aria-label="Interactive element"
             href="https://github.com"
             target="_blank"
             rel="noopener noreferrer"
@@ -86,7 +86,7 @@ export default function PinnedRepos() {
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {pinnedRepos.map((repo) => (
-            <a
+            <a aria-label="Interactive element"
               key={repo.url}
               href={repo.url}
               target="_blank"

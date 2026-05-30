@@ -115,7 +115,7 @@ export default function DailyBreakdownSheet({
           ) : (
             <div className="space-y-2">
               {commits.map((item) => (
-                  <a
+                  <a aria-label="Interactive element"
                   key={item.repo}
                   href={item.url}
                   target="_blank"

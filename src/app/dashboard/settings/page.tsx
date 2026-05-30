@@ -405,7 +405,7 @@ function SettingsPageContent() {
       <div className="max-w-2xl mx-auto">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <Link href="/dashboard">
-            <button className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--accent)] md:bg-[var(--accent)] md:text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 md:h-auto md:w-auto md:rounded-lg md:px-4 md:py-2">
+            <button aria-label="Interactive element" className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--accent)] md:bg-[var(--accent)] md:text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 md:h-auto md:w-auto md:rounded-lg md:px-4 md:py-2">
               <span className="text-lg items-center transition-transform duration-200 group-hover:-translate-x-1.5">
                 ←
               </span>
@@ -546,7 +546,7 @@ function SettingsPageContent() {
 
           {isDirty && (
             <div className="mt-6 pt-6 border-t border-[var(--border)] flex justify-end">
-              <button
+              <button aria-label="Interactive element"
                 type="button"
                 onClick={() => {
                   // The toggles themselves already call the API,
@@ -619,7 +619,7 @@ function SettingsPageContent() {
               </p>
             </div>
 
-            <a
+            <a aria-label="Interactive element"
               href="/api/auth/link-github"
               className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
             >
@@ -711,7 +711,7 @@ function SettingsPageContent() {
                   autoComplete="new-password"
                   className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 />
-                <button
+                <button aria-label="Interactive element"
                   type="button"
                   onClick={handleSaveWakatime}
                   disabled={savingWakatime}
@@ -730,7 +730,7 @@ function SettingsPageContent() {
         <PrivacySettings />
         <div className="mt-4 flex justify-center items-center pt-6">
           <Link href="/dashboard">
-            <button className="group inline-flex items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95">
+            <button aria-label="Interactive element" className="group inline-flex items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95">
               <span className="mr-2 transition-transform duration-200 group-hover:-translate-x-1.5">
                 ←
               </span>

@@ -228,7 +228,7 @@ export default function WrappedExperience() {
             <div className="max-w-xl rounded-lg border border-rose-300/30 bg-rose-500/10 p-6 text-center">
               <h2 className="text-xl font-bold">Wrapped is taking a breather</h2>
               <p className="mt-2 text-sm text-rose-100">{error}</p>
-              <button
+              <button aria-label="Interactive element"
                 type="button"
                 onClick={() => setReloadKey((value) => value + 1)}
                 className="mt-5 rounded-md bg-rose-100 px-4 py-2 text-sm font-bold text-rose-950"
@@ -277,7 +277,7 @@ export default function WrappedExperience() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <button
+                      <button aria-label="Interactive element"
                         type="button"
                         onClick={() => setSlide((value) => Math.max(0, value - 1))}
                         disabled={slide === 0}
@@ -285,7 +285,7 @@ export default function WrappedExperience() {
                       >
                         Previous
                       </button>
-                      <button
+                      <button aria-label="Interactive element"
                         type="button"
                         onClick={() =>
                           setSlide((value) => Math.min(slides.length - 1, value + 1))
@@ -313,7 +313,7 @@ export default function WrappedExperience() {
                     className="mt-4 aspect-[1200/630] w-full rounded-md border border-white/10 object-cover"
                   />
                   <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <a
+                    <a aria-label="Interactive element"
                       href={twitterUrl}
                       target="_blank"
                       rel="noreferrer"
@@ -321,7 +321,7 @@ export default function WrappedExperience() {
                     >
                       Share on X
                     </a>
-                    <a
+                    <a aria-label="Interactive element"
                       href={linkedInUrl}
                       target="_blank"
                       rel="noreferrer"
@@ -352,7 +352,7 @@ export default function WrappedExperience() {
               className="flex flex-wrap justify-center gap-2 pb-6"
             >
               {slides.map((item, index) => (
-                <button
+                <button aria-label="Interactive element"
                   key={item.metric}
                   type="button"
                   onClick={() => setSlide(index)}

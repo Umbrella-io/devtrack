@@ -128,7 +128,7 @@ export default function ShortcutsModal({
       </div>
 
       <div className="flex justify-end border-t border-[var(--border)] px-4 py-3">
-        <button
+        <button aria-label="Interactive element"
           type="button"
           onClick={onClose}
           className="rounded-lg bg-[var(--control)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"

@@ -20,7 +20,7 @@ export default function SignOutButton() {
     if (confirming) {
         return (
             <div className="flex items-center gap-2">
-                <button
+                <button aria-label="Interactive element"
                     type="button"
                     onClick={handleSignOut}
                     disabled={signingOut}
@@ -29,7 +29,7 @@ export default function SignOutButton() {
                     {signingOut ? "Signing out..." : "Confirm"}
                 </button>
 
-                <button
+                <button aria-label="Interactive element"
                     type="button"
                     onClick={() => setConfirming(false)}
                     disabled={signingOut}
@@ -42,7 +42,7 @@ export default function SignOutButton() {
     }
 
     return (
-        <button
+        <button aria-label="Interactive element"
             type="button"
             disabled={signingOut}
             onClick={() => setConfirming(true)}

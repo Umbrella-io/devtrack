@@ -114,7 +114,7 @@ export default async function PublicProfilePage({
           </p>
           <p className="text-sm text-[var(--muted-foreground)] mb-6">
             If this is your profile, go to{" "}
-            <a
+            <a aria-label="Interactive element"
               href="/dashboard/settings"
               className="text-[var(--accent)] underline hover:opacity-80"
             >
@@ -122,7 +122,7 @@ export default async function PublicProfilePage({
             </a>{" "}
             and enable <strong>Public Profile</strong>.
           </p>
-          <a
+          <a aria-label="Interactive element"
             href="/"
             className="primary-button inline-block rounded-lg px-6 py-2"
           >

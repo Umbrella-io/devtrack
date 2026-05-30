@@ -94,7 +94,7 @@ export default function InactiveRepositoriesCard() {
               </option>
             ))}
           </select>
-          <button
+          <button aria-label="Interactive element"
             type="button"
             onClick={fetchInactiveRepos}
             disabled={loading}
@@ -123,7 +123,7 @@ export default function InactiveRepositoriesCard() {
         ) : error ? (
           <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
             <p>{error}</p>
-            <button
+            <button aria-label="Interactive element"
               type="button"
               onClick={fetchInactiveRepos}
               className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
@@ -139,7 +139,7 @@ export default function InactiveRepositoriesCard() {
           <ul className="space-y-3">
             {repos.map((repo) => (
               <li key={repo.name}>
-                <a
+                <a aria-label="Interactive element"
                   href={repo.url}
                   target="_blank"
                   rel="noopener noreferrer"

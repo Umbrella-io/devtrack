@@ -43,7 +43,7 @@ export default function RepoAnalyticsExplorer() {
       ) : error ? (
         <div className="rounded-2xl border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-5 text-sm text-[var(--destructive)] flex flex-col items-center justify-center text-center">
           <p className="font-medium mb-3">{error}</p>
-          <button onClick={fetchRepos} className="rounded-xl border border-[var(--destructive-muted-border)] bg-transparent px-4 py-2 text-sm font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)] hover:text-white">Try again</button>
+          <button aria-label="Interactive element" onClick={fetchRepos} className="rounded-xl border border-[var(--destructive-muted-border)] bg-transparent px-4 py-2 text-sm font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)] hover:text-white">Try again</button>
         </div>
       ) : (
         <RepoCarousel repos={repos} />

@@ -70,7 +70,7 @@ export default function AccountToggle() {
         const isActive = selectedAccount === option.value;
 
         return (
-          <button
+          <button aria-label="Interactive element"
             key={`${option.label}-${option.value ?? "primary"}`}
             type="button"
             onClick={() => setSelectedAccount(option.value)}

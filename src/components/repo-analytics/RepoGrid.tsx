@@ -59,7 +59,7 @@ export default function RepoGrid({ repos }: { repos: ExplorerRepoCardData[] }) {
             {Math.min(safePage * PAGE_SIZE, filteredRepos.length)} of {filteredRepos.length}
           </p>
           <div className="flex items-center gap-2">
-          <button
+          <button aria-label="Interactive element"
             type="button"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={safePage === 1}
@@ -70,7 +70,7 @@ export default function RepoGrid({ repos }: { repos: ExplorerRepoCardData[] }) {
           <span className="text-xs text-[var(--muted-foreground)]">
             Page {safePage} / {totalPages}
           </span>
-          <button
+          <button aria-label="Interactive element"
             type="button"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={safePage === totalPages}

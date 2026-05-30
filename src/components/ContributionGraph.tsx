@@ -401,7 +401,7 @@ export default function ContributionGraph() {
 
           {/* Custom date range */}
           <div className="relative" ref={popoverRef}>
-            <button
+            <button aria-label="Interactive element"
               onClick={() => setShowPopover((v) => !v)}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-colors border border-[var(--border)] ${
                 customLabel
@@ -447,7 +447,7 @@ export default function ContributionGraph() {
                     <p className="text-xs text-[var(--destructive)]">{customError}</p>
                   )}
                   {customLabel && (
-                    <button
+                    <button aria-label="Interactive element"
                       onClick={() => {
                         setCustomLabel(null);
                         setCustomFrom("");
@@ -460,7 +460,7 @@ export default function ContributionGraph() {
                       Clear
                     </button>
                   )}
-                  <button
+                  <button aria-label="Interactive element"
                     onClick={handleCustomApply}
                     className="mt-1 w-full rounded-md bg-[var(--accent)] py-1.5 text-sm font-medium text-[var(--background)] hover:opacity-90 transition-opacity"
                   >
@@ -479,7 +479,7 @@ export default function ContributionGraph() {
               className="flex gap-1 rounded-lg border border-[var(--border)] bg-[var(--background)] p-1 text-sm"
             >
               {charts.map((chart) => (
-                <button
+                <button aria-label="Interactive element"
                   key={chart.key}
                   type="button"
                   onClick={() => setChartType(chart.key)}
@@ -498,7 +498,7 @@ export default function ContributionGraph() {
 
           {/* Clear compare button */}
           {compareMode && (
-            <button
+            <button aria-label="Interactive element"
               onClick={handleClearCompare}
               className="px-3 py-1 rounded-md text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors border border-[var(--border)]"
             >

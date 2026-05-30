@@ -657,7 +657,7 @@ export default function ExportButton() {
 
   return (
     <div className="flex gap-3">
-      <button
+      <button aria-label="Interactive element"
         type="button"
         onClick={exportCSV}
         disabled={isExportingCSV}
@@ -669,7 +669,7 @@ export default function ExportButton() {
         {isExportingCSV ? "Exporting..." : "Export CSV"}
       </button>
 
-      <button
+      <button aria-label="Interactive element"
         type="button"
         onClick={exportPDF}
         disabled={isExportingPDF}

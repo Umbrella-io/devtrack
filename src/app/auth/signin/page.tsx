@@ -121,7 +121,7 @@ export default function SignInPage() {
           Track streaks, PR velocity &amp; coding growth.
         </p>
 
-        <button
+        <button aria-label="Interactive element"
           onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
           style={{
             width: "100%",

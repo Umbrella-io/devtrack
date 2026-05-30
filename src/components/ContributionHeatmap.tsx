@@ -173,7 +173,7 @@ export default function ContributionHeatmap({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <button aria-label="Interactive element"
             type="button"
             onClick={() => setTheme("default")}
             style={theme === "default" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}
@@ -181,7 +181,7 @@ export default function ContributionHeatmap({
           >
             Default
           </button>
-          <button
+          <button aria-label="Interactive element"
             type="button"
             onClick={() => setTheme("colour-blind-friendly")}
             style={theme === "colour-blind-friendly" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}

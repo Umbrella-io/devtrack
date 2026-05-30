@@ -230,7 +230,7 @@ export default function FriendComparison() {
               className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-[var(--border)] bg-[var(--card)] shadow-lg"
             >
               {suggestions.map((u, idx) => (
-                <button
+                <button aria-label="Interactive element"
                   key={u.username}
                   type="button"
                   role="option"
@@ -264,7 +264,7 @@ export default function FriendComparison() {
           )}
         </div>
 
-        <button
+        <button aria-label="Interactive element"
           type="submit"
           disabled={loading || !trimmedFriendUsername}
           className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors disabled:opacity-50 hover:opacity-90"
@@ -277,7 +277,7 @@ export default function FriendComparison() {
       {error && (
         <div className="p-4 mb-4 rounded-md border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)] text-sm flex justify-between items-center">
           <span>{error}</span>
-          <button onClick={() => setError("")} className="hover:underline">Dismiss</button>
+          <button aria-label="Interactive element" onClick={() => setError("")} className="hover:underline">Dismiss</button>
         </div>
       )}
 
@@ -319,14 +319,14 @@ export default function FriendComparison() {
           </div>
 
           <div className="flex justify-center items-center gap-3 pt-4">
-            <a
+            <a aria-label="Interactive element"
               href="#contribution-activity"
               onClick={handleCommitActivityClick}
               className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
             >
               View Commit Activity
             </a>
-            <button
+            <button aria-label="Interactive element"
               onClick={clearComparison}
               className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)]"
             >

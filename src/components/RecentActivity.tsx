@@ -180,7 +180,7 @@ export default function RecentActivity() {
             Your latest GitHub events
           </p>
         </div>
-        <button
+        <button aria-label="Interactive element"
           type="button"
           onClick={fetchActivity}
           disabled={loading}
@@ -205,7 +205,7 @@ export default function RecentActivity() {
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
-          <button
+          <button aria-label="Interactive element"
             type="button"
             onClick={fetchActivity}
             className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
@@ -225,7 +225,7 @@ export default function RecentActivity() {
                 aria-hidden="true"
                 className="absolute -left-[21px] top-6 h-2.5 w-2.5 rounded-full border border-[var(--border)] bg-[var(--card)]"
               />
-              <a
+              <a aria-label="Interactive element"
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"

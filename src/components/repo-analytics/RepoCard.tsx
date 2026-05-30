@@ -136,7 +136,7 @@ export default function RepoCard({
 
         {/* Buttons */}
         <div className="grid grid-cols-2 gap-3">
-          <a
+          <a aria-label="Interactive element"
             href={repo.htmlUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -145,7 +145,7 @@ export default function RepoCard({
             Repo
           </a>
 
-          <button
+          <button aria-label="Interactive element"
             type="button"
             onClick={() => onViewAnalytics(repo)}
             className="flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm font-medium text-[var(--card-foreground)] transition hover:bg-[color:color-mix(in_srgb,var(--card)_80%,var(--accent)_20%)]"

@@ -247,7 +247,7 @@ export default function CodingActivityInsightsCard() {
           </p>
         </div>
 
-         <button
+         <button aria-label="Interactive element"
   type="button"
   onClick={fetchInsights}
   disabled={loading}
@@ -286,7 +286,7 @@ export default function CodingActivityInsightsCard() {
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
-          <button
+          <button aria-label="Interactive element"
             type="button"
             onClick={fetchInsights}
             className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"

@@ -44,7 +44,7 @@ export default function Footer() {
               Community
             </h3>
             <div className="mt-4 flex flex-col gap-3 text-sm text-[var(--muted-foreground)]">
-              <a
+              <a aria-label="Interactive element"
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://github.com/Priyanshu-byte-coder/devtrack/discussions"
                 target="_blank"
@@ -52,7 +52,7 @@ export default function Footer() {
               >
                 Discussions
               </a>
-              <a
+              <a aria-label="Interactive element"
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://github.com/Priyanshu-byte-coder/devtrack/issues"
                 target="_blank"
@@ -60,7 +60,7 @@ export default function Footer() {
               >
                 Issues
               </a>
-              <a
+              <a aria-label="Interactive element"
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://github.com/Priyanshu-byte-coder/devtrack"
                 target="_blank"
@@ -76,7 +76,7 @@ export default function Footer() {
               Contact
             </h3>
             <div className="mt-4 flex flex-col gap-3 text-sm text-[var(--muted-foreground)]">
-              <a
+              <a aria-label="Interactive element"
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://www.linkedin.com/in/priyanshu-doshi-21a54230a/"
                 target="_blank"
@@ -84,7 +84,7 @@ export default function Footer() {
               >
                 LinkedIn
               </a>
-              <a
+              <a aria-label="Interactive element"
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://github.com/Priyanshu-byte-coder"
                 target="_blank"
@@ -92,7 +92,7 @@ export default function Footer() {
               >
                 GitHub
               </a>
-              <a
+              <a aria-label="Interactive element"
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="https://portfolio-eta-gilt-84.vercel.app/"
                 target="_blank"
@@ -100,7 +100,7 @@ export default function Footer() {
               >
                 Portfolio
               </a>
-              <a
+              <a aria-label="Interactive element"
                 className="transition-colors hover:text-[var(--card-foreground)]"
                 href="mailto:doshipriyanshu3@gmail.com"
                 target="_blank"

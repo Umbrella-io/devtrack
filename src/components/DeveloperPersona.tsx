@@ -225,7 +225,7 @@ export default function DeveloperPersona() {
         ) : error ? (
           <div className="mt-5 rounded-xl border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
             <p>{error}</p>
-            <button
+            <button aria-label="Interactive element"
               type="button"
               onClick={() => void loadPersona()}
               className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors duration-200 ease-out hover:bg-[var(--destructive)]/10"

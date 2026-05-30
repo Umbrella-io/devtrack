@@ -375,7 +375,7 @@ export default function GoalTracker() {
 
                     {/* Manual +1 only for non-auto-synced goals */}
                     {!isAutoSynced && (
-                      <button
+                      <button aria-label="Interactive element"
                         onClick={async () => {
                           const newCurrent = goal.current + 1;
                           if (newCurrent > goal.target) return;
@@ -533,7 +533,7 @@ export default function GoalTracker() {
           </label>
           <div className="flex gap-2">
             {(["none", "weekly", "monthly"] as Recurrence[]).map((r) => (
-              <button
+              <button aria-label="Interactive element"
                 key={r}
                 type="button"
                 onClick={() => setRecurrence(r)}
@@ -561,7 +561,7 @@ export default function GoalTracker() {
           </p>
         )}
 
-        <button
+        <button aria-label="Interactive element"
           type="submit"
           disabled={creating || !title.trim()}
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"

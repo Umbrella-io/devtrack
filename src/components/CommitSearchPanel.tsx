@@ -196,7 +196,7 @@ export default function CommitSearchPanel({ commits, loading }: CommitSearchPane
               <ul className="max-h-96 overflow-y-auto space-y-1 pr-1 scrollbar-thin">
                 {visibleCommits.map((commit) => (
                   <li key={commit.sha}>
-                    <a
+                    <a aria-label="Interactive element"
                       href={commit.url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -241,7 +241,7 @@ export default function CommitSearchPanel({ commits, loading }: CommitSearchPane
               {/* Load more */}
               {hasMore && (
                 <div className="mt-2 flex justify-center">
-                  <button
+                  <button aria-label="Interactive element"
                     onClick={handleLoadMore}
                     className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-1.5 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--control-hover)] transition-colors"
                   >
