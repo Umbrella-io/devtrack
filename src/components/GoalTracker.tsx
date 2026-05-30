@@ -1491,7 +1491,6 @@ function ConfettiBurst() {
     </div>
   );
 }
-=======
 "use client";
 
 import { useCallback, useEffect, useState, useRef } from "react";
