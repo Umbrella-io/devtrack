@@ -1,10 +1,11 @@
-"use client";
+"use client"
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import PrivacySettings from "@/components/PrivacySettings";
+import DataExportCard from "@/components/DataExportCard"; // 🎯 Imported the modular data export engine
 import ConfirmModal from "@/components/ConfirmModal";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -180,11 +181,8 @@ function SettingsPageContent() {
 
     const handlePopState = () => {
       if (isDirty) {
-        // We can't easily prevent popstate without a prompt
-        // but we can alert the user.
         setPendingPath("BACK");
         setShowConfirmModal(true);
-        // Push state back to prevent the URL from changing immediately
         window.history.pushState(null, "", window.location.href);
       }
     };
@@ -538,32 +536,14 @@ function SettingsPageContent() {
   };
 
   if (status === "loading" || loading) {
-    return (
-      <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-        <div className="max-w-2xl mx-auto">
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
-            <div className="h-8 w-48 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-20 bg-[var(--card-muted)] rounded animate-pulse"
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <SettingsPageFallback />;
   }
 
   if (!settings) {
     return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
         <div className="max-w-2xl mx-auto">
-          <p className="text-[var(--muted-foreground)]">
-            Failed to load settings.
-          </p>
+          <p className="text-[var(--muted-foreground)]">Failed to load settings.</p>
         </div>
       </div>
     );
@@ -604,574 +584,563 @@ function SettingsPageContent() {
             {statusMessage.message}
           </div>
         )}
-        {/* Public Profile Section */}
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <div className="flex items-start justify-between mb-6 gap-4">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Public Profile
-              </h2>
-              <p className="text-sm text-[var(--muted-foreground)] mt-1">
-                Share your GitHub stats with a public profile link
-              </p>
+
+        <div className="space-y-6">
+          {/* Public Profile Section */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+            <div className="flex items-start justify-between mb-6 gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                  Public Profile
+                </h2>
+                <p className="text-sm text-[var(--muted-foreground)] mt-1">
+                  Share your GitHub stats with a public profile link
+                </p>
+              </div>
+
+              <label className="flex items-center cursor-pointer select-none">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={settings.is_public}
+                    onChange={(e) => handleTogglePublic(e.target.checked)}
+                    disabled={saving}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`block w-10 h-6 rounded-full transition-colors ${
+                      settings.is_public ? "bg-[var(--accent)]" : "bg-[var(--control)]"
+                    }`}
+                  />
+                  <div
+                    className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
+                      settings.is_public ? "translate-x-4" : ""
+                    }`}
+                  />
+                </div>
+              </label>
             </div>
 
-            {/* Toggle Switch */}
-            <label className="flex items-center cursor-pointer select-none">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={settings.is_public}
-                  onChange={(e) => handleTogglePublic(e.target.checked)}
-                  disabled={saving}
-                  className="sr-only"
-                />
-                <div
-                  className={`block w-10 h-6 rounded-full transition-colors ${settings.is_public
-                    ? "bg-[var(--accent)]"
-                    : "bg-[var(--control)]"
-                    }`}
-                />
-                <div
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${settings.is_public ? "translate-x-4" : ""
-                    }`}
-                />
+            {settings.is_public && (
+              <div className="mt-6 pt-6 border-t border-[var(--border)]">
+                <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+                  Share Your Profile
+                </h3>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={`${window.location.origin}/u/${settings.github_login}`}
+                    readOnly
+                    className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={copyShareLink}
+                    aria-label="Copy profile URL"
+                    className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
+                  >
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
               </div>
-            </label>
-          </div>
+            )}
 
-          {/* Share Link Section */}
-          {settings.is_public && (
             <div className="mt-6 pt-6 border-t border-[var(--border)]">
               <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
-                Share Your Profile
+                Heatmap colour scheme
               </h3>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={`${window.location.origin}/u/${settings.github_login}`}
-                  readOnly
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none"
-                />
+              <p className="text-sm text-[var(--muted-foreground)] mb-4">
+                Choose a colour scheme for the contribution and streak heatmaps.
+              </p>
+              <div className="space-y-3">
+                <label className="flex cursor-pointer items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-[var(--foreground)]">
+                  <span>Default</span>
+                  <input
+                    type="radio"
+                    name="heatmap-theme"
+                    value="default"
+                    checked={theme === "default"}
+                    onChange={() => {
+                      setTheme("default");
+                      setIsDirty(true);
+                    }}
+                    className="accent-[var(--accent)] focus:ring-[var(--accent)]"
+                  />
+                </label>
+                <label className="flex cursor-pointer items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-[var(--foreground)]">
+                  <span>Colour-blind friendly</span>
+                  <input
+                    type="radio"
+                    name="heatmap-theme"
+                    value="colour-blind-friendly"
+                    checked={theme === "colour-blind-friendly"}
+                    onChange={() => {
+                      setTheme("colour-blind-friendly");
+                      setIsDirty(true);
+                    }}
+                    className="accent-[var(--accent)] focus:ring-[var(--accent)]"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {!settings.is_public && (
+              <div className="mt-4 p-3 rounded-lg bg-[var(--control)] border border-[var(--border)]">
+                <p className="text-sm text-[var(--muted-foreground)]">
+                  Turn on public profile to generate a shareable link to your GitHub stats.
+                </p>
+              </div>
+            )}
+
+            {isDirty && (
+              <div className="mt-6 pt-6 border-t border-[var(--border)] flex justify-end">
                 <button
                   type="button"
-                  onClick={copyShareLink}
-                  aria-label="Copy profile URL"
-                  className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
+                  onClick={() => {
+                    setIsDirty(false);
+                    toast.success("Settings saved successfully!");
+                  }}
+                  className="px-6 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
                 >
-                  {copied ? "Copied!" : "Copy"}
+                  Save Changes
                 </button>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 pt-6 border-t border-[var(--border)]">
-            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
-              Heatmap colour scheme
-            </h3>
-            <p className="text-sm text-[var(--muted-foreground)] mb-4">
-              Choose a colour scheme for the contribution and streak heatmaps.
-            </p>
-            <div className="space-y-3">
-              <label className="flex cursor-pointer items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-[var(--foreground)]">
-                <span>Default</span>
-                <input
-                  type="radio"
-                  name="heatmap-theme"
-                  value="default"
-                  checked={theme === "default"}
-                  onChange={() => {
-                    setTheme("default");
-                    setIsDirty(true);
-                  }}
-                  className="accent-[var(--accent)] focus:ring-[var(--accent)]"
-                />
-              </label>
-              <label className="flex cursor-pointer items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-[var(--foreground)]">
-                <span>Colour-blind friendly</span>
-                <input
-                  type="radio"
-                  name="heatmap-theme"
-                  value="colour-blind-friendly"
-                  checked={theme === "colour-blind-friendly"}
-                  onChange={() => {
-                    setTheme("colour-blind-friendly");
-                    setIsDirty(true);
-                  }}
-                  className="accent-[var(--accent)] focus:ring-[var(--accent)]"
-                />
-              </label>
-            </div>
-          </div>
-
-          {!settings.is_public && (
-            <div className="mt-4 p-3 rounded-lg bg-[var(--control)] border border-[var(--border)]">
-              <p className="text-sm text-[var(--muted-foreground)]">
-                Turn on public profile to generate a shareable link to your
-                GitHub stats.
-              </p>
-            </div>
-          )}
-
-          {isDirty && (
-            <div className="mt-6 pt-6 border-t border-[var(--border)] flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  // The toggles themselves already call the API,
-                  // but for the heatmap theme which is local only, 
-                  // or to clear the dirty state after a manual change,
-                  // we provide this clear feedback.
-                  setIsDirty(false);
-                  toast.success("Settings saved successfully!");
-                }}
-                className="px-6 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
-              >
-                Save Changes
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Public Leaderboard
-              </h2>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Appear on the public leaderboard for streaks, commits, and pull
-                requests.
-              </p>
-            </div>
-
-            <label className="flex items-center cursor-pointer select-none">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={settings.leaderboard_opt_in}
-                  onChange={(e) => handleToggleLeaderboard(e.target.checked)}
-                  disabled={saving}
-                  className="sr-only"
-                />
-                <div
-                  className={`block h-6 w-10 rounded-full transition-colors ${settings.leaderboard_opt_in
-                    ? "bg-[var(--accent)]"
-                    : "bg-[var(--control)]"
-                    }`}
-                />
-                <div
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${settings.leaderboard_opt_in ? "translate-x-4" : ""
-                    }`}
-                />
-              </div>
-            </label>
-          </div>
-
-          <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--control)] p-3">
-            <p className="text-sm text-[var(--muted-foreground)]">
-              Turning this on also enables your public profile so leaderboard
-              rows can link to your DevTrack stats.
-            </p>
-          </div>
-        </div>
-
-        {/* Repository Spotlight Section */}
-        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-            Repository Spotlight 🚀
-          </h2>
-          <p className="mt-1 text-sm text-[var(--muted-foreground)] mb-6">
-            Pin up to 3 repositories to showcase on your dashboard and public profile.
-          </p>
-
-          {/* Currently Pinned */}
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
-              Pinned Repositories ({(settings.pinned_repos || []).length}/3)
-            </h3>
-            {(settings.pinned_repos || []).length === 0 ? (
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)] text-center">
-                No repositories pinned yet. Use the search below to spotlight your best projects!
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {(settings.pinned_repos || []).map((repoName, index) => (
-                  <div
-                    key={repoName}
-                    className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] p-4"
-                  >
-                    <div className="min-w-0 flex-1 pr-4">
-                      <span className="text-sm font-semibold text-[var(--card-foreground)] truncate block">
-                        {repoName}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Reorder Buttons */}
-                      <button
-                        type="button"
-                        onClick={() => handleMovePin(index, "up")}
-                        disabled={index === 0}
-                        title="Move Up"
-                        aria-label={`Move ${repoName} up`}
-                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMovePin(index, "down")}
-                        disabled={index === (settings.pinned_repos || []).length - 1}
-                        title="Move Down"
-                        aria-label={`Move ${repoName} down`}
-                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
-                      >
-                        ↓
-                      </button>
-                      
-                      {/* Unpin Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleUnpinRepo(repoName)}
-                        aria-label={`Unpin ${repoName}`}
-                        className="ml-2 rounded-lg border border-[var(--destructive-muted-border)] hover:bg-[var(--destructive-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--destructive)]"
-                      >
-                        Unpin
-                      </button>
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
           </div>
 
-          {/* Pin New Repos (Search) */}
-          {(settings.pinned_repos || []).length < 3 && (
-            <div className="border-t border-[var(--border)]/60 pt-6">
-              <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
-                Search & Pin Repositories
-              </h3>
-              <input
-                type="text"
-                value={repoSearchQuery}
-                onChange={(e) => setRepoSearchQuery(e.target.value)}
-                placeholder="Type to search your repositories..."
-                aria-label="Search repositories to pin"
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] mb-4"
-              />
+          {/* Public Leaderboard Section */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                  Public Leaderboard
+                </h2>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  Appear on the public leaderboard for streaks, commits, and pull requests.
+                </p>
+              </div>
 
-              {loadingRepos ? (
-                <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
-                  Loading your repositories...
+              <label className="flex items-center cursor-pointer select-none">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={settings.leaderboard_opt_in}
+                    onChange={(e) => handleToggleLeaderboard(e.target.checked)}
+                    disabled={saving}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`block h-6 w-10 rounded-full transition-colors ${
+                      settings.leaderboard_opt_in ? "bg-[var(--accent)]" : "bg-[var(--control)]"
+                    }`}
+                  />
+                  <div
+                    className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
+                      settings.leaderboard_opt_in ? "translate-x-4" : ""
+                    }`}
+                  />
+                </div>
+              </label>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--control)] p-3">
+              <p className="text-sm text-[var(--muted-foreground)]">
+                Turning this on also enables your public profile so leaderboard rows can link to your DevTrack stats.
+              </p>
+            </div>
+          </div>
+
+          {/* Repository Spotlight Section */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+            <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+              Repository Spotlight 🚀
+            </h2>
+            <p className="mt-1 text-sm text-[var(--muted-foreground)] mb-6">
+              Pin up to 3 repositories to showcase on your dashboard and public profile.
+            </p>
+
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+                Pinned Repositories ({(settings.pinned_repos || []).length}/3)
+              </h3>
+              {(settings.pinned_repos || []).length === 0 ? (
+                <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)] text-center">
+                  No repositories pinned yet. Use the search below to spotlight your best projects!
                 </div>
               ) : (
-                <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-thin">
-                  {userRepos
-                    .filter(
-                      (repoName) =>
-                        !(settings.pinned_repos || []).includes(repoName) &&
-                        repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
-                    )
-                    .slice(0, 5)
-                    .map((repoName) => (
-                      <div
-                        key={repoName}
-                        className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)]/40 hover:bg-[var(--control)] px-4 py-2 transition-colors"
-                      >
-                        <span className="text-xs font-medium text-[var(--card-foreground)] truncate">
+                <div className="space-y-3">
+                  {(settings.pinned_repos || []).map((repoName, index) => (
+                    <div
+                      key={repoName}
+                      className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] p-4"
+                    >
+                      <div className="min-w-0 flex-1 pr-4">
+                        <span className="text-sm font-semibold text-[var(--card-foreground)] truncate block">
                           {repoName}
                         </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           type="button"
-                          onClick={() => handlePinRepo(repoName)}
-                          aria-label={`Pin ${repoName}`}
-                          className="rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity"
+                          onClick={() => handleMovePin(index, "up")}
+                          disabled={index === 0}
+                          title="Move Up"
+                          aria-label={`Move ${repoName} up`}
+                          className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
                         >
-                          Pin
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMovePin(index, "down")}
+                          disabled={index === (settings.pinned_repos || []).length - 1}
+                          title="Move Down"
+                          aria-label={`Move ${repoName} down`}
+                          className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUnpinRepo(repoName)}
+                          aria-label={`Unpin ${repoName}`}
+                          className="ml-2 rounded-lg border border-[var(--destructive-muted-border)] hover:bg-[var(--destructive-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--destructive)]"
+                        >
+                          Unpin
                         </button>
                       </div>
-                    ))}
-                  {userRepos.filter(
-                    (repoName) =>
-                      !(settings.pinned_repos || []).includes(repoName) &&
-                      repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
-                  ).length === 0 && (
-                    <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
-                      No repositories available to pin.
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
-          )}
-        </div>
 
-        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Weekly Email Digest
-              </h2>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Receive an optional weekly email digest every Monday morning summarizing your coding habits.
-              </p>
-            </div>
-
-            <label className="flex items-center cursor-pointer select-none">
-              <div className="relative">
+            {(settings.pinned_repos || []).length < 3 && (
+              <div className="border-t border-[var(--border)]/60 pt-6">
+                <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+                  Search & Pin Repositories
+                </h3>
                 <input
-                  type="checkbox"
-                  checked={settings.weekly_digest_opt_in}
-                  onChange={(e) => handleToggleWeeklyDigest(e.target.checked)}
-                  disabled={saving}
-                  className="sr-only"
+                  type="text"
+                  value={repoSearchQuery}
+                  onChange={(e) => setRepoSearchQuery(e.target.value)}
+                  placeholder="Type to search your repositories..."
+                  aria-label="Search repositories to pin"
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] mb-4"
                 />
-                <div
-                  className={`block h-6 w-10 rounded-full transition-colors ${
-                    settings.weekly_digest_opt_in
-                      ? "bg-[var(--accent)]"
-                      : "bg-[var(--control)]"
-                  }`}
-                />
-                <div
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
-                    settings.weekly_digest_opt_in ? "translate-x-4" : ""
-                  }`}
-                />
-              </div>
-            </label>
-          </div>
-        </div>
 
-        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Connected Accounts
-              </h2>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Link additional GitHub accounts and switch between them on the
-                dashboard.
-              </p>
-            </div>
-
-            <a
-              href="/api/auth/link-github"
-              className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
-            >
-              Add GitHub Account
-            </a>
-          </div>
-
-          {removeError && (
-            <div className="mt-4 rounded-lg border border-[var(--error)]/30 bg-[var(--error)]/10 p-3 text-sm text-[var(--error)]">
-              {removeError}
-            </div>
-          )}
-
-          <div className="mt-6">
-            {accountsLoading ? (
-              <div className="space-y-3">
-                {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
-                  />
-                ))}
-              </div>
-            ) : linkedAccounts.length === 0 ? (
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)]">
-                No linked GitHub accounts yet.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {linkedAccounts.map((account) => (
-                  <div
-                    key={account.id}
-                    className="flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 md:flex-row md:items-center md:justify-between"
-                  >
-                    <div>
-                      <div className="text-sm font-semibold text-[var(--card-foreground)]">
-                        {account.githubLogin}
-                      </div>
-                      <div className="mt-1 text-sm text-[var(--muted-foreground)]">
-                        {formatAddedDate(account.addedAt)}
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveAccount(account.githubId)}
-                      aria-label={`Remove ${account.githubLogin}`}
-                      disabled={removingAccountId === account.githubId}
-                      className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--error)]/10 hover:text-[var(--error)] disabled:opacity-60"
-                    >
-                      {removingAccountId === account.githubId
-                        ? "Removing..."
-                        : "Remove"}
-                    </button>
+                {loadingRepos ? (
+                  <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
+                    Loading your repositories...
                   </div>
-                ))}
+                ) : (
+                  <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-thin">
+                    {userRepos
+                      .filter(
+                        (repoName) =>
+                          !(settings.pinned_repos || []).includes(repoName) &&
+                          repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
+                      )
+                      .slice(0, 5)
+                      .map((repoName) => (
+                        <div
+                          key={repoName}
+                          className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)]/40 hover:bg-[var(--control)] px-4 py-2 transition-colors"
+                        >
+                          <span className="text-xs font-medium text-[var(--card-foreground)] truncate">
+                            {repoName}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handlePinRepo(repoName)}
+                            aria-label={`Pin ${repoName}`}
+                            className="rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity"
+                          >
+                            Pin
+                          </button>
+                        </div>
+                      ))}
+                    {userRepos.filter(
+                      (repoName) =>
+                        !(settings.pinned_repos || []).includes(repoName) &&
+                        repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
+                    ).length === 0 && (
+                      <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
+                        No repositories available to pin.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
-        </div>
 
-        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Wakatime Integration
-              </h2>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Connect your Wakatime account to display accurate coding time and language usage.
-              </p>
+          {/* Weekly Email Digest Section */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                  Weekly Email Digest
+                </h2>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  Receive an optional weekly email digest every Monday morning summarizing your coding habits.
+                </p>
+              </div>
+
+              <label className="flex items-center cursor-pointer select-none">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={settings.weekly_digest_opt_in}
+                    onChange={(e) => handleToggleWeeklyDigest(e.target.checked)}
+                    disabled={saving}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`block h-6 w-10 rounded-full transition-colors ${
+                      settings.weekly_digest_opt_in ? "bg-[var(--accent)]" : "bg-[var(--control)]"
+                    }`}
+                  />
+                  <div
+                    className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
+                      settings.weekly_digest_opt_in ? "translate-x-4" : ""
+                    }`}
+                  />
+                </div>
+              </label>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="wakatime-key" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                API Key
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="wakatime-key"
-                  type="password"
-                  value={wakatimeKey}
+          {/* Connected Accounts Section */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                  Connected Accounts
+                </h2>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  Link additional GitHub accounts and switch between them on the dashboard.
+                </p>
+              </div>
+
+              <a
+                href="/api/auth/link-github"
+                className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+              >
+                Add GitHub Account
+              </a>
+            </div>
+
+            {removeError && (
+              <div className="mt-4 rounded-lg border border-[var(--error)]/30 bg-[var(--error)]/10 p-3 text-sm text-[var(--error)]">
+                {removeError}
+              </div>
+            )}
+
+            <div className="mt-6">
+              {accountsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2].map((i) => (
+                    <div
+                      key={i}
+                      className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
+                    />
+                  ))}
+                </div>
+              ) : linkedAccounts.length === 0 ? (
+                <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)]">
+                  No linked GitHub accounts yet.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {linkedAccounts.map((account) => (
+                    <div
+                      key={account.id}
+                      className="flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 md:flex-row md:items-center md:justify-between"
+                    >
+                      <div>
+                        <div className="text-sm font-semibold text-[var(--card-foreground)]">
+                          {account.githubLogin}
+                        </div>
+                        <div className="mt-1 text-sm text-[var(--muted-foreground)]">
+                          {formatAddedDate(account.addedAt)}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAccount(account.githubId)}
+                        aria-label={`Remove ${account.githubLogin}`}
+                        disabled={removingAccountId === account.githubId}
+                        className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--error)]/10 hover:text-[var(--error)] disabled:opacity-60"
+                      >
+                        {removingAccountId === account.githubId ? "Removing..." : "Remove"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Wakatime Integration Section */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                  Wakatime Integration
+                </h2>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  Connect your Wakatime account to display accurate coding time and language usage.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="wakatime-key" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
+                  API Key
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="wakatime-key"
+                    type="password"
+                    value={wakatimeKey}
+                    onChange={(e) => {
+                      setWakatimeKey(e.target.value);
+                      setIsDirty(true);
+                    }}
+                    placeholder={settings.has_wakatime_key ? "•••••••••••••••• (Configured)" : "Enter your Wakatime API key"}
+                    autoComplete="new-password"
+                    className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveWakatime}
+                    disabled={savingWakatime}
+                    className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60 min-w-[80px]"
+                  >
+                    {savingWakatime ? "Saving..." : "Save"}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+                  {settings.has_wakatime_key ? "Leave blank and click Save to remove your key." : "You can find your API key in your Wakatime Settings."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Discord Integration Section */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                  Discord Integration
+                </h2>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  Receive streak reminders and milestone alerts in your Discord server.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="discord-webhook" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
+                  Webhook URL
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="discord-webhook"
+                    type="text"
+                    value={discordWebhook}
+                    onChange={(e) => {
+                      setDiscordWebhook(e.target.value);
+                      setIsDirty(true);
+                    }}
+                    placeholder="https://discord.com/api/webhooks/..."
+                    className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="timezone-select" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
+                  Timezone (For 8 PM reminders)
+                </label>
+                <select
+                  id="timezone-select"
+                  value={timezone}
                   onChange={(e) => {
-                    setWakatimeKey(e.target.value);
+                    setTimezone(e.target.value);
                     setIsDirty(true);
                   }}
-                  placeholder={settings.has_wakatime_key ? "•••••••••••••••• (Configured)" : "Enter your Wakatime API key"}
-                  autoComplete="new-password"
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                />
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                >
+                  <option value="UTC">UTC</option>
+                  <option value="America/New_York">Eastern Time (ET)</option>
+                  <option value="America/Chicago">Central Time (CT)</option>
+                  <option value="America/Denver">Mountain Time (MT)</option>
+                  <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                  <option value="Europe/London">London (GMT/BST)</option>
+                  <option value="Europe/Paris">Central European Time (CET)</option>
+                  <option value="Asia/Kolkata">India Standard Time (IST)</option>
+                  <option value="Asia/Tokyo">Japan Standard Time (JST)</option>
+                  <option value="Australia/Sydney">Australian Eastern Time (AET)</option>
+                  <option value="America/Sao_Paulo">Brasilia Time (BRT)</option>
+                  <option value="Asia/Dubai">Gulf Standard Time (GST)</option>
+                  <option value="Asia/Singapore">Singapore Standard Time (SGT)</option>
+                </select>
+              </div>
+
+              <div className="flex gap-2 mt-4">
                 <button
                   type="button"
-                  onClick={handleSaveWakatime}
-                  disabled={savingWakatime}
-                  className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60 min-w-[80px]"
+                  onClick={handleSaveDiscord}
+                  disabled={savingDiscord}
+                  className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
                 >
-                  {savingWakatime ? "Saving..." : "Save"}
+                  {savingDiscord ? "Saving..." : "Save Discord Settings"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTestDiscord}
+                  disabled={testingDiscord || !discordWebhook}
+                  className="px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--card-muted)] transition-colors disabled:opacity-60"
+                >
+                  {testingDiscord ? "Testing..." : "Test Notification"}
                 </button>
               </div>
               <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-                {settings.has_wakatime_key ? "Leave blank and click Save to remove your key." : "You can find your API key in your Wakatime Settings."}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Discord Integration
-              </h2>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Receive streak reminders and milestone alerts in your Discord server.
+                Leave Webhook URL blank and click Save to unlink Discord.
               </p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="discord-webhook" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                Webhook URL
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="discord-webhook"
-                  type="text"
-                  value={discordWebhook}
-                  onChange={(e) => {
-                    setDiscordWebhook(e.target.value);
-                    setIsDirty(true);
-                  }}
-                  placeholder="https://discord.com/api/webhooks/..."
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="timezone-select" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                Timezone (For 8 PM reminders)
-              </label>
-              <select
-                id="timezone-select"
-                value={timezone}
-                onChange={(e) => {
-                  setTimezone(e.target.value);
-                  setIsDirty(true);
-                }}
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-              >
-                <option value="UTC">UTC</option>
-                <option value="America/New_York">Eastern Time (ET)</option>
-                <option value="America/Chicago">Central Time (CT)</option>
-                <option value="America/Denver">Mountain Time (MT)</option>
-                <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                <option value="Europe/London">London (GMT/BST)</option>
-                <option value="Europe/Paris">Central European Time (CET)</option>
-                <option value="Asia/Kolkata">India Standard Time (IST)</option>
-                <option value="Asia/Tokyo">Japan Standard Time (JST)</option>
-                <option value="Australia/Sydney">Australian Eastern Time (AET)</option>
-                {/* Additional common timezones */}
-                <option value="America/Sao_Paulo">Brasilia Time (BRT)</option>
-                <option value="Asia/Dubai">Gulf Standard Time (GST)</option>
-                <option value="Asia/Singapore">Singapore Standard Time (SGT)</option>
-              </select>
-            </div>
-
-            <div className="flex gap-2 mt-4">
-              <button
-                type="button"
-                onClick={handleSaveDiscord}
-                disabled={savingDiscord}
-                className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {savingDiscord ? "Saving..." : "Save Discord Settings"}
-              </button>
-              <button
-                type="button"
-                onClick={handleTestDiscord}
-                disabled={testingDiscord || !discordWebhook}
-                className="px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--card-muted)] transition-colors disabled:opacity-60"
-              >
-                {testingDiscord ? "Testing..." : "Test Notification"}
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-              Leave Webhook URL blank and click Save to unlink Discord.
-            </p>
-          </div>
+          {/* ── 🎯 Client-Side Tabular Data Export Capacity Module Placement ── */}
+          <DataExportCard />
         </div>
 
-        <PrivacySettings />
-        <div className="mt-4 flex justify-center items-center pt-6">
-          <Link href="/dashboard">
-            <button className="group inline-flex items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95">
-              <span className="mr-2 transition-transform duration-200 group-hover:-translate-x-1.5">
-                ←
-              </span>
-              Back to Dashboard
-            </button>
+        {/* Footer Back Button Section */}
+        <div className="mt-8 flex justify-center items-center border-t border-[var(--border)] pt-6">
+          <Link href="/dashboard" className="group inline-flex items-center justify-center rounded-xl border border-[var(--accent)] bg-[var(--accent)] px-6 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-95 active:scale-95 shadow-sm">
+            <span className="mr-2 transition-transform duration-200 group-hover:-translate-x-1">
+              ←
+            </span>
+            Back to Dashboard
           </Link>
         </div>
-
-        <ConfirmModal
-          isOpen={showConfirmModal}
-          title="Unsaved Changes"
-          message="You have unsaved changes in your settings. If you leave now, your progress will be lost."
-          confirmLabel="Leave Anyway"
-          cancelLabel="Stay and Save"
-          onConfirm={handleConfirmLeave}
-          onCancel={handleCancelLeave}
-        />
       </div>
+
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title="Unsaved Changes"
+        message="You have unsaved changes in your settings. If you leave now, your progress will be lost."
+        confirmLabel="Leave Anyway"
+        cancelLabel="Stay and Save"
+        onConfirm={handleConfirmLeave}
+        onCancel={handleCancelLeave}
+      />
     </div>
   );
 }
