@@ -16,8 +16,6 @@ import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExpl
 import dynamic from "next/dynamic";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import { AIMentorWidget } from "@/components/AIMentorWidget";
-import ExportButton from "@/components/ExportButton";
-import Link from "next/link";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
 import CodingTimeWidget from "@/components/CodingTimeWidget";
@@ -104,70 +102,14 @@ export default async function DashboardPage() {
 
   return (
     <DashboardSSEProvider>
-      <div className="min-h-screen overflow-x-hidden bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
+      <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
         <DashboardHeader />
-      <div className="mb-6 rounded-2xl border border-[var(--border)] bg-[var(--card)]/80 p-3 shadow-sm backdrop-blur-sm sm:p-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <p
-              className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-foreground)]"
-              style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)" }}
-            >
-              Quick actions
-            </p>
-            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-              Common dashboard tasks and exports
-            </p>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Link
-            href="/wrapped"
-            className="flex min-h-11 items-center justify-center rounded-xl border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90"
-          >
-            Year in Code
-          </Link>
-          <Link
-            href="/dashboard/settings"
-            className="secondary-button flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-medium"
-          >
-            Settings
-          </Link>
-          <div className="col-span-2">
-            <ExportButton />
-          </div>
-        </div>
-      </div>
-      <StreakAtRiskBanner />
+        <StreakAtRiskBanner />
 
         <div className="mt-6 mb-6">
           <TodayFocusHero userName={session.user?.name ?? null} />
         </div>
-
-        {/* Action bar */}
-        <div
-          id="overview"
-          className="mb-6 flex flex-wrap items-stretch justify-center gap-2 scroll-mt-24 sm:justify-end"
-        >
-          <Link
-            href="/wrapped"
-            className="flex min-w-0 flex-1 items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-center text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90 sm:min-w-[140px] sm:flex-none"
-          >
-            Year in Code
-          </Link>
-          <Link
-            href="/dashboard/settings"
-            className="secondary-button flex min-w-0 flex-1 items-center justify-center rounded-xl px-4 py-2 text-center text-sm font-medium sm:min-w-[140px] sm:flex-none"
-          >
-            Settings
-          </Link>
-          <div className="w-full sm:w-auto">
-            <ExportButton />
-          </div>
-        </div>
-
-        <StreakAtRiskBanner />
 
         {/* Weekly summary — full width */}
         <div className="mt-6">
@@ -185,9 +127,7 @@ export default async function DashboardPage() {
           {/* Left: contribution graph + heatmap */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             <ContributionGraph />
-            <LazyWidget fallback={<SkeletonCard />}>
-              <ContributionHeatmap />
-            </LazyWidget>
+            <ContributionHeatmap />
           </div>
 
           {/* Right: streak + coding time */}
