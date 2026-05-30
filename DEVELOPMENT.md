@@ -15,6 +15,7 @@ Everything you need to run DevTrack locally from scratch in under 10 minutes.
 You also need free accounts on:
 - [Supabase](https://supabase.com) — for the database
 - GitHub — for OAuth (you already have this)
+- [Resend](https://resend.com) — for the contact form backend
 
 ---
 
@@ -78,6 +79,11 @@ NEXTAUTH_SECRET=generate_with_openssl_rand_base64_32
 # GitHub OAuth
 GITHUB_ID=Ov23...
 GITHUB_SECRET=your_github_client_secret
+
+# Contact form email delivery
+RESEND_API_KEY=re_xxx...
+RESEND_FROM_EMAIL="DevTrack <contact@your-domain.com>"
+CONTACT_TO_EMAIL=you@example.com
 ```
 
 Generate `NEXTAUTH_SECRET`:

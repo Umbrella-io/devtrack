@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { Metadata } from "next";
 import { cache } from "react"; // 💡 Fix 1: Added for request memoization
 import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
 import BadgeSection from "@/components/BadgeSection";
 import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
@@ -11,10 +12,11 @@ import ThemeToggle from "@/components/ThemeToggle";
 import CopyLinkButton from "@/components/CopyLinkButton"; // ✅ Keeping your imported button
 
 import SponsorBadge from "@/components/SponsorBadge";
-import { getUserByUsername } from "@/lib/supabase";
-import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
-import { fetchPinnedRepoDetails } from "@/lib/pinned-repos";
+import CopyLinkButton from "@/components/CopyLinkButton";
+import { authOptions } from "@/lib/auth";
+import { fetchPublicProfile } from "@/lib/public-profile-data";
+import { getUserByGithubId, getUserByUsername } from "@/lib/supabase";
 
 import {
   fetchPublicTopRepos,
@@ -37,35 +39,19 @@ async function fetchPublicProfile(
 
   if (username !== canonicalUsername) {
     redirect(`/u/${canonicalUsername}`);
+async function getLoggedInGitHubUsername() {
+  const session = await getServerSession(authOptions);
+
+  if (typeof session?.githubLogin === "string" && session.githubLogin.trim()) {
+    return session.githubLogin;
   }
 
-  const githubToken = process.env.GITHUB_TOKEN || "";
+  if (typeof session?.githubId === "string" && session.githubId.trim()) {
+    const user = await getUserByGithubId(session.githubId);
+    return user?.github_login ?? null;
+  }
 
-  const [repos, contributions, streak, achievementsCache, spotlight] = await Promise.all([
-    fetchPublicTopRepos(user.github_login, githubToken, 30),
-    fetchPublicContributions(user.github_login, githubToken, 30),
-    fetchPublicStreak(user.github_login, githubToken),
-    options.includeAchievements
-      ? syncGitHubAchievementsForUser({
-          userId: user.id,
-          githubLogin: user.github_login,
-          token: githubToken,
-        })
-      : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
-    fetchPinnedRepoDetails(user.github_login, user.pinned_repos || [], githubToken),
-  ]);
-
-  return {
-    username: user.github_login,
-    userId: user.id,
-    isSponsor: user.is_sponsor ?? false,
-    repos,
-    contributions,
-    streak,
-    achievements: achievementsCache.achievements,
-    achievementsError: achievementsCache.error,
-    spotlightRepos: spotlight,
-  };
+  return null;
 }
 
 /* -------------------- TYPES & METADATA -------------------- */
@@ -126,7 +112,10 @@ export default async function PublicProfilePage({
   params: { username: string };
 }) {
   const { username } = params;
-  const profile = await fetchPublicProfile(username, { includeAchievements: true });
+  const [profile, loggedInUsername] = await Promise.all([
+    fetchPublicProfile(username, { includeAchievements: true }),
+    getLoggedInGitHubUsername(),
+  ]);
   const profileUrl = getProfileUrl(username);
 
   if (!profile) {
@@ -161,8 +150,22 @@ export default async function PublicProfilePage({
     );
   }
 
+  const canonicalUsername = profile.username.toLowerCase();
+  if (username !== canonicalUsername) {
+    redirect(`/u/${canonicalUsername}`);
+  }
+
   const avatarUrl = `https://avatars.githubusercontent.com/${profile.username}`;
   const topRepo = profile.repos[0]?.name ?? "";
+  const showCompareButton =
+    loggedInUsername !== null &&
+    loggedInUsername.toLowerCase() !== profile.username.toLowerCase();
+  const compareHref = showCompareButton
+    ? `/compare/${encodeURIComponent(loggedInUsername)}-vs-${encodeURIComponent(profile.username)}`
+    : null;
+  const signInToCompareHref = `/auth/signin?callbackUrl=${encodeURIComponent(
+    `/u/${profile.username}`
+  )}`;
 
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
@@ -173,13 +176,32 @@ export default async function PublicProfilePage({
               @{profile.username}&apos;s Profile
               {profile.isSponsor && <SponsorBadge />}
             </h1>
+            <CopyLinkButton />
           </div>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
           </p>
+          {compareHref && (
+            <a
+              href={compareHref}
+              className="primary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
+            >
+              Compare with me
+            </a>
+          )}
+          {!loggedInUsername && (
+            <a
+              href={signInToCompareHref}
+              className="secondary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
+            >
+              Log in to compare
+            </a>
+          )}
         </div>
         
         <div className="flex items-center gap-3">
+        {/* Download stats card button — client component */}
+        <div className="flex flex-wrap items-center gap-3">
           <ThemeToggle />
           <StatsCard
             username={profile.username}

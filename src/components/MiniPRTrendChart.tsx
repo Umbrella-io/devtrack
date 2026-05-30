@@ -117,8 +117,8 @@ export default function MiniPRTrendChart() {
   }
 
   let strokeColor = "var(--accent)";
-  if (stats.trendText === "Improving") strokeColor = "#16a34a";
-  if (stats.trendText === "Degrading") strokeColor = "#dc2626";
+  if (stats.trendText === "Improving") strokeColor = "var(--success)";
+  if (stats.trendText === "Degrading") strokeColor = "var(--destructive)";
 
   return (
     <div className="mt-4 flex h-16 w-full items-center justify-between gap-4 rounded-lg bg-[var(--control)] p-3 border border-[var(--border)]">

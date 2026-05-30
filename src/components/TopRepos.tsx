@@ -211,17 +211,19 @@ function getVisibleLanguages(languages: RepoLanguage[]): RepoLanguage[] {
   const sorted = [...languages].sort((a, b) => b.percentage - a.percentage);
 
   if (sorted.length <= 3) {
-    const total = sorted.reduce((sum, lang) => sum + lang.percentage, 0);
-    if (total < 100 && sorted.length > 0) {
-      return [
-        ...sorted,
-        {
-          name: "Other",
-          bytes: 0,
-          percentage: Math.round((100 - total) * 10) / 10,
-        },
-      ];
-    }
+   const total = sorted.reduce((sum, lang) => sum + lang.percentage, 0);
+const otherPercentage = Math.round((100 - total) * 10) / 10;
+
+if (total < 100 && sorted.length > 0 && otherPercentage > 0) {
+  return [
+    ...sorted,
+    {
+      name: "Other",
+      bytes: 0,
+      percentage: otherPercentage,
+    },
+  ];
+}
     return sorted;
   }
 
@@ -443,16 +445,29 @@ export default function TopRepos() {
         <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
       ) : (
       <>
-        {repos.length > 10 && (
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search repositories…"
-            aria-label="Search repositories"
-            className="mb-3 w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
-          />
-        )}
+      {repos.length > 10 && (
+  <div className="relative mb-3">
+    <input
+      type="text"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      placeholder="Search repositories…"
+      aria-label="Search repositories"
+      className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
+    />
+
+    {searchQuery.length > 0 && (
+      <button
+        type="button"
+        onClick={() => setSearchQuery("")}
+        aria-label="Clear search"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
+      >
+        ✕
+      </button>
+    )}
+  </div>
+)}
         <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)] mb-2 px-0">
           <button
             type="button"
