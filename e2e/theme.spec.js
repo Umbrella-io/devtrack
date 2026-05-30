@@ -3,7 +3,7 @@ import { encode } from "next-auth/jwt";
 
 test.beforeEach(async ({ page }) => {
   const token = await encode({
-    secret: process.env.NEXTAUTH_SECRET ?? "playwright-placeholder-secret-that-is-long-enough",
+    secret: "playwright-placeholder-secret-that-is-long-enough",
     token: {
       name: "Playwright User",
       email: "playwright@example.com",

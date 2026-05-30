@@ -27,6 +27,21 @@ const jetbrains = JetBrains_Mono({
 });
 
 async function fetchRepoStats(): Promise<RepoStats> {
+  if (process.env.NEXTAUTH_SECRET === "playwright-placeholder-secret-that-is-long-enough") {
+    return {
+      stars: 42,
+      forks: 10,
+      openIssues: 5,
+      contributorCount: 3,
+      goodFirstIssues: 2,
+      contributors: [
+        { login: "contrib-1", avatar_url: "https://github.com/contrib-1.png", html_url: "https://github.com/contrib-1", isSponsor: false },
+        { login: "contrib-2", avatar_url: "https://github.com/contrib-2.png", html_url: "https://github.com/contrib-2", isSponsor: false },
+        { login: "contrib-3", avatar_url: "https://github.com/contrib-3.png", html_url: "https://github.com/contrib-3", isSponsor: false },
+      ],
+    };
+  }
+
   const GH_HEADERS = { Accept: "application/vnd.github.v3+json" };
   const OPTS = (ttl: number) => ({ next: { revalidate: ttl }, headers: GH_HEADERS });
 

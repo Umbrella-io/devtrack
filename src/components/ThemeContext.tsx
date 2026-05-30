@@ -25,7 +25,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     if (storedTheme) {
       setTheme(storedTheme);
     } else {
-      setTheme("light");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setTheme(prefersDark ? "dark" : "light");
     }
   }, []);
 

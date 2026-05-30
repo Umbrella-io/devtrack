@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
-const authSecret = process.env.NEXTAUTH_SECRET ?? "playwright-placeholder-secret-that-is-long-enough";
+const authSecret = "playwright-placeholder-secret-that-is-long-enough";
 
 async function mockSession(page: any) {
   const token = await encode({
@@ -156,7 +156,7 @@ async function mockSession(page: any) {
     });
   });
 
-  await page.route("https://github.com/*.png", async (route: any) => {
+  await page.route(/github\.com\/.*\.png/, async (route: any) => {
     await route.fulfill({
       contentType: "image/png",
       body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64"),
@@ -263,6 +263,12 @@ function mockMetricResponse(url: string) {
 test.describe("Visual Regression Tests", () => {
   test("Landing page - dark mode", async ({ page }) => {
     test.setTimeout(60000);
+    await page.route(/github\.com\/.*\.png/, async (route: any) => {
+      await route.fulfill({
+        contentType: "image/png",
+        body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64"),
+      });
+    });
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(3000);
