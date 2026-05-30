@@ -193,7 +193,7 @@ export default function FriendComparison() {
   };
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
       <div className="mb-6 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
@@ -374,11 +374,11 @@ export default function FriendComparison() {
             />
           )}
 
-          <div className="flex justify-center items-center gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 pt-4">
             <a
               href="#contribution-activity"
               onClick={handleCommitActivityClick}
-              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
+              className="text-center rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
             >
               View Commit Activity
             </a>

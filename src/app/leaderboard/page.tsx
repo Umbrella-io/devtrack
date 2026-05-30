@@ -115,14 +115,6 @@ export default async function LeaderboardPage({
         </div>
 
         <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-soft)]">
-          <div className="grid grid-cols-[72px_1fr_110px_110px] border-b border-[var(--border)] bg-[var(--control)] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)] md:grid-cols-[80px_1fr_140px_140px_120px]">
-            <div>Rank</div>
-            <div>Contributor</div>
-            <div>{activeMeta.label}</div>
-            <div className="hidden md:block">Score</div>
-            <div>Profile</div>
-          </div>
-
           {!leaderboard ? (
             <div className="px-4 py-12 text-center text-sm text-[var(--muted-foreground)]">
               Leaderboard data is temporarily unavailable.
@@ -131,10 +123,11 @@ export default async function LeaderboardPage({
             <EmptyState
               icon="🏆"
               title="No public profiles yet"
-              description="No public profiles yet — be the first to enable yours in Settings!"
+              description="No public profiles yet - be the first to enable yours in Settings!"
               actionLabel="Go to Settings"
               actionHref="/dashboard/settings"
             />
+
          ) : (
             rows.map((entry, idx) => {
               const stableKey = entry.username
@@ -144,6 +137,21 @@ export default async function LeaderboardPage({
               return (
                 <div
                   key={stableKey}
+
+          ) : (
+            <>
+              <div className="grid grid-cols-[72px_1fr_110px_110px] border-b border-[var(--border)] bg-[var(--control)] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)] md:grid-cols-[80px_1fr_140px_140px_120px]">
+                <div>Rank</div>
+                <div>Contributor</div>
+                <div>{activeMeta.label}</div>
+                <div className="hidden md:block">Score</div>
+                <div>Profile</div>
+              </div>
+
+              {rows.map((entry) => (
+                <div
+                  key={`${activeTab}-${entry.username}`}
+
                   className="grid grid-cols-[72px_1fr_110px_110px] items-center border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[80px_1fr_140px_140px_120px]"
                 >
                   <div className="text-lg font-bold text-[var(--card-foreground)]">
@@ -159,14 +167,23 @@ export default async function LeaderboardPage({
                     <div className="min-w-0">
                       <div
                         title={entry.username}
+
                         className="flex items-center gap-2 max-w-[120px] truncate font-semibold text-[var(--card-foreground)] sm:max-w-[180px] md:max-w-none"
+
+                        className="flex max-w-[120px] items-center gap-2 truncate font-semibold text-[var(--card-foreground)] sm:max-w-[180px] md:max-w-none"
+
                       >
                         @{entry.username}
                         {entry.isSponsor && <SponsorBadge />}
                       </div>
                       <div className="text-xs text-[var(--muted-foreground)]">
+
                         {entry.commits} commits · {entry.prs} PRs · {entry.streak}d
                         streak
+
+                        {entry.commits} commits, {entry.prs} PRs, {entry.streak}
+                        d streak
+
                       </div>
                     </div>
                   </div>
@@ -190,8 +207,11 @@ export default async function LeaderboardPage({
                     </Link>
                   </div>
                 </div>
+
               );
             })
+              ))}
+            </>
           )}
         </section>
       </div>

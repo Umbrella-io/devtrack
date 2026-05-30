@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => {
   // Create a valid NextAuth JWT and set it as the session cookie so
   // dashboard pages render as an authenticated user in Playwright.
   const token = await encode({
-    secret: process.env.NEXTAUTH_SECRET ?? "playwright-placeholder-secret-that-is-long-enough",
+    secret: process.env.NEXTAUTH_SECRET || "playwright-placeholder-secret-that-is-long-enough",
     token: {
       name: "Playwright User",
       email: "playwright@example.com",

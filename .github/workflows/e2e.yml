@@ -35,7 +35,7 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      - name: Build app
+      - name: Build Next.js app
         run: npm run build
 
       - name: Install Playwright browsers
@@ -43,7 +43,6 @@ jobs:
 
       - name: Run Playwright tests
         run: npx playwright test
-
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()

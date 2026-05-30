@@ -80,9 +80,7 @@ function checkMemoryLimit(
   const active = (memoryBuckets.get(key) ?? []).filter(
     (timestamp) => timestamp > cutoff
   );
-  const reset = Math.ceil(
-    ((active[0] ?? now) + WINDOW_SECONDS * 1000) / 1000
-  );
+  const reset = Math.ceil(((active[0] ?? now) + WINDOW_SECONDS * 1000) / 1000);
 
   if (active.length >= limit) {
     memoryBuckets.set(key, active);
@@ -172,7 +170,7 @@ async function checkUpstashLimit(
     }
 
     const data = await response.json();
-    
+
     // Upstash REST eval response format: { result: [allowed_flag, current_count] }
     const [allowedFlag, currentCount] = data.result as [number, number];
     const isAllowed = allowedFlag === 1;
@@ -184,7 +182,10 @@ async function checkUpstashLimit(
       reset,
     };
   } catch (error) {
-    console.error("Rate-limiter cloud pipeline failure, falling back to local memory storage:", error);
+    console.error(
+      "Rate-limiter cloud pipeline failure, falling back to local memory storage:",
+      error
+    );
     return null;
   }
 }

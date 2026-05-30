@@ -329,18 +329,18 @@ export default function ContributionHeatmap({
 };
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <div className="w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
+      <div className="mb-4 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-4 sm:gap-2">
         <div>
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Contribution Heatmap</h2>
-          <p className="text-sm text-[var(--muted-foreground)]">
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)] dark:text-white">Contribution Heatmap</h2>          
+          <p className="text-sm text-[var(--muted-foreground)] dark:text-gray-300">
             {customLabel ? `${customLabel}` : `Last ${selectedDays} days of commit activity.`}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2">
           {/* Range buttons */}
-          <div className="flex gap-1 rounded-lg border border-[var(--border)] bg-[var(--background)] p-1">
+          <div className="flex flex-wrap gap-1 rounded-lg border border-[var(--border)] bg-[var(--background)] p-1">
             {PRESET_RANGES.map((r) => (
               <button
                 key={r.days}
@@ -350,7 +350,7 @@ export default function ContributionHeatmap({
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                   selectedDays === r.days && !customLabel
                     ? "bg-[var(--accent)] text-[var(--background)]"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    : "text-[var(--muted-foreground)] dark:text-gray-300 hover:text-[var(--foreground)] dark:hover:text-white"
                 }`}
               >
                 {r.label}
@@ -362,10 +362,12 @@ export default function ContributionHeatmap({
           <div className="relative" ref={popoverRef}>
             <button
               onClick={() => setShowPopover((v) => !v)}
+              aria-label={customLabel ? `Custom date range: ${customLabel}` : "Select custom date range"}
+              aria-expanded={showPopover}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-colors border border-[var(--border)] ${
                 customLabel
                   ? "bg-[var(--accent)] text-[var(--background)]"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  : "text-[var(--muted-foreground)] dark:text-gray-300 hover:text-[var(--foreground)] dark:hover:text-white"
               }`}
             >
               {customLabel ?? "Custom…"}
@@ -420,7 +422,7 @@ export default function ContributionHeatmap({
             type="button"
             onClick={() => setTheme("default")}
             style={theme === "default" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}
-            className="rounded px-2 py-1 text-xs"
+            className="rounded px-2 py-1 text-xs dark:text-gray-300"
           >
             Default
           </button>
@@ -428,24 +430,24 @@ export default function ContributionHeatmap({
             type="button"
             onClick={() => setTheme("colour-blind-friendly")}
             style={theme === "colour-blind-friendly" ? { backgroundColor: themeConfig.accent, color: "#fff" } : undefined}
-            className="rounded px-2 py-1 text-xs"
+            className="rounded px-2 py-1 text-xs dark:text-gray-300"
           >
             Colour-blind
           </button>
         </div>
 
+        {/* Legend — Less / More */}
         <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-          <span>Less</span>
+          <span className="dark:text-gray-300">Less</span>
           <div className="flex items-center gap-1">
             {[
-  0,
-  Math.ceil(maxCommits * 0.25),
-  Math.ceil(maxCommits * 0.5),
-  Math.ceil(maxCommits * 0.75),
-  maxCommits,
-].map((count) => {
+              0,
+              Math.ceil(maxCommits * 0.25),
+              Math.ceil(maxCommits * 0.5),
+              Math.ceil(maxCommits * 0.75),
+              maxCommits,
+            ].map((count) => {
               const swatch = getHeatmapColor(count);
-                
               return (
                 <span
                   key={count}
@@ -455,7 +457,7 @@ export default function ContributionHeatmap({
               );
             })}
           </div>
-          <span>More</span>
+          <span className="dark:text-gray-300">More</span>
         </div>
       </div>
 
@@ -467,12 +469,12 @@ export default function ContributionHeatmap({
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto pb-2  scrollbar-thin">
+          <div className="overflow-x-auto pb-2 scrollbar-thin">
             <div className="mx-auto flex flex-col gap-1" style={{ width: `${totalGridWidth}px` }}>
               
               {/* MATHEMATICAL COORDINATE TIMELINE HEADER BANNER CONTAINER */}
               <div 
-                className="relative w-full text-[11px] font-semibold text-[var(--foreground)]" 
+                className="relative w-full text-[11px] font-semibold text-[var(--foreground)] dark:text-gray-200" 
                 style={{ height: `${HEADER_HEIGHT}px` }}
               >
                 {monthMarkers.map((marker, idx) => {
@@ -503,7 +505,7 @@ export default function ContributionHeatmap({
                 {DAY_LABELS.map((label, rowIndex) => (
                   <div
                     key={label}
-                    className="flex items-center justify-end pr-2 text-[10px] text-[var(--muted-foreground)]"
+                    className="flex items-center justify-end pr-2 text-[10px] text-[var(--muted-foreground)] dark:text-gray-500"
                     style={{
                       gridRow: rowIndex + 1,
                       gridColumn: 1,
@@ -543,7 +545,6 @@ export default function ContributionHeatmap({
                         backgroundColor: isFuture
                           ? "transparent"
                           : getHeatmapColor(cell.count),
-
                         borderColor: themeConfig.border,
                         ["--heatmap-focus-ring" as any]: themeConfig.accent,
                       }}
@@ -568,7 +569,8 @@ export default function ContributionHeatmap({
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-between gap-4 text-xs text-[var(--muted-foreground)]">
+          {/* Commits shown + Updated timestamp */}
+          <div className="mt-4 flex items-center justify-between gap-4 text-xs text-[var(--muted-foreground)] dark:text-gray-400">
             <p>
               {cells.filter((cell) => cell.inRange).reduce((total, cell) => total + cell.count, 0)} commits shown.
             </p>
@@ -586,5 +588,3 @@ export default function ContributionHeatmap({
     </div>
   );
 }
-
-
