@@ -18,18 +18,19 @@ export type RepoStats = {
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
    ═══════════════════════════════════════════════════════════ */
-const A = '#818cf8';                  // accent — indigo
-const BG = 'transparent'
+const A = '#818cf8';
+const BG = 'transparent';
 const SURF = '#0e0e0e';
-const BORDER = '#2a2a2a';             // was #1a1a1a — now more visible
-const TEXT = '#e0e0e0';
-const MUTED = '#94a3b8';
-const HC = ['#111', '#1e1b4b', '#3730a3', '#4f46e5', A]; // heatmap levels
-const MC = ['#111', '#1e1b4b', '#3730a3', A];             // mini heatmap
+const BORDER = '#2a2a2a';
+
+const TEXT = '#f3f4f6';
+const MUTED = '#cbd5e1';
+
+const HC = ['#111', '#1e1b4b', '#3730a3', '#4f46e5', A];
+const MC = ['#111', '#1e1b4b', '#3730a3', A];
 
 const MONO = 'var(--font-jetbrains, ui-monospace, monospace)';
 const DISP = 'var(--font-syne, system-ui, sans-serif)';
-
 /* ═══════════════════════════════════════════════════════════
    PRE-SEEDED DATA  (deterministic → no hydration mismatch)
    ═══════════════════════════════════════════════════════════ */
@@ -164,12 +165,21 @@ function LandingNav() {
       <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: TEXT, letterSpacing: '-0.02em' }}>
         <span style={{ color: A }}>▲</span> DEVTRACK
       </span>
+
       <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
         <a href="/dashboard" className="lnd-nav-link">Dashboard</a>
         <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-nav-link">
           SIGN IN →
         </a>
       </div>
+
+     <a
+  href="/auth/signin"
+  className="lnd-nav-link hover:scale-105 transition-all duration-300"
+>
+  SIGN IN →
+</a>
+(style: improve landing page contrast and card hover effects)
     </nav>
   );
 }
@@ -196,8 +206,12 @@ function Cell({
 }) {
   return (
     <div
-      className="lnd-cell"
-      style={{ gridColumn: spanCols > 1 ? `span ${spanCols}` : undefined, ...style }}
+      className="lnd-cell hover:scale-105 transition-all duration-300"
+      style={{
+        gridColumn: spanCols > 1 ? `span ${spanCols}` : undefined,
+        cursor: 'pointer',
+        ...style,
+      }}
     >
       {children}
     </div>
@@ -392,7 +406,7 @@ function HeroSection() {
         <h1
           style={{
             fontFamily: DISP, fontWeight: 800,
-            fontSize: 'clamp(40px,6vw,76px)', lineHeight: 0.95,
+            fontSize: 'clamp(44px,7vw,84px)', lineHeight: 0.95,
             letterSpacing: '-0.04em', color: TEXT, margin: '0 0 24px',
             animation: 'lndHeroIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both',
           }}
@@ -404,12 +418,16 @@ function HeroSection() {
 
         {/* Tagline — NOW HIGH CONTRAST */}
         <p style={{
-          fontSize: 'clamp(15px,1.8vw,17px)', color: MUTED,   // was #555
-          lineHeight: 1.65, maxWidth: 400, margin: '0 0 32px',
-        }}>
+  fontSize: 'clamp(15px,1.8vw,17px)',
+  color: '#d1d5db',
+  lineHeight: 1.65,
+  maxWidth: 400,
+  margin: '0 0 32px',
+}}>
           Open-source developer productivity dashboard. Track GitHub streaks,
           PR velocity, and coding goals — automatically.
         </p>
+
 
         {/* CTAs */}
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -428,6 +446,29 @@ function HeroSection() {
             ★ Star on GitHub
           </a>
         </div>
+
+     {/* CTAs */}
+<div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+  <a
+    href="/auth/signin"
+    className="lnd-cta-primary hover:shadow-[0_0_25px_rgba(129,140,248,0.5)] hover:scale-105 transition-all duration-300"
+  >
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+    </svg>
+    Sign in with GitHub
+  </a>
+
+  <a
+    href="https://github.com/Priyanshu-byte-coder/devtrack"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="lnd-cta-secondary hover:scale-105 transition-all duration-300"
+  >
+    ★ Star on GitHub
+  </a>
+</div>
+ (style: improve landing page contrast and card hover effects)
       </div>
 
       {/* Right: bento */}
@@ -612,7 +653,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         }}>
           {f.title}
         </h3>
-        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>   {/* was '#444' */}
+        <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.65, margin: 0 }}>   {/* was '#444' */}
           {f.desc}
         </p>
       </div>
@@ -686,6 +727,7 @@ function SetupSection() {
       </div>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+
         <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary">
           Sign in with GitHub
         </a>
@@ -697,6 +739,14 @@ function SetupSection() {
         >
           ★ Star on GitHub
         </a>
+
+       <a
+  href="/auth/signin"
+  className="lnd-cta-primary hover:shadow-[0_0_25px_rgba(129,140,248,0.5)] hover:scale-105 transition-all duration-300"
+>
+  Sign in with GitHub
+</a>
+ (style: improve landing page contrast and card hover effects)
       </div>
 
       <div style={{ fontFamily: MONO, fontSize: 11, color: '#222', marginTop: 20, letterSpacing: '0.06em' }}>
