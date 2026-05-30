@@ -28,7 +28,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     env: {
-      NEXTAUTH_SECRET: "playwright-placeholder-secret-that-is-long-enough",
+      NEXTAUTH_SECRET: "test-nextauth-secret-for-playwright-tests",
       NEXTAUTH_URL: baseURL,
       NEXT_PUBLIC_APP_URL: baseURL,
       GITHUB_ID: "playwright-github-id",

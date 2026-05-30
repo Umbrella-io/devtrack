@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/Skeleton";
 
 interface ProjectData {
   metrics: {
@@ -144,6 +145,27 @@ export default function ProjectMetrics() {
           </div>
         </CardContent>
       </Card>
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+            Project Tracking
+          </h2>
+          <Skeleton className="h-4 w-16" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-[88px] w-full rounded-lg" />
+          ))}
+        </div>
+        <div>
+          <Skeleton className="h-4 w-24 mb-3" />
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-[60px] w-full rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
     );
   }
 

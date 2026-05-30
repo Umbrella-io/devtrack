@@ -12,6 +12,7 @@ import {
   YAxis,
   type TooltipProps,
 } from "recharts";
+import { Skeleton } from "@/components/Skeleton";
 import { useAccount } from "@/components/AccountContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -279,6 +280,10 @@ export default function CodingActivityInsightsCard() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((item) => (
               <Skeleton key={item} aria-hidden="true" className="h-16 rounded-lg" />
+          <Skeleton className="h-[260px] w-full rounded-lg" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <Skeleton key={item} className="h-16 w-full rounded-lg" />
             ))}
           </div>
         </div>

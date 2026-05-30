@@ -47,6 +47,9 @@ export default function Footer() {
               <Link className="transition-all duration-200 hover:text-white hover:translate-x-1 w-fit" href="/leaderboard">
                 Leaderboard
               </Link>
+              <Link className="transition-colors hover:text-[var(--card-foreground)]" href="/contact">
+                Contact
+              </Link>
             </div>
           </div>
 
