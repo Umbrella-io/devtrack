@@ -5,6 +5,7 @@ import { GITHUB_API, GitHubCommitSearchItem } from "@/lib/github";
 import {
   calculateLanguagePercentages,
   calculateLongestStreak,
+  calculatePersonality,
   getMostContributedRepo,
   getMostProductiveMonth,
   getPeakCodingHour,
@@ -194,19 +195,33 @@ export async function GET(req: NextRequest) {
       ),
     ]);
 
+    const activeDays = Object.values(contributionsByDate).filter(
+      (count) => count > 0
+    ).length;
+    const longestStreak = calculateLongestStreak(contributionsByDate);
+    const peakCodingHourResult = getPeakCodingHour(hours);
+
+    const personality = calculatePersonality(
+      contributionsByDate,
+      totalCommits,
+      prsMerged,
+      peakCodingHourResult,
+      longestStreak,
+      activeDays
+    );
+
     return Response.json({
       year,
       username: session.githubLogin,
       totalCommits,
-      activeDays: Object.values(contributionsByDate).filter(
-        (count) => count > 0
-      ).length,
-      longestStreak: calculateLongestStreak(contributionsByDate),
+      activeDays,
+      longestStreak,
       mostProductiveMonth: getMostProductiveMonth(contributionsByDate),
       topLanguages,
       prsMerged,
       mostContributedRepo: getMostContributedRepo(commits),
-      peakCodingHour: getPeakCodingHour(hours),
+      peakCodingHour: peakCodingHourResult,
+      personality,
       generatedAt: new Date().toISOString(),
       partial,
     });
