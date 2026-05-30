@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type NavItem = { href: string; label: string };
 
@@ -35,6 +36,7 @@ export default function AppNavbar() {
 
   const isAuthenticated = status === "authenticated" && Boolean(session);
   const isPublicProfileRoute = pathname.startsWith("/u/");
+  const isDashboardRoute = pathname.startsWith("/dashboard");
   const identityLabel =
     session?.githubLogin ?? session?.user?.name ?? session?.user?.email ?? "user";
 
@@ -110,6 +112,8 @@ export default function AppNavbar() {
 
         {/* Desktop right */}
         <div className="hidden items-center gap-4 md:flex">
+          {/* Show ThemeToggle in navbar except on dashboard, where DashboardHeader provides it */}
+          {!isDashboardRoute && <ThemeToggle />}
           {isAuthenticated ? (
             <div className="flex items-center gap-4 border-l border-white/10 pl-4">
               <Link 
@@ -197,6 +201,11 @@ export default function AppNavbar() {
             )}
 
             <div className="mt-4 border-t border-white/10 pt-4">
+              {!isDashboardRoute && (
+                <div className="px-4 py-2">
+                  <ThemeToggle />
+                </div>
+              )}
               {isAuthenticated ? (
                 <div className="flex flex-col gap-3">
                   <p className="px-4 py-2 text-[12px] text-[var(--muted-foreground)]" style={{ fontFamily: MONO }}>
