@@ -58,7 +58,7 @@ export default function AppNavbar() {
   }, [isAuthenticated]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_82%,transparent)] backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)] backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         <Link
           href={isAuthenticated ? "/dashboard" : "/"}

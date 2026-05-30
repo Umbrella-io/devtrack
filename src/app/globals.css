@@ -32,6 +32,25 @@
   --border: #334155;
   --accent: #818cf8;
   --accent-soft: rgba(99, 102, 241, 0.2);
+
+  --background: #060b18;
+  --foreground: #f0f6ff;
+  --muted-foreground: #8a9ab5;
+
+  --card: #0c1525;
+  --card-foreground: #f0f6ff;
+
+  --card-muted: #122035;
+  --border: #1c2d44;
+
+  --accent: #60a5fa;
+  --accent-secondary: #3b82f6;
+
+  --focus-ring: #a5b4fc;
+  --success: #10b981;
+  --warning: #fbbf24;
+  --destructive: #f87171;
+  --accent-soft: rgba(96, 165, 250, 0.2);
   --accent-foreground: #ffffff;
   --control: #334155;
   --control-hover: #475569;
