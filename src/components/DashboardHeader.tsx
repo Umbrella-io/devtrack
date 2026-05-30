@@ -161,45 +161,40 @@ export default function DashboardHeader() {
 
         {/* Right Section */}
         <div className="flex min-w-0 flex-col gap-3 sm:items-end">
-          <div className="inline-flex items-center gap-2 self-start rounded-full border border-[var(--border)] bg-[var(--card-muted)] px-3 py-1 text-[11px] font-medium text-[var(--muted-foreground)] shadow-sm sm:self-end">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            Account controls
-          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {isPublic === true && session?.githubLogin && (
+              <a
+                href={`/u/${session.githubLogin}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
+                title="View your public profile"
+              >
+                Share Profile
+              </a>
+            )}
 
-          {isPublic === true && session?.githubLogin && (
-            <a
-              href={`/u/${session.githubLogin}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
-              title="View your public profile"
-            >
-              Share Profile
-            </a>
-          )}
+            <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
+              <div className="transition-transform duration-200 hover:scale-[1.05]">
+                <KeyboardShortcuts />
+              </div>
 
-          <div className="grid w-full grid-cols-2 gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] p-3 shadow-sm sm:w-auto sm:grid-cols-5 sm:gap-3">
+              <div className="transition-transform duration-200 hover:scale-[1.05]">
+                <NotificationBell />
+              </div>
 
-            <div className="justify-self-stretch transition-transform duration-200 hover:scale-[1.02] sm:justify-self-start">
-              <KeyboardShortcuts />
+              <div className="transition-transform duration-200 hover:scale-[1.05]">
+                <UserAvatar />
+              </div>
+
+              <div className="transition-transform duration-200 hover:rotate-12">
+                <ThemeToggle />
+              </div>
+
+              <div className="transition-transform duration-200 hover:scale-[1.05]">
+                <SignOutButton />
+              </div>
             </div>
-
-            <div className="justify-self-stretch transition-transform duration-200 hover:scale-[1.02] sm:justify-self-start">
-              <NotificationBell />
-            </div>
-
-            <div className="col-span-2 justify-self-stretch transition-transform duration-200 hover:scale-[1.02] sm:col-span-1 sm:justify-self-start">
-              <UserAvatar />
-            </div>
-
-            <div className="justify-self-stretch transition-transform duration-200 hover:rotate-12 sm:justify-self-start">
-              <ThemeToggle />
-            </div>
-
-            <div className="col-span-2 justify-self-stretch transition-transform duration-200 hover:scale-[1.02] sm:col-span-1 sm:justify-self-start">
-              <SignOutButton />
-            </div>
-
           </div>
         </div>
       </div>
