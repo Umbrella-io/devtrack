@@ -9,13 +9,13 @@ export default function KeyboardShortcuts() {
   const [isOpen, setIsOpen] = useState(false);
 
   const [announcement, setAnnouncement] = useState("");
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const keyboardToggleRef = useRef(false);
   const shortcutsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (keyboardToggleRef.current && theme !== undefined) {
-      setAnnouncement(theme === "dark" ? "Dark mode enabled" : "Light mode enabled");
+      setAnnouncement(`Theme changed to ${theme}`);
     }
     keyboardToggleRef.current = false;
   }, [theme]);
@@ -37,7 +37,10 @@ export default function KeyboardShortcuts() {
 
       if (e.key.toLowerCase() === "t") {
         keyboardToggleRef.current = true;
-        toggleTheme();
+        const themes = ["classic-dark", "modern-light", "nordic-frost", "cyberpunk"] as const;
+        const currentIndex = themes.indexOf(theme as any);
+        const nextTheme = themes[(currentIndex + 1) % themes.length];
+        setTheme(nextTheme);
         e.preventDefault();
         return;
       }
@@ -59,7 +62,7 @@ export default function KeyboardShortcuts() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [toggleTheme]);
+  }, [theme, setTheme]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

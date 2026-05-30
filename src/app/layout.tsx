@@ -53,7 +53,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: import("react").ReactNode;
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -63,13 +63,17 @@ export default async function RootLayout({
             __html: `
               (function() {
                 try {
-                  const stored = localStorage.getItem('theme');
-                  if (stored === 'light') {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.style.colorScheme = 'light';
-                  } else {
+                  let stored = localStorage.getItem('theme');
+                  if (stored === 'light') stored = 'modern-light';
+                  if (stored === 'dark' || !stored) stored = 'classic-dark';
+                  
+                  document.documentElement.setAttribute('data-theme', stored);
+                  if (stored !== 'modern-light') {
                     document.documentElement.classList.add('dark');
                     document.documentElement.style.colorScheme = 'dark';
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.style.colorScheme = 'light';
                   }
                 } catch (e) {}
               })();

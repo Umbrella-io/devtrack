@@ -2,11 +2,11 @@
 
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+export type Theme = "classic-dark" | "modern-light" | "nordic-frost" | "cyberpunk";
 
 interface ThemeContextType {
   theme: Theme | undefined;
-  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -18,31 +18,37 @@ const useSafeLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : us
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [theme, setTheme] = useState<Theme>(() => "dark");
+  const [theme, setThemeState] = useState<Theme>(() => "classic-dark");
 
   useEffect(() => {
     const storedTheme = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    if (storedTheme === "dark" || storedTheme === "light") {
-      setTheme(storedTheme);
+    if (storedTheme === "classic-dark" || storedTheme === "modern-light" || storedTheme === "nordic-frost" || storedTheme === "cyberpunk") {
+      setThemeState(storedTheme);
       return;
     }
-    // No stored preference — keep dark as default.
+    // Handle old 'dark'/'light' values migration
+    if ((storedTheme as any) === "dark") {
+      setThemeState("classic-dark");
+    } else if ((storedTheme as any) === "light") {
+      setThemeState("modern-light");
+    }
   }, []);
 
   useSafeLayoutEffect(() => {
     if (theme) {
-      document.documentElement.classList.toggle("dark", theme === "dark");
-      document.documentElement.style.colorScheme = theme;
+      document.documentElement.setAttribute("data-theme", theme);
+      document.documentElement.classList.toggle("dark", theme !== "modern-light");
+      document.documentElement.style.colorScheme = theme === "modern-light" ? "light" : "dark";
       localStorage.setItem(STORAGE_KEY, theme);
     }
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );
