@@ -6,6 +6,7 @@ import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
 import RepoHealthPanel from "@/components/RepoHealthPanel";
 import RepoActivityDrawer from "@/components/RepoActivityDrawer";
+import { Search } from "lucide-react";
 
 interface RepoLanguage {
   name: string;
@@ -59,10 +60,9 @@ function getVisibleLanguages(languages: RepoLanguage[]): RepoLanguage[] {
   }
 
   const topLanguages = sorted.slice(0, 2);
-  const otherPercentage =
-    Math.round(
-      sorted.slice(2).reduce((sum, lang) => sum + lang.percentage, 0) * 10
-    ) / 10;
+  const otherPercentage = Math.round(
+    sorted.slice(2).reduce((sum, lang) => sum + lang.percentage, 0) * 10
+  ) / 10;
 
   return [
     ...topLanguages,
@@ -82,20 +82,15 @@ export default function TopRepos() {
   const [days, setDays] = useState(30);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
-  const [healthScores, setHealthScores] = useState<
-    Record<string, RepoHealthScore>
-  >({});
+  const [healthScores, setHealthScores] = useState<Record<string, RepoHealthScore>>({});
   const [healthLoading, setHealthLoading] = useState(true);
   const [sortColumn, setSortColumn] = useState<"commits" | "name">("commits");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [pinnedRepos, setPinnedRepos] = useState<string[]>([]);
   const [pinError, setPinError] = useState<string | null>(null);
   const [activeHealthRepo, setActiveHealthRepo] = useState<string | null>(null);
-  const [selectedRepoForActivity, setSelectedRepoForActivity] = useState<
-    string | null
-  >(null);
+  const [selectedRepoForActivity, setSelectedRepoForActivity] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-
   useEffect(() => {
     fetch("/api/user/settings")
       .then((r) => r.json())
@@ -106,9 +101,9 @@ export default function TopRepos() {
   const togglePin = async (repoFullName: string) => {
     const isPinned = pinnedRepos.includes(repoFullName);
     let newPinsArray: string[];
-
+    
     if (isPinned) {
-      newPinsArray = pinnedRepos.filter((name) => name !== repoFullName);
+      newPinsArray = pinnedRepos.filter(name => name !== repoFullName);
     } else {
       if (pinnedRepos.length >= 3) {
         setPinError("Maximum 3 pins allowed");
@@ -116,7 +111,7 @@ export default function TopRepos() {
       }
       newPinsArray = [...pinnedRepos, repoFullName];
     }
-
+    
     setPinError(null);
 
     const prevPins = [...pinnedRepos];
@@ -141,18 +136,13 @@ export default function TopRepos() {
     setLoading(true);
     setError(null);
     setSearchQuery("");
-    const accountParam =
-      selectedAccount !== null
-        ? `&accountId=${encodeURIComponent(selectedAccount)}`
-        : "";
+    const accountParam = selectedAccount !== null
+      ? `&accountId=${encodeURIComponent(selectedAccount)}`
+      : "";
     fetch(`/api/metrics/repos?days=${days}${accountParam}`)
       .then((r) => r.json())
       .then((d: { repos: Repo[] }) => setRepos(d.repos ?? []))
-      .catch(() =>
-        setError(
-          "We couldn't load your top repositories right now. Please try again in a moment."
-        )
-      )
+      .catch(() => setError("We couldn't load your top repositories right now. Please try again in a moment."))
       .finally(() => {
         setLoading(false);
         setLastUpdated(new Date());
@@ -162,13 +152,10 @@ export default function TopRepos() {
 
   const fetchHealthScores = useCallback(() => {
     setHealthLoading(true);
-    const accountParam =
-      selectedAccount !== null
-        ? `?accountId=${encodeURIComponent(selectedAccount)}`
-        : "";
-    fetch(
-      `/api/metrics/repo-health${accountParam}${accountParam ? "&" : "?"}days=${days}`
-    )
+    const accountParam = selectedAccount !== null
+      ? `?accountId=${encodeURIComponent(selectedAccount)}`
+      : "";
+    fetch(`/api/metrics/repo-health${accountParam}${accountParam ? "&" : "?"}days=${days}`)
       .then((r) => r.json())
       .then((d: { repos: RepoHealthScore[] }) => {
         const map: Record<string, RepoHealthScore> = {};
@@ -220,12 +207,9 @@ export default function TopRepos() {
   });
 
   const sortedRepos = [
-    ...(pinnedRepos
-      .map((pin) => repos.find((r) => r.name === pin))
-      .filter(Boolean) as Repo[]),
-    ...baseSortedRepos.filter((r) => !pinnedRepos.includes(r.name)),
+    ...pinnedRepos.map(pin => repos.find(r => r.name === pin)).filter(Boolean) as Repo[],
+    ...baseSortedRepos.filter(r => !pinnedRepos.includes(r.name))
   ];
-
   // client-side search filter — only shown when list has more than 10 repos
   const filteredRepos = searchQuery.trim()
     ? sortedRepos.filter((r) =>
@@ -240,8 +224,9 @@ export default function TopRepos() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <SectionHeader
-            title={`Top Repositories${!loading && repos.length > 0 ? ` (${repos.length})` : ""}`}
-          />
+    title={`Top Repositories${!loading && repos.length > 0 ? ` (${repos.length})` : ""}`}
+  />
+
           {pinError && (
             <p className="text-xs text-[var(--destructive)]">{pinError}</p>
           )}
@@ -257,7 +242,6 @@ export default function TopRepos() {
           <option value={90}>Last 90d</option>
         </select>
       </div>
-
       {loading ? (
         <div
           role="status"
@@ -286,241 +270,199 @@ export default function TopRepos() {
           </button>
         </div>
       ) : repos.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">
-          No commits in the last {days} days.
-        </p>
+        <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
       ) : (
-        <>
-          {repos.length > 10 && (
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search repositories…"
-              aria-label="Search repositories"
-              className="mb-3 w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
-            />
-          )}
-          <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)] mb-2 px-0">
-            <button
-              type="button"
-              onClick={() => handleSort("name")}
-              className="flex items-center gap-1 hover:text-[var(--card-foreground)] transition-colors"
-              aria-label="Sort by repository name"
-            >
-              Repository
-              <span aria-hidden="true">
-                {sortColumn === "name"
-                  ? sortDirection === "asc"
-                    ? "↑"
-                    : "↓"
-                  : "↕"}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSort("commits")}
-              className="flex items-center gap-1 hover:text-[var(--card-foreground)] transition-colors"
-              aria-label="Sort by commit count"
-            >
-              Commits
-              <span aria-hidden="true">
-                {sortColumn === "commits"
-                  ? sortDirection === "asc"
-                    ? "↑"
-                    : "↓"
-                  : "↕"}
-              </span>
-            </button>
-          </div>
-          <ul className="space-y-3">
-            {filteredRepos.length === 0 ? (
-              <p className="text-sm text-[var(--muted-foreground)] py-4 text-center">
-                No repos match your search.
-              </p>
-            ) : (
-              filteredRepos.map((repo, idx) => {
-                const isPinned = pinnedRepos.includes(repo.name);
-                const barWidth = Math.max(
-                  Math.round((repo.commits / maxCommits) * 100),
-                  4
-                );
-                const shortName = repo.name.split("/")[1] ?? repo.name;
-                const health = healthScores[repo.name];
-                const badgeTitle = health
-                  ? `Commits: ${health.signals.commitFrequency} | PR Merge Rate: ${Math.round(
-                      health.signals.prMergeRate * 100
-                    )}% | Avg PR Time: ${Math.round(
-                      health.signals.avgPrOpenTimeHours
-                    )}h | Open Issues: ${health.signals.openIssuesCount} | Last Commit: ${health.signals.daysSinceLastCommit} days ago`
-                  : undefined;
-                const badgeClass =
-                  health?.grade === "green"
-                    ? "bg-[var(--success)]/15 text-[var(--success)] border border-[var(--success)]/25"
-                    : health?.grade === "yellow"
-                      ? "bg-[var(--warning)]/15 text-[var(--warning)] border border-[var(--warning)]/25"
-                      : "bg-[var(--destructive)]/15 text-[var(--destructive)] border border-[var(--destructive)]/25";
-                const visibleLanguages = repo.languages
-                  ? getVisibleLanguages(repo.languages)
-                  : [];
-
-                return (
-                  <li key={repo.name}>
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <div className="flex items-center gap-2 max-w-[60%] sm:max-w-[70%]">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedRepoForActivity(repo.name)}
-                          className="truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] text-left font-medium"
-                          title={
-                            repo.description ||
-                            `View activity for ${repo.name}`
-                          }
-                        >
-                          <span className="mr-1 text-[var(--muted-foreground)] font-normal">
-                            #{idx + 1}
-                          </span>
-                          {shortName}
-                          {isPinned && (
-                            <span className="ml-2 inline-flex items-center rounded-md bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--accent)_20%,transparent)] align-middle">
-                              Pinned
-                            </span>
-                          )}
-                        </button>
-                        <a
-                          href={repo.url || `https://github.com/${repo.name}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors shrink-0"
-                          title="Open in GitHub"
-                          aria-label={`Open ${repo.name} in GitHub`}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M15 3h6v6" />
-                            <path d="M10 14 21 3" />
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                          </svg>
-                        </a>
-                      </div>
-                      <span className="shrink-0 flex items-center gap-2">
-                        {healthLoading ? (
-                          <div className="h-5 w-9 rounded bg-[var(--card-muted)] animate-pulse" />
-                        ) : health ? (
-                          <button
-                            type="button"
-                            onClick={() => setActiveHealthRepo(repo.name)}
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold cursor-pointer ${badgeClass}`}
-                            title={badgeTitle}
-                            aria-label={`View health breakdown for ${shortName}`}
-                          >
-                            {health.score}
-                          </button>
-                        ) : (
-                          <span
-                            className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-2 py-0.5 text-xs font-semibold text-[var(--muted-foreground)]"
-                            title="Not enough data to calculate health score"
-                          >
-                            --
-                          </span>
-                        )}
-                        <span className="text-[var(--muted-foreground)]">
-                          {repo.commits} commit{repo.commits !== 1 ? "s" : ""}
+      <>
+        {repos.length > 10 && (
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search repositories…"
+            aria-label="Search repositories"
+            className="mb-3 w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
+          />
+        )}
+        <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)] mb-2 px-0">
+          <button
+            type="button"
+            onClick={() => handleSort("name")}
+            className="flex items-center gap-1 hover:text-[var(--card-foreground)] transition-colors"
+            aria-label="Sort by repository name"
+          >
+            Repository
+            <span aria-hidden="true">
+              {sortColumn === "name" ? (sortDirection === "asc" ? "↑" : "↓") : "↕"}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSort("commits")}
+            className="flex items-center gap-1 hover:text-[var(--card-foreground)] transition-colors"
+            aria-label="Sort by commit count"
+          >
+            Commits
+            <span aria-hidden="true">
+              {sortColumn === "commits" ? (sortDirection === "asc" ? "↑" : "↓") : "↕"}
+            </span>
+          </button>
+        </div>
+        <div className="relative mb-4">
+  <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--muted-foreground)]" />
+  <input
+    type="text"
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    placeholder="Search repositories…"
+    className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-9 py-2 text-sm focus:border-[var(--accent)] focus:outline-none"
+  />
+</div>
+        <ul className="space-y-3">
+          {filteredRepos.length === 0 ? (
+            <p className="text-sm text-[var(--muted-foreground)] py-4 text-center">
+              No repos match your search.
+            </p>
+          ) : filteredRepos.map((repo, idx) => {
+            const isPinned = pinnedRepos.includes(repo.name);
+            const barWidth = Math.max(
+              Math.round((repo.commits / maxCommits) * 100),
+              4
+            );
+            const shortName = repo.name.split("/")[1] ?? repo.name;
+            const health = healthScores[repo.name];
+            const badgeTitle = health
+              ? `Commits: ${health.signals.commitFrequency} | PR Merge Rate: ${Math.round(
+                  health.signals.prMergeRate * 100
+                )}% | Avg PR Time: ${Math.round(
+                  health.signals.avgPrOpenTimeHours
+                )}h | Open Issues: ${health.signals.openIssuesCount} | Last Commit: ${health.signals.daysSinceLastCommit} days ago`
+              : undefined;
+            const badgeClass =
+              health?.grade === "green"
+                ? "bg-[var(--success)]/15 text-[var(--success)] border border-[var(--success)]/25"
+                : health?.grade === "yellow"
+                  ? "bg-[var(--warning)]/15 text-[var(--warning)] border border-[var(--warning)]/25"
+                  : "bg-[var(--destructive)]/15 text-[var(--destructive)] border border-[var(--destructive)]/25";
+            const visibleLanguages = repo.languages ? getVisibleLanguages(repo.languages) : [];
+            return (
+              <li key={repo.name}>
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <div className="flex items-center gap-2 max-w-[60%] sm:max-w-[70%]">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRepoForActivity(repo.name)}
+                      className="truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] text-left font-medium"
+                      title={repo.description || `View activity for ${repo.name}`}
+                    >
+                      <span className="mr-1 text-[var(--muted-foreground)] font-normal">#{idx + 1}</span>
+                      {shortName}
+                      {isPinned && (
+                        <span className="ml-2 inline-flex items-center rounded-md bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--accent)_20%,transparent)] align-middle">
+                          Pinned
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => togglePin(repo.name)}
-                          className="ml-1 p-1 hover:bg-[var(--card-muted)] rounded-md transition-colors"
-                          title={
-                            isPinned
-                              ? `Unpin ${shortName} repository`
-                              : `Pin ${shortName} repository`
-                          }
-                          aria-label={
-                            isPinned
-                              ? `Unpin ${repo.name}`
-                              : `Pin ${repo.name}`
-                          }
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill={isPinned ? "currentColor" : "none"}
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className={
-                              isPinned
-                                ? "text-[var(--accent)]"
-                                : "text-[var(--muted-foreground)]"
-                            }
-                          >
-                            <path d="M12 17v5" />
-                            <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
-                          </svg>
-                        </button>
-                      </span>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-[var(--control)]">
-                      <div
-                        className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
-                        style={{ width: `${barWidth}%` }}
-                      />
-                    </div>
-                    <div className="mt-2 min-h-6">
-                      {visibleLanguages.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 text-[11px] text-[var(--muted-foreground)]">
-                          {visibleLanguages.map((language) => (
-                            <span
-                              key={language.name}
-                              className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--control)] px-2 py-0.5"
-                              title={`${language.name}: ${language.percentage}%`}
-                            >
-                              <span
-                                className="h-2 w-2 rounded-full"
-                                style={{
-                                  backgroundColor: getLanguageColor(
-                                    language.name
-                                  ),
-                                }}
-                              />
-                              <span className="text-[var(--card-foreground)]">
-                                {language.name}
-                              </span>
-                              <span>{language.percentage}%</span>
-                            </span>
-                          ))}
-                        </div>
                       )}
+                    </button>
+                    <a
+                      href={repo.url || `https://github.com/${repo.name}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors shrink-0"
+                      title="Open in GitHub"
+                      aria-label={`Open ${repo.name} in GitHub`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                    </a>
+                  </div>
+                  <span className="shrink-0 flex items-center gap-2">
+                    {healthLoading ? (
+                      <div className="h-5 w-9 rounded bg-[var(--card-muted)] animate-pulse" />
+                    ) : health ? (
+                      <button
+                        type="button"
+                        onClick={() => setActiveHealthRepo(repo.name)}
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold cursor-pointer ${badgeClass}`}
+                        title={badgeTitle}
+                        aria-label={`View health breakdown for ${shortName}`}
+                      >
+                        {health.score}
+                      </button>
+                    ) : (
+                      <span
+                        className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-2 py-0.5 text-xs font-semibold text-[var(--muted-foreground)]"
+                        title="Not enough data to calculate health score"
+                      >
+                        --
+                      </span>
+                    )}
+                    <span className="text-[var(--muted-foreground)]">
+                      {repo.commits} commit{repo.commits !== 1 ? "s" : ""}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => togglePin(repo.name)}
+                      className="ml-1 p-1 hover:bg-[var(--card-muted)] rounded-md transition-colors"
+                      title={
+                        isPinned
+                          ? `Unpin ${shortName} repository`
+                          : `Pin ${shortName} repository`
+                      }
+                      aria-label={isPinned ? `Unpin ${repo.name}` : `Pin ${repo.name}`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill={isPinned ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={isPinned ? "text-[var(--accent)]" : "text-[var(--muted-foreground)]"}
+                      >
+                        <path d="M12 17v5" />
+                        <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-[var(--control)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
+                    style={{ width: `${barWidth}%` }}
+                  />
+                </div>
+                <div className="mt-2 min-h-6">
+                  {visibleLanguages.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 text-[11px] text-[var(--muted-foreground)]">
+                      {visibleLanguages.map((language) => (
+                        <span
+                          key={language.name}
+                          className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--control)] px-2 py-0.5"
+                          title={`${language.name}: ${language.percentage}%`}
+                        >
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: getLanguageColor(language.name) }}
+                          />
+                          <span className="text-[var(--card-foreground)]">{language.name}</span>
+                          <span>{language.percentage}%</span>
+                        </span>
+                      ))}
                     </div>
-                  </li>
-                );
-              })
-            )}
-          </ul>
-        </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </>
       )}
-
       {lastUpdated && (
         <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
-          {minutesAgo === 0
-            ? "Updated just now"
-            : `Updated ${minutesAgo} min ago`}
+         {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
         </p>
-      )}
-
+     )}
       {activeHealthRepo && healthScores[activeHealthRepo] && (
         <RepoHealthPanel
           health={healthScores[activeHealthRepo]}
