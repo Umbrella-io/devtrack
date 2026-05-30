@@ -33,7 +33,10 @@ export default function DashboardHeader() {
   }, [session]);
 
   return (
-    <header className="flex flex-wrap items-center justify-between p-4 mb-8 gap-3 border-b border-[var(--border)] pb-6">
+    <header
+      className="flex flex-wrap items-center justify-between p-4 mb-8 gap-3 border-b border-[var(--border)] pb-6"
+      role="banner"
+    >
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
           Dashboard
@@ -43,14 +46,14 @@ export default function DashboardHeader() {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <nav aria-label="User actions" className="flex flex-wrap items-center gap-3">
         {settings?.is_public && session?.githubLogin && (
           <a
             href={`/u/${session.githubLogin}`}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="View your public profile (opens in new tab)"
             className="px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors"
-            title="View your public profile"
           >
             Share Profile
           </a>
@@ -58,7 +61,7 @@ export default function DashboardHeader() {
         <UserAvatar />
         <ThemeToggle />
         <SignOutButton />
-      </div>
+      </nav>
     </header>
   );
 }

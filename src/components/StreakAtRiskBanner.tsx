@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface StreakAtRiskBannerProps {
   lastCommitDate?: string | null;
@@ -17,9 +17,9 @@ export default function StreakAtRiskBanner({
   const [lastCommitDate, setLastCommitDate] = useState(propsLastCommitDate);
   const [currentStreak, setCurrentStreak] = useState(propsCurrentStreak);
   const [isAtRisk, setIsAtRisk] = useState(false);
+  const dismissBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    // If props weren't passed (e.g. from a Server Component), fetch them
     if (propsLastCommitDate === undefined || propsCurrentStreak === undefined) {
       fetch("/api/metrics/streak")
         .then((r) => r.json())
@@ -47,16 +47,12 @@ export default function StreakAtRiskBanner({
     }
 
     const now = new Date();
-    // 1. Check if current time is past 20:00 (8pm)
     if (now.getHours() < 20) {
       setIsAtRisk(false);
       return;
     }
 
-    // 2. Check if lastCommitDate is NOT today
-    // Convert to local YYYY-MM-DD for comparison
-    const todayStr = now.toLocaleDateString("en-CA"); // "YYYY-MM-DD" in local time
-    // lastCommitDate comes as "YYYY-MM-DD" from API
+    const todayStr = now.toLocaleDateString("en-CA");
     if (lastCommitDate === todayStr) {
       setIsAtRisk(false);
       return;
@@ -68,9 +64,14 @@ export default function StreakAtRiskBanner({
   if (!isAtRisk || dismissed) return null;
 
   return (
-    <div className="mb-6 flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-amber-500 shadow-sm transition-all animate-in fade-in slide-in-from-top-4">
+    <div
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      className="mb-6 flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-amber-500 shadow-sm transition-all animate-in fade-in slide-in-from-top-4"
+    >
       <div className="flex items-center gap-3">
-        <span className="text-xl" role="img" aria-label="Warning">
+        <span aria-hidden="true" className="text-xl">
           ⚠️
         </span>
         <div>
@@ -83,11 +84,12 @@ export default function StreakAtRiskBanner({
         </div>
       </div>
       <button
+        ref={dismissBtnRef}
         onClick={() => setDismissed(true)}
+        aria-label="Dismiss streak at risk warning"
         className="ml-4 rounded-md p-1.5 opacity-70 hover:bg-amber-500/20 hover:opacity-100 transition-all"
-        aria-label="Dismiss banner"
       >
-        ✕
+        <span aria-hidden="true">✕</span>
       </button>
     </div>
   );

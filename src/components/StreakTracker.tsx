@@ -42,7 +42,9 @@ export default function StreakTracker() {
       setData(streakData);
       setContributionData(contribData);
     } catch {
-      setError("We couldn't load your streak data right now. Please try again in a moment.");
+      setError(
+        "We couldn't load your streak data right now. Please try again in a moment."
+      );
     } finally {
       setLoading(false);
     }
@@ -54,7 +56,11 @@ export default function StreakTracker() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
+      <div
+        className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6"
+        role="status"
+        aria-label="Loading commit streaks"
+      >
         <div className="mb-4 h-5 w-36 rounded bg-[var(--card-muted)] animate-pulse" />
         <div className="grid grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -68,12 +74,18 @@ export default function StreakTracker() {
   if (error) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
+          Commit Streaks
+        </h2>
+        <div
+          role="alert"
+          className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400"
+        >
           <p>{error}</p>
           <button
             type="button"
             onClick={fetchStreak}
+            aria-label="Retry loading streak data"
             className="mt-3 rounded-md border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/10"
           >
             Try again
@@ -91,7 +103,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: data.current > 0,
           icon: "🔥",
-          tooltip: "Current consecutive coding days",
+          description: `Current streak: ${data.current} consecutive coding days`,
         },
         {
           label: "Longest Streak",
@@ -99,7 +111,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: false,
           icon: "🏆",
-          tooltip: "Your longest streak ever",
+          description: `Longest streak ever: ${data.longest} days`,
         },
         {
           label: "Active Days (90d)",
@@ -107,7 +119,7 @@ export default function StreakTracker() {
           unit: "days",
           highlight: false,
           icon: "📅",
-          tooltip: "Days you made commits in the last 90 days",
+          description: `${data.totalActiveDays} active days in the last 90 days`,
         },
         {
           label: "Last Commit",
@@ -120,15 +132,26 @@ export default function StreakTracker() {
           unit: "",
           highlight: false,
           icon: "⚡",
-          tooltip: "Your most recent commit",
+          description: data.lastCommitDate
+            ? `Last commit on ${new Date(data.lastCommitDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
+            : "No commits recorded",
         },
       ]
     : [];
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Commit Streaks</h2>
-      <div className="grid grid-cols-2 gap-3">
+    <section
+      aria-labelledby="commit-streaks-heading"
+      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+    >
+      <h2
+        id="commit-streaks-heading"
+        className="mb-4 text-lg font-semibold text-[var(--card-foreground)]"
+      >
+        Commit Streaks
+      </h2>
+
+      <dl className="grid grid-cols-2 gap-3">
         {stats.map((stat) => (
           <div
             key={stat.label}
@@ -138,11 +161,12 @@ export default function StreakTracker() {
                 : "bg-[var(--control)]"
             }`}
           >
-            <div className="text-xl mb-1" title={stat.tooltip} aria-label={stat.tooltip} role="img">{stat.icon}</div>
-            <div
-              className={`text-2xl font-bold ${
-                stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
-              }`}
+            <span aria-hidden="true" className="text-xl mb-1 block">
+              {stat.icon}
+            </span>
+            <dd
+              className="text-2xl font-bold text-[var(--accent)]"
+              aria-label={stat.description}
             >
               {stat.value}
               {stat.unit && (
@@ -150,13 +174,14 @@ export default function StreakTracker() {
                   {stat.unit}
                 </span>
               )}
-            </div>
-            <div className="mt-1 text-xs text-[var(--muted-foreground)]">{stat.label}</div>
+            </dd>
+            <dt className="mt-1 text-xs text-[var(--muted-foreground)]">
+              {stat.label}
+            </dt>
           </div>
         ))}
-      </div>
+      </dl>
 
-      {/* Streak Calendar Section */}
       {loading ? (
         <div className="mt-6 pt-6 border-t border-[var(--border)]">
           <div className="mb-4 h-6 w-40 rounded bg-[var(--card-muted)] animate-pulse" />
@@ -176,7 +201,7 @@ export default function StreakTracker() {
           onMonthChange={setCalendarMonth}
         />
       ) : null}
-    </div>
+    </section>
   );
 }
 
@@ -195,11 +220,10 @@ function StreakCalendar({
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
-  // Get first day of month and number of days
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const daysInMonth = lastDay.getDate();
-  const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
+  const startingDayOfWeek = firstDay.getDay();
 
   const monthName = firstDay.toLocaleDateString("en-US", {
     month: "long",
@@ -208,24 +232,16 @@ function StreakCalendar({
 
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  // Create calendar grid
-  const calendarDays: Array<{ date: Date | null; dayOfMonth: number | null }> =
-    [];
+  const calendarDays: Array<{ date: Date | null; dayOfMonth: number | null }> = [];
 
-  // Empty cells for days before month starts
   for (let i = 0; i < startingDayOfWeek; i++) {
     calendarDays.push({ date: null, dayOfMonth: null });
   }
 
-  // Days of the month
   for (let day = 1; day <= daysInMonth; day++) {
-    calendarDays.push({
-      date: new Date(year, month, day),
-      dayOfMonth: day,
-    });
+    calendarDays.push({ date: new Date(year, month, day), dayOfMonth: day });
   }
 
-  // Fill remaining cells to complete the grid
   const totalCells = Math.ceil(calendarDays.length / 7) * 7;
   while (calendarDays.length < totalCells) {
     calendarDays.push({ date: null, dayOfMonth: null });
@@ -239,33 +255,45 @@ function StreakCalendar({
     onMonthChange(new Date(year, month + 1));
   };
 
+  // Build accessible summary for screen readers
+  const committedDays = calendarDays.filter(({ date }) => {
+    if (!date || date > today) return false;
+    const dateStr = date.toISOString().slice(0, 10);
+    return (contributions[dateStr] ?? 0) > 0;
+  }).length;
+
   return (
     <div className="mt-6 pt-6 border-t border-[var(--border)]">
-      {/* Calendar Header */}
+      {/* Calendar header */}
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
           {monthName}
         </h3>
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="group" aria-label="Calendar navigation">
           <button
             onClick={handlePrevMonth}
+            aria-label={`Previous month`}
             className="rounded-md p-1 hover:bg-[var(--control)] transition-colors"
-            aria-label="Previous month"
           >
-            ←
+            <span aria-hidden="true">←</span>
           </button>
           <button
             onClick={handleNextMonth}
+            aria-label={`Next month`}
             className="rounded-md p-1 hover:bg-[var(--control)] transition-colors"
-            aria-label="Next month"
           >
-            →
+            <span aria-hidden="true">→</span>
           </button>
         </div>
       </div>
 
-      {/* Day labels */}
-      <div className="mb-2 grid grid-cols-7 gap-1">
+      {/* Screen-reader summary */}
+      <p className="sr-only">
+        {monthName}: {committedDays} days with commits.
+      </p>
+
+      {/* Day-of-week labels */}
+      <div className="mb-2 grid grid-cols-7 gap-1" aria-hidden="true">
         {dayLabels.map((label) => (
           <div
             key={label}
@@ -277,81 +305,99 @@ function StreakCalendar({
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {calendarDays.map((dayData, idx) => {
-          if (!dayData.date) {
-            return (
-              <div key={`empty-${idx}`} className="aspect-square" />
-            );
-          }
+      <div
+        className="grid grid-cols-7 gap-1"
+        role="grid"
+        aria-label={`Commit calendar for ${monthName}`}
+      >
+        {/* Empty leading cells */}
+        {Array.from({ length: startingDayOfWeek }).map((_, i) => (
+          <div key={`empty-start-${i}`} role="gridcell" aria-hidden="true" className="aspect-square" />
+        ))}
 
-          const dateStr = dayData.date
-            .toISOString()
-            .slice(0, 10);
-          const commitCount = contributions[dateStr] ?? 0;
-          const isFuture = dayData.date > today;
-          const isToday =
-            dayData.date.toDateString() === today.toDateString();
+        {calendarDays
+          .filter((d) => d.date !== null)
+          .map((dayData) => {
+            const date = dayData.date!;
+            const dateStr = date.toISOString().slice(0, 10);
+            const commitCount = contributions[dateStr] ?? 0;
+            const isFuture = date > today;
+            const isToday = date.toDateString() === today.toDateString();
 
-          let bgColor = "bg-white dark:bg-transparent";
-          let borderColor = "border border-[var(--border)]";
+            let bgColor = "bg-white dark:bg-transparent";
+            let borderColor = "border border-[var(--border)]";
 
-          if (!isFuture) {
-            if (commitCount > 0) {
-              bgColor = "bg-green-500";
-              borderColor = "border border-green-600";
-            } else {
-              bgColor = "bg-gray-500";
-              borderColor = "border border-gray-600";
+            if (!isFuture) {
+              if (commitCount > 0) {
+                bgColor = "bg-green-500";
+                borderColor = "border border-green-600";
+              } else {
+                bgColor = "bg-gray-500";
+                borderColor = "border border-gray-600";
+              }
             }
-          }
 
-          const tooltipText = !isFuture
-            ? `${dayData.date.toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}: ${commitCount > 0 ? "Committed" : "Missed"}`
-            : "";
+            const humanDate = date.toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            });
 
-          return (
-            <div
-              key={dateStr}
-              className={`group relative aspect-square rounded-md ${bgColor} ${borderColor} transition-transform hover:scale-110 cursor-default ${
-                isToday ? "ring-2 ring-[var(--accent)]" : ""
-              }`}
-              title={tooltipText}
-            >
-              {!isFuture && (
-                <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {dayData.dayOfMonth}
-                </span>
-              )}
+            const cellLabel = isFuture
+              ? `${humanDate}: future date`
+              : commitCount > 0
+              ? `${humanDate}: ${commitCount} commit${commitCount !== 1 ? "s" : ""}`
+              : `${humanDate}: no commits`;
 
-              {/* Tooltip */}
-              {!isFuture && tooltipText && (
-                <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--foreground)] px-2 py-1 text-xs text-[var(--background)] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-10">
-                  {tooltipText}
-                  <div className="absolute top-full left-1/2 h-1 w-1 -translate-x-1/2 border-4 border-t-[var(--foreground)] border-transparent" />
-                </div>
-              )}
-            </div>
-          );
-        })}
+            return (
+              <div
+                key={dateStr}
+                role="gridcell"
+                aria-label={cellLabel}
+                aria-current={isToday ? "date" : undefined}
+                className={`group relative aspect-square rounded-md ${bgColor} ${borderColor} transition-transform hover:scale-110 cursor-default ${
+                  isToday ? "ring-2 ring-[var(--accent)]" : ""
+                }`}
+              >
+                {!isFuture && (
+                  <span
+                    className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-hidden="true"
+                  >
+                    {dayData.dayOfMonth}
+                  </span>
+                )}
+
+                {/* Visual tooltip (decorative) */}
+                {!isFuture && (
+                  <div
+                    className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--foreground)] px-2 py-1 text-xs text-[var(--background)] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-10"
+                    aria-hidden="true"
+                  >
+                    {commitCount > 0 ? `${commitCount} commit${commitCount !== 1 ? "s" : ""}` : "No commits"}
+                    <div className="absolute top-full left-1/2 h-1 w-1 -translate-x-1/2 border-4 border-t-[var(--foreground)] border-transparent" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap gap-4 text-xs text-[var(--muted-foreground)]">
+      <div
+        className="mt-4 flex flex-wrap gap-4 text-xs text-[var(--muted-foreground)]"
+        aria-label="Calendar legend"
+      >
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded bg-green-500" />
+          <div className="h-3 w-3 rounded bg-green-500" aria-hidden="true" />
           <span>Committed</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded bg-gray-500" />
-          <span>Missed</span>
+          <div className="h-3 w-3 rounded bg-gray-500" aria-hidden="true" />
+          <span>No commits</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded border border-[var(--border)]" />
+          <div className="h-3 w-3 rounded border border-[var(--border)]" aria-hidden="true" />
           <span>Future</span>
         </div>
       </div>

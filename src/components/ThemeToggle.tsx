@@ -20,25 +20,20 @@ export default function ThemeToggle() {
   }, []);
 
   useEffect(() => {
-    if (!mounted) {
-      return;
-    }
-
+    if (!mounted) return;
     document.documentElement.classList.toggle("dark", dark);
     document.documentElement.style.colorScheme = dark ? "dark" : "light";
     localStorage.setItem(STORAGE_KEY, dark ? "dark" : "light");
   }, [dark, mounted]);
 
-  if (!mounted) {
-    return null;
-  }
+  if (!mounted) return null;
 
   return (
     <button
       type="button"
       onClick={() => setDark((current) => !current)}
       className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]"
-      aria-label="Toggle theme"
+      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
       aria-pressed={dark}
     >
       <span aria-hidden="true">{dark ? "☀️" : "🌙"}</span>

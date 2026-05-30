@@ -19,6 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={inter.className}>
+        {/* Skip-to-content link for keyboard/screen-reader users */}
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <Providers>{children}</Providers>
       </body>
     </html>

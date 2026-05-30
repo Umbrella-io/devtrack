@@ -17,12 +17,15 @@ export default function UserAvatar() {
   const showImage = image && !imageFailed;
 
   return (
-    <div className="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-2">
+    <div
+      className="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-2"
+      aria-label={`Signed in as ${name}`}
+    >
       <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[var(--control)] text-sm font-semibold text-[var(--card-foreground)]">
         {showImage ? (
           <Image
             src={image}
-            alt={`${name} avatar`}
+            alt={`${name}'s avatar`}
             width={32}
             height={32}
             className="h-8 w-8 rounded-full object-cover"
