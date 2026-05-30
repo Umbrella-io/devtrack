@@ -138,41 +138,6 @@ function MouseSpotlight() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   NAV
-   ═══════════════════════════════════════════════════════════ */
-function LandingNav() {
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 30);
-    window.addEventListener('scroll', fn, { passive: true });
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
-
-  return (
-    <nav
-      style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: 52, padding: '0 clamp(20px,4vw,48px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: scrolled ? 'rgba(8,8,8,0.92)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(12px)' : 'none',
-        borderBottom: `1px solid ${scrolled ? BORDER : 'transparent'}`,
-        transition: 'all 0.3s',
-      }}
-    >
-      <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: TEXT, letterSpacing: '-0.02em' }}>
-        <span style={{ color: A }}>▲</span> DEVTRACK
-      </span>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-        <a href="/dashboard" className="lnd-nav-link">Dashboard</a>
-        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-nav-link">
-          SIGN IN →
-        </a>
-      </div>
-    </nav>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════
    BENTO WIDGETS
@@ -934,37 +899,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   LANDING FOOTER  (above global Footer)
-   ═══════════════════════════════════════════════════════════ */
-function LandingFooter() {
-  return (
-    <footer 
-      data-testid="landing-footer"
-      style={{
-        borderTop: `1px solid ${BORDER}`,   // was '#111'
-        padding: '24px clamp(20px,4vw,48px)',
-        display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
-        justifyContent: 'space-between', alignItems: 'center',
-      }}
-    >
-      <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--foreground)' }}>
-        © {new Date().getFullYear()} DEVTRACK
-      </span>
-      <div style={{ display: 'flex', gap: 20 }}>
-        {[
-          { label: 'GitHub', href: 'https://github.com/Priyanshu-byte-coder/devtrack' },
-          { label: 'Docs', href: 'https://github.com/Priyanshu-byte-coder/devtrack/blob/main/DEVELOPMENT.md' },
-          { label: 'Issues', href: 'https://github.com/Priyanshu-byte-coder/devtrack/issues' },
-        ].map(l => (
-          <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="lnd-footer-link">
-            {l.label}
-          </a>
-        ))}
-      </div>
-    </footer>
-  );
-}
+
 
 /* ═══════════════════════════════════════════════════════════
    MAIN EXPORT
@@ -983,7 +918,6 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <FeaturesSection />
       <ContributeSection stats={repoStats} />
       <SetupSection />
-      <LandingFooter />
     </div>
   );
 }

@@ -304,14 +304,6 @@ body {
   position: relative;
 }
 
-.lnd-footer-link {
-  font-family: var(--font-jetbrains, ui-monospace, monospace);
-  font-size: 11px;
-  color: #9ca3af;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.lnd-footer-link:hover { color: #818cf8; }
 
 @media (max-width: 640px) {
   .lnd-ticker { animation-duration: 20s !important; }
