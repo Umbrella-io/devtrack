@@ -538,6 +538,10 @@ export default function GoalTracker() {
           <span id="recurrence-label" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
             Recurrence
           </span>
+        <div>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+            Recurrence
+          </label>
           <div className="flex gap-2">
             {(["none", "weekly", "monthly"] as Recurrence[]).map((r) => (
               <button
