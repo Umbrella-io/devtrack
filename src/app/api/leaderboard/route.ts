@@ -19,6 +19,50 @@ import {
 } from "@/lib/upstash-rest";
 
 export const dynamic = "force-dynamic";
+/**
+ * Removes leaderboard entries for users who have deleted their account.
+ * Called before serving any cached payload to ensure data deletion compliance.
+ */
+async function filterDeletedUsers(
+  payload: LeaderboardPayload
+): Promise<LeaderboardPayload> {
+  // Collect all unique usernames across all metric categories
+  const allUsernames = new Set<string>();
+  for (const entries of Object.values(payload.leaders)) {
+    for (const entry of entries) {
+      allUsernames.add(entry.username);
+    }
+  }
+
+  if (allUsernames.size === 0) return payload;
+
+  // Check which users still exist as public profiles in the DB
+  const { data: existingUsers } = await supabaseAdmin
+    .from("users")
+    .select("github_login")
+    .in("github_login", Array.from(allUsernames))
+    .eq("is_public", true);
+
+  const existingLogins = new Set(
+    (existingUsers ?? []).map((u) => u.github_login)
+  );
+
+  // Re-rank after filtering, preserving relative order
+  function rerank(entries: LeaderboardEntry[]): LeaderboardEntry[] {
+    return entries
+      .filter((e) => existingLogins.has(e.username))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+  }
+
+  return {
+    ...payload,
+    leaders: {
+      streak: rerank(payload.leaders.streak),
+      commits: rerank(payload.leaders.commits),
+      prs: rerank(payload.leaders.prs),
+    },
+  };
+}
 
 const GITHUB_API = "https://api.github.com";
 const CACHE_REFRESH_SECONDS = 60 * 60; // 1 hour
@@ -331,18 +375,20 @@ export async function GET(req: NextRequest) {
   if (!bypass) {
     memoryLeaderboardCache = pruneExpiredLeaderboardCache(memoryLeaderboardCache);
     if (memoryLeaderboardCache && isFresh(memoryLeaderboardCache.payload)) {
-      return NextResponse.json(memoryLeaderboardCache.payload, {
+      const filtered = await filterDeletedUsers(memoryLeaderboardCache.payload);
+      return NextResponse.json(filtered, {
         headers: { "x-devtrack-leaderboard-cache": "memory" },
       });
     }
-
     const cached = await cacheGet<LeaderboardPayload>(LEADERBOARD_CACHE_KEY);
     if (cached && isFresh(cached)) {
+      // filter out deleted users before serving cached results
+      const filtered = await filterDeletedUsers(cached);
       memoryLeaderboardCache = {
-        payload: cached,
+        payload: filtered,
         expiresAt: Date.now() + CACHE_REFRESH_SECONDS * 1000,
       };
-      return NextResponse.json(cached);
+      return NextResponse.json(filtered);
     }
 
     // Avoid thundering herd on cache misses across serverless instances.
