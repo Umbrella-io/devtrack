@@ -12,9 +12,7 @@ import { getUserByUsername } from "@/lib/supabase";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
 import { fetchPinnedRepoDetails } from "@/lib/pinned-repos";
-
-
-
+import { Moon, Sun } from "lucide-react"; // 🎯 UI vectors for server visibility
 
 import {
   fetchPublicTopRepos,
@@ -23,10 +21,16 @@ import {
   type PublicProfileData,
 } from "@/lib/public-profile-data";
 
+// Extend tracking structures to forward gamification flags seamlessly downstream
+interface ExtendedPublicProfileData extends PublicProfileData {
+  isNightOwl: boolean;
+  isEarlyBird: boolean;
+}
+
 async function fetchPublicProfile(
   username: string,
   options: { includeAchievements?: boolean } = {}
-): Promise<PublicProfileData | null> {
+): Promise<ExtendedPublicProfileData | null> {
   const user = await getUserByUsername(username);
 
   if (!user) return null;
@@ -48,10 +52,25 @@ async function fetchPublicProfile(
           userId: user.id,
           githubLogin: user.github_login,
           token: githubToken,
-        })
+          })
       : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
     fetchPinnedRepoDetails(user.github_login, user.pinned_repos || [], githubToken),
   ]);
+
+  // Server-side parsing layout to compute hourly metrics cleanly from available repo data arrays
+  let nightOwlCount = 0;
+  let earlyBirdCount = 0;
+
+  const combinedRepos = repos || [];
+  combinedRepos.forEach((repo: any) => {
+    if (repo.last_commit_date || repo.updatedAt) {
+      const targetDate = repo.last_commit_date || repo.updatedAt;
+      const commitHour = new Date(targetDate).getHours();
+      
+      if (commitHour >= 0 && commitHour <= 4) nightOwlCount++;
+      if (commitHour >= 5 && commitHour <= 8) earlyBirdCount++;
+    }
+  });
 
   return {
     username: user.github_login,
@@ -63,6 +82,8 @@ async function fetchPublicProfile(
     achievements: achievementsCache.achievements,
     achievementsError: achievementsCache.error,
     spotlightRepos: spotlight,
+    isNightOwl: nightOwlCount >= 1,
+    isEarlyBird: earlyBirdCount >= 1,
   };
 }
 
@@ -81,7 +102,6 @@ export async function generateMetadata({
   params: { username: string };
 }): Promise<Metadata> {
   const { username } = params;
-  // Minimal lookup — avoids duplicating 3 GitHub API calls that the page already makes
   const user = await getUserByUsername(username);
   const profileUrl = getProfileUrl(username);
 
@@ -158,16 +178,35 @@ export default async function PublicProfilePage({
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] flex items-center gap-2">
-              @{profile.username}&apos;s Profile
+            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] flex flex-wrap items-center gap-2">
+              <span>@{profile.username}&apos;s Profile</span>
               {profile.isSponsor && <SponsorBadge />}
+              
+              {/* 🎯 Render Server-Calculated Time Distribution Badges Safely on Public Profile View */}
+              {profile.isNightOwl && (
+                <span 
+                  title="Night Owl Milestone Badge" 
+                  className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 px-2.5 py-0.5 text-xs font-bold text-indigo-400"
+                >
+                  <Moon className="h-3 w-3" />
+                  <span>Night Owl</span>
+                </span>
+              )}
+              {profile.isEarlyBird && (
+                <span 
+                  title="Early Bird Milestone Badge" 
+                  className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-xs font-bold text-amber-400"
+                >
+                  <Sun className="h-3 w-3" />
+                  <span>Early Bird</span>
+                </span>
+              )}
             </h1>
           </div>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
           </p>
         </div>
-        {/* Download stats card button — client component */}
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <StatsCard
@@ -227,10 +266,6 @@ export default async function PublicProfilePage({
   );
 }
 
-/**
- * Public variant of ContributionGraph component.
- * Displays data passed as props instead of fetching it.
- */
 function PublicContributionGraph({
   data: contributionData,
 }: {
@@ -263,7 +298,6 @@ function PublicContributionGraph({
         </p>
       ) : (
         <div className="space-y-2">
-          {/* Simple text-based activity display for public profiles */}
           <div className="text-sm text-[var(--muted-foreground)]">
             {data.length} active days
           </div>
@@ -290,10 +324,6 @@ function PublicContributionGraph({
   );
 }
 
-/**
- * Public variant of StreakTracker component.
- * Displays data passed as props.
- */
 function PublicStreakTracker({ streak }: { streak: any }) {
   const stats = [
     {
@@ -364,10 +394,6 @@ function PublicStreakTracker({ streak }: { streak: any }) {
   );
 }
 
-/**
- * Public variant of TopRepos component.
- * Displays data passed as props.
- */
 function PublicTopRepos({
   repos,
 }: {
