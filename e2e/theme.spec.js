@@ -2,8 +2,12 @@ import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
 test.beforeEach(async ({ page }) => {
+  const authSecret =
+    process.env.NEXTAUTH_SECRET ||
+    "test-nextauth-secret-for-playwright-tests";
+
   const token = await encode({
-    secret: process.env.NEXTAUTH_SECRET ?? "playwright-placeholder-secret-that-is-long-enough",
+    secret: authSecret,
     token: {
       name: "Playwright User",
       email: "playwright@example.com",
@@ -25,7 +29,7 @@ test.beforeEach(async ({ page }) => {
       secure: false,
     },
   ]);
-  
+
   await page.route("**/api/user/settings", async (route) => {
     await route.fulfill({
       contentType: "application/json",
@@ -41,9 +45,9 @@ test("theme toggle switches between dark and light mode", async ({ page }) => {
   await expect(themeToggle).toBeVisible();
 
   const initialPressed = await themeToggle.getAttribute("aria-pressed");
-  
+
   await themeToggle.click();
-  
+
   await expect(themeToggle).toHaveAttribute(
     "aria-pressed",
     initialPressed === "true" ? "false" : "true"
