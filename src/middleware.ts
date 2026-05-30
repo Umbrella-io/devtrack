@@ -1,5 +1,6 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
+import { createMemoryFixedWindowRateLimiter, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -20,8 +21,12 @@ const WINDOW_SECONDS = 60;
    ============================================================ */
 const AUTHENTICATED_LIMIT = isDev ? 5000 : 60;
 const ANONYMOUS_LIMIT = isDev ? 1000 : 10;
-
-const memoryBuckets = new Map<string, number[]>();
+const MEMORY_MAX_ENTRIES = Number(process.env.MEMORY_RATE_LIMIT_MAX_ENTRIES ?? 10_000);
+const memoryLimiter = createMemoryFixedWindowRateLimiter({
+  windowMs: WINDOW_SECONDS * 1000,
+  pruneIntervalMs: 5 * 60 * 1000,
+  maxEntries: Number.isFinite(MEMORY_MAX_ENTRIES) ? MEMORY_MAX_ENTRIES : 10_000,
+});
 
 type RateLimitResult = {
   allowed: boolean;
@@ -31,12 +36,7 @@ type RateLimitResult = {
 };
 
 function getIp(req: NextRequest) {
-  return (
-    req.ip ??
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "unknown"
-  );
+  return getClientIp(req);
 }
 
 function buildHeaders(result: RateLimitResult) {
@@ -55,54 +55,13 @@ function buildHeaders(result: RateLimitResult) {
   return headers;
 }
 
-function pruneMemoryBuckets(now: number) {
-  if (memoryBuckets.size < 500) {
-    return;
-  }
-
-  const cutoff = now - WINDOW_SECONDS * 1000;
-  for (const [key, values] of Array.from(memoryBuckets.entries())) {
-    const active = values.filter((timestamp: number) => timestamp > cutoff);
-    if (active.length === 0) {
-      memoryBuckets.delete(key);
-    } else {
-      memoryBuckets.set(key, active);
-    }
-  }
-}
-
 function checkMemoryLimit(
   key: string,
   limit: number,
   now: number
 ): RateLimitResult {
-  pruneMemoryBuckets(now);
-
-  const cutoff = now - WINDOW_SECONDS * 1000;
-  const active = (memoryBuckets.get(key) ?? []).filter(
-    (timestamp) => timestamp > cutoff
-  );
-  const reset = Math.ceil(((active[0] ?? now) + WINDOW_SECONDS * 1000) / 1000);
-
-  if (active.length >= limit) {
-    memoryBuckets.set(key, active);
-    return {
-      allowed: false,
-      limit,
-      remaining: 0,
-      reset,
-    };
-  }
-
-  active.push(now);
-  memoryBuckets.set(key, active);
-
-  return {
-    allowed: true,
-    limit,
-    remaining: Math.max(limit - active.length, 0),
-    reset,
-  };
+  const result = memoryLimiter.check(key, limit, now);
+  return { ...result, limit };
 }
 
 /**
