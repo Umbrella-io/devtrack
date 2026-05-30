@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Image from "next/image";
 
 /* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
@@ -86,6 +87,13 @@ function Counter({ end, active }: { end: number; active: boolean }) {
   const [val, setVal] = useState(0);
   useEffect(() => {
     if (!active) return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      setVal(end);
+      return;
+    }
+
     const dur = 1500;
     const t0 = performance.now();
     let raf: number;
@@ -156,9 +164,12 @@ function LandingNav() {
       <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: TEXT, letterSpacing: '-0.02em' }}>
         <span style={{ color: A }}>▲</span> DEVTRACK
       </span>
-      <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-nav-link">
-        SIGN IN →
-      </a>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+        <a href="/dashboard" className="lnd-nav-link">Dashboard</a>
+        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-nav-link">
+          SIGN IN →
+        </a>
+      </div>
     </nav>
   );
 }
@@ -535,7 +546,7 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
 
 function StatsSection() {
   return (
-    <section style={{
+    <section id="features" style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
         gap: 24, borderTop: '1px solid #1e293b',
@@ -633,6 +644,7 @@ function SetupSection() {
   const [ref, vis] = useScrollReveal(0.2);
   return (
     <section
+      id="open-source"
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
@@ -800,9 +812,8 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
                 el.style.zIndex = String(stats.contributors.length - i);
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`${c.avatar_url}&s=76`}
+              <Image
+                src={c.avatar_url}
                 alt={c.login}
                 width={38}
                 height={38}
@@ -898,7 +909,6 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}
     >
       <MouseSpotlight />
-      <LandingNav />
       <HeroSection />
       <CommitTicker />
       <HeatmapSection />

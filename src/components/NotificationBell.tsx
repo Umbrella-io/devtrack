@@ -110,6 +110,7 @@ export default function NotificationBell() {
         onClick={handleOpen}
         className="relative rounded-lg p-2 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-colors"
         aria-label="Notifications"
+        title="Notifications"
         suppressHydrationWarning
       >
         {/* icon */}
@@ -193,7 +194,7 @@ export default function NotificationBell() {
                 </li>
               ))
             )}
-          </ul>          
+          </ul>
         </div>
       )}
     </div>
