@@ -3,10 +3,15 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+export const isSupabaseAdminAvailable =
+  !!supabaseUrl &&
+  !!serviceRoleKey &&
+  !supabaseUrl.includes("placeholder");
 
 export const SUPABASE_ADMIN_UNAVAILABLE_MESSAGE =
   "Supabase admin client is unavailable. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.";
 
+// eslint-disable-next-line
 type SupabaseAdminClient = SupabaseClient<any, any, any>;
 
 function createUnavailableSupabaseAdmin(): SupabaseAdminClient {
@@ -20,14 +25,16 @@ function createUnavailableSupabaseAdmin(): SupabaseAdminClient {
 // Do not throw here - build-time rendering can touch this module before
 // runtime environment variables are present. Guard call sites instead.
 export const supabaseAdmin: SupabaseAdminClient =
-  supabaseUrl && serviceRoleKey && !supabaseUrl.includes("placeholder")
-    ? createClient(supabaseUrl, serviceRoleKey)
+  isSupabaseAdminAvailable
+? createClient(supabaseUrl!, serviceRoleKey!)
     : createUnavailableSupabaseAdmin();
+
 
 interface User {
   id: string;
   github_id: string;
   github_login: string;
+  bio: string | null;
   is_public: boolean;
   pinned_repos?: string[];
   created_at: string;
@@ -42,10 +49,13 @@ interface User {
 export async function getUserByUsername(
   username: string
 ): Promise<User | null> {
+  if (!username || !username.trim()) {
+    return null;
+  }
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
-      .select("id,github_id,github_login,is_public,pinned_repos,created_at,updated_at,is_sponsor")
+      .select("id,github_id,github_login,bio,is_public,pinned_repos,created_at,updated_at,is_sponsor")
       .ilike("github_login", username)
       .eq("is_public", true)
       .single();
@@ -69,7 +79,7 @@ export async function getUserByUsername(
           return null;
         }
 
-        return minimal as User;
+        return { ...(minimal as User), bio: null };
       }
       console.error("Error fetching user:", error);
       return null;
@@ -78,6 +88,37 @@ export async function getUserByUsername(
     return data as User;
   } catch (err) {
     console.error("Unexpected error fetching user:", err);
+    return null;
+  }
+}
+
+/**
+ * Look up a user by GitHub id. Used for authenticated server-rendered pages
+ * where the session has an id but may not have the login claim populated.
+ */
+export async function getUserByGithubId(
+  githubId: string
+): Promise<User | null> {
+  if (!supabaseAdmin) return null;
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("users")
+      .select("id,github_id,github_login,is_public,created_at,updated_at")
+      .eq("github_id", githubId)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return null;
+      }
+      console.error("Error fetching user by GitHub id:", error);
+      return null;
+    }
+
+    return data as User;
+  } catch (err) {
+    console.error("Unexpected error fetching user by GitHub id:", err);
     return null;
   }
 }
@@ -94,7 +135,7 @@ export async function updateUserPublicFlag(
       .from("users")
       .update({ is_public: isPublic })
       .eq("id", userId)
-      .select("id,github_id,github_login,is_public,created_at,updated_at")
+      .select("id,github_id,github_login,bio,is_public,created_at,updated_at")
       .single();
 
     if (error) {
