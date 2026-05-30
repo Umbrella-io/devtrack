@@ -13,12 +13,14 @@ interface ShortcutItem {
 }
 
 const SHORTCUTS: ShortcutItem[] = [
-  { key: "T", action: "Toggle theme" },
+  { key: "Alt + T", action: "Toggle theme" },
   { key: "B", action: "Toggle chart" },
   { key: "R", action: "Reload data" },
+  { key: "G + D", action: "Go to Dashboard" },
+  { key: "G + P", action: "Go to Goals" },
+  { key: "Esc", action: "Close modal/dialog" },
   { key: "?", action: "Show shortcuts" },
 ];
-
 export default function ShortcutsModal({
   isOpen,
   onClose,

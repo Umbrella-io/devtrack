@@ -80,9 +80,7 @@ function checkMemoryLimit(
   const active = (memoryBuckets.get(key) ?? []).filter(
     (timestamp) => timestamp > cutoff
   );
-  const reset = Math.ceil(
-    ((active[0] ?? now) + WINDOW_SECONDS * 1000) / 1000
-  );
+  const reset = Math.ceil(((active[0] ?? now) + WINDOW_SECONDS * 1000) / 1000);
 
   if (active.length >= limit) {
     memoryBuckets.set(key, active);
@@ -172,7 +170,7 @@ async function checkUpstashLimit(
     }
 
     const data = await response.json();
-    
+
     // Upstash REST eval response format: { result: [allowed_flag, current_count] }
     const [allowedFlag, currentCount] = data.result as [number, number];
     const isAllowed = allowedFlag === 1;
@@ -184,7 +182,10 @@ async function checkUpstashLimit(
       reset,
     };
   } catch (error) {
-    console.error("Rate-limiter cloud pipeline failure, falling back to local memory storage:", error);
+    console.error(
+      "Rate-limiter cloud pipeline failure, falling back to local memory storage:",
+      error
+    );
     return null;
   }
 }
@@ -199,11 +200,35 @@ async function checkRateLimit(identifier: string, limit: number) {
 }
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  const githubId = typeof token?.githubId === "string" ? token.githubId : null;
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  // Protect dashboard and settings routes
+  const pathname = req.nextUrl.pathname;
+
+  const protectedRoutes = ["/dashboard", "/settings"];
+
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  if (isProtectedRoute && !token) {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+
+  const githubId =
+    typeof token?.githubId === "string" ? token.githubId : null;
+
   const identifier = githubId ? `user:${githubId}` : `ip:${getIp(req)}`;
-  const limit = githubId ? AUTHENTICATED_LIMIT : ANONYMOUS_LIMIT;
+
+  const limit = githubId
+    ? AUTHENTICATED_LIMIT
+    : ANONYMOUS_LIMIT;
+
   const result = await checkRateLimit(identifier, limit);
+
   const headers = buildHeaders(result);
 
   if (!result.allowed) {
@@ -220,10 +245,30 @@ export async function middleware(req: NextRequest) {
   }
 
   const response = NextResponse.next();
-  headers.forEach((value, key) => response.headers.set(key, value));
+
+  headers.forEach((value, key) =>
+    response.headers.set(key, value)
+  );
+
+  // Cache GET metric responses in the browser for 5 minutes.
+  // This eliminates redundant function invocations on every dashboard
+  // tab-switch or soft navigation, directly cutting Vercel Active CPU usage.
+  // Responses are private (user-specific) so CDN caching is disabled.
+  if (req.method === "GET") {
+    response.headers.set(
+      "Cache-Control",
+      "private, max-age=300, stale-while-revalidate=600"
+    );
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: "/api/metrics/:path*",
+  matcher: [
+    "/dashboard/:path*",
+    "/settings/:path*",
+    "/api/metrics/:path*",
+  ],
 };
+
