@@ -123,13 +123,6 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-  await page.route("**/api/goals/sync", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ updated: 1, commitCount: 4 }),
-    });
-  });
-
   await page.route("**/api/ai-insights**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
