@@ -64,10 +64,10 @@ export default function AppNavbar() {
     position: "sticky",
     top: 0,
     zIndex: 50,
-    background: scrolled ? "rgba(10, 15, 30, 0.75)" : "transparent",
+    background: scrolled ? "color-mix(in srgb, var(--background) 75%, transparent)" : "transparent",
     backdropFilter: scrolled ? "blur(24px) saturate(150%)" : "none",
     WebkitBackdropFilter: scrolled ? "blur(24px) saturate(150%)" : "none",
-    borderBottom: scrolled ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid transparent",
+    borderBottom: scrolled ? "1px solid var(--border)" : "1px solid transparent",
     transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
   };
 
@@ -170,8 +170,8 @@ export default function AppNavbar() {
       {mobileOpen && (
         <div
           id="app-mobile-nav"
-          className="border-t border-white/10 md:hidden"
-          style={{ background: "rgba(10,15,30,0.98)", backdropFilter: "blur(24px)" }}
+          className="border-t border-[var(--border)] md:hidden"
+          style={{ background: "color-mix(in srgb, var(--background) 98%, transparent)", backdropFilter: "blur(24px)" }}
         >
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-5 sm:px-6">
             {navItems.map((item) => {

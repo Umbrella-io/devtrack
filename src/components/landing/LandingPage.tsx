@@ -18,14 +18,14 @@ export type RepoStats = {
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
    ═══════════════════════════════════════════════════════════ */
-const A = '#818cf8';                  // accent — indigo
-const BG = 'transparent'
-const SURF = '#0e0e0e';
-const BORDER = '#2a2a2a';             // was #1a1a1a — now more visible
-const TEXT = '#e0e0e0';
-const MUTED = '#94a3b8';
-const HC = ['#111', '#1e1b4b', '#3730a3', '#4f46e5', A]; // heatmap levels
-const MC = ['#111', '#1e1b4b', '#3730a3', A];             // mini heatmap
+const A = 'var(--accent)';
+const BG = 'transparent';
+const SURF = 'var(--card)';
+const BORDER = 'var(--border)';
+const TEXT = 'var(--foreground)';
+const MUTED = 'var(--muted-foreground)';
+const HC = ['transparent', 'color-mix(in srgb, var(--accent) 25%, transparent)', 'color-mix(in srgb, var(--accent) 50%, transparent)', 'color-mix(in srgb, var(--accent) 75%, transparent)', 'var(--accent)'];
+const MC = ['transparent', 'color-mix(in srgb, var(--accent) 40%, transparent)', 'color-mix(in srgb, var(--accent) 75%, transparent)', 'var(--accent)'];
 
 const MONO = 'var(--font-jetbrains, ui-monospace, monospace)';
 const DISP = 'var(--font-syne, system-ui, sans-serif)';
@@ -179,7 +179,7 @@ function LandingNav() {
    ═══════════════════════════════════════════════════════════ */
 const wLabel: React.CSSProperties = {
   fontFamily: MONO, fontSize: 10, fontWeight: 500,
-  color: '#444', textTransform: 'uppercase', letterSpacing: '0.1em',
+  color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.1em',
 };
 const wValue: React.CSSProperties = {
   fontFamily: MONO, fontWeight: 600, color: TEXT,
@@ -258,7 +258,7 @@ function StreakWidget() {
       >
         <div style={{ position: 'relative', width: 62, height: 62 }}>
           <svg width="62" height="62" viewBox="0 0 62 62" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="31" cy="31" r={r} fill="none" stroke="#1a1a1a" strokeWidth="3" />
+            <circle cx="31" cy="31" r={r} fill="none" stroke="var(--border)" strokeWidth="3" />
             <circle
               cx="31" cy="31" r={r} fill="none" stroke={A} strokeWidth="3"
               strokeDasharray={circ}
@@ -284,9 +284,9 @@ function MergeWidget() {
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>merge rate</span>
         <span style={{ ...wValue, fontSize: 26, marginTop: 4, color: A }}>
-          87<span style={{ color: '#333', fontSize: 14 }}>%</span>
+          87<span style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>%</span>
         </span>
-        <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
+        <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
           <div style={{
             height: '100%', borderRadius: 2, background: A,
             width: vis ? '87%' : '0%',
@@ -305,9 +305,9 @@ function GoalWidget() {
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>weekly goal</span>
         <span style={{ ...wValue, fontSize: 26, marginTop: 4 }}>
-          84<span style={{ color: '#333', fontSize: 14 }}>%</span>
+          84<span style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>%</span>
         </span>
-        <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
+        <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
           <div style={{
             height: '100%', borderRadius: 2, background: '#f59e0b',
             width: vis ? '84%' : '0%',
@@ -441,7 +441,7 @@ function HeroSection() {
         >
           YOUR<br />CODE<br />HAS A<br />
           <span style={{ color: A, textShadow: '0 0 30px rgba(129,140,248,0.3)' }}>PULSE</span>
-          <span style={{ color: '#222' }}>.</span>
+          <span style={{ color: 'var(--foreground)' }}>.</span>
         </h1>
 
         {/* Tagline — NOW HIGH CONTRAST */}
@@ -520,7 +520,7 @@ function CommitTicker() {
           <span
             key={i}
             style={{
-              fontFamily: MONO, fontSize: 12, color: '#333',
+              fontFamily: MONO, fontSize: 12, color: 'var(--muted-foreground)',
               display: 'inline-flex', alignItems: 'center', gap: 10,
             }}
           >
@@ -541,15 +541,15 @@ function HeatmapSection() {
   return (
     <section ref={ref} style={{ padding: '64px clamp(20px,4vw,48px)', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: '#333', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           52 weeks of contributions
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>less</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted-foreground)' }}>less</span>
           {HC.map((c, i) => (
             <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: c, border: `1px solid ${BORDER}` }} />
           ))}
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>more</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted-foreground)' }}>more</span>
         </div>
       </div>
       <div style={{
@@ -602,9 +602,9 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
         lineHeight: 1, letterSpacing: '-0.03em',
       }}>
         <Counter end={value} active={vis} />
-        <span style={{ color: '#222', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
+        <span style={{ color: 'var(--foreground)', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', marginTop: 8 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted-foreground)', letterSpacing: '0.12em', marginTop: 8 }}>
         {label}
       </div>
     </div>
@@ -616,7 +616,7 @@ function StatsSection() {
     <section id="features" style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
-        gap: 24, borderTop: '1px solid #1e293b',
+        gap: 24, borderTop: `1px solid ${BORDER}`,
     }}>
       {STATS.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
@@ -662,7 +662,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
       ref={ref}
       style={{
         display: 'flex', gap: 'clamp(16px,3vw,32px)',
-        padding: '24px 0', borderBottom: '1px solid #1e293b',
+        padding: '24px 0', borderBottom: `1px solid ${BORDER}`,
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateX(0)' : 'translateX(-12px)',
         transition: `all 0.5s ease ${index * 50}ms`,
@@ -691,7 +691,7 @@ function FeaturesSection() {
   return (
     <section style={{
       padding: '64px clamp(20px,4vw,48px) 80px',
-      borderTop: '1px solid #1e293b',
+      borderTop: `1px solid ${BORDER}`,
       maxWidth: 720, margin: '0 auto',
     }}>
       <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
@@ -726,7 +726,7 @@ function SetupSection() {
       </div>
 
       <div style={{
-        background: '#0a0a0c', border: `1px solid #1e293b`,
+        background: 'color-mix(in srgb, var(--card) 40%, transparent)', border: `1px solid ${BORDER}`,
         borderRadius: 8, padding: '24px 28px', maxWidth: 480, width: '100%',
         textAlign: 'left', marginBottom: 32,
         fontFamily: MONO, fontSize: 13, lineHeight: 1.8,
@@ -766,7 +766,7 @@ function SetupSection() {
         </a>
       </div>
 
-      <div style={{ fontFamily: MONO, fontSize: 11, color: '#222', marginTop: 20, letterSpacing: '0.06em' }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--foreground)', marginTop: 20, letterSpacing: '0.06em' }}>
         MIT License · Self-hostable · Free forever · Zero vendor lock-in
       </div>
     </section>
@@ -791,7 +791,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
-        borderTop: '1px solid #1e293b',
+        borderTop: `1px solid ${BORDER}`,
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(24px)',
         transition: 'all 0.7s ease',
@@ -808,7 +808,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           <div
             key={s.label}
             style={{
-              background: '#0a0a0c', border: `1px solid #1e293b`,
+              background: 'color-mix(in srgb, var(--card) 40%, transparent)', border: `1px solid ${BORDER}`,
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
@@ -948,7 +948,7 @@ function LandingFooter() {
         justifyContent: 'space-between', alignItems: 'center',
       }}
     >
-      <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
+      <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--foreground)' }}>
         © {new Date().getFullYear()} DEVTRACK
       </span>
       <div style={{ display: 'flex', gap: 20 }}>
