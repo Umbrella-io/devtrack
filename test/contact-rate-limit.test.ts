@@ -81,7 +81,7 @@ describe("contact-rate-limit", () => {
       const result = checkContactRateLimit("new-ip");
       expect(result.allowed).toBe(true);
       // Expect expired buckets to be pruned
-      expect(contactBuckets.size).toBe(2); // 'new-ip' + 'prune-ip-504' (it was evaluated inside the loop, wait all 505 were expired and pruned, plus new-ip added = 1, wait, actually during loop they are evaluated at 1000, so after 1 hour they are all pruned. Thus size should be 1).
+      expect(contactBuckets.size).toBe(1); // 'new-ip' (all 505 older ones are expired and pruned, plus new-ip added = 1).
     });
   });
 
