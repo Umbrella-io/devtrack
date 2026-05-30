@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Image from "next/image";
 
 /* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
@@ -811,9 +812,8 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
                 el.style.zIndex = String(stats.contributors.length - i);
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`${c.avatar_url}&s=76`}
+              <Image
+                src={c.avatar_url}
                 alt={c.login}
                 width={38}
                 height={38}
