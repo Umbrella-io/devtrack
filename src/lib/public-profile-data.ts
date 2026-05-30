@@ -34,6 +34,7 @@ export interface StreakData {
 export interface PublicProfileData {
   username: string;
   userId: string;
+  bio: string | null;
   isSponsor: boolean;
   repos: TopRepo[];
   contributions: ContributionData;
@@ -298,6 +299,7 @@ export async function fetchPublicProfile(
   return {
     username: user.github_login,
     userId: user.id,
+    bio: user.bio ?? null,
     isSponsor: user.is_sponsor ?? false,
     repos,
     contributions,

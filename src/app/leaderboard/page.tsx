@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import EmptyState from "@/components/EmptyState";
 import SponsorBadge from "@/components/SponsorBadge";
 
@@ -146,10 +147,11 @@ export default async function LeaderboardPage({
                     #{entry.rank}
                   </div>
                   <div className="flex min-w-0 items-center gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={entry.avatarUrl}
-                      alt=""
+                      alt={`${entry.username} avatar`}
+                      width={40}
+                      height={40}
                       className="h-10 w-10 rounded-full border border-[var(--border)]"
                     />
                     <div className="min-w-0">

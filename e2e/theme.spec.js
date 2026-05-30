@@ -2,10 +2,12 @@ import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
 test.beforeEach(async ({ page }) => {
+  const authSecret =
+    process.env.NEXTAUTH_SECRET ||
+    "test-nextauth-secret-for-playwright-tests";
+
   const token = await encode({
-    secret:
-      process.env.NEXTAUTH_SECRET ||
-      "playwright-placeholder-secret-that-is-long-enough",
+    secret: authSecret,
     token: {
       name: "Playwright User",
       email: "playwright@example.com",

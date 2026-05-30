@@ -7,6 +7,7 @@ import { redirect, useSearchParams } from "next/navigation";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import PrivacySettings from "@/components/PrivacySettings";
 import ConfirmModal from "@/components/ConfirmModal";
+import MarkdownBio from "@/components/MarkdownBio";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +15,7 @@ import { useRouter } from "next/navigation";
 interface UserSettings {
   id: string;
   github_login: string;
+  bio: string;
   is_public: boolean;
   leaderboard_opt_in: boolean;
   has_wakatime_key?: boolean;
@@ -92,7 +94,9 @@ function SettingsPageFallback() {
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
       <div className="max-w-2xl mx-auto">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
-          <div className="h-8 w-48 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
+          <h1 className="mb-4 text-3xl font-bold text-[var(--foreground)]">
+            Settings
+          </h1>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div
@@ -122,6 +126,9 @@ function SettingsPageContent() {
     null
   );
   const [wakatimeKey, setWakatimeKey] = useState("");
+  const [bioDraft, setBioDraft] = useState("");
+  const [showBioPreview, setShowBioPreview] = useState(false);
+  const [savingBio, setSavingBio] = useState(false);
   const [savingWakatime, setSavingWakatime] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -218,9 +225,10 @@ function SettingsPageContent() {
       try {
         const res = await fetch("/api/user/settings");
         if (res.ok) {
-          const data = await res.json();
-          setSettings(data);
-        }
+  const data = await res.json();
+  setSettings(data);
+  setBioDraft(data.bio ?? "");
+}
       } catch (error) {
         console.error("Failed to load settings:", error);
       } finally {
@@ -335,6 +343,37 @@ function SettingsPageContent() {
     }
   };
 
+
+  const handleSaveBio = async () => {
+    if (!settings || bioDraft.length > 500) return;
+
+    setSavingBio(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bio: bioDraft }),
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setBioDraft(updated.bio ?? "");
+        setIsDirty(false);
+        toast.success("Bio saved successfully!");
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to update bio");
+      }
+    } catch (error) {
+      console.error("Error updating bio:", error);
+      toast.error("Failed to update bio");
+    } finally {
+      setSavingBio(false);
+    }
+  };
+    
+    
   const copyShareLink = () => {
     if (!settings) return;
     const link = `${window.location.origin}/u/${settings.github_login}`;
@@ -501,6 +540,77 @@ function SettingsPageContent() {
               </div>
             </div>
           )}
+
+          <div className="mt-6 pt-6 border-t border-[var(--border)]">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+                  Profile Bio
+                </h3>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  Add a short Markdown bio for your public profile.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBioPreview((value) => !value)}
+                className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]"
+              >
+                {showBioPreview ? "Hide Preview" : "Show Preview"}
+              </button>
+            </div>
+
+            <textarea
+              value={bioDraft}
+              onChange={(e) => {
+                setBioDraft(e.target.value);
+                setIsDirty(true);
+              }}
+              maxLength={500}
+              rows={5}
+              placeholder="Write a short bio with **bold**, _italic_, `code`, or links."
+              className="w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-sm text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            />
+
+            {showBioPreview && (
+              <div className="mt-3 min-h-[128px] rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-[var(--card-foreground)]">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+                  Live Preview
+                </p>
+                {bioDraft.trim() ? (
+                  <MarkdownBio bio={bioDraft} />
+                ) : (
+                  <p className="text-sm text-[var(--muted-foreground)]">
+                    Nothing to preview yet.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <span
+                className={`text-xs ${
+                  bioDraft.length > 500
+                    ? "text-[var(--error)]"
+                    : "text-[var(--muted-foreground)]"
+                }`}
+              >
+                {bioDraft.length}/500 characters
+              </span>
+              <button
+                type="button"
+                onClick={handleSaveBio}
+                disabled={
+                  savingBio ||
+                  bioDraft.length > 500 ||
+                  bioDraft === (settings.bio ?? "")
+                }
+                className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {savingBio ? "Saving..." : "Save Bio"}
+              </button>
+            </div>
+          </div>
 
           <div className="mt-6 pt-6 border-t border-[var(--border)]">
             <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
