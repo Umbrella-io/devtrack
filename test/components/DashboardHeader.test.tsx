@@ -51,7 +51,7 @@ describe("DashboardHeader", () => {
     render(<DashboardHeader />);
 
     expect(
-      screen.getByText(/Dashboard/i)
+      screen.getByRole("heading", { name: "Dashboard" })
     ).toBeInTheDocument();
   });
 

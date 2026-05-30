@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { WrappedStats } from "@/lib/wrapped";
 
 const SLIDE_THEMES = [
@@ -306,11 +307,13 @@ export default function WrappedExperience() {
                   <p className="mt-1 text-sm text-slate-300">
                     Generated from your selected year.
                   </p>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={getOgImageUrl(stats)}
                     alt={`${stats.year} Year in Code share card for ${stats.username}`}
+                    width={1200}
+                    height={630}
                     className="mt-4 aspect-[1200/630] w-full rounded-md border border-white/10 object-cover"
+                    unoptimized
                   />
                   <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <a

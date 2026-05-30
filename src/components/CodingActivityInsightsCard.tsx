@@ -12,6 +12,7 @@ import {
   YAxis,
   type TooltipProps,
 } from "recharts";
+import { Skeleton } from "@/components/Skeleton";
 import { useAccount } from "@/components/AccountContext";
 import {
   formatHourRange,
@@ -272,14 +273,10 @@ export default function CodingActivityInsightsCard() {
           className="space-y-4"
         >
           <span className="sr-only">Loading coding activity insights</span>
-          <div className="h-[260px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
+          <Skeleton className="h-[260px] w-full rounded-lg" />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                aria-hidden="true"
-                className="h-16 rounded-lg bg-[var(--card-muted)] animate-pulse"
-              />
+              <Skeleton key={item} className="h-16 w-full rounded-lg" />
             ))}
           </div>
         </div>
