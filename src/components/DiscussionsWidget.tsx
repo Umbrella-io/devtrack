@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useMetrics } from "@/hooks/useMetrics";
 
 interface DiscussionData {
   discussionsStarted: number;
@@ -9,28 +9,9 @@ interface DiscussionData {
 }
 
 export default function DiscussionsWidget() {
-  const [data, setData] = useState<DiscussionData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchData = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    fetch("/api/metrics/discussions")
-      .then((r) => {
-        if (!r.ok) throw new Error("API error");
-        return r.json();
-      })
-      .then((d: DiscussionData) => setData(d))
-      .catch(() =>
-        setError("We couldn't load your discussion metrics right now.")
-      )
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data, loading, error, refetch } = useMetrics<DiscussionData>(
+    "/api/metrics/discussions"
+  );
 
   const stats = data
     ? [
@@ -69,10 +50,10 @@ export default function DiscussionsWidget() {
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
-          <p>{error}</p>
+          <p>{error.message}</p>
           <button
             type="button"
-            onClick={fetchData}
+            onClick={refetch}
             className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again

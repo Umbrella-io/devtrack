@@ -1,8 +1,9 @@
 "use client";
 import SectionHeader from "./SectionHeader";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { useMetrics } from "@/hooks/useMetrics";
 import PRStatusDonutChart from "./PRStatusDonutChart";
 import MiniPRTrendChart from "./MiniPRTrendChart";
 
@@ -52,44 +53,30 @@ function formatReviewCycle(hours: number | null): string {
 
 export default function PRMetrics() {
   const { selectedAccount } = useAccount();
-  const [metrics, setMetrics] = useState<PRData | null>(null);
   const [staleThresholdDays, setStaleThresholdDays] = useState(7);
-  const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"authored" | "reviews">("authored");
   const [prFilter, setPrFilter] = useState<"all" | "merged" | "open">("all");
 
-  const fetchMetrics = useCallback(() => {
-    setLoading(true);
-    setError(null);
+  const params = new URLSearchParams({
+    staleThresholdDays: String(staleThresholdDays),
+  });
 
-    const params = new URLSearchParams({
-      staleThresholdDays: String(staleThresholdDays),
-    });
+  if (selectedAccount !== null) {
+    params.set("accountId", selectedAccount);
+  }
 
-    if (selectedAccount !== null) {
-      params.set("accountId", selectedAccount);
-    }
+  const url = `/api/metrics/prs?${params.toString()}`;
 
-    fetch(`/api/metrics/prs?${params.toString()}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("API error");
-        return r.json();
-      })
-      .then((data: PRData) => {
-        setMetrics(data);
-        setLastUpdated(new Date());
-        setMinutesAgo(0);
-      })
-      .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
-      .finally(() => setLoading(false));
-  }, [selectedAccount, staleThresholdDays]);
+  const { data: metrics, loading, error, refetch } = useMetrics<PRData>(url);
 
   useEffect(() => {
-    fetchMetrics();
-  }, [fetchMetrics]);
+    if (metrics) {
+      setLastUpdated(new Date());
+      setMinutesAgo(0);
+    }
+  }, [metrics]);
 
   useEffect(() => {
     if (!lastUpdated) {
@@ -267,10 +254,10 @@ export default function PRMetrics() {
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-4 text-sm text-[var(--destructive)]">
-          <p>{error}</p>
+          <p>{error.message}</p>
           <button
             type="button"
-            onClick={fetchMetrics}
+            onClick={refetch}
             className="mt-3 rounded-md border border-[var(--destructive-muted-border)] px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive-muted)]"
           >
             Try again

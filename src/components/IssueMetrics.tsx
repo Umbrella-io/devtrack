@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { useMetrics } from "@/hooks/useMetrics";
 
 interface IssueData {
   opened: number;
@@ -13,33 +14,9 @@ interface IssueData {
 }
 
 export default function IssueMetrics() {
-  const { selectedAccount } = useAccount();
-  const [metrics, setMetrics] = useState<IssueData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchMetrics = useCallback(() => {
-    setLoading(true);
-    setError(null);
-
-    const url = selectedAccount !== null
-      ? `/api/metrics/issues?accountId=${encodeURIComponent(selectedAccount)}`
-      : "/api/metrics/issues";
-
-    fetch(url)
-      .then((r) => r.json())
-      .then((data: IssueData) => setMetrics(data))
-      .catch(() =>
-        setError(
-          "We couldn't load your Issues analytics right now. Please try again in a moment."
-        )
-      )
-      .finally(() => setLoading(false));
-  }, [selectedAccount]);
-
-  useEffect(() => {
-    fetchMetrics();
-  }, [fetchMetrics]);
+  const { data: metrics, loading, error, refetch } = useMetrics<IssueData>(
+    "/api/metrics/issues"
+  );
 
   const stats = metrics
     ? [
@@ -84,10 +61,10 @@ export default function IssueMetrics() {
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
-          <p>{error}</p>
+          <p>{error.message}</p>
           <button
             type="button"
-            onClick={fetchMetrics}
+            onClick={refetch}
             className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again

@@ -51,12 +51,14 @@ describe('StreakTracker - StreakData interface', () => {
 
 describe('StreakTracker - copy to clipboard behavior', () => {
   beforeEach(() => {
-    // ✅ Safely define read-only properties on globalThis with descriptors
-    Object.defineProperty(globalThis, 'navigator', {
-      value: {},
-      writable: true,
-      configurable: true,
-    });
+   Object.defineProperty(global, "navigator", {
+  value: {
+    clipboard: {
+      writeText: vi.fn(),
+    },
+  },
+  writable: true,
+});
   });
 
   it('StreakTracker: copies streak string data as formatted structural text', async () => {

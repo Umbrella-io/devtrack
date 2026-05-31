@@ -9,6 +9,7 @@ import OfflineBanner from "@/components/OfflineBanner";
 import "./globals.css";
 import { Toaster } from "sonner";
 
+
 const inter = Inter({ subsets: ["latin"] });
 const syne = Syne({
   subsets: ["latin"],

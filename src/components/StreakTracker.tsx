@@ -1,50 +1,50 @@
 "use client";
+
 import SectionHeader from "./SectionHeader";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { useCountUp } from "@/hooks/useCountUp";
+import { useStreak, ContributionData } from "@/hooks/useStreak";
 import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
-import { Flame, Trophy, Calendar, Zap, Copy, CheckCircle, Medal, Star, Sparkles } from "lucide-react";
+import {
+  Flame,
+  Trophy,
+  Calendar,
+  Zap,
+  Copy,
+  CheckCircle,
+  Medal,
+  Star,
+  Sparkles,
+} from "lucide-react";
 
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
-interface StreakData {
-  current: number;
-  longest: number;
-  lastCommitDate: string | null;
-  totalActiveDays: number;
-  freezeDates: string[];
-}
-
-interface ContributionData {
-  days: number;
-  total: number;
-  data: Record<string, number>;
-}
-
-interface FreezeData {
-  hasFreeze: boolean;
-  freezeDate?: string | null;
-}
-
 export default function StreakTracker() {
   const { selectedAccount } = useAccount();
-  const [data, setData] = useState<StreakData | null>(null);
-  const [contributionData, setContributionData] = useState<ContributionData | null>(null);
+
+  const {
+    streak: data,
+    contributions: contributionData,
+    freeze,
+    loading,
+    freezeLoading,
+    error,
+    refetch,
+    refetchFreeze,
+  } = useStreak(selectedAccount);
+
   const [freezeDates, setFreezeDates] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dismissedMilestones, setDismissedMilestones] = useState<number[]>([]);
-  const [lastCelebratedMilestone, setLastCelebratedMilestone] = useState<number>(0);
+  const [lastCelebratedMilestone, setLastCelebratedMilestone] =
+    useState<number>(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
-  const [freeze, setFreeze] = useState<FreezeData | null>(null);
-  const [freezeLoading, setFreezeLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -57,12 +57,15 @@ export default function StreakTracker() {
 
   const handleDownload = useCallback(async () => {
     if (!containerRef.current) return;
+
     try {
       setIsDownloading(true);
+
       const dataUrl = await toPng(containerRef.current, {
         cacheBust: true,
         style: { margin: "0" },
       });
+
       const link = document.createElement("a");
       link.download = "devtrack-streak.png";
       link.href = dataUrl;
@@ -74,75 +77,25 @@ export default function StreakTracker() {
     }
   }, []);
 
-  const fetchStreak = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const streakUrl =
-        selectedAccount !== null
-          ? `/api/metrics/streak?accountId=${encodeURIComponent(selectedAccount)}`
-          : "/api/metrics/streak";
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const contributionUrl =
-        selectedAccount !== null
-          ? `/api/metrics/contributions?days=365&accountId=${encodeURIComponent(selectedAccount)}&timezone=${encodeURIComponent(timezone)}`
-          : `/api/metrics/contributions?days=365&timezone=${encodeURIComponent(timezone)}`;
-      const [streakRes, contributionRes] = await Promise.all([
-        fetch(streakUrl),
-        fetch(contributionUrl),
-      ]);
-
-      if (!streakRes.ok || !contributionRes.ok) {
-        throw new Error("Failed to fetch data");
-      }
-
-      const streakData = (await streakRes.json()) as StreakData;
-      const contribData = (await contributionRes.json()) as ContributionData;
-
-      setData(streakData);
-      setContributionData(contribData);
-      setFreezeDates(streakData.freezeDates || []);
-    } catch (err) {
-      console.error("Failed to fetch streak data:", err);
-      setError("We couldn't load your streak data right now. Please try again in a moment.");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (data) {
+      setFreezeDates(data.freezeDates || []);
       setLastUpdated(new Date());
       setMinutesAgo(0);
     }
-  }, [selectedAccount]);
-
-  const fetchFreeze = () => {
-    setFreezeLoading(true);
-    fetch("/api/streak/freeze")
-      .then((r) => r.json())
-      .then((d: FreezeData) => setFreeze(d))
-      .catch((err) => {
-        console.error("Failed to fetch freeze data:", err);
-        setFreeze(null);
-      })
-      .finally(() => setFreezeLoading(false));
-  };
-
-  useEffect(() => {
-    fetchStreak();
-    fetchFreeze();
-  }, [fetchStreak]);
+  }, [data]);
 
   useEffect(() => {
     const handleSync = () => {
-      fetchStreak();
+      refetch();
     };
+
     window.addEventListener("devtrack:sync", handleSync);
     return () => window.removeEventListener("devtrack:sync", handleSync);
-  }, [fetchStreak]);
+  }, [refetch]);
 
   useEffect(() => {
-    const stored = localStorage.getItem(
-      "devtrack:dismissed-milestones"
-    );
-
+    const stored = localStorage.getItem("devtrack:dismissed-milestones");
     const storedLastCelebrated = localStorage.getItem(
       "devtrack:last-celebrated-milestone"
     );
@@ -156,47 +109,34 @@ export default function StreakTracker() {
     }
 
     if (storedLastCelebrated) {
-      setLastCelebratedMilestone(
-        Number(storedLastCelebrated)
-      );
+      setLastCelebratedMilestone(Number(storedLastCelebrated));
     }
   }, []);
+
   useEffect(() => {
     if (!lastUpdated) return;
+
     const interval = setInterval(() => {
       const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
       setMinutesAgo(diff);
     }, 60000);
+
     return () => clearInterval(interval);
   }, [lastUpdated]);
 
   async function handleApplyFreeze() {
-    setFreezeLoading(true);
     try {
       const res = await fetch("/api/streak/freeze", { method: "POST" });
       if (!res.ok) throw new Error("Failed to apply freeze");
 
-      const streakUrl =
-        selectedAccount !== null
-          ? `/api/metrics/streak?accountId=${encodeURIComponent(selectedAccount)}`
-          : "/api/metrics/streak";
-      const [streakRes, freezeRes] = await Promise.all([
-        fetch(streakUrl),
-        fetch("/api/streak/freeze"),
-      ]);
-      const [streakData, freezeData] = await Promise.all([
-        streakRes.json() as Promise<StreakData>,
-        freezeRes.json() as Promise<FreezeData>,
-      ]);
-      setData(streakData);
-      setFreeze(freezeData);
+      await refetch();
+      await refetchFreeze();
+
       toast.success("Streak freeze activated for today!");
     } catch (err) {
       console.error("Failed to apply streak freeze:", err);
       toast.error("Failed to activate streak freeze.");
-      fetchFreeze();
-    } finally {
-      setFreezeLoading(false);
+      await refetchFreeze();
     }
   }
 
@@ -207,30 +147,19 @@ export default function StreakTracker() {
     }
 
     setCancelling(true);
+
     try {
       const res = await fetch("/api/streak/freeze", { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to cancel freeze");
 
       setConfirmCancel(false);
 
-      const streakUrl =
-        selectedAccount !== null
-          ? `/api/metrics/streak?accountId=${encodeURIComponent(selectedAccount)}`
-          : "/api/metrics/streak";
-      const [streakRes, freezeRes] = await Promise.all([
-        fetch(streakUrl),
-        fetch("/api/streak/freeze"),
-      ]);
-      const [streakData, freezeData] = await Promise.all([
-        streakRes.json() as Promise<StreakData>,
-        freezeRes.json() as Promise<FreezeData>,
-      ]);
-      setData(streakData);
-      setFreeze(freezeData);
+      await refetch();
+      await refetchFreeze();
     } catch (err) {
       console.error("Failed to cancel streak freeze:", err);
       toast.error("Failed to cancel streak freeze.");
-      fetchFreeze();
+      await refetchFreeze();
     } finally {
       setCancelling(false);
     }
@@ -245,9 +174,15 @@ export default function StreakTracker() {
             aria-hidden="true"
             className="h-6 w-36 bg-[var(--card-muted)] rounded animate-pulse mb-4"
           />
-          <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div
+            aria-hidden="true"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse" />
+              <div
+                key={i}
+                className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse"
+              />
             ))}
           </div>
         </div>
@@ -260,10 +195,10 @@ export default function StreakTracker() {
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
         <SectionHeader title="Commit Streaks" />
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
-          <p>{error}</p>
+          <p>{error.message}</p>
           <button
             type="button"
-            onClick={fetchStreak}
+            onClick={refetch}
             className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again
@@ -272,6 +207,7 @@ export default function StreakTracker() {
       </div>
     );
   }
+
   if (
     !contributionData ||
     !contributionData.data ||
@@ -283,8 +219,6 @@ export default function StreakTracker() {
           <div className="mb-4 text-4xl">📉</div>
 
           <SectionHeader title="No contribution data found" />
-
-
 
           <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
             Start committing to build your streak and track your coding activity.
@@ -302,6 +236,7 @@ export default function StreakTracker() {
       </div>
     );
   }
+
   const MILESTONES = [
     { days: 30, label: "30-day streak!", icon: Medal },
     { days: 14, label: "2-week streak!", icon: Star },
@@ -315,44 +250,44 @@ export default function StreakTracker() {
 
   const stats = data
     ? [
-      {
-        label: "Current Streak",
-        value: animatedCurrent,
-        unit: "days",
-        highlight: data.current > 0,
-        icon: Flame,
-        tooltip: "Current consecutive coding days",
-      },
-      {
-        label: "Longest Streak",
-        value: animatedLongest,
-        unit: "days",
-        highlight: false,
-        icon: Trophy,
-        tooltip: "Your longest streak ever",
-      },
-      {
-        label: "Active Days (90d)",
-        value: animatedActiveDays,
-        unit: "days",
-        highlight: false,
-        icon: Calendar,
-        tooltip: "Days you made commits in the last 90 days",
-      },
-      {
-        label: "Last Commit",
-        value: data.lastCommitDate
-          ? new Date(data.lastCommitDate).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })
-          : "—",
-        unit: "",
-        highlight: false,
-        icon: Zap,
-        tooltip: "Your most recent commit",
-      },
-    ]
+        {
+          label: "Current Streak",
+          value: animatedCurrent,
+          unit: "days",
+          highlight: data.current > 0,
+          icon: Flame,
+          tooltip: "Current consecutive coding days",
+        },
+        {
+          label: "Longest Streak",
+          value: animatedLongest,
+          unit: "days",
+          highlight: false,
+          icon: Trophy,
+          tooltip: "Your longest streak ever",
+        },
+        {
+          label: "Active Days (90d)",
+          value: animatedActiveDays,
+          unit: "days",
+          highlight: false,
+          icon: Calendar,
+          tooltip: "Days you made commits in the last 90 days",
+        },
+        {
+          label: "Last Commit",
+          value: data.lastCommitDate
+            ? new Date(data.lastCommitDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : "—",
+          unit: "",
+          highlight: false,
+          icon: Zap,
+          tooltip: "Your most recent commit",
+        },
+      ]
     : [];
 
   const handleCopy = async () => {
@@ -372,11 +307,8 @@ export default function StreakTracker() {
 
     try {
       await navigator.clipboard.writeText(textToCopy);
-
       setCopied(true);
-
       toast.success("Streak stats copied to clipboard!");
-
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy streak stats:", err);
@@ -384,28 +316,19 @@ export default function StreakTracker() {
     }
   };
 
-  const currentMilestone =
-    [...STREAK_MILESTONES]
-      .reverse()
-      .find(
-        (m) =>
-          data?.current &&
-          data.current >= m &&
-          m > lastCelebratedMilestone
-      );
+  const currentMilestone = [...STREAK_MILESTONES]
+    .reverse()
+    .find((m) => data?.current && data.current >= m && m > lastCelebratedMilestone);
+
   const shouldShowBanner =
-    currentMilestone &&
-    !dismissedMilestones.includes(currentMilestone);
+    currentMilestone && !dismissedMilestones.includes(currentMilestone);
+
   const handleDismissBanner = () => {
     if (!currentMilestone) return;
 
-    const updated = [
-      ...dismissedMilestones,
-      currentMilestone,
-    ];
+    const updated = [...dismissedMilestones, currentMilestone];
 
     setDismissedMilestones(updated);
-
     setLastCelebratedMilestone(currentMilestone);
 
     localStorage.setItem(
@@ -427,6 +350,7 @@ export default function StreakTracker() {
           onDismiss={handleDismissBanner}
         />
       )}
+
       <div className="relative">
         {data && (
           <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
@@ -437,11 +361,14 @@ export default function StreakTracker() {
               aria-label="Copy streak stats to clipboard"
             >
               {copied ? (
-                <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
+                <span className="text-xs font-medium text-[var(--success)]">
+                  Copied!
+                </span>
               ) : (
                 <Copy size={16} className="opacity-80 hover:opacity-100" />
               )}
             </button>
+
             <button
               type="button"
               onClick={handleDownload}
@@ -452,33 +379,61 @@ export default function StreakTracker() {
               {isDownloading ? (
                 <span className="w-4 h-4 rounded-full border-2 border-[var(--accent-foreground)]/30 border-t-[var(--accent-foreground)] animate-spin" />
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
               )}
               <span>SHARE</span>
             </button>
           </div>
         )}
-        <div ref={containerRef} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+
+        <div
+          ref={containerRef}
+          className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+        >
           <div className="mb-4 flex items-center justify-between">
             <SectionHeader title="Commit Streaks" />
             {data && <div className="h-8 w-24" />}
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className={`rounded-lg p-4 text-center ${stat.highlight
+                className={`rounded-lg p-4 text-center ${
+                  stat.highlight
                     ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
                     : "bg-[var(--control)]"
-                  }`}
+                }`}
                 aria-label={stat.tooltip}
               >
                 <div className="flex justify-center mb-1">
-                  <stat.icon size={24} className="text-[var(--accent)]" aria-hidden="true" />
+                  <stat.icon
+                    size={24}
+                    className="text-[var(--accent)]"
+                    aria-hidden="true"
+                  />
                 </div>
+
                 <div
-                  className={`text-2xl font-bold ${stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
-                    }`}
+                  className={`text-2xl font-bold ${
+                    stat.highlight
+                      ? "text-[var(--accent)]"
+                      : "text-[var(--accent)]"
+                  }`}
                 >
                   {stat.value}
                   {stat.unit && (
@@ -487,6 +442,7 @@ export default function StreakTracker() {
                     </span>
                   )}
                 </div>
+
                 <div className="mt-1 flex items-center justify-center gap-1 text-xs text-[var(--muted-foreground)]">
                   <span>{stat.label}</span>
 
@@ -516,20 +472,31 @@ export default function StreakTracker() {
               </div>
             ))}
           </div>
+
           {monthlyTrend.isValid && (
             <div className="mt-3 flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-xs shadow-sm">
               <span className="text-[var(--muted-foreground)]">
-                This month: <strong className="font-semibold text-[var(--card-foreground)]">{monthlyTrend.thisMonth} active days</strong>
+                This month:{" "}
+                <strong className="font-semibold text-[var(--card-foreground)]">
+                  {monthlyTrend.thisMonth} active days
+                </strong>
               </span>
               <span className={monthlyTrend.colorClass}>
                 ({monthlyTrend.text})
               </span>
             </div>
           )}
+
           {badge && (
             <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
-              <badge.icon size={18} className="text-[var(--accent)]" aria-hidden="true" />
-              <span className="text-sm font-medium text-[var(--accent)]">{badge.label}</span>
+              <badge.icon
+                size={18}
+                className="text-[var(--accent)]"
+                aria-hidden="true"
+              />
+              <span className="text-sm font-medium text-[var(--accent)]">
+                {badge.label}
+              </span>
             </div>
           )}
 
@@ -537,7 +504,9 @@ export default function StreakTracker() {
             <div className="mt-4 pt-4 border-t border-[var(--border)]">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <div className="text-xs font-medium text-[var(--muted-foreground)]">Most Active Day</div>
+                  <div className="text-xs font-medium text-[var(--muted-foreground)]">
+                    Most Active Day
+                  </div>
                   <div className="text-sm font-semibold text-[var(--card-foreground)] mt-0.5">
                     {activeDayData.peakDay.label}{" "}
                     <span className="text-xs font-normal text-[var(--muted-foreground)]">
@@ -549,23 +518,40 @@ export default function StreakTracker() {
                 <div className="flex items-end gap-1.5 h-10 pt-2">
                   {activeDayData.insights.map((item) => {
                     const maxAvg = activeDayData.peakDay?.avgCommits ?? 1;
-                    const heightPercent = maxAvg > 0 ? Math.max(15, Math.round((item.avgCommits / maxAvg) * 100)) : 15;
+                    const heightPercent =
+                      maxAvg > 0
+                        ? Math.max(
+                            15,
+                            Math.round((item.avgCommits / maxAvg) * 100)
+                          )
+                        : 15;
                     const isPeak = item.label === activeDayData.peakDay?.label;
 
                     return (
                       <div
                         key={item.label}
                         className="flex flex-col items-center gap-1 group relative cursor-default"
-                        title={`${item.label}: avg ${item.avgCommits.toFixed(1)} commits`}
+                        title={`${item.label}: avg ${item.avgCommits.toFixed(
+                          1
+                        )} commits`}
                       >
                         <div className="w-5 bg-[var(--card-muted)] rounded-sm flex items-end h-8 overflow-hidden">
                           <div
                             style={{ height: `${heightPercent}%` }}
-                            className={`w-full rounded-sm transition-all duration-300 ${isPeak ? "bg-[var(--accent)]" : "bg-[var(--accent)]/40 hover:bg-[var(--accent)]/60"
-                              }`}
+                            className={`w-full rounded-sm transition-all duration-300 ${
+                              isPeak
+                                ? "bg-[var(--accent)]"
+                                : "bg-[var(--accent)]/40 hover:bg-[var(--accent)]/60"
+                            }`}
                           />
                         </div>
-                        <span className={`text-[10px] leading-none ${isPeak ? "font-bold text-[var(--card-foreground)]" : "text-[var(--muted-foreground)]"}`}>
+                        <span
+                          className={`text-[10px] leading-none ${
+                            isPeak
+                              ? "font-bold text-[var(--card-foreground)]"
+                              : "text-[var(--muted-foreground)]"
+                          }`}
+                        >
                           {item.shortLabel}
                         </span>
                       </div>
@@ -575,6 +561,7 @@ export default function StreakTracker() {
               </div>
             </div>
           )}
+
           {lastUpdated && (
             <p className="mt-2 text-right text-xs text-[var(--muted-foreground)]">
               {minutesAgo === 0
@@ -586,12 +573,21 @@ export default function StreakTracker() {
           {!freezeLoading && freeze?.hasFreeze && (
             <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-4 py-3">
               <div className="flex items-center gap-2">
-                <CheckCircle size={18} className="text-[var(--accent)]" aria-hidden="true" />
-                <span className="text-sm font-medium text-[var(--accent)]">Freeze active today</span>
+                <CheckCircle
+                  size={18}
+                  className="text-[var(--accent)]"
+                  aria-hidden="true"
+                />
+                <span className="text-sm font-medium text-[var(--accent)]">
+                  Freeze active today
+                </span>
               </div>
+
               {confirmCancel ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-[var(--muted-foreground)]">Remove freeze?</span>
+                  <span className="text-xs text-[var(--muted-foreground)]">
+                    Remove freeze?
+                  </span>
                   <button
                     type="button"
                     onClick={handleCancelFreeze}
@@ -624,8 +620,9 @@ export default function StreakTracker() {
           {!freezeLoading && !freeze?.hasFreeze && (
             <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-[var(--foreground)]">Streak Freeze</span>
-                <span className="text-xs text-[var(--muted-foreground)]">❄️ 1 available</span>
+                <span className="text-sm font-medium text-[var(--foreground)]">
+                  Streak Freeze
+                </span>
                 <div className="group relative cursor-help">
                   <span
                     className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--card-muted)] text-[10px] font-bold text-[var(--muted-foreground)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] transition-colors"
@@ -635,45 +632,39 @@ export default function StreakTracker() {
                     ?
                   </span>
                   <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 w-64 rounded-lg bg-[var(--foreground)] px-3 py-2 text-xs font-medium leading-relaxed text-[var(--background)] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20 shadow-lg text-center">
-                    A streak freeze protects your streak for one missed day. You can only use one freeze at a time.
+                    A streak freeze protects your streak for one missed day. You
+                    can only use one freeze at a time.
                     <div className="absolute top-full left-1/2 h-1 w-1 -translate-x-1/2 border-4 border-t-[var(--foreground)] border-transparent" />
                   </div>
                 </div>
               </div>
+
               <button
                 type="button"
                 onClick={handleApplyFreeze}
                 disabled={freezeLoading || freeze?.hasFreeze}
-                className={`rounded-md px-3 py-1 text-xs font-medium transition ${freezeLoading || freeze?.hasFreeze
+                className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                  freezeLoading || freeze?.hasFreeze
                     ? "cursor-not-allowed opacity-50 bg-[var(--accent)]"
                     : "bg-[var(--accent)] hover:opacity-90"
-                  } text-[var(--accent-foreground)]`}
+                } text-[var(--accent-foreground)]`}
               >
                 {freeze?.hasFreeze ? "Freeze Active" : "Freeze Streak"}
               </button>
             </div>
           )}
 
-          {/* Streak Calendar Section */}
           {contributionData ? (
-            <>
-              {/*
-            Freeze dates are managed via the streak freeze API (/api/streak/freeze).
-            Users can activate a freeze from the freeze button in this component.
-            The calendar displays existing freeze dates from the API response.
-            Future: add UI to manually mark/unmark past dates as frozen.
-          */}
-              <StreakCalendar
-                contributions={contributionData.data}
-                freezeDates={
-                  freeze?.freezeDate
-                    ? Array.from(new Set([...freezeDates, freeze.freezeDate]))
-                    : freezeDates
-                }
-                currentMonth={calendarMonth}
-                onMonthChange={setCalendarMonth}
-              />
-            </>
+            <StreakCalendar
+              contributions={contributionData.data}
+              freezeDates={
+                freeze?.freezeDate
+                  ? Array.from(new Set([...freezeDates, freeze.freezeDate]))
+                  : freezeDates
+              }
+              currentMonth={calendarMonth}
+              onMonthChange={setCalendarMonth}
+            />
           ) : null}
         </div>
       </div>
@@ -689,7 +680,10 @@ interface StreakCalendarProps {
 }
 
 function toLocalDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function StreakCalendar({
@@ -708,18 +702,25 @@ function StreakCalendar({
   const startingDayOfWeek = firstDay.getDay();
 
   const { getCalendarStyle, themeConfig } = useHeatmapTheme();
-  const monthName = firstDay.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const monthName = firstDay.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  const calendarDays: Array<{ date: Date | null; dayOfMonth: number | null }> = [];
+  const calendarDays: Array<{ date: Date | null; dayOfMonth: number | null }> =
+    [];
 
   for (let i = 0; i < startingDayOfWeek; i++) {
     calendarDays.push({ date: null, dayOfMonth: null });
   }
+
   for (let day = 1; day <= daysInMonth; day++) {
     calendarDays.push({ date: new Date(year, month, day), dayOfMonth: day });
   }
+
   const totalCells = Math.ceil(calendarDays.length / 7) * 7;
+
   while (calendarDays.length < totalCells) {
     calendarDays.push({ date: null, dayOfMonth: null });
   }
@@ -730,7 +731,6 @@ function StreakCalendar({
 
   return (
     <div className="mt-6 pt-6 border-t border-[var(--border)]">
-      {/* Calendar Header */}
       <div className="mb-6 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-[var(--card-foreground)]">
           {monthName}
@@ -753,7 +753,6 @@ function StreakCalendar({
         </div>
       </div>
 
-      {/* Day labels */}
       <div className="mb-3 grid grid-cols-7 gap-1">
         {dayLabels.map((label) => (
           <div
@@ -765,7 +764,6 @@ function StreakCalendar({
         ))}
       </div>
 
-      {/* Calendar grid */}
       <div className="grid grid-cols-7 gap-2">
         {calendarDays.map((dayData, idx) => {
           if (!dayData.date) {
@@ -799,24 +797,30 @@ function StreakCalendar({
           }
 
           const cellStyle = isFuture
-            ? { backgroundColor: "transparent", borderColor: themeConfig.border }
+            ? {
+                backgroundColor: "transparent",
+                borderColor: themeConfig.border,
+              }
             : isFrozen
-              ? undefined
-              : getCalendarStyle(commitCount);
+            ? undefined
+            : getCalendarStyle(commitCount);
 
           const tooltipText = !isFuture
             ? `${dayData.date.toLocaleDateString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            })}: ${statusText}${!isFrozen && commitCount > 0 ? ` (${commitCount})` : ""}`
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}: ${statusText}${
+                !isFrozen && commitCount > 0 ? ` (${commitCount})` : ""
+              }`
             : "";
 
           return (
             <div
               key={dateStr}
-              className={`group relative aspect-square rounded-lg ${bgColor} ${borderColor} transition-all hover:scale-110 hover:shadow-lg cursor-default ${isToday ? "ring-2 ring-offset-1 ring-[var(--accent)]" : ""
-                }`}
+              className={`group relative aspect-square rounded-lg ${bgColor} ${borderColor} transition-all hover:scale-110 hover:shadow-lg cursor-default ${
+                isToday ? "ring-2 ring-offset-1 ring-[var(--accent)]" : ""
+              }`}
               style={cellStyle}
               title={tooltipText}
             >
@@ -825,6 +829,7 @@ function StreakCalendar({
                   {dayData.dayOfMonth}
                 </span>
               )}
+
               {!isFuture && tooltipText && (
                 <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--foreground)] px-3 py-2 text-xs font-medium text-[var(--background)] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-10 shadow-lg">
                   {tooltipText}
@@ -836,25 +841,33 @@ function StreakCalendar({
         })}
       </div>
 
-      {/* Legend */}
       <div className="mt-6 flex flex-wrap gap-6 text-sm">
         <div className="flex items-center gap-3">
           <div className="h-4 w-4 rounded-md bg-[var(--accent)]" />
-          <span className="text-[var(--card-foreground)] font-medium">Committed</span>
+          <span className="text-[var(--card-foreground)] font-medium">
+            Committed
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <div className="h-4 w-4 rounded-md border border-[var(--accent)]/40 bg-[var(--accent)]/20" />
-          <span className="text-[var(--card-foreground)] font-medium">Frozen</span>
+          <span className="text-[var(--card-foreground)] font-medium">
+            Frozen
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <div className="h-4 w-4 rounded-md border border-[var(--muted-foreground)]/30 bg-[var(--muted-foreground)]/20" />
-          <span className="text-[var(--card-foreground)] font-medium">Missed</span>
+          <span className="text-[var(--card-foreground)] font-medium">
+            Missed
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <div className="h-4 w-4 rounded-md border-2 border-[var(--border)]" />
-          <span className="text-[var(--card-foreground)] font-medium">Future</span>
+          <span className="text-[var(--card-foreground)] font-medium">
+            Future
+          </span>
         </div>
       </div>
+
       <p className="mt-2 text-xs text-[var(--muted-foreground)]">
         Frozen days are set via the streak freeze feature above.
       </p>
@@ -870,7 +883,9 @@ interface WeekdayInsight {
   avgCommits: number;
 }
 
-function calculateActiveDayInsights(data: Record<string, number> | undefined | null): {
+function calculateActiveDayInsights(
+  data: Record<string, number> | undefined | null
+): {
   insights: WeekdayInsight[];
   peakDay: WeekdayInsight | null;
   isValid: boolean;
@@ -879,7 +894,15 @@ function calculateActiveDayInsights(data: Record<string, number> | undefined | n
     return { insights: [], peakDay: null, isValid: false };
   }
 
-  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   const shortNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   const totals = [0, 0, 0, 0, 0, 0, 0];
@@ -887,9 +910,16 @@ function calculateActiveDayInsights(data: Record<string, number> | undefined | n
 
   for (const [dateStr, commitCount] of Object.entries(data)) {
     const parts = dateStr.split("-").map(Number);
-    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+
+    if (
+      parts.length === 3 &&
+      !Number.isNaN(parts[0]) &&
+      !Number.isNaN(parts[1]) &&
+      !Number.isNaN(parts[2])
+    ) {
       const d = new Date(parts[0], parts[1] - 1, parts[2]);
-      if (!isNaN(d.getTime())) {
+
+      if (!Number.isNaN(d.getTime())) {
         const dayIdx = d.getDay();
         totals[dayIdx] += commitCount;
         counts[dayIdx] += 1;
@@ -898,10 +928,12 @@ function calculateActiveDayInsights(data: Record<string, number> | undefined | n
   }
 
   const insights: WeekdayInsight[] = [];
+
   for (let i = 0; i < 7; i++) {
     const totalCommits = totals[i];
     const countDays = counts[i];
     const avgCommits = countDays > 0 ? totalCommits / countDays : 0;
+
     insights.push({
       label: dayNames[i],
       shortLabel: shortNames[i],
@@ -912,6 +944,7 @@ function calculateActiveDayInsights(data: Record<string, number> | undefined | n
   }
 
   let maxAvg = -1;
+
   for (const item of insights) {
     if (item.avgCommits > maxAvg) {
       maxAvg = item.avgCommits;
@@ -920,6 +953,7 @@ function calculateActiveDayInsights(data: Record<string, number> | undefined | n
 
   const tiedDays = insights.filter((item) => item.avgCommits === maxAvg);
   tiedDays.sort((a, b) => a.label.localeCompare(b.label));
+
   const peakDay = tiedDays.length > 0 ? tiedDays[0] : null;
 
   return { insights, peakDay, isValid: true };
@@ -933,13 +967,27 @@ interface MonthlyTrendResult {
   colorClass: string;
 }
 
-function calculateMonthlyTrend(contrib: ContributionData | undefined | null): MonthlyTrendResult {
+function calculateMonthlyTrend(
+  contrib: ContributionData | undefined | null
+): MonthlyTrendResult {
   if (!contrib || !contrib.data) {
-    return { isValid: false, thisMonth: 0, lastMonth: 0, text: "", colorClass: "" };
+    return {
+      isValid: false,
+      thisMonth: 0,
+      lastMonth: 0,
+      text: "",
+      colorClass: "",
+    };
   }
 
   if (contrib.days < 30) {
-    return { isValid: false, thisMonth: 0, lastMonth: 0, text: "", colorClass: "" };
+    return {
+      isValid: false,
+      thisMonth: 0,
+      lastMonth: 0,
+      text: "",
+      colorClass: "",
+    };
   }
 
   const data = contrib.data;
@@ -958,12 +1006,25 @@ function calculateMonthlyTrend(contrib: ContributionData | undefined | null): Mo
   for (const [dateStr, count] of Object.entries(data)) {
     if (count > 0) {
       const parts = dateStr.split("-").map(Number);
-      if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+
+      if (
+        parts.length === 3 &&
+        !Number.isNaN(parts[0]) &&
+        !Number.isNaN(parts[1]) &&
+        !Number.isNaN(parts[2])
+      ) {
         const d = new Date(parts[0], parts[1] - 1, parts[2]);
-        if (!isNaN(d.getTime())) {
-          if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+
+        if (!Number.isNaN(d.getTime())) {
+          if (
+            d.getFullYear() === currentYear &&
+            d.getMonth() === currentMonth
+          ) {
             thisMonth++;
-          } else if (d.getFullYear() === prevYear && d.getMonth() === prevMonth) {
+          } else if (
+            d.getFullYear() === prevYear &&
+            d.getMonth() === prevMonth
+          ) {
             lastMonth++;
           }
         }
@@ -988,7 +1049,7 @@ function calculateMonthlyTrend(contrib: ContributionData | undefined | null): Mo
       text = `↓${Math.abs(deltaCalc).toFixed(0)}% vs last month`;
       colorClass = "text-[var(--destructive)] font-medium";
     } else {
-      text = `=0% vs last month`;
+      text = "=0% vs last month";
       colorClass = "text-[var(--muted-foreground)] font-medium";
     }
   }
