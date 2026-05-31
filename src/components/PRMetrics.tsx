@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import PRStatusDonutChart from "./PRStatusDonutChart";
 import MiniPRTrendChart from "./MiniPRTrendChart";
+
 interface ReviewMetrics {
   totalReviews: number;
   approvalRate: string;
@@ -174,10 +175,11 @@ export default function PRMetrics() {
         <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
       </>
     );
-    const className = `rounded-lg p-4 text-center min-w-0 transition-colors ${
+
+    const className = `rounded-lg p-4 text-center min-w-0 border border-transparent transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md ${
       stat.warning
-        ? "border border-orange-400/30 bg-orange-500/10 hover:bg-orange-500/15"
-        : "bg-[var(--control)]"
+        ? "border-orange-400/30 bg-orange-500/10 hover:bg-orange-500/15 hover:border-orange-400/50"
+        : "bg-[var(--control)] hover:bg-[var(--control-hover)] hover:border-[var(--border)]"
     }`;
 
     return stat.href ? (
@@ -192,6 +194,7 @@ export default function PRMetrics() {
         {content}
       </a>
     ) : (
+      // 🎯 Fixed: Changed opening tag to match closing tag correctly
       <div key={stat.label} className={className} title={stat.title}>
         {content}
       </div>
@@ -356,7 +359,10 @@ export default function PRMetrics() {
               { label: "Total Reviews Given", value: metrics?.reviews?.totalReviews ?? 0 },
               { label: "Approval Rate", value: metrics?.reviews?.approvalRate ?? "0%" },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-lg bg-[var(--control)] p-4 text-center">
+              <div 
+                key={stat.label} 
+                className="rounded-lg bg-[var(--control)] border border-transparent p-4 text-center transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md hover:bg-[var(--control-hover)] hover:border-[var(--border)]"
+              >
                 <div className="text-2xl font-bold text-[var(--accent)]">{stat.value}</div>
                 <div className="mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
               </div>

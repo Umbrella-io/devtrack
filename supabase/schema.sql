@@ -153,6 +153,19 @@ create table if not exists user_github_achievements (
   updated_at   timestamptz default now()
 );
 
+create table if not exists jira_credentials (
+  id           text primary key default gen_random_uuid()::text,
+  user_id      text not null unique references users(id) on delete cascade,
+  jira_domain  text not null,
+  email        text not null,
+  api_token    text not null,
+  token_iv     text not null,
+  project_key  text,
+  is_active    boolean default true,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+
 create index if not exists idx_user_github_achievements_login
   on user_github_achievements(github_login);
 
@@ -186,3 +199,4 @@ begin
 end;
 $$ language plpgsql security definer;
 
+create index if not exists jira_credentials_user on jira_credentials(user_id);

@@ -4,6 +4,11 @@ import {
   mergeCommitCounts,
   mergeSignals,
   DeveloperSignals,
+  calculateStreaks,
+  formatDurationHours,
+  choosePersonaCandidate,
+  buildSmartInsightCandidates,
+  PersonaKey,
 } from "../src/lib/developer-persona";
 
 describe("Developer Persona Utilities", () => {
@@ -188,6 +193,146 @@ describe("Developer Persona Utilities", () => {
 
       const result = buildDeveloperPersonaResponse(signals);
       expect(result.insights.some(i => i.title === "Momentum Builder")).toBe(true);
+    });
+  });
+
+  describe("calculateStreaks", () => {
+    it("returns zeros for empty commit history", () => {
+      const result = calculateStreaks({});
+      expect(result).toEqual({
+        currentStreak: 0,
+        longestStreak: 0,
+        totalActiveDays: 0,
+        currentWeekCommits: 0,
+        previousWeekCommits: 0,
+        activeDaysThisWeek: 0,
+      });
+    });
+
+    it("returns correct streak info for single day commit", () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const result = calculateStreaks({ [today]: 1 });
+      expect(result.currentStreak).toBe(1);
+      expect(result.longestStreak).toBe(1);
+      expect(result.totalActiveDays).toBe(1);
+    });
+
+    it("calculates consecutive days correctly", () => {
+      const today = new Date();
+      const day1 = new Date(today.getTime() - 2 * 86400000).toISOString().slice(0, 10);
+      const day2 = new Date(today.getTime() - 86400000).toISOString().slice(0, 10);
+      const day3 = today.toISOString().slice(0, 10);
+
+      const result = calculateStreaks({
+        [day1]: 1,
+        [day2]: 2,
+        [day3]: 1,
+      });
+      expect(result.currentStreak).toBe(3);
+      expect(result.longestStreak).toBe(3);
+    });
+
+    it("handles gaps in commit history", () => {
+      const today = new Date();
+      const day1 = new Date(today.getTime() - 4 * 86400000).toISOString().slice(0, 10);
+      const day2 = new Date(today.getTime() - 3 * 86400000).toISOString().slice(0, 10);
+      const day3 = today.toISOString().slice(0, 10); // gap of 2 days before today
+
+      const result = calculateStreaks({
+        [day1]: 1,
+        [day2]: 1,
+        [day3]: 1,
+      });
+      expect(result.currentStreak).toBe(1); // because gap is 2 days
+      expect(result.longestStreak).toBe(2);
+    });
+  });
+
+  describe("formatDurationHours", () => {
+    it("returns 0h for non-finite values", () => {
+      expect(formatDurationHours(NaN)).toBe("0h");
+      expect(formatDurationHours(Infinity)).toBe("0h");
+      expect(formatDurationHours(-1)).toBe("0h");
+      expect(formatDurationHours(0)).toBe("0h");
+    });
+
+    it("formats minutes for values less than 1 hour", () => {
+      expect(formatDurationHours(0.5)).toBe("30m");
+      expect(formatDurationHours(0.25)).toBe("15m");
+    });
+
+    it("formats hours for values between 1 and 24", () => {
+      expect(formatDurationHours(1)).toBe("1h");
+      expect(formatDurationHours(8.5)).toBe("8.5h");
+    });
+
+    it("formats days for values 24 or more", () => {
+      expect(formatDurationHours(24)).toBe("1d");
+      expect(formatDurationHours(48)).toBe("2d");
+    });
+  });
+
+  describe("choosePersonaCandidate", () => {
+    it("returns fallback when no candidates are eligible or scored", () => {
+      const candidates = [
+        { key: "night_owl" as PersonaKey, score: 0, eligible: false },
+        { key: "early_bird" as PersonaKey, score: 0, eligible: false },
+      ];
+      const result = choosePersonaCandidate(candidates, "balanced_builder");
+      expect(result).toBe("balanced_builder");
+    });
+
+    it("returns highest scoring eligible candidate", () => {
+      const candidates = [
+        { key: "night_owl" as PersonaKey, score: 0.8, eligible: true },
+        { key: "early_bird" as PersonaKey, score: 0.6, eligible: true },
+      ];
+      const result = choosePersonaCandidate(candidates, "balanced_builder");
+      expect(result).toBe("night_owl");
+    });
+
+    it("returns highest scored when no eligible ones exist but scored candidates exist", () => {
+      const candidates = [
+        { key: "night_owl" as PersonaKey, score: 0.8, eligible: false },
+        { key: "early_bird" as PersonaKey, score: 0.6, eligible: false },
+      ];
+      const result = choosePersonaCandidate(candidates, "balanced_builder");
+      expect(result).toBe("night_owl");
+    });
+  });
+
+  describe("buildSmartInsightCandidates", () => {
+    it("returns empty array for no signals", () => {
+      const signals: DeveloperSignals = {
+        commitCountsByDate: {},
+        timeBlocks: { morning: 0, afternoon: 0, evening: 0, night: 0 },
+        prsOpened: 0,
+        prsMerged: 0,
+        prMergeTotalHours: 0,
+        prMergeSampleSize: 0,
+        additions: 0,
+        deletions: 0,
+      };
+      const summary = calculateStreaks({});
+      const result = buildSmartInsightCandidates(signals, summary, "balanced_builder");
+      expect(result).toEqual([]);
+    });
+
+    it("returns steady cadence insight when no other insights apply", () => {
+      const signals: DeveloperSignals = {
+        commitCountsByDate: { "2026-05-10": 1, "2026-05-11": 2 },
+        timeBlocks: { morning: 5, afternoon: 5, evening: 5, night: 0 },
+        prsOpened: 0,
+        prsMerged: 0,
+        prMergeTotalHours: 0,
+        prMergeSampleSize: 0,
+        additions: 0,
+        deletions: 0,
+      };
+      const summary = calculateStreaks(signals.commitCountsByDate);
+      const result = buildSmartInsightCandidates(signals, summary, "balanced_builder");
+      expect(result.length).toBeGreaterThan(0);
+      expect(result[0].title).toBe("Steady Cadence");
     });
   });
 });

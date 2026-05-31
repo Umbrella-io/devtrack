@@ -1,6 +1,8 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 const isDev = process.env.NODE_ENV === "development";
 const WINDOW_SECONDS = 60;
 
@@ -199,27 +201,26 @@ async function checkRateLimit(identifier: string, limit: number) {
 }
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-
-  // Protect dashboard and settings routes
   const pathname = req.nextUrl.pathname;
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   const protectedRoutes = ["/dashboard", "/settings"];
-
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
-  if (isProtectedRoute && !token) {
-    return NextResponse.redirect(new URL("/", req.url));
+  if (isProtectedRoute) {
+    if (!token) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    return NextResponse.next();
   }
 
-  const githubId =
-    typeof token?.githubId === "string" ? token.githubId : null;
-
+  const githubId = typeof token?.githubId === "string" ? token.githubId : null;
   const identifier = githubId ? `user:${githubId}` : `ip:${getIp(req)}`;
 
   const limit = githubId
@@ -231,14 +232,19 @@ export async function middleware(req: NextRequest) {
   const headers = buildHeaders(result);
 
   if (!result.allowed) {
-    console.warn("metrics_rate_limit_hit", {
+    const isContact = req.nextUrl.pathname.startsWith("/api/contact");
+    console.warn(isContact ? "contact_rate_limit_hit" : "metrics_rate_limit_hit", {
       identifier,
       path: req.nextUrl.pathname,
       limit,
     });
 
     return NextResponse.json(
-      { error: "Too many metrics requests. Please retry shortly." },
+      {
+        error: isContact
+          ? "Too many submissions. Please retry shortly."
+          : "Too many metrics requests. Please retry shortly.",
+      },
       { status: 429, headers }
     );
   }
@@ -265,9 +271,11 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/dashboard",
     "/dashboard/:path*",
+    "/settings",
     "/settings/:path*",
     "/api/metrics/:path*",
+    "/api/contact",
   ],
 };
-

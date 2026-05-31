@@ -228,13 +228,13 @@ function calculateWeeklyTrend(
   direction: "up" | "down" | "stable";
   percentage: number;
 } {
-  const firstHalf = dayCounts
-    .slice(0, 3)
-    .reduce((sum, day) => sum + day.count, 0);
+  const firstHalfDays = dayCounts.slice(0, 3);
+  const firstHalfSum = firstHalfDays.reduce((sum, day) => sum + day.count, 0);
+  const firstHalf = firstHalfSum / firstHalfDays.length;
 
-  const secondHalf = dayCounts
-    .slice(3)
-    .reduce((sum, day) => sum + day.count, 0);
+  const secondHalfDays = dayCounts.slice(3);
+  const secondHalfSum = secondHalfDays.reduce((sum, day) => sum + day.count, 0);
+  const secondHalf = secondHalfSum / secondHalfDays.length;
 
   if (firstHalf === secondHalf) {
     return {
