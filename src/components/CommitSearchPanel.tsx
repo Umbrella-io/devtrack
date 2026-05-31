@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import type { CommitItem } from "@/lib/github";
 
 const PAGE_SIZE = 50;

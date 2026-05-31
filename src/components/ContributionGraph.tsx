@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import CommitSearchPanel from "@/components/CommitSearchPanel";
 import type { CommitItem } from "@/lib/github";
+import { get, set } from "idb-keyval";
 import {
   BarChart,
   Bar,
@@ -108,7 +109,17 @@ export default function ContributionGraph() {
   const { selectedAccount } = useAccount();
   const [data, setData] = useState<DayData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [days, setDays] = useState(30);
+  const [days, setDays] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("devtrack:contribution-range");
+        if (stored === "7" || stored === "30" || stored === "90" || stored === "365") {
+          return Number(stored);
+        }
+      } catch {}
+    }
+    return 30;
+  });
   const [chartType, setChartType] = useState<ViewMode>("bar");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
@@ -133,23 +144,6 @@ export default function ContributionGraph() {
   const [customLabel, setCustomLabel] = useState<string | null>(null);
   const [customError, setCustomError] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-
-  // Fetch my data
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("devtrack:contribution-range");
-        if (stored === "7" || stored === "30" || stored === "90" || stored === "365") {
-          setDays(Number(stored));
-        } else {
-          localStorage.setItem("devtrack:contribution-range", "30");
-          setDays(30);
-        }
-      } catch {
-        setDays(30);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
@@ -176,9 +170,7 @@ export default function ContributionGraph() {
   };
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    setCommits([]);
+    let active = true;
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -193,12 +185,48 @@ export default function ContributionGraph() {
         ? `/api/metrics/contributions?from=${customFrom}&to=${customTo}${accountParam}${repoParam}${timezoneParam}`
         : `/api/metrics/contributions?days=${days}${accountParam}${repoParam}${timezoneParam}`;
 
-    fetch(url)
-      .then((r) => {
+    const cacheKey = `contrib-graph-${selectedAccount ?? "default"}-${repo}-${days}-${customFrom ?? "none"}-${customTo ?? "none"}`;
+    const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+    async function processFetch() {
+      // 1. Attempt to load from IndexedDB cache
+      let cached: { data: DayData[]; commits: CommitItem[]; timestamp: number } | undefined;
+      try {
+        cached = await get(cacheKey);
+      } catch (err) {
+        console.warn("Failed to get cache from IndexedDB:", err);
+      }
+
+      if (cached && active) {
+        // Hydrate from cache immediately (Local Hydration)
+        setData(cached.data);
+        setCommits(cached.commits);
+        setLoading(false);
+        setLastUpdated(new Date(cached.timestamp));
+        setMinutesAgo(Math.floor((Date.now() - cached.timestamp) / 60000));
+        setError(null);
+
+        // Check if cache has expired (TTL Strategy)
+        const isExpired = Date.now() - cached.timestamp > CACHE_TTL;
+        if (!isExpired) {
+          // If not expired, skip background fetch
+          return;
+        }
+      } else if (active) {
+        // No cache: show standard loading
+        setLoading(true);
+        setError(null);
+        setCommits([]);
+      }
+
+      // 2. Perform background sync / standard fetch
+      try {
+        const r = await fetch(url);
         if (!r.ok) throw new Error("API error");
-        return r.json();
-      })
-      .then((res: ContributionResponse) => {
+        const res: ContributionResponse = await r.json();
+        
+        if (!active) return;
+
         const merged = mergeContributionSources(
           res.sources,
           res.data ?? {}
@@ -206,17 +234,41 @@ export default function ContributionGraph() {
         const sorted = Object.entries(merged)
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([day, commits]) => ({ day, commits }));
+
         setData(sorted);
         setCommits(res.commits ?? []);
-      })
-      .catch(() => {
-        setError("Failed to load contribution data.");
-      })
-      .finally(() => {
-        setLoading(false);
+        setError(null);
         setLastUpdated(new Date());
         setMinutesAgo(0);
-      });
+
+        // Update IndexedDB cache
+        try {
+          await set(cacheKey, {
+            data: sorted,
+            commits: res.commits ?? [],
+            timestamp: Date.now(),
+          });
+        } catch (err) {
+          console.warn("Failed to write cache to IndexedDB:", err);
+        }
+      } catch (err) {
+        if (!active) return;
+        // If we have cached data, suppress fetch error (Offline recovery)
+        if (!cached) {
+          setError("Failed to load contribution data.");
+        }
+      } finally {
+        if (active && !cached) {
+          setLoading(false);
+        }
+      }
+    }
+
+    processFetch();
+
+    return () => {
+      active = false;
+    };
   }, [days, selectedAccount, customFrom, customTo, customLabel, repo]);
 
   // Fetch friend data when compare mode is on and compareUser changes
