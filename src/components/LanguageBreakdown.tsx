@@ -47,16 +47,26 @@ export default function LanguageBreakdown() {
   const { selectedAccount } = useAccount();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     const url = selectedAccount !== null
       ? `/api/metrics/languages?accountId=${encodeURIComponent(selectedAccount)}`
       : "/api/metrics/languages";
     fetch(url)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error("API error");
+        }
+
+        return r.json();
+      })
       .then((d: { languages: Language[] }) => setLanguages(d.languages ?? []))
-      .catch(() => {})
+      .catch(() => {
+        setError("Failed to load language statistics. Please try again later.");
+      })
       .finally(() => setLoading(false));
   }, [selectedAccount]);
 
@@ -96,6 +106,10 @@ export default function LanguageBreakdown() {
             ))}
           </div>
         </div>
+      ) : error ? (
+        <p className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
+          {error}
+        </p>
       ) : languages.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No language data available.

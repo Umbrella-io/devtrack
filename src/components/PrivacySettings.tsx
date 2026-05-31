@@ -140,10 +140,14 @@ export default function PrivacySettings() {
                   <li>• Linked accounts and integrations</li>
                   <li>• Local coding time data</li>
                 </ul>
-                <p className="text-sm text-[var(--destructive)] mb-3">
+                <label
+                  htmlFor="delete-confirm-input"
+                  className="block text-sm text-[var(--destructive)] mb-3"
+                >
                   Type <strong>DELETE</strong> to confirm:
-                </p>
+                </label>
                 <input
+                  id="delete-confirm-input"
                   type="text"
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}

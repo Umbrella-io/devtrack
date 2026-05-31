@@ -269,6 +269,7 @@ export default function ExportButton() {
   const { data: session } = useSession();
   const [isExportingCSV, setIsExportingCSV] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [isExportingJSON, setIsExportingJSON] = useState(false);
 
   const reportName = useMemo(
     () => session?.githubLogin ?? session?.user?.name ?? "",
@@ -280,21 +281,28 @@ export default function ExportButton() {
       cache: "no-store",
     };
 
-    const [prRes, goalsRes, contribRes] = await Promise.all([
+    const [prRes, goalsRes, contribRes, dbExportRes] = await Promise.all([
       fetch(`/api/metrics/prs`, fetchOptions),
       fetch(`/api/goals`, fetchOptions),
       fetch(`/api/metrics/contributions?days=365`, fetchOptions),
+      fetch(`/api/user/data-export`, fetchOptions),
     ]);
 
     const prData: PRData | null = prRes.ok ? await prRes.json() : null;
     const goalsData = goalsRes.ok ? await goalsRes.json() : { goals: [] };
     const contribDataRaw = contribRes.ok ? await contribRes.json() : { data: {} };
+    const dbExportData = dbExportRes.ok ? await dbExportRes.json() : null;
 
     const contribData: DayData[] = Object.entries(contribDataRaw.data ?? {})
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([day, commits]) => ({ day, commits: commits as number }));
 
-    return { prData, contribData, goalsData: goalsData?.goals as Goal[] };
+    return { 
+      prData, 
+      contribData, 
+      goalsData: goalsData?.goals as Goal[],
+      dbExportData
+    };
   };
 
   const downloadFile = (content: string, filename: string, type: string) => {
@@ -649,9 +657,46 @@ export default function ExportButton() {
 
       addFooter(doc, generatedAt);
 
-      doc.save("dashboard-metrics.pdf");
+      doc.save(`devtrack-export-${reportName || "metrics"}-${new Date().toISOString().slice(0, 10)}.pdf`);
     } finally {
       setIsExportingPDF(false);
+    }
+  };
+
+  const exportJSON = async () => {
+    setIsExportingJSON(true);
+    try {
+      const { prData, goalsData, contribData, dbExportData } = await fetchData();
+      const generatedAt = formatGeneratedTimestamp();
+      
+      const jsonData = {
+        generatedAt,
+        githubUser: reportName || "unknown",
+        summary: {
+          totalCommits: getTotalCommits(contribData),
+          activeCodingDays: getActiveDays(contribData),
+          bestCommitDay: getBestCommitDay(contribData)?.day || null,
+          highestCommitsInOneDay: getHighestCommitsInOneDay(contribData),
+          totalGoals: goalsData.length,
+          averageGoalProgress: getAverageGoalProgress(goalsData),
+        },
+        prMetrics: prData,
+        insights: getExportInsights(goalsData, contribData),
+        goals: goalsData,
+        monthlySummary: getMonthlySummary(contribData),
+        commitActivity: contribData,
+        goalStatusOverview: getGoalStatusSummary(goalsData),
+        // Include full database dump if Supabase is connected
+        databaseRecords: dbExportData?.sections || null,
+      };
+
+      downloadFile(
+        JSON.stringify(jsonData, null, 2),
+        `devtrack-export-${reportName || "metrics"}-${new Date().toISOString().slice(0, 10)}.json`,
+        "application/json"
+      );
+    } finally {
+      setIsExportingJSON(false);
     }
   };
 
@@ -680,6 +725,19 @@ export default function ExportButton() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         {isExportingPDF ? "Exporting..." : "Export PDF"}
+      </button>
+
+      <button
+        type="button"
+        onClick={exportJSON}
+        disabled={isExportingJSON}
+        className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:border-[var(--accent)] disabled:opacity-50 sm:min-w-[140px] sm:flex-none"
+        suppressHydrationWarning
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        {isExportingJSON ? "Exporting..." : "Export JSON"}
       </button>
     </div>
   );
