@@ -105,7 +105,7 @@ export default function CommitTimeChart() {
         <select
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus:outline-none focus:border-[var(--accent)]"
+          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus-visible:outline-none focus:border-[var(--accent)]"
         >
           <option value={7}>Last 7d</option>
           <option value={30}>Last 30d</option>

@@ -79,7 +79,7 @@ export default function ShareProfileSection({
             target="_blank"
             rel="noreferrer noopener"
             aria-label={`Share ${username}'s profile on X`}
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
           >
             <span aria-hidden="true">𝕏</span>
             <span>X</span>
@@ -90,7 +90,7 @@ export default function ShareProfileSection({
             target="_blank"
             rel="noreferrer noopener"
             aria-label={`Share ${username}'s profile on LinkedIn`}
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
           >
             <span aria-hidden="true">in</span>
             <span>LinkedIn</span>
