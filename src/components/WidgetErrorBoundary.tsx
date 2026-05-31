@@ -83,7 +83,7 @@ class WidgetErrorBoundary extends React.Component<Props, State> {
 
           <button
             onClick={this.handleRetry}
-            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-[var(--accent-foreground)] transition hover:opacity-80"
+            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-[var(--accent-foreground)] transition hover:opacity-80 transition-all duration-200 hover:opacity-90 active:scale-95"
           >
             Retry
           </button>

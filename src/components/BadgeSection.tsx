@@ -58,8 +58,7 @@ export default function BadgeSection({ username }: BadgeSectionProps) {
   }, []);
 
   return (
-    <>
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
         📌 Get Your Badge
       </h2>
@@ -151,13 +150,13 @@ function CopyableCodeBlock({ code, onCopySuccess }: { code: string; onCopySucces
   };
 
   return (
-    <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-3 border border-[var(--border)]">
+    <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-3 border border-[var(--border)] transition-colors duration-200 hover:bg-[var(--card-muted)]">
       <code className="flex-1 text-xs text-[var(--card-foreground)] overflow-auto scrollbar-thin">
         {code}
       </code>
       <button
         onClick={handleCopy}
-        className="ml-2 shrink-0 px-2 py-1 text-xs font-medium rounded bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+        className="ml-2 shrink-0 px-2 py-1 text-xs font-medium rounded bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity active:scale-95"
       >
         {copied ? "✓ Copied!" : "Copy"}
       </button>

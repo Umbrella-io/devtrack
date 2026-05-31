@@ -233,8 +233,8 @@ export default function CodingActivityInsightsCard() {
       : `${dataWindowLabel} · Commits by hour · Local timezone`;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between pb-4">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <CardTitle>Coding Activity Insights</CardTitle>
           {data?.weeklyTrend ? (
@@ -250,24 +250,22 @@ export default function CodingActivityInsightsCard() {
           </CardDescription>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchInsights}
-          disabled={loading}
-          className="flex items-center gap-2 text-[var(--muted-foreground)]"
-        >
-          {loading ? (
-            <>
-              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-              Refreshing
-            </>
-          ) : (
-            "Refresh"
-          )}
-        </Button> 
-      </CardHeader>
-      <CardContent>
+         <button aria-label="Refresh"
+  type="button"
+  onClick={fetchInsights}
+  disabled={loading}
+  className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-all hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50 hover:opacity-90 active:scale-95"
+>
+  {loading ? (
+    <>
+      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+      Refreshing
+    </>
+  ) : (
+    "Refresh"
+  )}
+</button> 
+      </div>
 
       {loading ? (
         <div

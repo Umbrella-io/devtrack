@@ -417,7 +417,7 @@ export default function ContributionHeatmap({
                   )}
                   <button
                     onClick={handleCustomApply}
-                    className="mt-2 w-full rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-[var(--background)] transition-opacity hover:opacity-90"
+                    className="mt-2 w-full rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-[var(--background)] transition-opacity hover:opacity-90 active:scale-95"
                   >
                     Apply
                   </button>

@@ -53,7 +53,7 @@ export default function DiscussionsWidget() {
     : [];
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
         Discussion Activity
       </h2>
@@ -63,7 +63,7 @@ export default function DiscussionsWidget() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
+              className="h-20 rounded-lg skeleton-shimmer"
             />
           ))}
         </div>
@@ -79,11 +79,11 @@ export default function DiscussionsWidget() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 stagger-children">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="rounded-lg bg-[var(--control)] p-4 text-center"
+              className="rounded-lg bg-[var(--control)] p-4 text-center stat-cell animate-fade-in-up"
               title={stat.title}
             >
               <div className="text-2xl font-bold text-[var(--accent)]">

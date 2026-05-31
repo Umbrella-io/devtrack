@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { encryptToken } from "@/lib/crypto";
+import { clearLeaderboardCache } from "@/lib/leaderboard";
 
 export const dynamic = "force-dynamic";
 
@@ -366,6 +367,22 @@ export async function PATCH(req: NextRequest) {
   if (updateError || !updated) {
     console.error("Error updating settings:", updateError);
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
+  }
+
+  // If is_public or leaderboard_opt_in changed, the cached leaderboard would
+  // show stale eligibility until it expires (up to 1 hour). Bust the cache
+  // immediately so the next request reflects the updated preference.
+  const leaderboardEligibilityChanged =
+    "is_public" in updates || "leaderboard_opt_in" in updates;
+
+  if (leaderboardEligibilityChanged) {
+    try {
+      await clearLeaderboardCache();
+    } catch {
+      // Cache invalidation is best-effort — a failure must not prevent the
+      // settings response from reaching the client.
+      console.error("[settings] Failed to invalidate leaderboard cache after visibility change");
+    }
   }
 
   return NextResponse.json({

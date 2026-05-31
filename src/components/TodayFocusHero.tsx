@@ -108,13 +108,13 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
     return (
       <section className="surface-card fade-up relative overflow-hidden rounded-3xl border border-[var(--border)] px-5 py-6 shadow-sm md:px-8 md:py-8">
         <div className="space-y-4">
-          <div className="h-6 w-52 rounded bg-[var(--card-muted)] animate-pulse" />
-          <div className="h-4 w-full max-w-xl rounded bg-[var(--card-muted)] animate-pulse" />
+          <div className="h-6 w-52 rounded skeleton-shimmer" />
+          <div className="h-4 w-full max-w-xl rounded skeleton-shimmer" />
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <div className="h-12 rounded-xl bg-[var(--card-muted)] animate-pulse" />
+            <div className="h-12 rounded-xl skeleton-shimmer" />
             <div className="flex gap-3">
-              <div className="h-12 w-24 rounded-xl bg-[var(--card-muted)] animate-pulse" />
-              <div className="h-12 w-24 rounded-xl bg-[var(--card-muted)] animate-pulse" />
+              <div className="h-12 w-24 rounded-xl skeleton-shimmer" />
+              <div className="h-12 w-24 rounded-xl skeleton-shimmer" />
             </div>
           </div>
         </div>

@@ -21,7 +21,14 @@ const WINDOW_SECONDS = 60;
 const AUTHENTICATED_LIMIT = isDev ? 5000 : 60;
 const ANONYMOUS_LIMIT = isDev ? 1000 : 10;
 
-const memoryBuckets = new Map<string, number[]>();
+type MemoryBucket = {
+  count: number;
+  resetAt: number;
+};
+
+const memoryBuckets = new Map<string, MemoryBucket>();
+const MEMORY_BUCKET_CLEANUP_INTERVAL = 5 * 60 * 1000;
+let lastMemoryBucketCleanup = 0;
 
 type RateLimitResult = {
   allowed: boolean;
@@ -55,17 +62,15 @@ function buildHeaders(result: RateLimitResult) {
 }
 
 function pruneMemoryBuckets(now: number) {
-  if (memoryBuckets.size < 500) {
+  if (now - lastMemoryBucketCleanup <= MEMORY_BUCKET_CLEANUP_INTERVAL) {
     return;
   }
 
-  const cutoff = now - WINDOW_SECONDS * 1000;
-  for (const [key, values] of Array.from(memoryBuckets.entries())) {
-    const active = values.filter((timestamp: number) => timestamp > cutoff);
-    if (active.length === 0) {
+  lastMemoryBucketCleanup = now;
+
+  for (const [key, bucket] of memoryBuckets.entries()) {
+    if (bucket.resetAt <= now) {
       memoryBuckets.delete(key);
-    } else {
-      memoryBuckets.set(key, active);
     }
   }
 }
@@ -77,14 +82,18 @@ function checkMemoryLimit(
 ): RateLimitResult {
   pruneMemoryBuckets(now);
 
-  const cutoff = now - WINDOW_SECONDS * 1000;
-  const active = (memoryBuckets.get(key) ?? []).filter(
-    (timestamp) => timestamp > cutoff
-  );
-  const reset = Math.ceil(((active[0] ?? now) + WINDOW_SECONDS * 1000) / 1000);
+  const existingBucket = memoryBuckets.get(key);
+  const bucket =
+    existingBucket && existingBucket.resetAt > now
+      ? existingBucket
+      : {
+          count: 0,
+          resetAt: now + WINDOW_SECONDS * 1000,
+        };
+  const reset = Math.ceil(bucket.resetAt / 1000);
 
-  if (active.length >= limit) {
-    memoryBuckets.set(key, active);
+  if (bucket.count >= limit) {
+    memoryBuckets.set(key, bucket);
     return {
       allowed: false,
       limit,
@@ -93,13 +102,13 @@ function checkMemoryLimit(
     };
   }
 
-  active.push(now);
-  memoryBuckets.set(key, active);
+  bucket.count += 1;
+  memoryBuckets.set(key, bucket);
 
   return {
     allowed: true,
     limit,
-    remaining: Math.max(limit - active.length, 0),
+    remaining: Math.max(limit - bucket.count, 0),
     reset,
   };
 }

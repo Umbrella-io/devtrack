@@ -70,12 +70,13 @@ const maxActiveDays = summary?.activeDays
   }, [fetchSummary]);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle>This Week</CardTitle>
-        <Button
-          variant="ghost"
-          size="sm"
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+          This Week
+        </h2>
+        <button
+          type="button"
           onClick={() => setIsCollapsed((value) => !value)}
           className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
           aria-expanded={!isCollapsed}
@@ -90,19 +91,21 @@ const maxActiveDays = summary?.activeDays
 
       {!isCollapsed &&
         (loading ? (
-          <CardContent>
-            <div
-              role="status"
-              aria-live="polite"
-              aria-busy="true"
-              className="space-y-3 pt-4"
-            >
-              <span className="sr-only">Loading weekly summary</span>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} aria-hidden="true" className="h-14 rounded-lg" />
-              ))}
-            </div>
-          </CardContent>
+          <div
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            className="mt-4 space-y-3"
+          >
+            <span className="sr-only">Loading weekly summary</span>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                aria-hidden="true"
+                className="h-14 rounded-lg skeleton-shimmer"
+              />
+            ))}
+          </div>
         ) : error ? (
           <CardContent>
             <div className="mt-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
@@ -113,7 +116,7 @@ const maxActiveDays = summary?.activeDays
           <CardContent>
             <div className="space-y-4 pt-2">
             {/* Commits Comparison */}
-            <div className="rounded-lg bg-[var(--control)] p-4">
+            <div className="rounded-lg bg-[var(--control)] p-4 stat-cell">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm text-[var(--muted-foreground)]">
                   Commits
@@ -139,7 +142,7 @@ const maxActiveDays = summary?.activeDays
                   <div className="flex-1">
                     <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
                       <div
-                        className="h-full bg-[var(--muted-foreground)]"
+                        className="h-full bg-[var(--muted-foreground)] progress-fill"
                         style={{
                           width: `${((summary.commits.previous / maxCommits) * 100).toFixed(0)}%`,
                         }}
@@ -152,7 +155,7 @@ const maxActiveDays = summary?.activeDays
                   <div className="flex-1">
                     <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
                       <div
-                        className="h-full bg-[var(--success)]"
+                        className="h-full bg-[var(--success)] progress-fill"
                         style={{
                           width: `${((summary.commits.current / maxCommits) * 100).toFixed(0)}%`,
                         }}
@@ -164,7 +167,7 @@ const maxActiveDays = summary?.activeDays
             </div>
 
             {/* PRs Comparison */}
-            <div className="rounded-lg bg-[var(--control)] p-4">
+            <div className="rounded-lg bg-[var(--control)] p-4 stat-cell">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm text-[var(--muted-foreground)]">PRs Merged</span>
                 <span className="text-base font-semibold text-[var(--card-foreground)]">
@@ -202,7 +205,7 @@ const maxActiveDays = summary?.activeDays
             </div>
 
             {/* Active Days Comparison */}
-            <div className="rounded-lg bg-[var(--control)] p-4">
+            <div className="rounded-lg bg-[var(--control)] p-4 stat-cell">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm text-[var(--muted-foreground)]">Active Days</span>
                 <span className="text-base font-semibold text-[var(--card-foreground)]">
@@ -241,13 +244,13 @@ const maxActiveDays = summary?.activeDays
 
             {/* Streak & Top Repo */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
+              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4 stat-cell">
                 <span className="text-sm text-[var(--muted-foreground)]">Streak</span>
                 <span className="text-base font-semibold text-[var(--card-foreground)]">
                   {summary.streak} day streak
                 </span>
               </div>
-              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
+              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4 stat-cell">
                 <span className="text-sm text-[var(--muted-foreground)]">Top repo</span>
                 <span className="text-base font-semibold text-[var(--card-foreground)]">
                   {summary.topRepo ?? "-"}

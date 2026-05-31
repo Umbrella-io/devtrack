@@ -121,7 +121,7 @@ export default function MiniPRTrendChart() {
   if (stats.trendText === "Degrading") strokeColor = "var(--destructive)";
 
   return (
-    <div className="mt-4 flex h-16 w-full items-center justify-between gap-4 rounded-lg bg-[var(--control)] p-3 border border-[var(--border)]">
+    <div className="mt-4 flex h-16 w-full items-center justify-between gap-4 rounded-lg bg-[var(--control)] p-3 border border-[var(--border)] transition-colors duration-200 hover:bg-[var(--card-muted)]">
       <div className="flex flex-col gap-1 w-24">
         <span className="text-xs font-medium text-[var(--muted-foreground)]">12w Trend</span>
         <span className={`inline-flex w-fit items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${stats.trendBg} ${stats.trendColor}`}>
