@@ -76,7 +76,7 @@ function TrendBadge({
 function HourTooltip({
   active,
   payload,
-}: TooltipProps<number, string>) {
+}: any) {
   if (!active || !payload || payload.length === 0) {
     return null;
   }
@@ -249,7 +249,7 @@ export default function CodingActivityInsightsCard() {
           </p>
         </div>
 
-         <button
+         <button aria-label="Refresh"
   type="button"
   onClick={fetchInsights}
   disabled={loading}
