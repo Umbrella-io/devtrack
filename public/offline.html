@@ -46,6 +46,10 @@
       font-weight: 600;
       cursor: pointer;
     }
+    button:focus-visible {
+      outline: 3px solid #38bdf8;
+      outline-offset: 4px;
+    }
     @media (prefers-reduced-motion: reduce) {
       * {
         scroll-behavior: auto;
@@ -56,7 +60,7 @@
   </style>
 </head>
 <body>
-  <main class="card">
+  <main class="card" aria-live="polite">
     <h1>You are offline</h1>
     <p>DevTrack is installed, but this page needs internet. Please reconnect and try again.</p>
     <button

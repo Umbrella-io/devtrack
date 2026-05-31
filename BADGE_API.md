@@ -172,3 +172,7 @@ For issues or feature requests related to badges:
   ![DevTrack Streak](https://devtrack.app/api/badge/streak?user=octocat)
 ](https://devtrack.app/u/octocat)
 ```
+
+
+### GSSoC Badge API Rate Limiting
+- Badge requests are restricted to 100 per minute per IP.
