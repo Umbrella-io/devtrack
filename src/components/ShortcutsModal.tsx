@@ -106,7 +106,7 @@ export default function ShortcutsModal({
           ref={closeBtnRef}
           type="button"
           onClick={onClose}
-          className="rounded-lg p-1 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          className="rounded-lg p-1 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           aria-label="Close shortcuts"
         >
           x
@@ -133,7 +133,7 @@ export default function ShortcutsModal({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg bg-[var(--control)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          className="rounded-lg bg-[var(--control)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
           Got it
         </button>

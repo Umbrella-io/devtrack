@@ -196,7 +196,7 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
                     value={inputValue}
                     onChange={(event) => setInputValue(event.target.value)}
                     placeholder="Write your main dev goal for today..."
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] shadow-sm transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)] focus:outline-none"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] shadow-sm transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)] focus-visible:outline-none"
                   />
                 </label>
 

@@ -19,15 +19,15 @@ const useSafeLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : us
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [theme, setTheme] = useState<Theme>(() => "dark");
+  const [theme, setTheme] = useState<Theme | undefined>(undefined);
 
-  useEffect(() => {
+  useSafeLayoutEffect(() => {
     const storedTheme = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    if (storedTheme === "dark" || storedTheme === "light") {
+    if (storedTheme && storedTheme in themes) {
       setTheme(storedTheme);
       return;
     }
-    // No stored preference — keep dark as default.
+    setTheme("dark");
   }, []);
 
   useSafeLayoutEffect(() => {

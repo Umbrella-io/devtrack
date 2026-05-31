@@ -28,6 +28,13 @@
   --destructive-foreground: #ffffff;
   --shadow-soft: 0 12px 30px -20px rgba(37, 99, 235, 0.35);
   --shadow-medium: 0 18px 35px -24px rgba(37, 99, 235, 0.4);
+  --chart-2: #22c55e;
+  --chart-3: #f97316;
+  --chart-4: #06b6d4;
+  --chart-5: #ec4899;
+  --chart-6: #eab308;
+  --chart-7: #8b5cf6;
+  --chart-8: #14b8a6;
 }
 
 .dark {
@@ -60,6 +67,17 @@
   --destructive-foreground: #ffffff;
   --shadow-soft: 0 16px 34px -24px rgba(2, 6, 23, 0.8);
   --shadow-medium: 0 24px 45px -28px rgba(2, 6, 23, 0.85);
+  --chart-2: #4ade80;
+  --chart-3: #fb923c;
+  --chart-4: #22d3ee;
+  --chart-5: #f472b6;
+  --chart-6: #facc15;
+  --chart-7: #a78bfa;
+  --chart-8: #2dd4bf;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 
@@ -173,8 +191,8 @@
 
 /* Strip body background on landing page so the dark bg is visible */
 body:has(.lnd-root) {
-  background: #050505 !important;
-  background-color: #050505 !important;
+  background: var(--background) !important;
+  background-color: var(--background) !important;
 }
 
 /* Strip body background on Year in Code wrapped page */
@@ -241,12 +259,32 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--muted-foreground) transparent;
 }
-.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
-.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: var(--muted-foreground); border-radius: 9999px; }
-.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
-.dark .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--muted-foreground); }
-.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 9999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
 
 @keyframes fadeUp {
   from {
@@ -308,14 +346,14 @@ body {
   font-family: var(--font-jetbrains, ui-monospace, monospace);
   font-size: 12px;
   font-weight: 500;
-  color: #888;
+  color: var(--muted-foreground);
   text-decoration: none;
   padding: 6px 14px;
-  border: 1px solid #222;
+  border: 1px solid var(--border);
   border-radius: 5px;
   transition: all 0.2s;
 }
-.lnd-nav-link:hover { color: #e0e0e0; border-color: #444; }
+.lnd-nav-link:hover { color: var(--foreground); border-color: var(--muted-foreground); }
 
 .lnd-cta-primary {
   display: inline-flex;
@@ -364,26 +402,26 @@ body {
   font-family: var(--font-jetbrains, ui-monospace, monospace);
   font-size: 13px;
   font-weight: 500;
-  color: #555;
+  color: var(--muted-foreground);
   background: transparent;
   padding: 11px 22px;
   border-radius: 6px;
-  border: 1px solid #222;
+  border: 1px solid var(--border);
   text-decoration: none;
   transition: all 0.2s;
 }
 
 
 .lnd-cell {
-  background: rgba(8, 8, 10, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.035);
+  background: color-mix(in srgb, var(--card) 60%, transparent);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 18px 20px;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: 
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 4px 20px rgba(0, 0, 0, 0.35);
+    var(--shadow-soft);
   transition: 
     background 0.4s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
@@ -391,12 +429,12 @@ body {
     box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .lnd-cell:hover {
-  background: rgba(12, 12, 16, 0.75);
-  border-color: rgba(129, 140, 248, 0.35);
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  border-color: var(--accent-secondary);
   transform: translateY(-2px);
   box-shadow: 
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 8px 30px rgba(129, 140, 248, 0.12);
+    var(--shadow-medium);
 }
 
 .lnd-heatmap-cell { cursor: crosshair; }
