@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Image from "next/image";
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 export type RepoStats = {
   stars: number;
   forks: number;
@@ -14,24 +15,24 @@ export type RepoStats = {
   contributors: Array<{ login: string; avatar_url: string; html_url: string }>;
 };
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    CONSTANTS
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const A = '#818cf8';                  // accent — indigo
 const BG = 'transparent'
 const SURF = '#0e0e0e';
-const BORDER = '#1a1a1a';
+const BORDER = '#2a2a2a';             // was #1a1a1a — now more visible
 const TEXT = '#e0e0e0';
-const MUTED = '#9ca3af';
+const MUTED = '#94a3b8';
 const HC = ['#111', '#1e1b4b', '#3730a3', '#4f46e5', A]; // heatmap levels
 const MC = ['#111', '#1e1b4b', '#3730a3', A];             // mini heatmap
 
 const MONO = 'var(--font-jetbrains, ui-monospace, monospace)';
 const DISP = 'var(--font-syne, system-ui, sans-serif)';
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    PRE-SEEDED DATA  (deterministic → no hydration mismatch)
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function heatLvl(i: number): 0 | 1 | 2 | 3 | 4 {
   const d = i % 7;
   const w = Math.floor(i / 7);
@@ -61,9 +62,9 @@ const COMMITS = [
   'feat(leaderboard): weekly ranking system',
 ];
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    HOOKS
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function useScrollReveal(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
   const [vis, setVis] = useState(false);
@@ -86,6 +87,13 @@ function Counter({ end, active }: { end: number; active: boolean }) {
   const [val, setVal] = useState(0);
   useEffect(() => {
     if (!active) return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      setVal(end);
+      return;
+    }
+
     const dur = 1500;
     const t0 = performance.now();
     let raf: number;
@@ -100,9 +108,9 @@ function Counter({ end, active }: { end: number; active: boolean }) {
   return <>{val.toLocaleString()}</>;
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    MOUSE SPOTLIGHT
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function MouseSpotlight() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -130,9 +138,9 @@ function MouseSpotlight() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    NAV
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -156,16 +164,19 @@ function LandingNav() {
       <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: TEXT, letterSpacing: '-0.02em' }}>
         <span style={{ color: A }}>▲</span> DEVTRACK
       </span>
-      <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-nav-link">
-        SIGN IN →
-      </a>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+        <a href="/dashboard" className="lnd-nav-link">Dashboard</a>
+        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-nav-link">
+          SIGN IN →
+        </a>
+      </div>
     </nav>
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    BENTO WIDGETS
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const wLabel: React.CSSProperties = {
   fontFamily: MONO, fontSize: 10, fontWeight: 500,
   color: '#444', textTransform: 'uppercase', letterSpacing: '0.1em',
@@ -337,7 +348,7 @@ function BentoGrid() {
   return (
     <div style={{
       display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: 5, width: '100%', maxWidth: 450,
+      gap: 5, width: '100%', maxWidth: 380,
     }}>
       <ChartWidget />
       <StreakWidget />
@@ -348,32 +359,72 @@ function BentoGrid() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    HERO
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function HeroSection() {
   return (
     <section
       style={{
         minHeight: '100vh',
         display: 'flex', alignItems: 'center',
-       padding: '120px clamp(24px,5vw,64px) 40px',
-        gap: 'clamp(24px,4vw,56px)',
+        padding: '80px clamp(24px,5vw,64px) 40px',
+        gap: 'clamp(32px,5vw,80px)',
         flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
+        overflow: 'hidden',
       }}
     >
+      {/* Ambient Animated Background Glow */}
+      <div 
+        style={{
+          position: 'absolute',
+          top: '20%', left: '10%',
+          width: '60vw', height: '60vw',
+          background: 'radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 60%)',
+          borderRadius: '50%',
+          filter: 'blur(60px)',
+          animation: 'floatGlow 10s ease-in-out infinite alternate',
+          pointerEvents: 'none',
+          zIndex: -1,
+        }}
+      />
+      <div 
+        style={{
+          position: 'absolute',
+          bottom: '-10%', right: '5%',
+          width: '50vw', height: '50vw',
+          background: 'radial-gradient(circle, rgba(55,48,163,0.2) 0%, transparent 60%)',
+          borderRadius: '50%',
+          filter: 'blur(80px)',
+          animation: 'floatGlow2 12s ease-in-out infinite alternate',
+          pointerEvents: 'none',
+          zIndex: -1,
+        }}
+      />
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes floatGlow {
+          0% { transform: translate(0px, 0px) scale(1); opacity: 0.5; }
+          100% { transform: translate(30px, -50px) scale(1.1); opacity: 0.8; }
+        }
+        @keyframes floatGlow2 {
+          0% { transform: translate(0px, 0px) scale(1); opacity: 0.5; }
+          100% { transform: translate(-40px, 40px) scale(1.2); opacity: 0.9; }
+        }
+      `}} />
+
       {/* Left: text */}
-      <div style={{ flex: '1 1 340px', maxWidth: 620 }}>
+      <div style={{ flex: '1 1 340px', maxWidth: 500, position: 'relative', zIndex: 2 }}>
         {/* Badge */}
         <div style={{
-         display: 'flex',
-          alignItems: 'flex-start', gap: 8,
-          background: 'rgba(129,140,248,0.08)', border: '1px solid rgba(129,140,248,0.2)',
-          borderRadius: 20, padding: '4px 12px', marginBottom: 24,
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.25)',
+          borderRadius: 24, padding: '6px 14px', marginBottom: 28,
+          boxShadow: '0 4px 14px rgba(129,140,248,0.1)',
         }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-          <span style={{ fontFamily: MONO, fontSize: 11, color: A, letterSpacing: '0.06em' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }} />
+          <span style={{ fontFamily: MONO, fontSize: 11, color: A, letterSpacing: '0.08em', fontWeight: 600 }}>
             OPEN SOURCE · FREE FOREVER
           </span>
         </div>
@@ -382,30 +433,42 @@ function HeroSection() {
         <h1
           style={{
             fontFamily: DISP, fontWeight: 800,
-           fontSize: 'clamp(48px,6vw,96px)', lineHeight: 0.95,
-            letterSpacing: '-0.04em',
-color: '#c4c4c4',
-margin: '0 0 24px',
+            fontSize: 'clamp(40px,6.5vw,82px)', lineHeight: 0.95,
+            letterSpacing: '-0.04em', color: TEXT, margin: '0 0 24px',
             animation: 'lndHeroIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both',
+            textShadow: '0 4px 24px rgba(0,0,0,0.4)',
           }}
         >
           YOUR<br />CODE<br />HAS A<br />
-          <span style={{ color: A }}>PULSE</span>
+          <span style={{ color: A, textShadow: '0 0 30px rgba(129,140,248,0.3)' }}>PULSE</span>
           <span style={{ color: '#222' }}>.</span>
         </h1>
 
-        {/* Tagline */}
+        {/* Tagline — NOW HIGH CONTRAST */}
         <p style={{
-          fontSize: 'clamp(15px,1.8vw,17px)', color: '#6b7280',
-          lineHeight: 1.65, maxWidth: 460, margin: '0 0 32px',
+          fontSize: 'clamp(16px,2vw,18px)', color: MUTED,
+          lineHeight: 1.6, maxWidth: 420, margin: '0 0 36px',
+          fontWeight: 400,
         }}>
           Open-source developer productivity dashboard. Track GitHub streaks,
           PR velocity, and coding goals — automatically.
         </p>
 
         {/* CTAs */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary">
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary" style={{
+            boxShadow: '0 8px 24px rgba(129,140,248,0.3)',
+            transition: 'transform 0.3s, box-shadow 0.3s',
+            transform: 'translateY(0)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 12px 28px rgba(129,140,248,0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 8px 24px rgba(129,140,248,0.3)';
+          }}>
             <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
             </svg>
@@ -416,6 +479,18 @@ margin: '0 0 24px',
             target="_blank"
             rel="noopener noreferrer"
             className="lnd-cta-secondary"
+            style={{
+              transition: 'transform 0.3s, background 0.3s',
+              transform: 'translateY(0)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.background = 'transparent';
+            }}
           >
             ★ Star on GitHub
           </a>
@@ -423,16 +498,16 @@ margin: '0 0 24px',
       </div>
 
       {/* Right: bento */}
-      <div style={{ flex: '1 1 340px', display: 'flex', justifyContent: 'center' }}>
+      <div style={{ flex: '1 1 340px', display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
         <BentoGrid />
       </div>
     </section>
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    COMMIT TICKER
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function CommitTicker() {
   const doubled = [...COMMITS, ...COMMITS];
   return (
@@ -458,9 +533,9 @@ function CommitTicker() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    HEATMAP SECTION
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function HeatmapSection() {
   const [ref, vis] = useScrollReveal(0.05);
   return (
@@ -500,9 +575,9 @@ function HeatmapSection() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    STATS ROW
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const STATS = [
   { value: 847, label: 'COMMITS TRACKED' },
   { value: 43,  label: 'PRS MERGED' },
@@ -538,10 +613,10 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
 
 function StatsSection() {
   return (
-    <section style={{
+    <section id="features" style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
-      gap: 24, borderTop: '1px solid #111',
+        gap: 24, borderTop: '1px solid #1e293b',
     }}>
       {STATS.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
@@ -550,9 +625,9 @@ function StatsSection() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    FEATURES LIST
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const FEATURES = [
   {
     num: '01', title: 'STREAK TRACKING',
@@ -587,7 +662,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
       ref={ref}
       style={{
         display: 'flex', gap: 'clamp(16px,3vw,32px)',
-        padding: '24px 0', borderBottom: '1px solid #111',
+        padding: '24px 0', borderBottom: '1px solid #1e293b',
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateX(0)' : 'translateX(-12px)',
         transition: `all 0.5s ease ${index * 50}ms`,
@@ -604,7 +679,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         }}>
           {f.title}
         </h3>
-        <p style={{ fontSize: 14, color: '#9ca3af', lineHeight: 1.65, margin: 0 }}>
+        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>   {/* was '#444' */}
           {f.desc}
         </p>
       </div>
@@ -616,10 +691,10 @@ function FeaturesSection() {
   return (
     <section style={{
       padding: '64px clamp(20px,4vw,48px) 80px',
-      borderTop: '1px solid #111',
+      borderTop: '1px solid #1e293b',
       maxWidth: 720, margin: '0 auto',
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         FEATURES
       </div>
       {FEATURES.map((f, i) => (
@@ -629,13 +704,14 @@ function FeaturesSection() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    SETUP SECTION
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function SetupSection() {
   const [ref, vis] = useScrollReveal(0.2);
   return (
     <section
+      id="open-source"
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
@@ -645,27 +721,34 @@ function SetupSection() {
         transition: 'all 0.7s ease',
       }}
     >
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', marginBottom: 24 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', marginBottom: 24 }}>
         SETUP
       </div>
 
       <div style={{
-        background: SURF, border: `1px solid ${BORDER}`,
-        borderRadius: 8, padding: '20px 28px', maxWidth: 480, width: '100%',
+        background: '#0a0a0c', border: `1px solid #1e293b`,
+        borderRadius: 8, padding: '24px 28px', maxWidth: 480, width: '100%',
         textAlign: 'left', marginBottom: 32,
         fontFamily: MONO, fontSize: 13, lineHeight: 1.8,
+        boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
       }}>
-        <div style={{ color: '#333' }}># start tracking in 30 seconds</div>
+        {/* Terminal Header Mock */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }} />
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981' }} />
+        </div>
+        <div style={{ color: '#10b981', fontWeight: 500 }}># start tracking in 30 seconds</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>→</span> sign in at{' '}
           <span style={{ color: A }}>devtrack.vercel.app</span>
         </div>
-        <div style={{ color: '#333', marginTop: 4 }}># or self-host</div>
+        <div style={{ color: '#10b981', marginTop: 8, fontWeight: 500 }}># or self-host</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>$</span> git clone github.com/…/devtrack
         </div>
         <div style={{ color: TEXT }}>
-          <span style={{ color: A }}>$</span> npm install &amp;&amp; npm run dev
+          <span style={{ color: A }}>$</span> npm install && npm run dev
         </div>
       </div>
 
@@ -690,9 +773,9 @@ function SetupSection() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    OPEN SOURCE / CONTRIBUTE SECTION
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function ContributeSection({ stats }: { stats: RepoStats }) {
   const [ref, vis] = useScrollReveal(0.08);
 
@@ -708,14 +791,14 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
-        borderTop: '1px solid #111',
+        borderTop: '1px solid #1e293b',
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(24px)',
         transition: 'all 0.7s ease',
       }}
     >
       {/* Label */}
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         OPEN SOURCE
       </div>
 
@@ -725,11 +808,11 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           <div
             key={s.label}
             style={{
-              background: SURF, border: `1px solid ${BORDER}`,
+              background: '#0a0a0c', border: `1px solid #1e293b`,
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#444', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: '#94a3b8', letterSpacing: '0.1em', marginBottom: 10 }}>
               {s.icon} {s.label}
             </div>
             <div style={{
@@ -738,7 +821,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               lineHeight: 1, letterSpacing: '-0.03em',
             }}>
               <Counter end={s.value} active={vis} />
-              {s.suffix && <span style={{ color: '#444', fontSize: '0.55em' }}>{s.suffix}</span>}
+              {s.suffix && <span style={{ color: A, fontSize: '0.75em' }}>{s.suffix}</span>}
             </div>
           </div>
         ))}
@@ -755,7 +838,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           BUILT IN PUBLIC.<br />
           <span style={{ color: A }}>SHIP WITH US.</span>
         </h2>
-        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>
+        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>   {/* was '#555' */}
           DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
           who actually use it. Every widget, every metric, every API was contributed by
           someone in this list. {stats.goodFirstIssues > 0 && (
@@ -796,9 +879,8 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
                 el.style.zIndex = String(stats.contributors.length - i);
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`${c.avatar_url}&s=76`}
+              <Image
+                src={c.avatar_url}
                 alt={c.login}
                 width={38}
                 height={38}
@@ -810,10 +892,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           {stats.contributorCount > stats.contributors.length && (
             <div style={{
               width: 38, height: 38, borderRadius: '50%',
-              border: `2px solid ${BG}`,
-              background: '#181818', marginLeft: -11,
+              border: `2px solid #000000`,
+              background: '#1e293b', marginLeft: -11,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: MONO, fontSize: 9, color: '#555', flexShrink: 0,
+              fontFamily: MONO, fontSize: 10, color: '#cbd5e1', flexShrink: 0,
             }}>
               +{stats.contributorCount - stats.contributors.length}
             </div>
@@ -852,17 +934,20 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    LANDING FOOTER  (above global Footer)
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function LandingFooter() {
   return (
-    <footer style={{
-      borderTop: `1px solid #111`,
-      padding: '40px clamp(20px,4vw,48px)',
-      display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
-      justifyContent: 'space-between', alignItems: 'center',
-    }}>
+    <footer 
+      data-testid="landing-footer"
+      style={{
+        borderTop: `1px solid ${BORDER}`,   // was '#111'
+        padding: '24px clamp(20px,4vw,48px)',
+        display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
+        justifyContent: 'space-between', alignItems: 'center',
+      }}
+    >
       <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
         © {new Date().getFullYear()} DEVTRACK
       </span>
@@ -881,9 +966,9 @@ function LandingFooter() {
   );
 }
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    MAIN EXPORT
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
   return (
     <div
@@ -891,7 +976,6 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}
     >
       <MouseSpotlight />
-      <LandingNav />
       <HeroSection />
       <CommitTicker />
       <HeatmapSection />

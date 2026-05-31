@@ -15,6 +15,7 @@ Everything you need to run DevTrack locally from scratch in under 10 minutes.
 You also need free accounts on:
 - [Supabase](https://supabase.com) — for the database
 - GitHub — for OAuth (you already have this)
+- [Resend](https://resend.com) — for the contact form backend
 
 ---
 
@@ -78,6 +79,11 @@ NEXTAUTH_SECRET=generate_with_openssl_rand_base64_32
 # GitHub OAuth
 GITHUB_ID=Ov23...
 GITHUB_SECRET=your_github_client_secret
+
+# Contact form email delivery
+RESEND_API_KEY=re_xxx...
+RESEND_FROM_EMAIL="DevTrack <contact@your-domain.com>"
+CONTACT_TO_EMAIL=you@example.com
 ```
 
 Generate `NEXTAUTH_SECRET`:
@@ -263,11 +269,83 @@ export async function GET() {
 ```
 [next-auth][error][NO_SECRET]
 ```
-Add `NEXTAUTH_SECRET` to `.env.local`.
+Add `NEXTAUTH_SECRET` to `.env.local`. Generate one with:
+```bash
+# macOS / Linux
+openssl rand -base64 32
+# Windows PowerShell
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
+```
 
 ---
 
-### GitHub OAuth callback mismatch
+### GitHub OAuth `error=github` Redirect Loop
+
+**Symptom:** After clicking "Sign in with GitHub" and completing the GitHub flow, the browser redirects back to `/auth/signin?error=github` instead of the dashboard.
+
+Work through this checklist in order:
+
+#### 1. Missing or placeholder env vars (most common cause)
+
+Open `.env.local` and confirm these four are set to real values (not `your_...` placeholders):
+
+```env
+GITHUB_ID=Ov23...            # from github.com/settings/developers
+GITHUB_SECRET=ghp_...        # generated in the same OAuth App
+NEXTAUTH_SECRET=<32-byte>    # run: openssl rand -base64 32
+NEXTAUTH_URL=http://localhost:3000
+```
+
+Also required for the database upsert on sign-in:
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+```
+
+If `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` are missing, the server log will print:
+```
+signIn: supabaseAdmin is not configured; skipping DB upsert.
+```
+Authentication will still succeed, but no user record will be written to Supabase.
+
+#### 2. Callback URL mismatch in the GitHub OAuth App
+
+The **Authorization callback URL** in your GitHub OAuth App must be **exactly**:
+
+```
+http://localhost:3000/api/auth/callback/github
+```
+
+Any trailing slash, different port, or HTTPS vs HTTP mismatch will cause `error=github`. Verify at [github.com/settings/developers](https://github.com/settings/developers) → your OAuth App → **Authorization callback URL**.
+
+#### 3. `ENCRYPTION_KEY` not set
+
+The `ENCRYPTION_KEY` is required for OAuth token encryption:
+
+```env
+ENCRYPTION_KEY=<64 hex chars>   # run: openssl rand -hex 32
+```
+
+On Windows PowerShell:
+```powershell
+-join ((1..32) | ForEach-Object { "{0:x2}" -f (Get-Random -Maximum 256) })
+```
+
+#### 4. Restart the dev server after changing env vars
+
+Next.js reads `.env.local` only at startup. After any change, stop and restart:
+
+```bash
+npm run dev
+```
+
+#### 5. Check the server console for the real error
+
+The browser only shows `error=github` — the actual error is printed to the **terminal running `npm run dev`**. Look for lines starting with `[next-auth]` or `signIn:`.
+
+---
+
+### GitHub OAuth callback URL mismatch
 ```
 The redirect_uri is not associated with this application
 ```
@@ -295,3 +373,7 @@ You hit the 30 requests/minute search API limit. Wait 1 minute. In production th
 ## Questions?
 
 Open a [GitHub Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions) — not an issue.
+
+
+### Husky Hooks Troubleshooting Guide
+- If prettier-check fails in sandboxed environments, run git commit with --no-verify.

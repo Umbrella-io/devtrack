@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { WrappedStats } from "@/lib/wrapped";
 
 const SLIDE_THEMES = [
@@ -30,7 +31,8 @@ function buildYearOptions() {
 }
 
 function getShareText(stats: WrappedStats) {
-  return `My ${stats.year} Year in Code: ${formatNumber(
+  const persona = stats.personality ? `I'm a ${stats.personality.icon} ${stats.personality.name}! ` : "";
+  return `My ${stats.year} Year in Code: ${persona}${formatNumber(
     stats.totalCommits
   )} commits, ${stats.longestStreak}-day streak, and ${
     stats.topLanguages[0]?.name ?? "code"
@@ -160,6 +162,12 @@ export default function WrappedExperience() {
             : `You coded at ${stats.peakCodingHour.label} most often.`,
         metric: "Peak coding time",
       },
+      {
+        eyebrow: "Your Coding Persona",
+        title: `${stats.personality.icon} ${stats.personality.name}`,
+        body: `${stats.personality.description} ${stats.personality.reason}`,
+        metric: "Coding Personality",
+      },
     ];
   }, [stats]);
 
@@ -177,7 +185,7 @@ export default function WrappedExperience() {
   const currentSlide = slides[slide];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-50">
+    <main className="wrapped-root min-h-screen bg-slate-950 text-slate-50">
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -306,11 +314,13 @@ export default function WrappedExperience() {
                   <p className="mt-1 text-sm text-slate-300">
                     Generated from your selected year.
                   </p>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={getOgImageUrl(stats)}
                     alt={`${stats.year} Year in Code share card for ${stats.username}`}
+                    width={1200}
+                    height={630}
                     className="mt-4 aspect-[1200/630] w-full rounded-md border border-white/10 object-cover"
+                    unoptimized
                   />
                   <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <a

@@ -7,6 +7,8 @@ import { randomBytes, createHash } from "crypto";
 
 export const dynamic = "force-dynamic";
 
+const MAX_KEYS_PER_USER = 10;
+
 function hashApiKey(key: string): string {
   return createHash("sha256").update(key).digest("hex");
 }
@@ -50,6 +52,18 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Name is required" }, { status: 400 });
   }
 
+  const { count: existingCount } = await supabaseAdmin
+    .from("local_coding_api_keys")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  if ((existingCount || 0) >= MAX_KEYS_PER_USER) {
+    return Response.json(
+      { error: `API key limit reached. Maximum ${MAX_KEYS_PER_USER} keys per user.` },
+      { status: 400 }
+    );
+  }
+
   const apiKey = randomBytes(24).toString("base64url");
   const apiKeyHash = hashApiKey(apiKey);
 
@@ -58,6 +72,7 @@ export async function POST(req: NextRequest) {
     .insert({
       user_id: user.id,
       api_key: apiKeyHash,
+      api_key_hash: apiKeyHash,
       name,
     })
     .select("id, name, last_used_at, created_at")

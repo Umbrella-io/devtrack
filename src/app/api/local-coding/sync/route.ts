@@ -15,11 +15,12 @@ function hashApiKey(key: string): string {
 
 async function authenticateApiKey(apiKey: string): Promise<string | null> {
   const keyHash = hashApiKey(apiKey);
+  const keyHashFilter = `api_key_hash.eq.${keyHash},api_key.eq.${keyHash}`;
 
   const { data: keyRecord } = await supabaseAdmin
     .from("local_coding_api_keys")
     .select("user_id")
-    .eq("api_key_hash", keyHash)
+    .or(keyHashFilter)
     .single();
 
   if (!keyRecord) {
@@ -29,7 +30,7 @@ async function authenticateApiKey(apiKey: string): Promise<string | null> {
   await supabaseAdmin
     .from("local_coding_api_keys")
     .update({ last_used_at: new Date().toISOString() })
-    .eq("api_key_hash", keyHash);
+    .or(keyHashFilter);
 
   return keyRecord.user_id;
 }
@@ -107,7 +108,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if ((existingCount || 0) + newSessions.length > MAX_SESSIONS_PER_USER) {
+  const incomingDates = [...new Set(newSessions.map((session) => session.date))];
+  const { data: existingSessionsForDates } = await supabaseAdmin
+    .from("local_coding_sessions")
+    .select("date")
+    .eq("user_id", userId)
+    .in("date", incomingDates);
+
+  const existingDateSet = new Set(
+    (existingSessionsForDates ?? []).map((session: { date: string }) => session.date)
+  );
+  const newDateCount = incomingDates.filter((date) => !existingDateSet.has(date)).length;
+
+  if ((existingCount || 0) + newDateCount > MAX_SESSIONS_PER_USER) {
     return Response.json(
       { error: `Session limit reached. Maximum ${MAX_SESSIONS_PER_USER} sessions per user.` },
       { status: 400 }
@@ -122,11 +135,12 @@ export async function POST(req: NextRequest) {
     project_count: session.projectCount || 0,
   }));
 
-  const { error: upsertError } = await supabaseAdmin
-    .from("local_coding_sessions")
-    .upsert(records, { onConflict: "user_id,date" });
+  const { error: upsertError } = await supabaseAdmin.rpc("batch_upsert_sessions", {
+    sessions: records,
+  });
 
   if (upsertError) {
+    console.error("Failed to sync sessions via RPC:", upsertError);
     return Response.json({ error: "Failed to sync sessions" }, { status: 500 });
   }
 

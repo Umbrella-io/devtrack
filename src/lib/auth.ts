@@ -19,13 +19,14 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GITHUB_ID ?? "",
       clientSecret: process.env.GITHUB_SECRET ?? "",
       authorization: {
-        params: { scope: "read:user user:email read:discussion" },
+        params: { scope: "read:user user:email repo read:discussion" },
       },
     }),
   ],
   pages: {
     signIn: "/auth/signin",
   },
+  // From PR #1334: use secure cookies on HTTPS deployments, plain cookies on HTTP (local dev).
   cookies: {
     sessionToken: {
       name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
@@ -48,20 +49,54 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {
-        const p = profile as { id: number; login: string };
+        const p = profile as { id: number; login: string; email?: string };
+
+        // Guard: supabaseAdmin is null when Supabase env vars are missing or
+        // contain placeholder values (see src/lib/supabase.ts). Calling .from()
+        // on null throws a TypeError which NextAuth silently converts to
+        // return false → error=github redirect. Skip the upsert gracefully
+        // so authentication can still succeed with degraded functionality.
+        if (!supabaseAdmin) {
+          console.warn(
+            "signIn: supabaseAdmin is not configured; skipping DB upsert. " +
+            "Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local."
+          );
+          return true;
+        }
+
         try {
-          const { data: user, error: upsertError } = await supabaseAdmin
+          let { data: user, error: upsertError } = await supabaseAdmin
             .from("users")
             .upsert(
               {
                 github_id: String(p.id),
                 github_login: p.login,
+                email: p.email || null,
                 updated_at: new Date().toISOString(),
               },
               { onConflict: "github_id" }
             )
             .select("id")
             .single();
+
+          // If the email column does not exist yet (migration pending),
+          // PostgREST returns a 42703 error. Fallback to upsert without email.
+          if (upsertError && (upsertError as { code?: string }).code === "42703") {
+            const fallback = await supabaseAdmin
+              .from("users")
+              .upsert(
+                {
+                  github_id: String(p.id),
+                  github_login: p.login,
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: "github_id" }
+              )
+              .select("id")
+              .single();
+            user = fallback.data;
+            upsertError = fallback.error;
+          }
 
           if (upsertError) {
             console.error("[auth] Supabase upsert error:", upsertError);
@@ -152,3 +187,4 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
+
