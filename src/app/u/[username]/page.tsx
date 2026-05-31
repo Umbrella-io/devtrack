@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { Metadata } from "next";
+import { cache } from "react"; // 💡 Fix 1: Added for request memoization
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import BadgeSection from "@/components/BadgeSection";
@@ -8,6 +9,8 @@ import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
 import ShareProfileSection from "@/components/ShareProfileSection";
 import ThemeToggle from "@/components/ThemeToggle";
+import CopyLinkButton from "@/components/CopyLinkButton"; // ✅ Keeping your imported button
+
 import SponsorBadge from "@/components/SponsorBadge";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
 import CopyLinkButton from "@/components/CopyLinkButton";
@@ -15,6 +18,27 @@ import { authOptions } from "@/lib/auth";
 import { fetchPublicProfile } from "@/lib/public-profile-data";
 import { getUserByGithubId, getUserByUsername } from "@/lib/supabase";
 
+import {
+  fetchPublicTopRepos,
+  fetchPublicContributions,
+  fetchPublicStreak,
+  type PublicProfileData,
+} from "@/lib/public-profile-data";
+
+/* -------------------- DATA FETCH -------------------- */
+
+async function fetchPublicProfile(
+  username: string,
+  options: { includeAchievements?: boolean } = {}
+): Promise<PublicProfileData | null> {
+  const user = await getUserByUsername(username);
+
+  if (!user) return null;
+
+  const canonicalUsername = user.github_login.toLowerCase();
+
+  if (username !== canonicalUsername) {
+    redirect(`/u/${canonicalUsername}`);
 async function getLoggedInGitHubUsername() {
   const session = await getServerSession(authOptions);
 
@@ -28,6 +52,12 @@ async function getLoggedInGitHubUsername() {
   }
 
   return null;
+}
+
+/* -------------------- TYPES & METADATA -------------------- */
+
+interface PageProps {
+  params: Promise<{ username: string }>; // 💡 Fix 2: typed as Promise for Next.js 15+ safety
 }
 
 function getProfileUrl(username: string) {
@@ -58,7 +88,7 @@ export async function generateMetadata({
 
   return {
     title: `${username}'s DevTrack Profile`,
-    description: `GitHub stats and coding activity for ${username}. View commits, streaks, and top repositories.`,
+    description: `GitHub stats and coding activity for ${username}.`,
     openGraph: {
       title: `${username}'s DevTrack Profile`,
       description: `GitHub stats and coding activity for ${username}`,
@@ -73,6 +103,8 @@ export async function generateMetadata({
     },
   };
 }
+
+/* -------------------- MAIN PAGE COMPONENT -------------------- */
 
 export default async function PublicProfilePage({
   params,
@@ -106,6 +138,7 @@ export default async function PublicProfilePage({
             </a>{" "}
             and enable <strong>Public Profile</strong>.
           </p>
+
           <a
             href="/"
             className="primary-button inline-block rounded-lg px-6 py-2"
@@ -143,7 +176,7 @@ export default async function PublicProfilePage({
               @{profile.username}&apos;s Profile
               {profile.isSponsor && <SponsorBadge />}
             </h1>
-            <CopyLinkButton url={profileUrl} />
+            <CopyLinkButton />
           </div>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
@@ -165,17 +198,20 @@ export default async function PublicProfilePage({
             </a>
           )}
         </div>
-        {/* Download stats card button — client component */}
-        <div className="flex flex-wrap items-center gap-3">
-          <ThemeToggle />
-          <StatsCard
-            username={profile.username}
-            avatarUrl={avatarUrl}
-            currentStreak={profile.streak.current}
-            longestStreak={profile.streak.longest}
-            totalCommits={profile.contributions.total}
-            topRepo={topRepo}
-          />
+        
+        <div className="flex items-center gap-3">
+          {/* Download stats card button — client component */}
+          <div className="flex flex-wrap items-center gap-3">
+            <ThemeToggle />
+            <StatsCard
+              username={profile.username}
+              avatarUrl={avatarUrl}
+              currentStreak={profile.streak.current}
+              longestStreak={profile.streak.longest}
+              totalCommits={profile.contributions.total}
+              topRepo={topRepo}
+            />
+          </div>
         </div>
       </div>
 
@@ -187,12 +223,13 @@ export default async function PublicProfilePage({
         />
       </div>
 
-      {/* Row 1: Contribution graph + Streak */}
+      {/* ROW 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <PublicContributionGraph data={profile.contributions} />
         </div>
-        <div className="flex flex-col gap-6">
+
+        <div>
           <PublicStreakTracker streak={profile.streak} />
         </div>
       </div>
@@ -225,12 +262,10 @@ export default async function PublicProfilePage({
   );
 }
 
-/**
- * Public variant of ContributionGraph component.
- * Displays data passed as props instead of fetching it.
- */
+/* -------------------- SUB-COMPONENTS -------------------- */
+
 function PublicContributionGraph({
-  data: contributionData,
+  data,
 }: {
   data: {
     days: number;
@@ -238,189 +273,97 @@ function PublicContributionGraph({
     data: Record<string, number>;
   };
 }) {
-  const data = Object.entries(contributionData.data ?? {})
+  const chart = Object.entries(data.data ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([day, commits]) => ({ day, commits }));
 
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
-      <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-            Commit Activity ({contributionData.days} days)
-          </h2>
-          <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            Total commits: {contributionData.total}
-          </p>
-        </div>
-      </div>
-
-      {data.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">
-          No commit data available.
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {/* Simple text-based activity display for public profiles */}
-          <div className="text-sm text-[var(--muted-foreground)]">
-            {data.length} active days
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {data.map((day) => (
-              <div
-                key={day.day}
-                className="aspect-square rounded-sm"
-                style={{
-                  backgroundColor:
-                    day.commits > 0 ? "var(--accent)" : "var(--control)",
-                  opacity:
-                    day.commits > 0
-                      ? Math.max(0.2, Math.min(day.commits / 10, 1))
-                      : 1,
-                }}
-                title={`${day.day}: ${day.commits} commits`}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * Public variant of StreakTracker component.
- * Displays data passed as props.
- */
-function PublicStreakTracker({ streak }: { streak: any }) {
-  const stats = [
-    {
-      label: "Current Streak",
-      value: streak.current,
-      unit: "days",
-      highlight: streak.current > 0,
-      icon: "🔥",
-    },
-    {
-      label: "Longest Streak",
-      value: streak.longest,
-      unit: "days",
-      highlight: false,
-      icon: "🏆",
-    },
-    {
-      label: "Active Days (90d)",
-      value: streak.totalActiveDays,
-      unit: "days",
-      highlight: false,
-      icon: "📅",
-    },
-    {
-      label: "Last Commit",
-      value: streak.lastCommitDate
-        ? new Date(streak.lastCommitDate).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })
-        : "—",
-      unit: "",
-      highlight: false,
-      icon: "⚡",
-    },
-  ];
-
-  return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
-        Commit Streaks
+    <div className="border rounded-xl p-6">
+      <h2 className="font-semibold mb-2">
+        Commit Activity ({data.days} days)
       </h2>
-      <div className="grid grid-cols-2 gap-3">
-        {stats.map((stat) => (
+      <p className="text-sm text-gray-500 mb-4">
+        Total commits: {data.total}
+      </p>
+
+      <div className="grid grid-cols-7 gap-1">
+        {chart.map((d) => (
           <div
-            key={stat.label}
-            className={`rounded-lg border p-3 ${
-              stat.highlight
-                ? "border-[var(--accent)] bg-[var(--accent)]/10"
-                : "border-[var(--border)] bg-[var(--control)]"
-            }`}
-          >
-            <div className="text-xs font-medium text-[var(--muted-foreground)]">
-              {stat.icon} {stat.label}
-            </div>
-            <div className="mt-1 text-lg font-bold text-[var(--card-foreground)]">
-              {stat.value}
-            </div>
-            {stat.unit && (
-              <div className="text-xs text-[var(--muted-foreground)]">
-                {stat.unit}
-              </div>
-            )}
-          </div>
+            key={d.day}
+            className="aspect-square rounded-sm"
+            style={{
+              backgroundColor: d.commits > 0 ? "#4f46e5" : "#e5e7eb",
+              opacity: d.commits > 0 ? Math.min(d.commits / 10, 1) : 1,
+            }}
+            title={`${d.day}: ${d.commits} commits`}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-/**
- * Public variant of TopRepos component.
- * Displays data passed as props.
- */
+interface StreakData {
+  current: number;
+  longest: number;
+  totalActiveDays: number;
+  lastCommitDate: string | null;
+}
+
+// 💡 Fix 3: Standard structural typing preserved natively
+function PublicStreakTracker({ streak }: { streak: StreakData }) {
+  return (
+    <div className="border rounded-xl p-6 space-y-3">
+      <h2 className="font-semibold">Commit Streaks</h2>
+
+      <div>🔥 Current: {streak.current} days</div>
+      <div>🏆 Longest: {streak.longest} days</div>
+      <div>📅 Active: {streak.totalActiveDays} days</div>
+      <div>
+        ⚡ Last:{" "}
+        {streak.lastCommitDate
+          ? new Date(streak.lastCommitDate).toLocaleDateString()
+          : "—"}
+      </div>
+    </div>
+  );
+}
+
 function PublicTopRepos({
   repos,
 }: {
   repos: Array<{ name: string; commits: number; url: string }>;
 }) {
-  const maxCommits = repos[0]?.commits ?? 1;
+  const max = repos[0]?.commits ?? 1;
 
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
-        Top Repositories
-      </h2>
+    <div className="border rounded-xl p-6">
+      <h2 className="font-semibold mb-4">Top Repositories</h2>
 
-      {repos.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">
-          No repository data available.
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {repos.map((repo, idx) => {
-            const barWidth = Math.max(
-              Math.round((repo.commits / maxCommits) * 100),
-              4
-            );
-            const shortName = repo.name.split("/")[1] ?? repo.name;
-            return (
-              <li key={repo.name}>
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <a
-                    href={repo.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="max-w-[70%] truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
-                    title={repo.name}
-                  >
-                    <span className="mr-1 text-[var(--muted-foreground)]">
-                      #{idx + 1}
-                    </span>
-                    {shortName}
-                  </a>
-                  <span className="shrink-0 text-[var(--muted-foreground)]">
-                    {repo.commits} commit{repo.commits !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-[var(--control)]">
-                  <div
-                    className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
-                    style={{ width: `${barWidth}%` }}
-                  />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <ul className="space-y-3">
+        {repos.map((repo, i) => {
+          const width = Math.max((repo.commits / max) * 100, 4);
+          const name = repo.name.split("/")[1] ?? repo.name;
+
+          return (
+            <li key={repo.name}>
+              <div className="flex justify-between text-sm">
+                <a href={repo.url} target="_blank" rel="noopener noreferrer">
+                  #{i + 1} {name}
+                </a>
+                <span>{repo.commits} commits</span>
+              </div>
+
+              <div className="h-1 bg-gray-200 rounded">
+                <div
+                  className="h-1 bg-indigo-500 rounded"
+                  style={{ width: `${width}%` }}
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
