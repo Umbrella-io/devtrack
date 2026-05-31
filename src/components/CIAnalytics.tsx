@@ -104,7 +104,7 @@ export default function CIAnalytics() {
     : "Refresh";
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
@@ -119,7 +119,7 @@ export default function CIAnalytics() {
           onClick={fetchCIAnalytics}
           disabled={isRateLimited || loading}
           title={isRateLimited ? "GitHub API rate limit reached" : "Refresh CI data"}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-all hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50 hover:opacity-90 active:scale-95"
         >
           {loading ? (
             <svg className="animate-spin h-3 w-3 text-[var(--muted-foreground)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -140,7 +140,7 @@ export default function CIAnalytics() {
             <div
               key={item}
               aria-hidden="true"
-              className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
+              className="h-20 rounded-lg skeleton-shimmer"
             />
           ))}
         </div>
@@ -165,11 +165,11 @@ export default function CIAnalytics() {
         </div>
       ) : data ? (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 stagger-children">
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-lg bg-[var(--control)] p-4 text-center"
+                className="rounded-lg bg-[var(--control)] p-4 text-center stat-cell animate-fade-in-up"
               >
                 <div className="text-2xl font-bold text-[var(--accent)]">
                   {stat.value}
@@ -181,7 +181,7 @@ export default function CIAnalytics() {
             ))}
           </div>
 
-          <div className="rounded-lg bg-[var(--control)] p-4">
+          <div className="rounded-lg bg-[var(--control)] p-4 stat-cell">
             <p className="text-sm font-medium text-[var(--card-foreground)]">
               Flakiest workflow
             </p>

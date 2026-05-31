@@ -18,23 +18,27 @@ const useSafeLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : us
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [theme, setTheme] = useState<Theme>(() => "dark");
+  const [theme, setTheme] = useState<Theme | undefined>(undefined);
 
-  useEffect(() => {
+  useSafeLayoutEffect(() => {
     const storedTheme = localStorage.getItem(STORAGE_KEY) as Theme | null;
     if (storedTheme === "dark" || storedTheme === "light") {
       setTheme(storedTheme);
       return;
     }
-    // No stored preference — keep dark as default.
+    setTheme("dark");
   }, []);
 
   useSafeLayoutEffect(() => {
-    if (theme) {
-      document.documentElement.classList.toggle("dark", theme === "dark");
-      document.documentElement.style.colorScheme = theme;
-      localStorage.setItem(STORAGE_KEY, theme);
-    }
+    if (!theme) return;
+
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+  }, [theme]);
+
+  useEffect(() => {
+    if (!theme) return;
+    localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
   const toggleTheme = () => {
