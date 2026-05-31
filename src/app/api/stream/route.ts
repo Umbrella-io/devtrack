@@ -24,7 +24,6 @@ export async function GET(req: NextRequest) {
     async start(controller) {
       const checkData = async () => {
         try {
-          // 1. Get max last_synced_at from goals
           const { data: goals } = await supabaseAdmin
             .from("goals")
             .select("last_synced_at")
@@ -34,7 +33,6 @@ export async function GET(req: NextRequest) {
 
           const currentSyncedAt = goals?.[0]?.last_synced_at || null;
 
-          // 2. Get unread notifications count
           const { count } = await supabaseAdmin
             .from("notifications")
             .select("*", { count: "exact", head: true })
@@ -44,12 +42,12 @@ export async function GET(req: NextRequest) {
           const currentUnreadCount = count ?? 0;
 
           let hasChanges = false;
-          const payload: any = { type: "update" };
+          const payload: Record<string, unknown> = { type: "update" };
 
           if (lastCheckedSyncedAt !== currentSyncedAt) {
             hasChanges = true;
             payload.lastSyncedAt = currentSyncedAt;
-            payload.syncTriggered = lastCheckedSyncedAt !== null; // true if this is an update, not the initial fetch
+            payload.syncTriggered = lastCheckedSyncedAt !== null;
             lastCheckedSyncedAt = currentSyncedAt;
           }
 
@@ -67,15 +65,15 @@ export async function GET(req: NextRequest) {
         }
       };
 
-      // Initial check
       await checkData();
 
       const interval = setInterval(() => {
         checkData();
-      }, 2000); // Poll DB every 2 seconds
+      }, 2000);
 
       req.signal.addEventListener("abort", () => {
         clearInterval(interval);
+        controller.close();
       });
     },
   });

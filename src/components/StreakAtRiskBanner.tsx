@@ -75,7 +75,11 @@ export default function StreakAtRiskBanner({
   if (!isAtRisk || dismissed) return null;
 
   return (
-    <div className="mb-6 flex items-center justify-between rounded-lg border border-[var(--warning)]/30 bg-[var(--warning)]/10 p-4 text-[var(--warning)] shadow-sm transition-all animate-in fade-in slide-in-from-top-4">
+    <div
+      role="status"
+      aria-live="polite"
+      className="mb-6 flex items-center justify-between rounded-lg border border-[var(--warning)]/30 bg-[var(--warning)]/10 p-4 text-[var(--warning)] shadow-sm transition-all animate-in fade-in slide-in-from-top-4"
+    >
       <div className="flex items-center gap-3">
         <AlertTriangle size={20} className="flex-shrink-0" aria-hidden="true" />
         <div>
