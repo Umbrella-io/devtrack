@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import EmptyState from "@/components/EmptyState";
 import SponsorBadge from "@/components/SponsorBadge";
+import { getLeaderboardData, type LeaderboardPayload } from "@/lib/leaderboard";
 
 type LeaderboardTab = "streak" | "commits" | "prs";
 
@@ -17,39 +18,11 @@ interface LeaderboardEntry {
   isSponsor: boolean;
 }
 
-interface LeaderboardPayload {
-  generatedAt: string;
-  refreshSeconds: number;
-  leaders: Record<LeaderboardTab, LeaderboardEntry[]>;
-}
-
 const tabs: Array<{ id: LeaderboardTab; label: string; metric: string }> = [
   { id: "streak", label: "Streak", metric: "days" },
   { id: "commits", label: "Commits", metric: "this month" },
   { id: "prs", label: "PRs", metric: "this month" },
 ];
-
-async function fetchLeaderboard(): Promise<LeaderboardPayload | null> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXTAUTH_URL ||
-    "http://localhost:3000";
-
-  try {
-    const res = await fetch(`${baseUrl}/api/leaderboard`, {
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) {
-      return null;
-    }
-
-    return (await res.json()) as LeaderboardPayload;
-  } catch (error) {
-    console.error("Failed to fetch leaderboard:", error);
-    return null;
-  }
-}
 
 function getMetricValue(entry: LeaderboardEntry, tab: LeaderboardTab): number {
   if (tab === "streak") return entry.streak;
@@ -65,7 +38,14 @@ export default async function LeaderboardPage({
   const activeTab = tabs.some((tab) => tab.id === searchParams.tab)
     ? (searchParams.tab as LeaderboardTab)
     : "streak";
-  const leaderboard = await fetchLeaderboard();
+
+  let leaderboard: LeaderboardPayload | null = null;
+  try {
+    leaderboard = await getLeaderboardData();
+  } catch (err) {
+    console.error("[LeaderboardPage] Failed to load leaderboard data:", err);
+  }
+
   const activeMeta = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
   const rows = leaderboard?.leaders[activeTab] ?? [];
 
@@ -117,8 +97,17 @@ export default async function LeaderboardPage({
 
         <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-soft)]">
           {!leaderboard ? (
-            <div className="px-4 py-12 text-center text-sm text-[var(--muted-foreground)]">
-              Leaderboard data is temporarily unavailable.
+            <div className="px-4 py-12 text-center">
+              <p className="text-sm text-[var(--muted-foreground)]">
+                Leaderboard data is temporarily unavailable. Please try again in
+                a few minutes.
+              </p>
+              <Link
+                href="/leaderboard"
+                className="mt-4 inline-block text-sm font-medium text-[var(--accent)] hover:underline"
+              >
+                Retry
+              </Link>
             </div>
           ) : rows.length === 0 ? (
             <EmptyState
@@ -163,8 +152,8 @@ export default async function LeaderboardPage({
                         {entry.isSponsor && <SponsorBadge />}
                       </div>
                       <div className="text-xs text-[var(--muted-foreground)]">
-                        {entry.commits} commits, {entry.prs} PRs, {entry.streak}
-                        d streak
+                        {entry.commits} commits, {entry.prs} PRs,{" "}
+                        {entry.streak}d streak
                       </div>
                     </div>
                   </div>

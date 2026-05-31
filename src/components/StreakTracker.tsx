@@ -83,10 +83,11 @@ export default function StreakTracker() {
         selectedAccount !== null
           ? `/api/metrics/streak?accountId=${encodeURIComponent(selectedAccount)}`
           : "/api/metrics/streak";
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const contributionUrl =
         selectedAccount !== null
-          ? `/api/metrics/contributions?days=365&accountId=${encodeURIComponent(selectedAccount)}`
-          : "/api/metrics/contributions?days=365";
+          ? `/api/metrics/contributions?days=365&accountId=${encodeURIComponent(selectedAccount)}&timezone=${encodeURIComponent(timezone)}`
+          : `/api/metrics/contributions?days=365&timezone=${encodeURIComponent(timezone)}`;
       const [streakRes, contributionRes] = await Promise.all([
         fetch(streakUrl),
         fetch(contributionUrl),
@@ -271,7 +272,7 @@ export default function StreakTracker() {
       </div>
     );
   }
-    if (
+  if (
     !contributionData ||
     !contributionData.data ||
     Object.keys(contributionData.data).length === 0
@@ -282,8 +283,8 @@ export default function StreakTracker() {
           <div className="mb-4 text-4xl">📉</div>
 
           <SectionHeader title="No contribution data found" />
-            
-          
+
+
 
           <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
             Start committing to build your streak and track your coding activity.
@@ -314,47 +315,47 @@ export default function StreakTracker() {
 
   const stats = data
     ? [
-        {
-          label: "Current Streak",
-          value: animatedCurrent,
-          unit: "days",
-          highlight: data.current > 0,
-          icon: Flame,
-          tooltip: "Current consecutive coding days",
-        },
-        {
-          label: "Longest Streak",
-          value: animatedLongest,
-          unit: "days",
-          highlight: false,
-          icon: Trophy,
-          tooltip: "Your longest streak ever",
-        },
-        {
-          label: "Active Days (90d)",
-          value: animatedActiveDays,
-          unit: "days",
-          highlight: false,
-          icon: Calendar,
-          tooltip: "Days you made commits in the last 90 days",
-        },
-        {
-          label: "Last Commit",
-          value: data.lastCommitDate
-            ? new Date(data.lastCommitDate).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })
-            : "—",
-          unit: "",
-          highlight: false,
-          icon: Zap,
-          tooltip: "Your most recent commit",
-        },
-      ]
+      {
+        label: "Current Streak",
+        value: animatedCurrent,
+        unit: "days",
+        highlight: data.current > 0,
+        icon: Flame,
+        tooltip: "Current consecutive coding days",
+      },
+      {
+        label: "Longest Streak",
+        value: animatedLongest,
+        unit: "days",
+        highlight: false,
+        icon: Trophy,
+        tooltip: "Your longest streak ever",
+      },
+      {
+        label: "Active Days (90d)",
+        value: animatedActiveDays,
+        unit: "days",
+        highlight: false,
+        icon: Calendar,
+        tooltip: "Days you made commits in the last 90 days",
+      },
+      {
+        label: "Last Commit",
+        value: data.lastCommitDate
+          ? new Date(data.lastCommitDate).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+          : "—",
+        unit: "",
+        highlight: false,
+        icon: Zap,
+        tooltip: "Your most recent commit",
+      },
+    ]
     : [];
 
-    const handleCopy = async () => {
+  const handleCopy = async () => {
     if (!data) return;
 
     const textToCopy = [
@@ -383,7 +384,7 @@ export default function StreakTracker() {
     }
   };
 
-  const currentMilestone = 
+  const currentMilestone =
     [...STREAK_MILESTONES]
       .reverse()
       .find(
@@ -392,7 +393,7 @@ export default function StreakTracker() {
           data.current >= m &&
           m > lastCelebratedMilestone
       );
-  const shouldShowBanner = 
+  const shouldShowBanner =
     currentMilestone &&
     !dismissedMilestones.includes(currentMilestone);
   const handleDismissBanner = () => {
@@ -463,223 +464,219 @@ export default function StreakTracker() {
             {data && <div className="h-8 w-24" />}
           </div>
           <div className="grid grid-cols-2 gap-3">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className={`rounded-lg p-4 text-center ${
-              stat.highlight
-                ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
-                : "bg-[var(--control)]"
-            }`}
-            aria-label={stat.tooltip}
-          >
-            <div className="flex justify-center mb-1">
-              <stat.icon size={24} className="text-[var(--accent)]" aria-hidden="true" />
-            </div>
-            <div
-              className={`text-2xl font-bold ${
-                stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
-              }`}
-            >
-              {stat.value}
-              {stat.unit && (
-                <span className="ml-1 text-sm font-normal text-[var(--muted-foreground)]">
-                  {stat.unit}
-                </span>
-              )}
-            </div>
-            <div className="mt-1 flex items-center justify-center gap-1 text-xs text-[var(--muted-foreground)]">
-              <span>{stat.label}</span>
-
-              <button
-                type="button"
+            {stats.map((stat) => (
+              <div
+                key={stat.label}
+                className={`rounded-lg p-4 text-center ${stat.highlight
+                    ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
+                    : "bg-[var(--control)]"
+                  }`}
                 aria-label={stat.tooltip}
-                className="text-[var(--muted-foreground)] hover:text-[var(--accent)] focus:outline-none"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+                <div className="flex justify-center mb-1">
+                  <stat.icon size={24} className="text-[var(--accent)]" aria-hidden="true" />
+                </div>
+                <div
+                  className={`text-2xl font-bold ${stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
+                    }`}
                 >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      {monthlyTrend.isValid && (
-        <div className="mt-3 flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-xs shadow-sm">
-          <span className="text-[var(--muted-foreground)]">
-            This month: <strong className="font-semibold text-[var(--card-foreground)]">{monthlyTrend.thisMonth} active days</strong>
-          </span>
-          <span className={monthlyTrend.colorClass}>
-            ({monthlyTrend.text})
-          </span>
-        </div>
-      )}
-      {badge && (
-        <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
-          <badge.icon size={18} className="text-[var(--accent)]" aria-hidden="true" />
-          <span className="text-sm font-medium text-[var(--accent)]">{badge.label}</span>
-        </div>
-      )}
+                  {stat.value}
+                  {stat.unit && (
+                    <span className="ml-1 text-sm font-normal text-[var(--muted-foreground)]">
+                      {stat.unit}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1 flex items-center justify-center gap-1 text-xs text-[var(--muted-foreground)]">
+                  <span>{stat.label}</span>
 
-      {activeDayData.isValid && activeDayData.peakDay && (
-        <div className="mt-4 pt-4 border-t border-[var(--border)]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div className="text-xs font-medium text-[var(--muted-foreground)]">Most Active Day</div>
-              <div className="text-sm font-semibold text-[var(--card-foreground)] mt-0.5">
-                {activeDayData.peakDay.label}{" "}
-                <span className="text-xs font-normal text-[var(--muted-foreground)]">
-                  (avg {activeDayData.peakDay.avgCommits.toFixed(1)} commits)
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-end gap-1.5 h-10 pt-2">
-              {activeDayData.insights.map((item) => {
-                const maxAvg = activeDayData.peakDay?.avgCommits ?? 1;
-                const heightPercent = maxAvg > 0 ? Math.max(15, Math.round((item.avgCommits / maxAvg) * 100)) : 15;
-                const isPeak = item.label === activeDayData.peakDay?.label;
-
-                return (
-                  <div
-                    key={item.label}
-                    className="flex flex-col items-center gap-1 group relative cursor-default"
-                    title={`${item.label}: avg ${item.avgCommits.toFixed(1)} commits`}
+                  <button
+                    type="button"
+                    aria-label={stat.tooltip}
+                    className="text-[var(--muted-foreground)] hover:text-[var(--accent)] focus:outline-none"
                   >
-                    <div className="w-5 bg-[var(--card-muted)] rounded-sm flex items-end h-8 overflow-hidden">
-                      <div
-                        style={{ height: `${heightPercent}%` }}
-                        className={`w-full rounded-sm transition-all duration-300 ${
-                          isPeak ? "bg-[var(--accent)]" : "bg-[var(--accent)]/40 hover:bg-[var(--accent)]/60"
-                        }`}
-                      />
-                    </div>
-                    <span className={`text-[10px] leading-none ${isPeak ? "font-bold text-[var(--card-foreground)]" : "text-[var(--muted-foreground)]"}`}>
-                      {item.shortLabel}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          {monthlyTrend.isValid && (
+            <div className="mt-3 flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-xs shadow-sm">
+              <span className="text-[var(--muted-foreground)]">
+                This month: <strong className="font-semibold text-[var(--card-foreground)]">{monthlyTrend.thisMonth} active days</strong>
+              </span>
+              <span className={monthlyTrend.colorClass}>
+                ({monthlyTrend.text})
+              </span>
+            </div>
+          )}
+          {badge && (
+            <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
+              <badge.icon size={18} className="text-[var(--accent)]" aria-hidden="true" />
+              <span className="text-sm font-medium text-[var(--accent)]">{badge.label}</span>
+            </div>
+          )}
+
+          {activeDayData.isValid && activeDayData.peakDay && (
+            <div className="mt-4 pt-4 border-t border-[var(--border)]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-medium text-[var(--muted-foreground)]">Most Active Day</div>
+                  <div className="text-sm font-semibold text-[var(--card-foreground)] mt-0.5">
+                    {activeDayData.peakDay.label}{" "}
+                    <span className="text-xs font-normal text-[var(--muted-foreground)]">
+                      (avg {activeDayData.peakDay.avgCommits.toFixed(1)} commits)
                     </span>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-      {lastUpdated && (
-        <p className="mt-2 text-right text-xs text-[var(--muted-foreground)]">
-          {minutesAgo === 0
-            ? "Updated just now"
-            : `Updated ${minutesAgo} min ago`}
-        </p>
-      )}
+                </div>
 
-      {!freezeLoading && freeze?.hasFreeze && (
-        <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-4 py-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle size={18} className="text-[var(--accent)]" aria-hidden="true" />
-            <span className="text-sm font-medium text-[var(--accent)]">Freeze active today</span>
-          </div>
-          {confirmCancel ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--muted-foreground)]">Remove freeze?</span>
-              <button
-                type="button"
-                onClick={handleCancelFreeze}
-                disabled={cancelling}
-                className="rounded-md bg-[var(--destructive)]/10 px-2.5 py-1 text-xs font-medium text-[var(--destructive)] transition hover:bg-[var(--destructive)]/20 disabled:opacity-60"
-              >
-                {cancelling ? "Removing..." : "Yes, remove"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmCancel(false)}
-                disabled={cancelling}
-                className="rounded-md border border-[var(--border)] px-2.5 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)]"
-              >
-                Keep
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={handleCancelFreeze}
-              className="rounded-md border border-[var(--border)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)]"
-            >
-              Cancel freeze
-            </button>
-          )}
-        </div>
-      )}
+                <div className="flex items-end gap-1.5 h-10 pt-2">
+                  {activeDayData.insights.map((item) => {
+                    const maxAvg = activeDayData.peakDay?.avgCommits ?? 1;
+                    const heightPercent = maxAvg > 0 ? Math.max(15, Math.round((item.avgCommits / maxAvg) * 100)) : 15;
+                    const isPeak = item.label === activeDayData.peakDay?.label;
 
-      {!freezeLoading && !freeze?.hasFreeze && (
-        <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-[var(--foreground)]">Streak Freeze</span>
-            <span className="text-xs text-[var(--muted-foreground)]">❄️ 1 available</span>
-            <div className="group relative cursor-help">
-              <span 
-                className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--card-muted)] text-[10px] font-bold text-[var(--muted-foreground)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] transition-colors"
-                role="img"
-                aria-label="A streak freeze protects your streak for one missed day. You can only use one freeze at a time."
-              >
-                ?
-              </span>
-              <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 w-64 rounded-lg bg-[var(--foreground)] px-3 py-2 text-xs font-medium leading-relaxed text-[var(--background)] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20 shadow-lg text-center">
-                A streak freeze protects your streak for one missed day. You can only use one freeze at a time.
-                <div className="absolute top-full left-1/2 h-1 w-1 -translate-x-1/2 border-4 border-t-[var(--foreground)] border-transparent" />
+                    return (
+                      <div
+                        key={item.label}
+                        className="flex flex-col items-center gap-1 group relative cursor-default"
+                        title={`${item.label}: avg ${item.avgCommits.toFixed(1)} commits`}
+                      >
+                        <div className="w-5 bg-[var(--card-muted)] rounded-sm flex items-end h-8 overflow-hidden">
+                          <div
+                            style={{ height: `${heightPercent}%` }}
+                            className={`w-full rounded-sm transition-all duration-300 ${isPeak ? "bg-[var(--accent)]" : "bg-[var(--accent)]/40 hover:bg-[var(--accent)]/60"
+                              }`}
+                          />
+                        </div>
+                        <span className={`text-[10px] leading-none ${isPeak ? "font-bold text-[var(--card-foreground)]" : "text-[var(--muted-foreground)]"}`}>
+                          {item.shortLabel}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleApplyFreeze}
-            disabled={freezeLoading || freeze?.hasFreeze}
-            className={`rounded-md px-3 py-1 text-xs font-medium transition ${
-              freezeLoading || freeze?.hasFreeze
-                ? "cursor-not-allowed opacity-50 bg-[var(--accent)]"
-                : "bg-[var(--accent)] hover:opacity-90"
-            } text-[var(--accent-foreground)]`}
-          >
-            {freeze?.hasFreeze ? "Freeze Active" : "Freeze Streak"}
-          </button>
-        </div>    
-      )}
+          )}
+          {lastUpdated && (
+            <p className="mt-2 text-right text-xs text-[var(--muted-foreground)]">
+              {minutesAgo === 0
+                ? "Updated just now"
+                : `Updated ${minutesAgo} min ago`}
+            </p>
+          )}
 
-      {/* Streak Calendar Section */}
-      {contributionData ? (
-        <>
-          {/*
+          {!freezeLoading && freeze?.hasFreeze && (
+            <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-4 py-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle size={18} className="text-[var(--accent)]" aria-hidden="true" />
+                <span className="text-sm font-medium text-[var(--accent)]">Freeze active today</span>
+              </div>
+              {confirmCancel ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[var(--muted-foreground)]">Remove freeze?</span>
+                  <button
+                    type="button"
+                    onClick={handleCancelFreeze}
+                    disabled={cancelling}
+                    className="rounded-md bg-[var(--destructive)]/10 px-2.5 py-1 text-xs font-medium text-[var(--destructive)] transition hover:bg-[var(--destructive)]/20 disabled:opacity-60"
+                  >
+                    {cancelling ? "Removing..." : "Yes, remove"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmCancel(false)}
+                    disabled={cancelling}
+                    className="rounded-md border border-[var(--border)] px-2.5 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)]"
+                  >
+                    Keep
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleCancelFreeze}
+                  className="rounded-md border border-[var(--border)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)]"
+                >
+                  Cancel freeze
+                </button>
+              )}
+            </div>
+          )}
+
+          {!freezeLoading && !freeze?.hasFreeze && (
+            <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-[var(--foreground)]">Streak Freeze</span>
+                <span className="text-xs text-[var(--muted-foreground)]">❄️ 1 available</span>
+                <div className="group relative cursor-help">
+                  <span
+                    className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--card-muted)] text-[10px] font-bold text-[var(--muted-foreground)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] transition-colors"
+                    role="img"
+                    aria-label="A streak freeze protects your streak for one missed day. You can only use one freeze at a time."
+                  >
+                    ?
+                  </span>
+                  <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 w-64 rounded-lg bg-[var(--foreground)] px-3 py-2 text-xs font-medium leading-relaxed text-[var(--background)] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20 shadow-lg text-center">
+                    A streak freeze protects your streak for one missed day. You can only use one freeze at a time.
+                    <div className="absolute top-full left-1/2 h-1 w-1 -translate-x-1/2 border-4 border-t-[var(--foreground)] border-transparent" />
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleApplyFreeze}
+                disabled={freezeLoading || freeze?.hasFreeze}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition ${freezeLoading || freeze?.hasFreeze
+                    ? "cursor-not-allowed opacity-50 bg-[var(--accent)]"
+                    : "bg-[var(--accent)] hover:opacity-90"
+                  } text-[var(--accent-foreground)]`}
+              >
+                {freeze?.hasFreeze ? "Freeze Active" : "Freeze Streak"}
+              </button>
+            </div>
+          )}
+
+          {/* Streak Calendar Section */}
+          {contributionData ? (
+            <>
+              {/*
             Freeze dates are managed via the streak freeze API (/api/streak/freeze).
             Users can activate a freeze from the freeze button in this component.
             The calendar displays existing freeze dates from the API response.
             Future: add UI to manually mark/unmark past dates as frozen.
           */}
-          <StreakCalendar
-            contributions={contributionData.data}
-            freezeDates={
-              freeze?.freezeDate
-                ? Array.from(new Set([...freezeDates, freeze.freezeDate]))
-                : freezeDates
-            }
-            currentMonth={calendarMonth}
-            onMonthChange={setCalendarMonth}
-          />
-        </>
-      ) : null}
+              <StreakCalendar
+                contributions={contributionData.data}
+                freezeDates={
+                  freeze?.freezeDate
+                    ? Array.from(new Set([...freezeDates, freeze.freezeDate]))
+                    : freezeDates
+                }
+                currentMonth={calendarMonth}
+                onMonthChange={setCalendarMonth}
+              />
+            </>
+          ) : null}
+        </div>
       </div>
-    </div>
     </>
   );
 }
@@ -804,23 +801,22 @@ function StreakCalendar({
           const cellStyle = isFuture
             ? { backgroundColor: "transparent", borderColor: themeConfig.border }
             : isFrozen
-            ? undefined
-            : getCalendarStyle(commitCount);
+              ? undefined
+              : getCalendarStyle(commitCount);
 
           const tooltipText = !isFuture
             ? `${dayData.date.toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}: ${statusText}${!isFrozen && commitCount > 0 ? ` (${commitCount})` : ""}`
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            })}: ${statusText}${!isFrozen && commitCount > 0 ? ` (${commitCount})` : ""}`
             : "";
 
           return (
             <div
               key={dateStr}
-              className={`group relative aspect-square rounded-lg ${bgColor} ${borderColor} transition-all hover:scale-110 hover:shadow-lg cursor-default ${
-                isToday ? "ring-2 ring-offset-1 ring-[var(--accent)]" : ""
-              }`}
+              className={`group relative aspect-square rounded-lg ${bgColor} ${borderColor} transition-all hover:scale-110 hover:shadow-lg cursor-default ${isToday ? "ring-2 ring-offset-1 ring-[var(--accent)]" : ""
+                }`}
               style={cellStyle}
               title={tooltipText}
             >

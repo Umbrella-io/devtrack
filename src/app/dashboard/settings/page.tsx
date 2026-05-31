@@ -11,6 +11,10 @@ import MarkdownBio from "@/components/MarkdownBio";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import WebhookManager from "@/components/webhook/WebhookManager";
+
+// ── Max length for the profile bio ──────────────────────────────────────────
+const BIO_MAX = 160;
 
 interface UserSettings {
   id: string;
@@ -480,6 +484,7 @@ function SettingsPageContent() {
             {statusMessage.message}
           </div>
         )}
+
         {/* Public Profile Section */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="flex items-start justify-between mb-6 gap-4">
@@ -498,6 +503,7 @@ function SettingsPageContent() {
                 <input
                   type="checkbox"
                   checked={settings.is_public}
+                  aria-label="Toggle Public Profile"
                   onChange={(e) => handleTogglePublic(e.target.checked)}
                   disabled={saving}
                   className="sr-only"
@@ -540,6 +546,58 @@ function SettingsPageContent() {
               </div>
             </div>
           )}
+
+          {/* ── Bio field with character counter ── NEW ─────────────────────── */}
+          <div className="mt-6 pt-6 border-t border-[var(--border)]">
+            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-1">
+              Bio
+            </h3>
+            <p className="text-sm text-[var(--muted-foreground)] mb-3">
+              Write a short bio shown on your public profile.
+            </p>
+
+            <textarea
+              id="bio"
+              value={bioDraft}
+              onChange={(e) => {
+                setBioDraft(e.target.value.slice(0, BIO_MAX));
+                setIsDirty(true);
+              }}
+              placeholder="Tell others about yourself..."
+              rows={3}
+              maxLength={BIO_MAX}
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] resize-none"
+            />
+
+            {/* Character counter */}
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-xs text-[var(--muted-foreground)]">
+                {bioDraft.length === 0 && "Shown on your public /u/ page."}
+              </p>
+              <p
+                className={`text-xs font-medium tabular-nums transition-colors ${
+                  bioDraft.length >= BIO_MAX
+                    ? "text-[var(--destructive)]"
+                    : bioDraft.length >= Math.floor(BIO_MAX * 0.9)
+                    ? "text-yellow-500"
+                    : "text-[var(--muted-foreground)]"
+                }`}
+              >
+                {bioDraft.length} / {BIO_MAX}
+              </p>
+            </div>
+
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={handleSaveBio}
+                disabled={savingBio}
+                className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {savingBio ? "Saving..." : "Save Bio"}
+              </button>
+            </div>
+          </div>
 
           <div className="mt-6 pt-6 border-t border-[var(--border)]">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -666,7 +724,7 @@ function SettingsPageContent() {
                 type="button"
                 onClick={() => {
                   // The toggles themselves already call the API,
-                  // but for the heatmap theme which is local only, 
+                  // but for the heatmap theme which is local only,
                   // or to clear the dirty state after a manual change,
                   // we provide this clear feedback.
                   setIsDirty(false);
@@ -711,6 +769,7 @@ function SettingsPageContent() {
                 <input
                   type="checkbox"
                   checked={settings.leaderboard_opt_in}
+                  aria-label="Toggle Public Leaderboard"
                   onChange={(e) => handleToggleLeaderboard(e.target.checked)}
                   disabled={saving}
                   className="sr-only"
@@ -734,6 +793,175 @@ function SettingsPageContent() {
               Turning this on also enables your public profile so leaderboard
               rows can link to your DevTrack stats.
             </p>
+          </div>
+        </div>
+
+        {/* Repository Spotlight Section */}
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+            Repository Spotlight 🚀
+          </h2>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)] mb-6">
+            Pin up to 3 repositories to showcase on your dashboard and public profile.
+          </p>
+
+          {/* Currently Pinned */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+              Pinned Repositories ({(settings.pinned_repos || []).length}/3)
+            </h3>
+            {(settings.pinned_repos || []).length === 0 ? (
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)] text-center">
+                No repositories pinned yet. Use the search below to spotlight your best projects!
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(settings.pinned_repos || []).map((repoName, index) => (
+                  <div
+                    key={repoName}
+                    className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] p-4"
+                  >
+                    <div className="min-w-0 flex-1 pr-4">
+                      <span className="text-sm font-semibold text-[var(--card-foreground)] truncate block">
+                        {repoName}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Reorder Buttons */}
+                      <button
+                        type="button"
+                        onClick={() => handleMovePin(index, "up")}
+                        disabled={index === 0}
+                        title="Move Up"
+                        aria-label={`Move ${repoName} up`}
+                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMovePin(index, "down")}
+                        disabled={index === (settings.pinned_repos || []).length - 1}
+                        title="Move Down"
+                        aria-label={`Move ${repoName} down`}
+                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
+                      >
+                        ↓
+                      </button>
+
+                      {/* Unpin Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleUnpinRepo(repoName)}
+                        aria-label={`Unpin ${repoName}`}
+                        className="ml-2 rounded-lg border border-[var(--destructive-muted-border)] hover:bg-[var(--destructive-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--destructive)]"
+                      >
+                        Unpin
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pin New Repos (Search) */}
+          {(settings.pinned_repos || []).length < 3 && (
+            <div className="border-t border-[var(--border)]/60 pt-6">
+              <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+                Search & Pin Repositories
+              </h3>
+              <input
+                type="text"
+                value={repoSearchQuery}
+                onChange={(e) => setRepoSearchQuery(e.target.value)}
+                placeholder="Type to search your repositories..."
+                aria-label="Search repositories to pin"
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] mb-4"
+              />
+
+              {loadingRepos ? (
+                <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
+                  Loading your repositories...
+                </div>
+              ) : (
+                <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-thin">
+                  {userRepos
+                    .filter(
+                      (repoName) =>
+                        !(settings.pinned_repos || []).includes(repoName) &&
+                        repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
+                    )
+                    .slice(0, 5)
+                    .map((repoName) => (
+                      <div
+                        key={repoName}
+                        className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)]/40 hover:bg-[var(--control)] px-4 py-2 transition-colors"
+                      >
+                        <span className="text-xs font-medium text-[var(--card-foreground)] truncate">
+                          {repoName}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handlePinRepo(repoName)}
+                          aria-label={`Pin ${repoName}`}
+                          className="rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity"
+                        >
+                          Pin
+                        </button>
+                      </div>
+                    ))}
+                  {userRepos.filter(
+                    (repoName) =>
+                      !(settings.pinned_repos || []).includes(repoName) &&
+                      repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
+                  ).length === 0 && (
+                    <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
+                      No repositories available to pin.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                Weekly Email Digest
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                Receive an optional weekly email digest every Monday morning summarizing your coding habits.
+              </p>
+            </div>
+
+            <label className="flex items-center cursor-pointer select-none">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={settings.weekly_digest_opt_in}
+                  aria-label="Toggle Weekly Email Digest"
+                  onChange={(e) => handleToggleWeeklyDigest(e.target.checked)}
+                  disabled={saving}
+                  className="sr-only"
+                />
+                <div
+                  className={`block h-6 w-10 rounded-full transition-colors ${
+                    settings.weekly_digest_opt_in
+                      ? "bg-[var(--accent)]"
+                      : "bg-[var(--control)]"
+                  }`}
+                />
+                <div
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
+                    settings.weekly_digest_opt_in ? "translate-x-4" : ""
+                  }`}
+                />
+              </div>
+            </label>
           </div>
         </div>
 
@@ -868,6 +1096,8 @@ function SettingsPageContent() {
             </button>
           </Link>
         </div>
+
+        <WebhookManager />
 
         <ConfirmModal
           isOpen={showConfirmModal}

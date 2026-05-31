@@ -143,7 +143,7 @@ export default async function PublicProfilePage({
               @{profile.username}&apos;s Profile
               {profile.isSponsor && <SponsorBadge />}
             </h1>
-            <CopyLinkButton />
+            <CopyLinkButton url={profileUrl} />
           </div>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
