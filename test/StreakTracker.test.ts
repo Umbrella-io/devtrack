@@ -123,7 +123,8 @@ describe('StreakTracker - useStreakTracker Hook & Utils', () => {
     expect(result.current.freeze).toEqual(mockFreezeData);
 
     expect(fetchSpy).toHaveBeenCalledWith('/api/metrics/streak?accountId=test-account');
-    expect(fetchSpy).toHaveBeenCalledWith('/api/metrics/contributions?days=365&accountId=test-account');
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    expect(fetchSpy).toHaveBeenCalledWith(`/api/metrics/contributions?days=365&accountId=test-account&timezone=${encodeURIComponent(timezone)}`);
     expect(fetchSpy).toHaveBeenCalledWith('/api/streak/freeze');
   });
 
