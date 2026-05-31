@@ -273,7 +273,13 @@ export default function WrappedExperience() {
                     <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-200">
                       {currentSlide.eyebrow}
                     </p>
-                    <h2 className="mt-6 max-w-3xl break-words text-5xl font-black leading-[0.95] text-white sm:text-7xl">
+                    <h2
+                      className={`mt-6 max-w-3xl overflow-hidden text-ellipsis break-all font-black leading-[0.95] text-white ${
+                        currentSlide.metric === "Most contributed repo"
+                          ? "line-clamp-3 text-3xl sm:text-4xl lg:text-5xl"
+                          : "text-5xl sm:text-7xl"
+                      }`}
+                    >
                       {currentSlide.title}
                     </h2>
                     <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200">
