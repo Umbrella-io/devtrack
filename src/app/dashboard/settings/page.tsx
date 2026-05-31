@@ -1196,12 +1196,13 @@ function SettingsPageContent() {
               </p>
             </div>
 
-            <a
+            <Link
               href="/api/auth/link-github"
+              prefetch={false}
               className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
             >
               Add GitHub Account
-            </a>
+            </Link>
           </div>
 
           {removeError && (

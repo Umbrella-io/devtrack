@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import BadgeSection from "@/components/BadgeSection";
@@ -98,20 +99,20 @@ export default async function PublicProfilePage({
           </p>
           <p className="text-sm text-[var(--muted-foreground)] mb-6">
             If this is your profile, go to{" "}
-            <a
+            <Link
               href="/dashboard/settings"
               className="text-[var(--accent)] underline hover:opacity-80"
             >
               Settings
-            </a>{" "}
+            </Link>{" "}
             and enable <strong>Public Profile</strong>.
           </p>
-          <a
+          <Link
             href="/"
             className="primary-button inline-block rounded-lg px-6 py-2"
           >
             Back to Home
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -149,20 +150,20 @@ export default async function PublicProfilePage({
             GitHub activity and coding stats
           </p>
           {compareHref && (
-            <a
+            <Link
               href={compareHref}
               className="primary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
             >
               Compare with me
-            </a>
+            </Link>
           )}
           {!loggedInUsername && (
-            <a
+            <Link
               href={signInToCompareHref}
               className="secondary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
             >
               Log in to compare
-            </a>
+            </Link>
           )}
         </div>
         {/* Download stats card button — client component */}
