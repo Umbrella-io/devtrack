@@ -92,6 +92,9 @@ export default async function LeaderboardPage({
           {!leaderboard ? (
             <div className="px-4 py-12 text-center">
               <p className="text-sm text-[var(--muted-foreground)]">Leaderboard data is temporarily unavailable.</p>
+              <Link href="/leaderboard" className="mt-4 inline-block text-sm font-medium text-[var(--accent)] hover:underline">
+                Retry
+              </Link>
             </div>
           ) : rows.length === 0 ? (
             <EmptyState
