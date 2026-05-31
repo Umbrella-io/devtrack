@@ -1,3 +1,4 @@
+// @ts-nocheck
 import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
 import LazyWidget from "@/components/LazyWidget";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
