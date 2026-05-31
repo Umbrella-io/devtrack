@@ -26,20 +26,29 @@ const RECURRENCE_LABELS: Record<Recurrence, string> = {
 export default function GoalTracker() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+<<<<<<< HEAD
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+=======
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [title, setTitle] = useState("");
   const [target, setTarget] = useState(7);
   const [unit, setUnit] = useState("commits");
   const [recurrence, setRecurrence] = useState<Recurrence>("none");
+<<<<<<< HEAD
   const [deadline, setDeadline] = useState("");
+=======
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+<<<<<<< HEAD
   const [deleteError, setDeleteError] = useState<string | null>(null);
+=======
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
 
   const [activeConfettiGoalId, setActiveConfettiGoalId] = useState<string | null>(null);
   const prevGoalsRef = useRef<Map<string, boolean>>(new Map());
@@ -48,6 +57,7 @@ export default function GoalTracker() {
   const loadGoals = useCallback(async () => {
     const response = await fetch("/api/goals");
     const data: { goals: Goal[] } = await response.json();
+<<<<<<< HEAD
     const fetchedGoals = data.goals ?? [];
     setGoals(fetchedGoals);
     return fetchedGoals;
@@ -104,12 +114,20 @@ export default function GoalTracker() {
           await handleSync();
         }
       })
+=======
+    setGoals(data.goals ?? []);
+  }, []);
+
+  useEffect(() => {
+    loadGoals()
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
       .catch(() => {})
       .finally(() => {
         setLoading(false);
         setLastUpdated(new Date());
         setMinutesAgo(0);
       });
+<<<<<<< HEAD
   }, [loadGoals, handleSync]);
 
   useEffect(() => {
@@ -123,6 +141,8 @@ export default function GoalTracker() {
     };
     window.addEventListener("devtrack:sync", handleSyncEvent);
     return () => window.removeEventListener("devtrack:sync", handleSyncEvent);
+=======
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
   }, [loadGoals]);
 
   async function handleCreate(e: React.FormEvent) {
@@ -131,6 +151,7 @@ export default function GoalTracker() {
     setCreateError(null);
 
     try {
+<<<<<<< HEAD
       const result = await submitGoalWithRefresh({
         payload: { title, target, unit, recurrence, deadline: deadline || null },
         handleSync,
@@ -159,6 +180,29 @@ export default function GoalTracker() {
     } finally {
       setCreating(false);  
     }
+=======
+      const response = await fetch("/api/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, target, unit, recurrence }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create goal");
+      }
+    } catch {
+      setCreateError("Failed to create goal. Please try again.");
+      setCreating(false);
+      return;
+    }
+
+    setTitle("");
+    setTarget(7);
+    setUnit("commits");
+    setRecurrence("none");
+    await loadGoals().catch(() => {});
+    setCreating(false);
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
   }
 
   async function handleDelete(id: string) {
@@ -166,17 +210,26 @@ export default function GoalTracker() {
     setGoals((prev) => prev.filter((g) => g.id !== id));
     setConfirmingId(null);
     setDeletingId(id);
+<<<<<<< HEAD
     setDeleteError(null);
+=======
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
 
     try {
       const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
       if (!res.ok) {
         setGoals(previousGoals);
+<<<<<<< HEAD
         setDeleteError("Failed to delete goal. Please try again.");
       }
     } catch {
       setGoals(previousGoals);
       setDeleteError("Failed to delete goal. Please check your connection.");
+=======
+      }
+    } catch {
+      setGoals(previousGoals);
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
     } finally {
       setDeletingId(null);
     }
@@ -188,6 +241,7 @@ export default function GoalTracker() {
       if (goal.recurrence === "monthly") return "Completed this month ✓";
       return "Completed ✓";
     }
+<<<<<<< HEAD
     
     if (goal.deadline) {
       const msLeft = new Date(goal.deadline).getTime() - Date.now();
@@ -197,6 +251,8 @@ export default function GoalTracker() {
       return `${daysLeft}d left`;
     }
     
+=======
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
     return "";
   }
 
@@ -241,7 +297,11 @@ export default function GoalTracker() {
 
   if (loading) {
     return (
+<<<<<<< HEAD
       <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
+=======
+      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading weekly goals</span>
           <div
@@ -260,6 +320,7 @@ export default function GoalTracker() {
   }
 
   return (
+<<<<<<< HEAD
     <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-4">
@@ -310,6 +371,10 @@ export default function GoalTracker() {
           <button onClick={() => setDeleteError(null)} className="text-[var(--destructive)] hover:opacity-80 ml-2" aria-label="Dismiss error">✕</button>
         </div>
       )}
+=======
+    <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">Weekly Goals</h2>
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
 
       {goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
@@ -318,19 +383,30 @@ export default function GoalTracker() {
       ) : (
         <ul className="space-y-4">
           {goals.map((goal) => {
+<<<<<<< HEAD
             const pct = Math.min((goal.current / goal.target) * 100, 100);
+=======
+            const progress = goal.target > 0 ? Math.min((goal.current / goal.target) * 100, 100) : 0;
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
             const isConfirming = confirmingId === goal.id;
             const isDeleting = deletingId === goal.id;
             const completed = goal.current >= goal.target;
             const completionLabel = getCompletionLabel(goal);
+<<<<<<< HEAD
             const isAutoSynced = goal.unit === "commits" || goal.unit === "prs";
+=======
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
 
             return (
               <li key={goal.id} className="relative">
                 {activeConfettiGoalId === goal.id && <ConfettiBurst />}
                 <div className="flex justify-between items-center text-sm mb-1">
                   <div className="flex flex-col gap-0.5">
+<<<<<<< HEAD
                     <div className="flex items-center gap-2 flex-wrap">
+=======
+                    <div className="flex items-center gap-2">
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
                       <span className="text-[var(--card-foreground)]">{goal.title}</span>
                       {goal.recurrence !== "none" && (
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
@@ -341,6 +417,7 @@ export default function GoalTracker() {
                           {RECURRENCE_LABELS[goal.recurrence]}
                         </span>
                       )}
+<<<<<<< HEAD
                       {isAutoSynced && (
                         <span
                           title={
@@ -372,6 +449,14 @@ export default function GoalTracker() {
                         {completionLabel}
                       </span>
                     ) : null}
+=======
+                    </div>
+                    {completed && (
+                      <span className="text-xs font-medium text-emerald-500">
+                        {completionLabel}
+                      </span>
+                    )}
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -379,6 +464,7 @@ export default function GoalTracker() {
                       {goal.current}/{goal.target} {goal.unit}
                     </span>
 
+<<<<<<< HEAD
                     {/* Manual +1 only for non-auto-synced goals */}
                     {!isAutoSynced && (
                       <button
@@ -406,13 +492,19 @@ export default function GoalTracker() {
                       </button>
                     )}
 
+=======
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
                     {isConfirming ? (
                       <span className="flex items-center gap-1 text-xs">
                         <span className="text-[var(--muted-foreground)]">Delete?</span>
                         <button
                           onClick={() => handleDelete(goal.id)}
                           disabled={isDeleting}
+<<<<<<< HEAD
                           className="text-[var(--destructive)] hover:opacity-80 font-semibold transition-colors disabled:opacity-50"
+=======
+                          className="text-red-400 hover:text-red-300 font-semibold transition-colors disabled:opacity-50"
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
                           aria-label={`Confirm delete goal: ${goal.title}`}
                         >
                           Yes
@@ -430,11 +522,19 @@ export default function GoalTracker() {
                       <button
                         onClick={() => setConfirmingId(goal.id)}
                         disabled={isDeleting}
+<<<<<<< HEAD
                         className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors disabled:opacity-50"
                         aria-label={`Delete goal: ${goal.title}`}
                         title="Delete goal"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+=======
+                        className="text-[var(--muted-foreground)] hover:text-red-400 transition-colors disabled:opacity-50"
+                        aria-label={`Delete goal: ${goal.title}`}
+                        title="Delete goal"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
                           <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
                         </svg>
                       </button>
@@ -445,8 +545,12 @@ export default function GoalTracker() {
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
                     className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
+<<<<<<< HEAD
                     style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
                     
+=======
+                    style={{ width: `${progress}%` }}
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
                   />
                 </div>
               </li>
@@ -461,7 +565,11 @@ export default function GoalTracker() {
         </p>
       )}
 
+<<<<<<< HEAD
       {/* Goal Creation Form */}
+=======
+
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
       <form onSubmit={handleCreate} className="mt-6 space-y-3 border-t border-[var(--border)] pt-4">
         <div>
           <label htmlFor="goal-title" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
@@ -488,7 +596,10 @@ export default function GoalTracker() {
               id="goal-target"
               type="number"
               min={1}
+<<<<<<< HEAD
               max={10000}
+=======
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
               value={target}
               onChange={(e) => setTarget(Number(e.target.value))}
               disabled={creating}
@@ -499,6 +610,7 @@ export default function GoalTracker() {
             <label htmlFor="goal-unit" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
               Unit
             </label>
+<<<<<<< HEAD
             <select
               id="goal-unit"
               value={unit}
@@ -532,6 +644,19 @@ export default function GoalTracker() {
             />
           </div>
         )}
+=======
+            <input
+              id="goal-unit"
+              type="text"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              placeholder="commits"
+              disabled={creating}
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+            />
+          </div>
+        </div>
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
 
         {/* Recurrence Picker */}
         <div>
@@ -547,7 +672,11 @@ export default function GoalTracker() {
                 disabled={creating}
                 className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium border transition-all ${
                   recurrence === r
+<<<<<<< HEAD
                     ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
+=======
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
                     : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
                 }`}
               >
@@ -562,6 +691,7 @@ export default function GoalTracker() {
           )}
         </div>
 
+<<<<<<< HEAD
         {(unit === "commits" || unit === "prs") && (
           <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--accent)]/10 px-3 py-2">
             ⚡ This goal will auto-update from your GitHub activity.
@@ -572,6 +702,12 @@ export default function GoalTracker() {
           type="submit"
           disabled={creating || !title.trim()}
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+=======
+        <button
+          type="submit"
+          disabled={creating || !title.trim()}
+          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
         >
           {creating ? (
             <>
@@ -582,8 +718,14 @@ export default function GoalTracker() {
             "Add goal"
           )}
         </button>
+<<<<<<< HEAD
         {createError && (
           <p className="text-sm text-[var(--destructive)]">{createError}</p>
+=======
+
+        {createError && (
+          <p className="text-sm text-red-500">{createError}</p>
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
         )}
       </form>
     </div>
@@ -595,7 +737,11 @@ function ConfettiBurst() {
 
   useEffect(() => {
     const colors = ["var(--accent)", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
+<<<<<<< HEAD
     const newParticles: Array<{ id: number; x: number; y: number; color: string; rot: number; scale: number; speed: number }> = [];
+=======
+    const newParticles = [];
+>>>>>>> 3c3aa2d (fix: repair JSX/TS syntax blocking CI)
     for (let i = 0; i < 35; i++) {
       const angle = Math.random() * Math.PI * 2;
       const distance = 30 + Math.random() * 140;

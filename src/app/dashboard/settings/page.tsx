@@ -145,6 +145,7 @@ function SettingsPageContent() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
+
   // Spotlight Repos States
   const [userRepos, setUserRepos] = useState<string[]>([]);
   const [loadingRepos, setLoadingRepos] = useState(false);
