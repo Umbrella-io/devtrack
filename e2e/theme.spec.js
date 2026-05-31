@@ -30,6 +30,19 @@ test.beforeEach(async ({ page }) => {
     },
   ]);
 
+  await page.route("**/api/auth/session**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: { name: "Playwright User", email: "playwright@example.com" },
+        githubLogin: "playwright-user",
+        githubId: "12345",
+        accessToken: "test-token",
+        expires: "2099-01-01T00:00:00.000Z",
+      }),
+    });
+  });
+
   await page.route("**/api/user/settings", async (route) => {
     await route.fulfill({
       contentType: "application/json",
