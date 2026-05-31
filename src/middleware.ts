@@ -203,7 +203,26 @@ async function checkRateLimit(identifier: string, limit: number) {
 
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  // PLAYWRIGHT_SERVER_MODE is not forwarded into the webServer env by
+  // playwright.config.mjs, so isPlaywrightServer is always false at runtime.
+  // Instead, attempt token resolution with both cookie name variants so the
+  // non-secure cookie set by Playwright tests is always found.
+  let token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: false,
+    cookieName: "next-auth.session-token",
+  });
+
+  if (!token) {
+    token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: true,
+      cookieName: "__Secure-next-auth.session-token",
+    });
+  }
 
   const protectedRoutes = ["/dashboard", "/settings"];
   const isProtectedRoute = protectedRoutes.some(
