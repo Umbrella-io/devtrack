@@ -13,12 +13,14 @@ const syne = Syne({
   weight: ["700", "800"],
   display: "swap",
 });
+
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
   weight: ["400", "500", "600"],
   display: "swap",
 });
+
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
