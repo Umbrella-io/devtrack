@@ -39,6 +39,7 @@ describe("getSafeApiErrorMessage", () => {
         "An unexpected error occurred."
       );
     } finally {
+      // @ts-ignore
       process.env.NODE_ENV = originalEnv;
     }
   });

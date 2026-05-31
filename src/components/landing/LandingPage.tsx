@@ -12,7 +12,7 @@ export type RepoStats = {
   openIssues: number;
   contributorCount: number;
   goodFirstIssues: number;
-  contributors: Array<{ login: string; avatar_url: string; html_url: string }>;
+  contributors: Array<{ login: string; avatar_url: string; html_url: string; isSponsor?: boolean }>;
 };
 
 /* ═══════════════════════════════════════════════════════════

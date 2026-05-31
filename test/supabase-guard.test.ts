@@ -12,8 +12,7 @@ describe("supabase admin guard", () => {
 
     const { supabaseAdmin, SUPABASE_ADMIN_UNAVAILABLE_MESSAGE } = await import("@/lib/supabase");
 
-    const result = await supabaseAdmin.from("users");
-    expect(result.error?.message).toBe(SUPABASE_ADMIN_UNAVAILABLE_MESSAGE);
+    expect(() => supabaseAdmin.from("users")).toThrow(SUPABASE_ADMIN_UNAVAILABLE_MESSAGE);
   });
 
   it("lets helper functions fail safely when the admin client is unavailable", async () => {
