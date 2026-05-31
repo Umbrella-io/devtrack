@@ -178,21 +178,6 @@ export default function DashboardHeader() {
 
           <p className="mt-2 text-sm md:text-base text-[var(--muted-foreground)]">
             Your coding activity at a glance 🚀
-        <div className="min-w-0">
-          <p
-            className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted-foreground)]"
-            style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)" }}
-          >
-            Dashboard overview
-          </p>
-          <h1 className="mt-2 bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-3xl font-extrabold text-transparent md:text-4xl">
-            Dashboard
-          </h1>
-          <p
-            className="mt-2 max-w-xl text-sm leading-6 text-[var(--muted-foreground)]"
-            style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", letterSpacing: "0.06em" }}
-          >
-            coding activity at a glance
           </p>
           {minutesAgo !== null && (
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">
