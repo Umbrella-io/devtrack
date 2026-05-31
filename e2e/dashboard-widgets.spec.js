@@ -179,7 +179,7 @@ test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "Goals", exact: true })).toBeVisible({ timeout: 10000 });
   await expect(page.getByText("Make 10 commits")).toBeVisible({ timeout: 10000 });
 });
 
