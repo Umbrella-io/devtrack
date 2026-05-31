@@ -52,9 +52,12 @@ export async function GET(req: NextRequest) {
   let lastCheckedSyncedAt: string | null = null;
   let lastCheckedUnreadCount: number | null = null;
 
+  let isClosed = false;
+
   const stream = new ReadableStream({
     start(controller) {
       const checkData = async () => {
+        if (isClosed) return;
         try {
           const { data: goals } = await supabaseAdmin
             .from("goals")
@@ -89,7 +92,7 @@ export async function GET(req: NextRequest) {
             lastCheckedUnreadCount = currentUnreadCount;
           }
 
-          if (hasChanges) {
+          if (hasChanges && !isClosed) {
             controller.enqueue(`data: ${JSON.stringify(payload)}\n\n`);
           }
         } catch (error) {
@@ -101,12 +104,17 @@ export async function GET(req: NextRequest) {
       // guaranteed to be in place before any async work begins. This prevents
       // a race where abort() fires before the listener is attached.
       const interval = setInterval(() => {
-        checkData();
+        if (!isClosed) checkData();
       }, POLL_INTERVAL_MS);
 
       req.signal.addEventListener("abort", () => {
+        isClosed = true;
         clearInterval(interval);
-        controller.close();
+        try {
+          controller.close();
+        } catch (e) {
+          // ignore already closed
+        }
 
         // Decrement the connection counter so the slot becomes available again.
         const remaining = activeStreamConnections.get(userId) ?? 1;
