@@ -106,11 +106,6 @@ const maxActiveDays = summary?.activeDays
           <div className="mt-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
             {error}
           </div>
-<<<<<<< HEAD
-        ) : (summary && summary.commits && summary.prs && summary.activeDays) ? (
-=======
-        ) : summary && summary.commits && summary.prs && summary.activeDays ? (
->>>>>>> 20107a0855dc410d6dfb4ad961eca16b1085bdf6
           <div className="mt-4 space-y-4">
             {/* Commits Comparison */}
             <div className="rounded-lg bg-[var(--control)] p-4">
