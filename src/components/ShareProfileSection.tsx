@@ -20,9 +20,7 @@ export default function ShareProfileSection({
   useEffect(() => {
     setCanUseNativeShare(
       typeof navigator !== "undefined" &&
-        "share" in navigator &&
-        typeof window !== "undefined" &&
-        window.matchMedia("(pointer: coarse)").matches
+        "share" in navigator
     );
   }, []);
 
