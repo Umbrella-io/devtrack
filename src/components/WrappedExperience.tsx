@@ -360,12 +360,11 @@ export default function WrappedExperience() {
                   type="button"
                   onClick={() => setSlide(index)}
                   aria-current={slide === index ? "step" : undefined}
+                  aria-label={`Go to slide ${index + 1}: ${item.metric}`}
                   className={`h-3 w-10 rounded-full transition ${
                     slide === index ? "bg-cyan-300" : "bg-white/20 hover:bg-white/40"
                   }`}
-                >
-                  <span className="sr-only">{item.metric}</span>
-                </button>
+                />
               ))}
             </nav>
           </>
