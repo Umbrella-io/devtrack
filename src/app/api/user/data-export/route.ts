@@ -301,17 +301,22 @@ export async function DELETE(req: NextRequest) {
   await writeAuditLog(user.id, "delete", req);
 
   // --- Data deletion ---------------------------------------------------
+  // ai_insights is included explicitly here even though ON DELETE CASCADE on
+  // the foreign key would remove those rows when the users row is deleted.
+  // The explicit delete is a defense-in-depth measure that works regardless
+  // of whether the FK migration has been applied to a given environment.
   const tablesToDelete = [
-  "streak_freezes",
-  "streak_milestones",
-  "local_coding_sessions",
-  "local_coding_api_keys",
-  "jira_credentials",
-  "webhook_configs",
-  "user_github_accounts",
-  "goals",
-  "metric_snapshots",
-];
+    "ai_insights",
+    "streak_freezes",
+    "streak_milestones",
+    "local_coding_sessions",
+    "local_coding_api_keys",
+    "jira_credentials",
+    "webhook_configs",
+    "user_github_accounts",
+    "goals",
+    "metric_snapshots",
+  ];
 
   for (const table of tablesToDelete) {
     await supabaseAdmin.from(table).delete().eq("user_id", user.id);
