@@ -5,7 +5,10 @@ import { supabaseAdmin } from "./supabase";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 const SESSION_UPDATE_AGE = 24 * 60 * 60;
-const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://") ?? process.env.NODE_ENV === "production";
+const isPlaywrightServer = process.env.PLAYWRIGHT_SERVER_MODE === "start";
+const useSecureCookies =
+  !isPlaywrightServer &&
+  (process.env.NEXTAUTH_URL?.startsWith("https://") ?? process.env.NODE_ENV === "production");
 
 const GITHUB_API = "https://api.github.com";
 // Re-validate the stored GitHub token at most once every 24 hours per session.
@@ -187,4 +190,3 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
-
