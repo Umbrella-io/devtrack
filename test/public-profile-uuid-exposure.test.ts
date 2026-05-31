@@ -160,7 +160,7 @@ describe("GET /api/public/[username] — response schema (regression for #1749)"
 
   it("responds 200 and does not include userId in the JSON body", async () => {
     const req = new NextRequest("http://localhost/api/public/alice");
-    const res = await GET(req, { params: { username: "alice" } });
+    const res = await GET(req, { params: Promise.resolve({ username: "alice" }) });
     expect(res.status).toBe(200);
 
     const body = await res.json();
@@ -172,7 +172,7 @@ describe("GET /api/public/[username] — response schema (regression for #1749)"
 
   it("does not expose the UUID value in the API response body", async () => {
     const req = new NextRequest("http://localhost/api/public/alice");
-    const res = await GET(req, { params: { username: "alice" } });
+    const res = await GET(req, { params: Promise.resolve({ username: "alice" }) });
     const body = await res.text();
     expect(body).not.toContain(APP_UUID);
   });
@@ -180,7 +180,7 @@ describe("GET /api/public/[username] — response schema (regression for #1749)"
   it("responds 404 when the profile is not found", async () => {
     mocks.getUserByUsername.mockResolvedValue(null);
     const req = new NextRequest("http://localhost/api/public/nobody");
-    const res = await GET(req, { params: { username: "nobody" } });
+    const res = await GET(req, { params: Promise.resolve({ username: "nobody" }) });
     expect(res.status).toBe(404);
   });
 });

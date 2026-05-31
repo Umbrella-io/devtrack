@@ -1,4 +1,3 @@
-// @ts-nocheck
 export const dynamic = "force-dynamic";
 
 import { Metadata } from "next";
@@ -11,6 +10,7 @@ import ShareProfileSection from "@/components/ShareProfileSection";
 import ThemeToggle from "@/components/ThemeToggle";
 import SponsorBadge from "@/components/SponsorBadge";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
+import CopyLinkButton from "@/components/CopyLinkButton";
 import { authOptions } from "@/lib/auth";
 import { fetchPublicProfile } from "@/lib/public-profile-data";
 import { getUserByGithubId, getUserByUsername } from "@/lib/supabase";
@@ -177,8 +177,6 @@ export default async function PublicProfilePage({
             topRepo={topRepo}
           />
         </div>
-      </div>
-
       </div>
 
       <div className="mb-8">

@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 
 import { useCallback, useEffect, useState, useRef } from "react";
@@ -313,6 +312,8 @@ export default function GoalTracker() {
     getCompletionLabel,
   } = useGoalTracker();
 
+  const activeConfirmingGoal = goals.find((g) => g.id === confirmingId);
+
   if (loading) {
     return (
       <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
@@ -591,7 +592,7 @@ export default function GoalTracker() {
           <span id="recurrence-label" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
             Recurrence
           </span>
-          <div className="flex gap-2 mt-1">
+          <div className="flex gap-2">
             {(["none", "weekly", "monthly"] as Recurrence[]).map((r) => (
               <button
                 key={r}

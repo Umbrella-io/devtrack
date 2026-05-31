@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { parseRepoParam } from "@/app/api/metrics/repo-analytics/route";
+import { parseRepoParam } from "@/lib/repo-analytics-utils";
 import { GET } from "@/app/api/metrics/repo-analytics/route";
 import { NextRequest } from "next/server";
 

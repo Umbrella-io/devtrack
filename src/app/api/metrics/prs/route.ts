@@ -505,14 +505,17 @@ export async function GET(req: NextRequest) {
 
   if (accountId === "combined") {
     try {
-      const allAccounts = await getAllAccounts(userRow.id);
-      
+      const allAccounts = await getAllAccounts(
+        { token: session.accessToken!, githubId: session.githubId, githubLogin: session.githubLogin },
+        userRow.id
+      );
+
       const metricsPromises = allAccounts.map(async (acc) => {
-        const token = acc.github_id === session.githubId
+        const token = acc.githubId === session.githubId
           ? session.accessToken
-          : await getAccountToken(userRow.id, acc.github_id);
+          : await getAccountToken(userRow.id, acc.githubId);
         if (!token) return null;
-        return fetchCachedPRMetrics(token, { bypass, userId: acc.github_id });
+        return fetchCachedPRMetrics(token, { bypass, userId: acc.githubId });
       });
 
       const resultsRaw = await Promise.allSettled(metricsPromises);

@@ -16,7 +16,7 @@ import SignOutButton from "@/components/SignOutButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
-import { toast } from "sonner"; // 📋 Added global toast handler
+import { toast } from "sonner";
 
 type DashboardSyncContextValue = {
   lastSynced: Date | null;
@@ -88,9 +88,9 @@ function useDashboardSync() {
 export default function DashboardHeader() {
   const { data: session } = useSession();
   const [isPublic, setIsPublic] = useState<boolean | null>(null);
-  const [copied, setCopied] = useState(false); // 📋 State to track clipboard copy event
+  const [copied, setCopied] = useState(false);
+  const [greeting, setGreeting] = useState<string>("Welcome back");
 
-  // 📋 Clipboard execution method
   const handleCopyLink = () => {
     if (!session?.githubLogin) return;
     const profileUrl = `${window.location.origin}/u/${session.githubLogin}`;
@@ -98,12 +98,10 @@ export default function DashboardHeader() {
       setCopied(true);
       toast.success("Profile link copied!");
       setTimeout(() => setCopied(false), 2000);
-    }).catch((err) => {
-      console.error("Clipboard capture error:", err);
+    }).catch(() => {
       toast.error("Failed to copy link");
     });
   };
-  const [greeting, setGreeting] = useState<string>("Welcome back");
 
   // Determine the user's personalized greeting string based on local timestamp metrics
   useEffect(() => {
@@ -204,51 +202,46 @@ export default function DashboardHeader() {
 
         {/* Right Section */}
         <div className="flex min-w-0 flex-col gap-3 sm:items-end">
-          <div className="inline-flex items-center gap-2 self-start rounded-full border border-[var(--border)] bg-[var(--card-muted)] px-3 py-1 text-[11px] font-medium text-[var(--muted-foreground)] shadow-sm sm:self-end">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            Account controls
-          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {isPublic === true && session?.githubLogin && (
+              <>
+                <a
+                  href={`/u/${session.githubLogin}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
+                  title="View your public profile"
+                >
+                  Share Profile
+                </a>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  title="Copy profile link to clipboard"
+                  aria-label="Copy profile link"
+                  className="rounded-xl border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--control-hover)] px-3 py-2 text-sm font-medium text-[var(--foreground)] transition-all active:scale-95 whitespace-nowrap"
+                >
+                  {copied ? "Copied! ✓" : "Copy Link 📋"}
+                </button>
+              </>
+            )}
 
-          {/* 📋 Updated Action Button Group Container */}
-          {isPublic === true && session?.githubLogin && (
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <a
-                href={`/u/${session.githubLogin}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="primary-button rounded-xl px-4 py-2 text-sm font-semibold flex-1 sm:flex-initial text-center"
-                title="View your public profile"
-              >
-                Share Profile
-              </a>
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                title="Copy profile link to clipboard"
-                aria-label="Copy profile link"
-                className="rounded-xl border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--control-hover)] px-3 py-2 text-sm font-medium text-[var(--foreground)] transition-all active:scale-95 whitespace-nowrap"
-              >
-                {copied ? "Copied! ✓" : "Copy Link 📋"}
-              </button>
-            </div>
-          )}
+            <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
+              <div className="transition-transform duration-200 hover:scale-[1.05]">
+                <KeyboardShortcuts />
+              </div>
 
-          <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
-            <div className="transition-transform duration-200 hover:scale-[1.05]">
-              <KeyboardShortcuts />
-            </div>
+              <div className="transition-transform duration-200 hover:scale-[1.05]">
+                <NotificationBell />
+              </div>
 
-            <div className="transition-transform duration-200 hover:scale-[1.05]">
-              <NotificationBell />
-            </div>
+              <div className="transition-transform duration-200 hover:scale-[1.05]">
+                <UserAvatar />
+              </div>
 
-            <div className="transition-transform duration-200 hover:scale-[1.05]">
-              <UserAvatar />
-            </div>
-
-            <div className="transition-transform duration-200 hover:rotate-12">
-              <ThemeToggle />
-            </div>
+              <div className="transition-transform duration-200 hover:rotate-12">
+                <ThemeToggle />
+              </div>
 
             <div className="transition-transform duration-200 hover:scale-[1.05]">
               <SignOutButton />

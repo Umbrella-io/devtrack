@@ -1,5 +1,3 @@
-// @ts-nocheck
-import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
 import LazyWidget from "@/components/LazyWidget";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
@@ -28,6 +26,8 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
+import DailyNoteWidget from "@/components/DailyNoteWidget";
+import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
 
 const SkeletonCard = () => (
   <div
@@ -57,27 +57,27 @@ const PRMetricsSkeleton = () => (
 
 const CodingActivityInsightsCard = dynamic(
   () => import("@/components/CodingActivityInsightsCard"),
-  { loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <SkeletonCard /> },
 );
 
 const FriendComparison = dynamic(
   () => import("@/components/FriendComparison"),
-  { loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <SkeletonCard /> },
 );
 
 const ActivityRingChart = dynamic(
   () => import("@/components/ActivityRingChart"),
-  { loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <SkeletonCard /> },
 );
 
 const ContributionGraph = dynamic(
   () => import("@/components/ContributionGraph"),
-  { loading: () => <ContributionGraphSkeleton /> },
+  { ssr: false, loading: () => <ContributionGraphSkeleton /> },
 );
 
 const ContributionHeatmap = dynamic(
   () => import("@/components/ContributionHeatmap"),
-  { loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <SkeletonCard /> },
 );
 
 const RepoContributionDistribution = dynamic(
@@ -89,36 +89,24 @@ const RepoContributionDistribution = dynamic(
 );
 
 const PRMetrics = dynamic(() => import("@/components/PRMetrics"), {
+  ssr: false,
   loading: () => <PRMetricsSkeleton />,
 });
 
 const PRBreakdownChart = dynamic(
   () => import("@/components/PRBreakdownChart"),
-  { loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <SkeletonCard /> },
 );
 
 const CommitTimeChart = dynamic(
   () => import("@/components/CommitTimeChart"),
-  { loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <SkeletonCard /> },
 );
 
 const PRReviewTrendChart = dynamic(
   () => import("@/components/PRReviewTrendChart"),
-  { loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <SkeletonCard /> },
 );
-import WeeklySummaryCard from "@/components/WeeklySummaryCard";
-import { AIMentorWidget } from "@/components/AIMentorWidget";
-import ExportButton from "@/components/ExportButton";
-import Link from "next/link";
-import PersonalRecords from "@/components/PersonalRecords";
-import LocalCodingTime from "@/components/LocalCodingTime";
-import CodingTimeWidget from "@/components/CodingTimeWidget";
-import RecentActivity from "@/components/RecentActivity";
-import { authOptions } from "@/lib/auth";
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import DailyNoteWidget from "@/components/DailyNoteWidget";
-import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -127,12 +115,11 @@ export default async function DashboardPage() {
   return (
     <DashboardSSEProvider>
       <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
-        <WidgetErrorBoundary>
-          <DashboardHeader />
-        </WidgetErrorBoundary>
+        <DashboardHeader />
 
         {/* Quick actions */}
         <div className="mt-8 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Left side actions */}
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <Link
               href="/wrapped"
@@ -147,6 +134,7 @@ export default async function DashboardPage() {
               Settings
             </Link>
           </div>
+          {/* Right side exports */}
           <div className="w-full sm:w-auto">
             <ExportButton />
           </div>
@@ -158,9 +146,7 @@ export default async function DashboardPage() {
 
         {/* Hero Section */}
         <section className="mt-8">
-          <WidgetErrorBoundary>
-            <TodayFocusHero userName={session.user?.name ?? null} />
-          </WidgetErrorBoundary>
+          <TodayFocusHero userName={session.user?.name ?? null} />
         </section>
 
         {/* 1. OVERVIEW SECTION */}
@@ -170,67 +156,14 @@ export default async function DashboardPage() {
             <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
           </div>
           <div className="grid grid-cols-1 gap-6 w-full">
-            <WidgetErrorBoundary>
-              <WeeklySummaryCard />
-            </WidgetErrorBoundary>
+            <WeeklySummaryCard />
           </div>
-        </div>
-
-        {/* Friend comparison — full width, below the fold */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <FriendComparison />
-          </LazyWidget>
-        </div>
-
-        {/* Repo analytics explorer — full width */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <RepoAnalyticsExplorer />
-          </LazyWidget>
-        </div>
-
-        <div>
-          <DailyNoteWidget/>
-          <StreakTracker />
-          <LocalCodingTime />
-          <div className="mt-6">
-            <CodingTimeCard />
-          </div>
-        {/* Row 2: PR metrics, community metrics, PR breakdown & Time Chart */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {/* ── Row 2: PR metrics + Community metrics ── */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <PRMetrics />
-          <CommunityMetrics />
-        </div>
-
-        {/* PR breakdown + commit time — 2-col so charts have room */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <PRBreakdownChart />
-          </LazyWidget>
-          <LazyWidget fallback={<SkeletonCard />}>
-            <CommitTimeChart />
-          </LazyWidget>
-        </div>
-
-        {/* Activity ring — full width */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <ActivityRingChart />
-          </LazyWidget>
-        </div>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
             <div className="flex flex-col gap-6 w-full overflow-hidden">
-              <WidgetErrorBoundary>
-                <PersonalRecords />
-              </WidgetErrorBoundary>
+              <PersonalRecords />
             </div>
             <div className="flex flex-col gap-6 w-full h-full">
-              <WidgetErrorBoundary>
-                <AIMentorWidget />
-              </WidgetErrorBoundary>
+              <AIMentorWidget />
             </div>
           </div>
         </section>
@@ -241,18 +174,14 @@ export default async function DashboardPage() {
             <div className="h-8 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
             <h2 className="text-2xl font-bold tracking-tight">Activity & Coding</h2>
           </div>
-
+          
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
             <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
               <div className="w-full overflow-x-auto pb-2">
-                <WidgetErrorBoundary>
-                  <ContributionGraph />
-                </WidgetErrorBoundary>
+                <ContributionGraph />
               </div>
               <div className="w-full overflow-x-auto pb-2">
-                <LazyWidget fallback={<SkeletonCard />}>
-                  <ContributionHeatmap />
-                </LazyWidget>
+                <ContributionHeatmap />
               </div>
               <LazyWidget fallback={<SkeletonCard />}>
                 <RepoContributionDistribution />
@@ -265,15 +194,9 @@ export default async function DashboardPage() {
               </LazyWidget>
             </div>
             <div className="flex flex-col gap-6 w-full overflow-hidden">
-              <WidgetErrorBoundary>
-                <StreakTracker />
-              </WidgetErrorBoundary>
-              <WidgetErrorBoundary>
-                <LocalCodingTime />
-              </WidgetErrorBoundary>
-              <WidgetErrorBoundary>
-                <CodingTimeWidget />
-              </WidgetErrorBoundary>
+              <StreakTracker />
+              <LocalCodingTime />
+              <CodingTimeWidget />
               <LazyWidget fallback={<SkeletonCard />}>
                 <CommitTimeChart />
               </LazyWidget>
@@ -288,6 +211,7 @@ export default async function DashboardPage() {
             <h2 className="text-2xl font-bold tracking-tight">Analytics & Repositories</h2>
           </div>
 
+          {/* Repo Analytics Explorer spans full width */}
           <div className="w-full overflow-hidden">
             <LazyWidget fallback={<SkeletonCard />}>
               <RepoAnalyticsExplorer />
@@ -296,9 +220,7 @@ export default async function DashboardPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
             <div className="flex flex-col gap-6 w-full overflow-hidden">
-              <WidgetErrorBoundary>
-                <PRMetrics />
-              </WidgetErrorBoundary>
+              <PRMetrics />
               <LazyWidget fallback={<SkeletonCard />}>
                 <PRBreakdownChart />
               </LazyWidget>
@@ -310,9 +232,7 @@ export default async function DashboardPage() {
               </LazyWidget>
             </div>
             <div className="flex flex-col gap-6 w-full overflow-hidden">
-              <WidgetErrorBoundary>
-                <CommunityMetrics />
-              </WidgetErrorBoundary>
+              <CommunityMetrics />
               <LazyWidget fallback={<SkeletonCard />}>
                 <PinnedReposWidget />
               </LazyWidget>
@@ -341,6 +261,7 @@ export default async function DashboardPage() {
               <WidgetErrorBoundary>
                 <GoalTracker />
               </WidgetErrorBoundary>
+              <DailyNoteWidget />
               <LazyWidget fallback={<SkeletonCard />}>
                 <RecentActivity />
               </LazyWidget>

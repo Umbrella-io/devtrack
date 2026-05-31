@@ -23,7 +23,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { extractValidRepoFromGoal } from "@/app/api/goals/sync/route";
+import { extractValidRepoFromGoal } from "@/lib/goals-sync-utils";
 
 // Re-use the ActivityGoal shape from the route (struct duck-typed here).
 type GoalLike = {

@@ -1,12 +1,8 @@
-// @ts-nocheck
 "use client";
 
 import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 interface WeeklySummaryData {
   commits: {
@@ -70,7 +66,7 @@ const maxActiveDays = summary?.activeDays
   }, [fetchSummary]);
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           This Week
@@ -78,16 +74,16 @@ const maxActiveDays = summary?.activeDays
         <button
           type="button"
           onClick={() => setIsCollapsed((value) => !value)}
-          className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+          className="text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--card-foreground)]"
           aria-expanded={!isCollapsed}
           aria-label={
             isCollapsed ? "Expand weekly summary" : "Collapse weekly summary"
           }
           suppressHydrationWarning
         >
-          {isCollapsed ? ">" : "v"}
-        </Button>
-      </CardHeader>
+          <ChevronDown className="h-4 w-4" />
+        </button>
+      </div>
 
       {!isCollapsed &&
         (loading ? (
@@ -102,21 +98,18 @@ const maxActiveDays = summary?.activeDays
               <div
                 key={i}
                 aria-hidden="true"
-                className="h-14 rounded-lg skeleton-shimmer"
+                className="h-14 rounded-lg bg-[var(--card-muted)] animate-pulse"
               />
             ))}
           </div>
         ) : error ? (
-          <CardContent>
-            <div className="mt-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
-              {error}
-            </div>
-          </CardContent>
-        ) : summary && summary.commits && summary.prs && summary.activeDays ? (
-          <CardContent>
-            <div className="space-y-4 pt-2">
+          <div className="mt-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
+            {error}
+          </div>
+        ) : summary ? (
+          <div className="mt-4 space-y-4">
             {/* Commits Comparison */}
-            <div className="rounded-lg bg-[var(--control)] p-4 stat-cell">
+            <div className="rounded-lg bg-[var(--control)] p-4">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm text-[var(--muted-foreground)]">
                   Commits
@@ -142,7 +135,7 @@ const maxActiveDays = summary?.activeDays
                   <div className="flex-1">
                     <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
                       <div
-                        className="h-full bg-[var(--muted-foreground)] progress-fill"
+                        className="h-full bg-[var(--muted-foreground)]"
                         style={{
                           width: `${((summary.commits.previous / maxCommits) * 100).toFixed(0)}%`,
                         }}
@@ -155,7 +148,7 @@ const maxActiveDays = summary?.activeDays
                   <div className="flex-1">
                     <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
                       <div
-                        className="h-full bg-[var(--success)] progress-fill"
+                        className="h-full bg-[var(--success)]"
                         style={{
                           width: `${((summary.commits.current / maxCommits) * 100).toFixed(0)}%`,
                         }}
@@ -167,7 +160,7 @@ const maxActiveDays = summary?.activeDays
             </div>
 
             {/* PRs Comparison */}
-            <div className="rounded-lg bg-[var(--control)] p-4 stat-cell">
+            <div className="rounded-lg bg-[var(--control)] p-4">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm text-[var(--muted-foreground)]">PRs Merged</span>
                 <span className="text-base font-semibold text-[var(--card-foreground)]">
@@ -205,7 +198,7 @@ const maxActiveDays = summary?.activeDays
             </div>
 
             {/* Active Days Comparison */}
-            <div className="rounded-lg bg-[var(--control)] p-4 stat-cell">
+            <div className="rounded-lg bg-[var(--control)] p-4">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm text-[var(--muted-foreground)]">Active Days</span>
                 <span className="text-base font-semibold text-[var(--card-foreground)]">
@@ -244,22 +237,21 @@ const maxActiveDays = summary?.activeDays
 
             {/* Streak & Top Repo */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4 stat-cell">
+              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
                 <span className="text-sm text-[var(--muted-foreground)]">Streak</span>
                 <span className="text-base font-semibold text-[var(--card-foreground)]">
                   {summary.streak} day streak
                 </span>
               </div>
-              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4 stat-cell">
+              <div className="flex items-center justify-between rounded-lg bg-[var(--control)] p-4">
                 <span className="text-sm text-[var(--muted-foreground)]">Top repo</span>
                 <span className="text-base font-semibold text-[var(--card-foreground)]">
                   {summary.topRepo ?? "-"}
                 </span>
               </div>
             </div>
-            </div>
-          </CardContent>
+          </div>
         ) : null)}
-    </Card>
+    </div>
   );
 }

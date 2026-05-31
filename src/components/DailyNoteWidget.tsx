@@ -78,7 +78,7 @@ if (loading) {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
         <div className="m-3 w-40  rounded mb-4 ml-0" >
           <h2 className="text-lg font-semibold text-[var(--card-foreground)] ">
-            Today's Plan`                     `
+            Today&apos;s Plan
           </h2>
           
           <p className="text-sm text-[var(--muted-foreground)]">Plan your coding session.</p>

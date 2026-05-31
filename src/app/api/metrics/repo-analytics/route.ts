@@ -4,52 +4,13 @@ import { authOptions } from "@/lib/auth";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
 import { computeHealthScore } from "@/lib/repo-health";
 import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
+import { parseRepoParam } from "@/lib/repo-analytics-utils";
 
 export const dynamic = "force-dynamic";
 const GITHUB_API = "https://api.github.com";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
-// A valid GitHub repository identifier is exactly "owner/repo".
-//
-// owner rules (GitHub username / org name):
-//   - 1–39 characters
-//   - alphanumeric and hyphens only
-//   - cannot start or end with a hyphen
-//
-// repo rules (GitHub repository name):
-//   - 1–100 characters
-//   - alphanumeric, dots, hyphens, and underscores only
-//
-// The regex intentionally does NOT allow extra slashes, path traversal
-// segments, or any other characters so that malformed values such as
-// "octocat/Hello-World/issues", "../../../admin", or "%2F" tricks are
-// rejected before reaching the cache layer or any fetch() call.
-const REPO_IDENTIFIER_RE =
-  /^([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?)\/([a-zA-Z0-9._-]{1,100})$/;
-
-interface ParsedRepo {
-  owner: string;
-  repo: string;
-}
-
-/**
- * Validates and parses a raw "owner/repo" string.
- * Returns the split components on success, or null if the value is invalid.
- */
-export function parseRepoParam(raw: string): ParsedRepo | null {
-  const trimmed = raw.trim();
-  const match = REPO_IDENTIFIER_RE.exec(trimmed);
-  if (!match) return null;
-
-  const [, owner, repo] = match;
-
-  // Exclude the special names "." and ".." even though they pass the
-  // character-set check, as they can be used for path traversal.
-  if (repo === "." || repo === "..") return null;
-
-  return { owner, repo };
-}
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);

@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -15,9 +14,6 @@ import {
 } from "recharts";
 import { Skeleton } from "@/components/Skeleton";
 import { useAccount } from "@/components/AccountContext";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   formatHourRange,
   type CodingActivityInsight,
@@ -233,28 +229,30 @@ export default function CodingActivityInsightsCard() {
       : `${dataWindowLabel} · Commits by hour · Local timezone`;
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <CardTitle>Coding Activity Insights</CardTitle>
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+            Coding Activity Insights
+          </h2>
           {data?.weeklyTrend ? (
-            <div className="mt-2 mb-1">
+            <div className="mt-2">
               <TrendBadge
                 direction={data.weeklyTrend.direction}
                 percentage={data.weeklyTrend.percentage}
               />
             </div>
           ) : null}
-          <CardDescription className="mt-1">
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             {subtitle}
-          </CardDescription>
+          </p>
         </div>
 
          <button aria-label="Refresh"
   type="button"
   onClick={fetchInsights}
   disabled={loading}
-  className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-all hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50 hover:opacity-90 active:scale-95"
+  className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50"
 >
   {loading ? (
     <>
@@ -275,10 +273,6 @@ export default function CodingActivityInsightsCard() {
           className="space-y-4"
         >
           <span className="sr-only">Loading coding activity insights</span>
-          <Skeleton className="h-[260px] rounded-lg" />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((item) => (
-              <Skeleton key={item} aria-hidden="true" className="h-16 rounded-lg" />
           <Skeleton className="h-[260px] w-full rounded-lg" />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((item) => (
@@ -289,14 +283,13 @@ export default function CodingActivityInsightsCard() {
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
-          <Button
-            variant="outline"
-            size="sm"
+          <button
+            type="button"
             onClick={fetchInsights}
-            className="mt-3 border-[var(--destructive)]/30 text-[var(--destructive)] hover:bg-[var(--destructive)]/10"
+            className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again
-          </Button>
+          </button>
         </div>
       ) : !hasData ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card-muted)] px-4 text-center">
@@ -405,7 +398,6 @@ export default function CodingActivityInsightsCard() {
     )}
         </div>
       )}
-      </CardContent>
-    </Card>
+    </div>
   );
 }
