@@ -5,6 +5,8 @@ import { resolveAppUser } from "@/lib/resolve-user";
 
 export const dynamic = "force-dynamic";
 
+const AUTO_SYNCED_GOAL_UNITS = new Set(["commits", "prs"]);
+
 export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } }
@@ -97,30 +99,45 @@ export async function PATCH(
     updates.target = target;
   }
 
-if (current !== undefined) {
-  if (
-    typeof current !== "number" ||
-    !Number.isInteger(current) ||
-    current < 0
-  ) {
-    return Response.json(
-      { error: "current must be a non-negative integer" },
-      { status: 400 }
-    );
+  if (current !== undefined) {
+    if (AUTO_SYNCED_GOAL_UNITS.has(existing.unit)) {
+      return Response.json(
+        { error: "current for GitHub-synced goals can only be updated by sync" },
+        { status: 400 }
+      );
+    }
+
+    const requestedUnit = typeof unit === "string" ? unit : existing.unit;
+    if (AUTO_SYNCED_GOAL_UNITS.has(requestedUnit)) {
+      return Response.json(
+        { error: "current for GitHub-synced goals can only be updated by sync" },
+        { status: 400 }
+      );
+    }
+
+    if (
+      typeof current !== "number" ||
+      !Number.isInteger(current) ||
+      current < 0
+    ) {
+      return Response.json(
+        { error: "current must be a non-negative integer" },
+        { status: 400 }
+      );
+    }
+
+    const effectiveTarget =
+      typeof target === "number" ? target : existing.target;
+
+    if (current > effectiveTarget) {
+      return Response.json(
+        { error: "current cannot exceed target" },
+        { status: 400 }
+      );
+    }
+
+    updates.current = current;
   }
-
-  const effectiveTarget =
-    typeof target === "number" ? target : existing.target;
-
-  if (current > effectiveTarget) {
-    return Response.json(
-      { error: "current cannot exceed target" },
-      { status: 400 }
-    );
-  }
-
-  updates.current = current;
-}
 
   if (unit !== undefined) {
     const safeUnit = typeof unit === "string" ? unit.slice(0, 30) : "commits";
