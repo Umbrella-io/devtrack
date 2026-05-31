@@ -144,7 +144,7 @@ export default function StatsCard({
             <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
               {/* Avatar */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <img loading="lazy"
                 src={avatarUrl}
                 alt={username}
                 width={80}
