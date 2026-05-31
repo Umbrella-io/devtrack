@@ -41,103 +41,106 @@ export default function AppNavbar() {
   const navItems = useMemo<NavItem[]>(() => {
     if (isAuthenticated) {
       return [
-        { href: "/dashboard", label: "Dashboard" },
-        { href: "/dashboard#streaks", label: "Streaks" },
-        { href: "/dashboard#pull-requests", label: "PRs" },
+        { href: "/dashboard", label: "Overview" },
+        { href: "/dashboard#streaks", label: "Activity" },
+        { href: "/dashboard#pull-requests", label: "Analytics" },
         { href: "/dashboard#goals", label: "Goals" },
         { href: "/leaderboard", label: "Leaderboard" },
-        { href: "/dashboard/settings", label: "Settings" },
       ];
     }
     return [
       { href: "/", label: "Home" },
       { href: "/#features", label: "Features" },
-      { href: "/#open-source", label: "Open Source" },
       { href: "/leaderboard", label: "Leaderboard" },
     ];
   }, [isAuthenticated]);
+
+  // Hide the global navbar on the landing page, as it has its own navigation structure
+  if (pathname === "/") return null;
 
   const headerStyle: React.CSSProperties = {
     position: "sticky",
     top: 0,
     zIndex: 50,
-    background: scrolled ? "rgba(6,11,24,0.92)" : "var(--background)",
-    backdropFilter: scrolled ? "blur(16px)" : "none",
-    WebkitBackdropFilter: scrolled ? "blur(16px)" : "none",
-    borderBottom: "1px solid var(--border)",
-    transition: "background 0.3s ease",
+    background: scrolled ? "rgba(10, 15, 30, 0.75)" : "transparent",
+    backdropFilter: scrolled ? "blur(24px) saturate(150%)" : "none",
+    WebkitBackdropFilter: scrolled ? "blur(24px) saturate(150%)" : "none",
+    borderBottom: scrolled ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid transparent",
+    transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
   };
 
   return (
     <header style={headerStyle}>
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
 
         {/* Logo */}
         <Link
           href={isAuthenticated ? "/dashboard" : "/"}
-          className="inline-flex items-center gap-2 select-none"
+          className="group inline-flex items-center gap-2.5 select-none transition-transform duration-300 hover:scale-[1.02]"
           style={{ fontFamily: MONO }}
         >
-          <span className="text-base font-bold" style={{ color: "var(--accent)" }}>▲</span>
-          <span className="text-sm font-bold tracking-[0.18em] text-[var(--foreground)]">DEVTRACK</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-base font-bold text-[var(--accent)] transition-colors group-hover:bg-[var(--accent)]/20">
+            ▲
+          </span>
+          <span className="text-sm font-bold tracking-[0.2em] text-[var(--foreground)]">
+            DEVTRACK
+          </span>
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center lg:flex" aria-label="Main navigation">
+        <nav className="hidden items-center gap-1 md:flex rounded-full border border-white/5 bg-white/[0.02] px-2 py-1.5 shadow-sm" aria-label="Main navigation">
           {navItems.map((item) => {
             const active = isActivePath(pathname, item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="relative px-3 py-2 text-[12px] font-medium transition-colors duration-150"
-                style={{
-                  fontFamily: MONO,
-                  color: active ? "var(--accent)" : "var(--muted-foreground)",
-                }}
-                onMouseEnter={(e) => {
-                  if (!active) (e.currentTarget as HTMLAnchorElement).style.color = "var(--foreground)";
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) (e.currentTarget as HTMLAnchorElement).style.color = "var(--muted-foreground)";
-                }}
+                className={`relative rounded-full px-4 py-1.5 text-[13px] font-medium transition-all duration-300 ${
+                  active 
+                    ? "bg-[var(--accent)]/10 text-[var(--accent)] shadow-sm" 
+                    : "text-[var(--muted-foreground)] hover:bg-white/5 hover:text-[var(--foreground)]"
+                }`}
+                style={{ fontFamily: MONO }}
               >
                 {item.label}
-                {active && (
-                  <span
-                    className="absolute inset-x-2 bottom-0 h-px"
-                    style={{ background: "var(--accent)" }}
-                  />
-                )}
               </Link>
             );
           })}
         </nav>
 
         {/* Desktop right */}
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden items-center gap-4 md:flex">
           {isAuthenticated ? (
-            <>
-              <span
-                className="hidden max-w-44 truncate text-[11px] text-[var(--muted-foreground)] xl:block"
+            <div className="flex items-center gap-4 border-l border-white/10 pl-4">
+              <Link 
+                href="/dashboard/settings"
+                className="text-[12px] font-medium text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
                 style={{ fontFamily: MONO }}
               >
-                @{identityLabel}
-              </span>
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="rounded-md border border-[var(--border)] px-3 py-1.5 text-[11px] font-medium text-[var(--muted-foreground)] transition-colors hover:border-red-500/60 hover:text-red-400"
-                style={{ fontFamily: MONO }}
-              >
-                sign out →
-              </button>
-            </>
+                ⚙️ Settings
+              </Link>
+              <div className="flex items-center gap-3">
+                <span
+                  className="hidden max-w-[140px] truncate text-[12px] font-medium text-[var(--foreground)] lg:block"
+                  style={{ fontFamily: MONO }}
+                >
+                  @{identityLabel}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] font-medium text-red-400 transition-all hover:bg-red-500/20 hover:text-red-300"
+                  style={{ fontFamily: MONO }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
           ) : (
             !isPublicProfileRoute && (
               <Link
                 href="/api/auth/signin/github?callbackUrl=/dashboard"
-                className="rounded-md px-4 py-2 text-[12px] font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
+                className="rounded-full px-5 py-2 text-[13px] font-semibold text-[var(--accent-foreground)] shadow-[0_0_20px_rgba(129,140,248,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(129,140,248,0.5)]"
                 style={{ fontFamily: MONO, background: "var(--accent)" }}
               >
                 SIGN IN →
@@ -150,7 +153,7 @@ export default function AppNavbar() {
         <button
           type="button"
           onClick={() => setMobileOpen((o) => !o)}
-          className="inline-flex items-center justify-center rounded-md border border-[var(--border)] p-2 text-[var(--foreground)] lg:hidden"
+          className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 p-2.5 text-[var(--foreground)] transition-colors hover:bg-white/10 md:hidden"
           aria-expanded={mobileOpen}
           aria-controls="app-mobile-nav"
           aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
@@ -163,49 +166,57 @@ export default function AppNavbar() {
       {mobileOpen && (
         <div
           id="app-mobile-nav"
-          className="border-t border-[var(--border)] lg:hidden"
-          style={{ background: "rgba(6,11,24,0.97)", backdropFilter: "blur(16px)" }}
+          className="border-t border-white/10 md:hidden"
+          style={{ background: "rgba(10,15,30,0.98)", backdropFilter: "blur(24px)" }}
         >
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-1 px-4 py-4 sm:px-6">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-5 sm:px-6">
             {navItems.map((item) => {
               const active = isActivePath(pathname, item.href);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="rounded-lg px-4 py-3 text-sm font-medium transition-colors"
-                  style={{
-                    fontFamily: MONO,
-                    color: active ? "var(--accent)" : "var(--muted-foreground)",
-                    background: active ? "var(--accent-soft)" : "transparent",
-                  }}
+                  className={`rounded-xl px-4 py-3.5 text-sm font-medium transition-colors ${
+                    active ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "text-[var(--muted-foreground)] hover:bg-white/5"
+                  }`}
+                  style={{ fontFamily: MONO }}
                 >
                   {item.label}
                 </Link>
               );
             })}
+            
+            {isAuthenticated && (
+              <Link
+                href="/dashboard/settings"
+                className="rounded-xl px-4 py-3.5 text-sm font-medium text-[var(--muted-foreground)] hover:bg-white/5 transition-colors"
+                style={{ fontFamily: MONO }}
+              >
+                Settings
+              </Link>
+            )}
 
-            <div className="mt-3 border-t border-[var(--border)] pt-3">
+            <div className="mt-4 border-t border-white/10 pt-4">
               {isAuthenticated ? (
-                <>
-                  <p className="px-4 py-1.5 text-[11px] text-[var(--muted-foreground)]" style={{ fontFamily: MONO }}>
-                    @{identityLabel}
+                <div className="flex flex-col gap-3">
+                  <p className="px-4 py-2 text-[12px] text-[var(--muted-foreground)]" style={{ fontFamily: MONO }}>
+                    Logged in as <span className="font-semibold text-[var(--foreground)]">@{identityLabel}</span>
                   </p>
                   <button
                     type="button"
                     onClick={() => signOut({ callbackUrl: "/" })}
-                    className="w-full rounded-lg px-4 py-3 text-left text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10"
+                    className="w-full rounded-xl bg-red-500/10 px-4 py-3.5 text-left text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
                     style={{ fontFamily: MONO }}
                   >
-                    sign out →
+                    Sign out →
                   </button>
-                </>
+                </div>
               ) : (
                 !isPublicProfileRoute && (
                   <Link
                     href="/api/auth/signin/github?callbackUrl=/dashboard"
-                    className="block rounded-lg px-4 py-3 text-center text-sm font-semibold text-[var(--accent-foreground)]"
-                    style={{ background: "var(--accent)" }}
+                    className="block w-full rounded-xl px-4 py-3.5 text-center text-sm font-semibold text-[var(--accent-foreground)] shadow-lg"
+                    style={{ background: "var(--accent)", fontFamily: MONO }}
                   >
                     SIGN IN →
                   </Link>
