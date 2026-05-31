@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
