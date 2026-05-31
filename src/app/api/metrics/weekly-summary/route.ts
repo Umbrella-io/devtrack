@@ -176,16 +176,20 @@ export async function GET(req: NextRequest) {
         }
       );
 
-      // Note: commitsRes.ok is intentionally NOT checked here — if the commits
-      // Search call fails, commitsData.items will be undefined and all counts
-      // will fall back to 0 rather than throwing and returning a 502.
-      // This is a lenient design choice: partial data is shown over an error state.
-      const commitsData = (await commitsRes.json()) as {
+      // Guard against non-200 responses (e.g. 403 secondary rate limit) before
+      // calling .json(). Without this check, commitsData.items is undefined on a
+      // rate-limit response, causing the for-of loop below to throw
+      // "TypeError: undefined is not iterable" and wipe the entire widget.
+      // On failure we fall back to an empty items array so PRs and streak data
+      // remain visible even when the commits search is rate-limited.
+      const commitsData: {
         items: Array<{
           commit: { author: { date: string } };
           repository: { full_name: string };
         }>;
-      };
+      } = commitsRes.ok
+        ? await commitsRes.json()
+        : { items: [] };
 
       let commitsThisWeek = 0;
       let commitsPrevWeek = 0;
