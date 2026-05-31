@@ -1,8 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
-const authSecret = "playwright-placeholder-secret-that-is-long-enough";
-
+const authSecret =
+  process.env.NEXTAUTH_SECRET ||
+  "test-nextauth-secret-for-playwright-tests";
+  
 test.beforeEach(async ({ page }) => {
   const token = await encode({
     secret: authSecret,
@@ -29,7 +31,7 @@ test.beforeEach(async ({ page }) => {
     },
   ]);
 
-  await page.route("**/api/auth/session", async (route) => {
+  await page.route("**/api/auth/session**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({

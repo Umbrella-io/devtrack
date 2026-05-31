@@ -13,12 +13,14 @@ const syne = Syne({
   weight: ["700", "800"],
   display: "swap",
 });
+
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
   weight: ["400", "500", "600"],
   display: "swap",
 });
+
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
@@ -68,19 +70,23 @@ async function fetchRepoStats(): Promise<RepoStats> {
       : [];
 
     if (mappedContributors.length > 0 && supabaseAdmin) {
-      const logins = mappedContributors.map((c) => c.login);
-      const { data: sponsors } = await supabaseAdmin
-        .from("users")
-        .select("github_login")
-        .in("github_login", logins)
-        .eq("is_sponsor", true);
+      try {
+        const logins = mappedContributors.map((c) => c.login);
+        const { data: sponsors } = await supabaseAdmin
+          .from("users")
+          .select("github_login")
+          .in("github_login", logins)
+          .eq("is_sponsor", true);
 
-      if (sponsors && sponsors.length > 0) {
-        const sponsorSet = new Set(sponsors.map((s: { github_login: string }) => s.github_login));
-        mappedContributors = mappedContributors.map((c) => ({
-          ...c,
-          isSponsor: sponsorSet.has(c.login),
-        }));
+        if (sponsors && sponsors.length > 0) {
+          const sponsorSet = new Set(sponsors.map((s: { github_login: string }) => s.github_login));
+          mappedContributors = mappedContributors.map((c) => ({
+            ...c,
+            isSponsor: sponsorSet.has(c.login),
+          }));
+        }
+      } catch {
+        // Supabase not configured locally — skip sponsor enrichment, show contributors as-is
       }
     }
 
