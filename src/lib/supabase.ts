@@ -15,6 +15,13 @@ export {
   getUserByUsername,
   getUserByGithubId,
   updateUserPublicFlag,
+  getRoomsForUser,
+  createRoom,
+  getRoomById,
+  getRoomMembers,
+  addRoomMember,
+  getRoomMessages,
+  sendRoomMessage,
 } from "@/lib/supabase-admin";
 
 export {
