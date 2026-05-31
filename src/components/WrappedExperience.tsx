@@ -220,8 +220,20 @@ export default function WrappedExperience() {
             aria-live="polite"
             aria-busy="true"
             className="grid flex-1 place-items-center py-16"
-          >
-            <div className="h-[520px] w-full max-w-4xl animate-pulse rounded-lg border border-white/10 bg-white/5" />
+          ><div
+            className="
+              w-full
+              max-w-4xl
+              animate-pulse
+              rounded-lg
+              border
+              border-white/10
+              bg-white/5
+              aspect-[4/3]
+              min-h-[250px]
+              max-h-[520px]
+            "
+          />
             <span className="sr-only">Loading your Year in Code</span>
           </section>
         ) : error ? (
