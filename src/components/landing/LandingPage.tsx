@@ -161,7 +161,7 @@ function Cell({
 }) {
   return (
     <div
-      className="lnd-cell"
+      className="lnd-cell hover:-translate-y-1 hover:shadow-2xl transition-all duration-300"
       style={{ gridColumn: spanCols > 1 ? `span ${spanCols}` : undefined, ...style }}
     >
       {children}
@@ -477,11 +477,11 @@ function HeroSection() {
 function CommitTicker() {
   const doubled = [...COMMITS, ...COMMITS];
   return (
-    <div style={{
+    <div className="group" style={{
       borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`,
       padding: '10px 0', overflow: 'hidden', background: BG,
     }}>
-      <div className="lnd-ticker" style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap' }}>
+      <div className="lnd-ticker group-hover:[animation-play-state:paused]" style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap' }}>
         {doubled.map((c, i) => (
           <span
             key={i}
@@ -559,7 +559,7 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
       style={{
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(16px)',
-        transition: `all 0.5s ease ${delay}ms`,
+        transition: `all 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
       }}
     >
       <div style={{
@@ -596,59 +596,73 @@ function StatsSection() {
    ═══════════════════════════════════════════════════════════ */
 const FEATURES = [
   {
-    num: '01', title: 'STREAK TRACKING',
-    desc: 'Current streak, longest streak, active coding days. Tracked automatically from your GitHub. Never break the chain.',
+    icon: <Image src="/images/icon_streaks.png" alt="Commit streaks tracker" width={56} height={56} style={{ borderRadius: 12, objectFit: 'cover' }} />,
+    title: 'Commit streaks tracker',
+    desc: 'Track your daily GitHub activity.',
   },
   {
-    num: '02', title: 'PR ANALYTICS',
-    desc: 'Review velocity, merge rates, open and closed counts. Understand your pull request lifecycle at a glance.',
+    icon: <Image src="/images/icon_analytics.png" alt="PR analytics" width={56} height={56} style={{ borderRadius: 12, objectFit: 'cover' }} />,
+    title: 'PR analytics',
+    desc: 'Monitor review velocity and merge rates.',
   },
   {
-    num: '03', title: 'WEEKLY GOALS',
-    desc: 'Set commit and PR targets. Progress bars auto-update from your GitHub activity. Stay accountable.',
+    icon: <Image src="/images/icon_goals.png" alt="Weekly goals" width={56} height={56} style={{ borderRadius: 12, objectFit: 'cover' }} />,
+    title: 'Weekly goals',
+    desc: 'Set commit and PR targets and stay accountable.',
   },
   {
-    num: '04', title: 'CONTRIBUTION HEATMAP',
-    desc: 'Full-year visualization of your coding consistency. See patterns emerge across weeks and months.',
-  },
-  {
-    num: '05', title: 'LANGUAGE BREAKDOWN',
-    desc: 'See which languages dominate your contributions. TypeScript, Python, Go — tracked across all repos.',
-  },
-  {
-    num: '06', title: 'PUBLIC PROFILE',
-    desc: 'Share your developer stats with the world. Your coding story, visible to anyone.',
+    icon: <Image src="/images/icon_repos.png" alt="Top repositories" width={56} height={56} style={{ borderRadius: 12, objectFit: 'cover' }} />,
+    title: 'Top repositories',
+    desc: 'See where you contribute the most.',
   },
 ];
 
-function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
+function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
   const [ref, vis] = useScrollReveal(0.15);
   return (
     <div
       ref={ref}
+      className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10"
       style={{
-        display: 'flex', gap: 'clamp(16px,3vw,32px)',
-        padding: '24px 0', borderBottom: `1px solid ${BORDER}`,
+        display: 'flex', flexDirection: 'column', gap: 16,
+        padding: '32px 24px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b',
+        borderRadius: 16, boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
         opacity: vis ? 1 : 0,
-        transform: vis ? 'translateX(0)' : 'translateX(-12px)',
-        transition: `all 0.5s ease ${index * 50}ms`,
+        transform: vis ? 'translateY(0)' : 'translateY(12px)',
+        transitionProperty: 'opacity, transform',
+        transitionDuration: '500ms',
+        transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        transitionDelay: `${index * 50}ms`,
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        cursor: 'pointer',
       }}
     >
-      <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: A, minWidth: 28, paddingTop: 3 }}>
-        {f.num}
-      </span>
-      <div>
-        <h3 style={{
-          fontFamily: DISP, fontWeight: 700,
-          fontSize: 'clamp(16px,2.5vw,22px)', color: TEXT,
-          letterSpacing: '-0.02em', margin: '0 0 6px',
-        }}>
-          {f.title}
-        </h3>
-        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>   {/* was '#444' */}
-          {f.desc}
-        </p>
+      <div 
+        className="absolute -inset-full w-[200%] h-[200%] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle at center, rgba(129,140,248,0.06) 0%, transparent 40%)',
+          transform: 'translate(-25%, -25%)'
+        }}
+      />
+      <div style={{ 
+        width: 56, height: 56, marginBottom: 8,
+        transition: 'transform 0.4s cubic-bezier(0.16,1,0.3,1)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+        borderRadius: 12
+      }} className="group-hover:scale-110">
+        {f.icon}
       </div>
+      <h3 style={{
+        fontFamily: DISP, fontWeight: 700,
+        fontSize: 'clamp(18px,2.5vw,22px)', color: TEXT,
+        letterSpacing: '-0.02em', margin: 0,
+      }}>
+        {f.title}
+      </h3>
+      <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.6, margin: 0 }}>
+        {f.desc}
+      </p>
     </div>
   );
 }
@@ -656,70 +670,74 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
 function FeaturesSection() {
   return (
     <section style={{
-      padding: '64px clamp(20px,4vw,48px) 80px',
-      borderTop: `1px solid ${BORDER}`,
-      maxWidth: 720, margin: '0 auto',
+      padding: '80px clamp(20px,4vw,48px)',
+      borderTop: '1px solid #1e293b',
+      maxWidth: 1200, margin: '0 auto',
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 50, textAlign: 'center', background: 'linear-gradient(90deg, #818cf8, #2dd4bf)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', width: '100%' }}>
         FEATURES
       </div>
-      {FEATURES.map((f, i) => (
-        <FeatureItem key={f.num} f={f} index={i} />
-      ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
+        {FEATURES.map((f, i) => (
+          <FeatureCard key={f.title} f={f} index={i} />
+        ))}
+      </div>
     </section>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SETUP SECTION
+   HOW IT WORKS SECTION
    ═══════════════════════════════════════════════════════════ */
-function SetupSection() {
+const STEPS = [
+  { num: '1', title: 'Sign in', desc: 'Authenticate with your GitHub account.', img: '/images/sign_in_step.png' },
+  { num: '2', title: 'View dashboard', desc: 'See your automatically generated stats.', img: '/images/view_dashboard_step.png' },
+  { num: '3', title: 'Set goals', desc: 'Configure weekly targets to keep your streak alive.', img: '/images/set_goals_step.png' },
+];
+
+function HowItWorksSection() {
   const [ref, vis] = useScrollReveal(0.2);
   return (
     <section
-      id="open-source"
+      id="how-it-works"
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(20px)',
-        transition: 'all 0.7s ease',
+        transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)',
+        borderTop: '1px solid #1e293b',
+        position: 'relative',
+        overflow: 'hidden'
       }}
     >
-      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', marginBottom: 24 }}>
-        SETUP
+      <div 
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-64 bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none"
+      />
+      <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 50, textAlign: 'center', background: 'linear-gradient(90deg, #2dd4bf, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', width: '100%', position: 'relative' }}>
+        HOW IT WORKS
       </div>
 
       <div style={{
-        background: 'color-mix(in srgb, var(--card) 40%, transparent)', border: `1px solid ${BORDER}`,
-        borderRadius: 8, padding: '24px 28px', maxWidth: 480, width: '100%',
-        textAlign: 'left', marginBottom: 32,
-        fontFamily: MONO, fontSize: 13, lineHeight: 1.8,
-        boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+        display: 'flex', flexWrap: 'wrap', gap: 32, justifyContent: 'center', maxWidth: 1100, width: '100%', marginBottom: 50, position: 'relative'
       }}>
-        {/* Terminal Header Mock */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }} />
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981' }} />
-        </div>
-        <div style={{ color: '#10b981', fontWeight: 500 }}># start tracking in 30 seconds</div>
-        <div style={{ color: TEXT }}>
-          <span style={{ color: A }}>→</span> sign in at{' '}
-          <span style={{ color: A }}>devtrack.vercel.app</span>
-        </div>
-        <div style={{ color: '#10b981', marginTop: 8, fontWeight: 500 }}># or self-host</div>
-        <div style={{ color: TEXT }}>
-          <span style={{ color: A }}>$</span> git clone github.com/…/devtrack
-        </div>
-        <div style={{ color: TEXT }}>
-          <span style={{ color: A }}>$</span> npm install && npm run dev
-        </div>
+        {STEPS.map((step, i) => (
+          <div key={i} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
+            <div className="group-hover:border-indigo-500/40 transition-colors duration-300" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, border: '1px solid #1e293b', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)' }}>
+              <Image src={step.img} alt={step.title} fill style={{ objectFit: 'cover' }} className="group-hover:scale-105 transition-transform duration-700 ease-in-out" />
+            </div>
+            <div className="group-hover:bg-indigo-500/20 group-hover:scale-110 transition-all duration-300 group-hover:border-indigo-500/40" style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.2)', color: A, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontFamily: MONO, fontSize: 18, fontWeight: 700 }}>
+              {step.num}
+            </div>
+            <h3 style={{ fontFamily: DISP, fontWeight: 700, fontSize: 20, color: TEXT, margin: '0 0 12px' }}>{step.title}</h3>
+            <p style={{ fontSize: 15, color: MUTED, margin: 0, lineHeight: 1.6 }}>{step.desc}</p>
+          </div>
+        ))}
       </div>
-
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary">
+      
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', position: 'relative' }}>
+        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary hover:scale-105 hover:shadow-indigo-500/30 transition-all duration-300">
           Sign in with GitHub
         </a>
         <a
@@ -760,7 +778,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
         borderTop: `1px solid ${BORDER}`,
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(24px)',
-        transition: 'all 0.7s ease',
+        transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)',
       }}
     >
       {/* Label */}
@@ -900,7 +918,38 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
   );
 }
 
-
+/* ═══════════════════════════════════════════════════════════
+   LANDING FOOTER  (above global Footer)
+   ═══════════════════════════════════════════════════════════ */
+function LandingFooter() {
+  return (
+    <footer 
+      data-testid="landing-footer"
+      style={{
+        borderTop: `1px solid ${BORDER}`,   // was '#111'
+        padding: '24px clamp(20px,4vw,48px)',
+        display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
+        justifyContent: 'space-between', alignItems: 'center',
+      }}
+    >
+      <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
+        © {new Date().getFullYear()} DEVTRACK
+      </span>
+      <div style={{ display: 'flex', gap: 20 }}>
+        {[
+          { label: 'GitHub', href: 'https://github.com/Priyanshu-byte-coder/devtrack' },
+          { label: 'CONTRIBUTING.md', href: 'https://github.com/Priyanshu-byte-coder/devtrack/blob/main/CONTRIBUTING.md' },
+          { label: 'LICENSE', href: 'https://github.com/Priyanshu-byte-coder/devtrack/blob/main/LICENSE' },
+          { label: 'Issues', href: 'https://github.com/Priyanshu-byte-coder/devtrack/issues' },
+        ].map(l => (
+          <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="lnd-footer-link">
+            {l.label}
+          </a>
+        ))}
+      </div>
+    </footer>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════════
    MAIN EXPORT
@@ -918,7 +967,8 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <StatsSection />
       <FeaturesSection />
       <ContributeSection stats={repoStats} />
-      <SetupSection />
+      <HowItWorksSection />
+      <LandingFooter />
     </div>
   );
 }
