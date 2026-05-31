@@ -31,7 +31,8 @@ function buildYearOptions() {
 }
 
 function getShareText(stats: WrappedStats) {
-  return `My ${stats.year} Year in Code: ${formatNumber(
+  const persona = stats.personality ? `I'm a ${stats.personality.icon} ${stats.personality.name}! ` : "";
+  return `My ${stats.year} Year in Code: ${persona}${formatNumber(
     stats.totalCommits
   )} commits, ${stats.longestStreak}-day streak, and ${
     stats.topLanguages[0]?.name ?? "code"
@@ -160,6 +161,12 @@ export default function WrappedExperience() {
             ? "Commit timestamps were too sparse for a peak-hour insight."
             : `You coded at ${stats.peakCodingHour.label} most often.`,
         metric: "Peak coding time",
+      },
+      {
+        eyebrow: "Your Coding Persona",
+        title: `${stats.personality.icon} ${stats.personality.name}`,
+        body: `${stats.personality.description} ${stats.personality.reason}`,
+        metric: "Coding Personality",
       },
     ];
   }, [stats]);

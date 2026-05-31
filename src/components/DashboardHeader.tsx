@@ -87,6 +87,26 @@ function useDashboardSync() {
 export default function DashboardHeader() {
   const { data: session } = useSession();
   const [isPublic, setIsPublic] = useState<boolean | null>(null);
+  const [greeting, setGreeting] = useState<string>("Welcome back");
+
+  // Determine the user's personalized greeting string based on local timestamp metrics
+  useEffect(() => {
+    const computeCurrentGreeting = () => {
+      const currentHour = new Date().getHours();
+      
+      if (currentHour >= 5 && currentHour < 12) {
+        return "Good morning ☀️";
+      } else if (currentHour >= 12 && currentHour < 17) {
+        return "Good afternoon 🌤️";
+      } else if (currentHour >= 17 && currentHour < 22) {
+        return "Good evening 🌙";
+      } else {
+        return "Burning the midnight oil 🦉";
+      }
+    };
+
+    setGreeting(computeCurrentGreeting());
+  }, []);
   const { lastSynced } = useDashboardSync();
   const [now, setNow] = useState(() => Date.now());
 
@@ -115,6 +135,8 @@ export default function DashboardHeader() {
     loadSettings();
   }, [session]);
 
+  // Extract a fallback username parameter from active session data strings
+  const displayName = session?.user?.name || session?.githubLogin || "Developer";
   useEffect(() => {
     if (!lastSynced) return;
 
@@ -136,6 +158,26 @@ export default function DashboardHeader() {
       <div className="flex min-w-0 flex-col gap-5 md:flex-row md:items-end md:justify-between">
 
         {/* Left Section */}
+        <div>
+          <div className="flex flex-col gap-1">
+            {/* Dynamic Personalized Friendly Greeting Badge Element Overlay */}
+            <div className="inline-flex items-center gap-1.5 self-start rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)] transition-all duration-300">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--accent)]"></span>
+              </span>
+              <span>
+                {greeting}, {displayName}!
+              </span>
+            </div>
+
+            <h1 className="bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-3xl font-extrabold text-transparent md:text-4xl mt-1">
+              Dashboard
+            </h1>
+          </div>
+
+          <p className="mt-2 text-sm md:text-base text-[var(--muted-foreground)]">
+            Your coding activity at a glance 🚀
         <div className="min-w-0">
           <p
             className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted-foreground)]"

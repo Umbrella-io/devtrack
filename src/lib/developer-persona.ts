@@ -106,7 +106,7 @@ function getUtcWeekStart(date: Date): Date {
   return result;
 }
 
-function calculateStreaks(commitCountsByDate: Record<string, number>) {
+export function calculateStreaks(commitCountsByDate: Record<string, number>) {
   const commitDays = Object.keys(commitCountsByDate).sort();
 
   if (commitDays.length === 0) {
@@ -179,7 +179,7 @@ function calculateStreaks(commitCountsByDate: Record<string, number>) {
   };
 }
 
-function formatDurationHours(hours: number): string {
+export function formatDurationHours(hours: number): string {
   if (!Number.isFinite(hours) || hours <= 0) {
     return "0h";
   }
@@ -195,7 +195,7 @@ function formatDurationHours(hours: number): string {
   return `${Math.round((hours / 24) * 10) / 10}d`;
 }
 
-function choosePersonaCandidate(
+export function choosePersonaCandidate(
   candidates: Array<{ key: PersonaKey; score: number; eligible: boolean }>,
   fallback: PersonaKey
 ): PersonaKey {
@@ -222,7 +222,7 @@ function addInsight(
   insights.push({ ...insight, score });
 }
 
-function buildSmartInsightCandidates(
+export function buildSmartInsightCandidates(
   signals: DeveloperSignals,
   summary: ReturnType<typeof calculateStreaks>,
   persona: PersonaKey
