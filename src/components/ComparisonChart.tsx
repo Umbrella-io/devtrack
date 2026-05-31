@@ -100,7 +100,7 @@ export default function ComparisonChart({
             wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
           />
           <Bar dataKey="me" fill="var(--accent)" radius={[4, 4, 0, 0]} maxBarSize={28} />
-          <Bar dataKey="friend" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={28} />
+          <Bar dataKey="friend" fill="var(--accent-secondary)" radius={[4, 4, 0, 0]} maxBarSize={28} />
         </BarChart>
       </ResponsiveContainer>
     </div>

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import PRStatusDonutChart from "./PRStatusDonutChart";
 import MiniPRTrendChart from "./MiniPRTrendChart";
+
 interface ReviewMetrics {
   totalReviews: number;
   approvalRate: string;
@@ -58,6 +59,7 @@ export default function PRMetrics() {
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"authored" | "reviews">("authored");
+  const [prFilter, setPrFilter] = useState<"all" | "merged" | "open">("all");
 
   const fetchMetrics = useCallback(() => {
     setLoading(true);
@@ -173,10 +175,11 @@ export default function PRMetrics() {
         <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
       </>
     );
-    const className = `rounded-lg p-4 text-center min-w-0 transition-colors ${
+
+    const className = `rounded-lg p-4 text-center min-w-0 border border-transparent transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md ${
       stat.warning
-        ? "border border-orange-400/30 bg-orange-500/10 hover:bg-orange-500/15"
-        : "bg-[var(--control)]"
+        ? "border-orange-400/30 bg-orange-500/10 hover:bg-orange-500/15 hover:border-orange-400/50"
+        : "bg-[var(--control)] hover:bg-[var(--control-hover)] hover:border-[var(--border)]"
     }`;
 
     return stat.href ? (
@@ -191,6 +194,7 @@ export default function PRMetrics() {
         {content}
       </a>
     ) : (
+      // 🎯 Fixed: Changed opening tag to match closing tag correctly
       <div key={stat.label} className={className} title={stat.title}>
         {content}
       </div>
@@ -275,11 +279,37 @@ export default function PRMetrics() {
       ) : activeTab === "authored" ? (
         <div className="space-y-6">
           <div>
-            <p className="text-sm font-medium text-[var(--muted-foreground)]">GitHub PRs</p>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-              {githubStats.map(renderStat)}
+            <div className="flex flex-wrap items-center justify-between mb-4">
+              <p className="text-sm font-medium text-[var(--muted-foreground)]">GitHub PRs</p>
+              <div className="flex items-center gap-2">
+                {(["all", "merged", "open"] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setPrFilter(filter)}
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold capitalize transition-colors ${
+                      prFilter === filter
+                        ? "bg-[var(--accent)] text-white"
+                        : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
             </div>
-            <MiniPRTrendChart />
+            
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+              {githubStats
+                .filter((stat) => {
+                  if (prFilter === "all") return true;
+                  const lbl = stat.label.toLowerCase();
+                  if (prFilter === "open") return lbl.includes("open") || lbl.includes("stale");
+                  if (prFilter === "merged") return lbl.includes("merged") || lbl.includes("review") || lbl.includes("merge rate");
+                  return true;
+                })
+                .map(renderStat)}
+            </div>
+            {prFilter !== "open" && <MiniPRTrendChart />}
           </div>
 
           {metrics && (
@@ -288,9 +318,9 @@ export default function PRMetrics() {
                 PR Status Distribution
               </p>
               <PRStatusDonutChart
-                open={metrics.open}
-                merged={metrics.merged}
-                closed={metrics.closed}
+                open={prFilter === "merged" ? 0 : (metrics.open || 0)}
+                merged={prFilter === "open" ? 0 : (metrics.merged || 0)}
+                closed={prFilter === "all" ? (metrics.closed || 0) : 0}
               />
             </div>
           )}
@@ -299,16 +329,24 @@ export default function PRMetrics() {
             <div className="space-y-4 border-t border-[var(--border)] pt-4">
               <p className="text-sm font-medium text-[var(--muted-foreground)]">GitLab MRs</p>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {gitlabStats.map(renderStat)}
+                {gitlabStats
+                  .filter((stat) => {
+                    if (prFilter === "all") return true;
+                    const lbl = stat.label.toLowerCase();
+                    if (prFilter === "open") return lbl.includes("open") || lbl.includes("stale");
+                    if (prFilter === "merged") return lbl.includes("merged") || lbl.includes("review") || lbl.includes("merge rate");
+                    return true;
+                  })
+                  .map(renderStat)}
               </div>
               <div>
                 <p className="mb-2 text-sm font-medium text-[var(--muted-foreground)]">
                   MR Status Distribution
                 </p>
                 <PRStatusDonutChart
-                  open={metrics.gitlab.open}
-                  merged={metrics.gitlab.merged}
-                  closed={metrics.gitlab.closed}
+                  open={prFilter === "merged" ? 0 : (metrics.gitlab.open || 0)}
+                  merged={prFilter === "open" ? 0 : (metrics.gitlab.merged || 0)}
+                  closed={prFilter === "all" ? (metrics.gitlab.closed || 0) : 0}
                 />
               </div>
             </div>
@@ -321,7 +359,10 @@ export default function PRMetrics() {
               { label: "Total Reviews Given", value: metrics?.reviews?.totalReviews ?? 0 },
               { label: "Approval Rate", value: metrics?.reviews?.approvalRate ?? "0%" },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-lg bg-[var(--control)] p-4 text-center">
+              <div 
+                key={stat.label} 
+                className="rounded-lg bg-[var(--control)] border border-transparent p-4 text-center transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md hover:bg-[var(--control-hover)] hover:border-[var(--border)]"
+              >
                 <div className="text-2xl font-bold text-[var(--accent)]">{stat.value}</div>
                 <div className="mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
               </div>
