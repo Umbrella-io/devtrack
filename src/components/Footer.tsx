@@ -1,10 +1,18 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const year = new Date().getFullYear();
 
 export default function Footer() {
+  const pathname = usePathname();
+  const isLanding = pathname === "/";
+
+  if (pathname === "/wrapped") return null;
+
   return (
-    <footer className="dark mt-auto border-t border-[var(--border)] bg-[var(--background)] relative overflow-hidden">
+    <footer className={`dark mt-auto border-t relative overflow-hidden ${isLanding ? 'bg-transparent border-slate-900/40' : 'border-[var(--border)] bg-[var(--background)]'}`}>
       {/* Subtle top gradient using the accent color */}
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(129,140,248,0.05),transparent_50%)] pointer-events-none" />
       
@@ -40,6 +48,9 @@ export default function Footer() {
               </Link>
               <Link className="transition-all duration-200 hover:text-white hover:translate-x-1 w-fit" href="/leaderboard">
                 Leaderboard
+              </Link>
+              <Link className="transition-colors hover:text-[var(--card-foreground)]" href="/contact">
+                Contact
               </Link>
             </div>
           </div>

@@ -19,6 +19,7 @@ export default function UserAvatar() {
   return (
     <a
       href={session?.githubLogin ? `https://github.com/${session.githubLogin}` : "#"}
+      aria-label={`Open GitHub profile for ${name}`}
       target="_blank"
       rel="noopener noreferrer"
       tabIndex={0}

@@ -12,10 +12,10 @@ interface PRBreakdown {
 }
 
 const SLICES: { key: keyof PRBreakdown; label: string; color: string }[] = [
-  { key: "open",   label: "Open",   color: "#6366f1" },
-  { key: "merged", label: "Merged", color: "#34d399" },
-  { key: "closed", label: "Closed", color: "#fb923c" },
-  { key: "draft",  label: "Draft",  color: "#94a3b8" },
+  { key: "open",   label: "Open",   color: "var(--accent)" },
+  { key: "merged", label: "Merged", color: "var(--success)" },
+  { key: "closed", label: "Closed", color: "var(--warning)" },
+  { key: "draft",  label: "Draft",  color: "var(--muted-foreground)" },
 ];
 
 export default function PRBreakdownChart() {
@@ -88,9 +88,9 @@ export default function PRBreakdownChart() {
     );
   }
 
-  const total = breakdown ? SLICES.reduce((sum, s) => sum + breakdown[s.key], 0) : 0;
+  const total = breakdown ? SLICES.reduce((sum, s) => sum + (breakdown[s.key] ?? 0), 0) : 0;
   const chartData = breakdown
-    ? SLICES.map((s) => ({ name: s.label, value: breakdown[s.key], color: s.color })).filter(
+    ? SLICES.map((s) => ({ name: s.label, value: breakdown[s.key] ?? 0, color: s.color })).filter(
         (d) => d.value > 0
       )
     : [];
