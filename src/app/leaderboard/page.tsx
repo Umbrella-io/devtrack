@@ -55,21 +55,14 @@ export default async function LeaderboardPage({
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <Link
-              href="/"
-              className="text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-            >
+            <Link href="/" className="text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
               DevTrack
             </Link>
-            <h1 className="mt-3 text-3xl font-bold text-[var(--foreground)] md:text-4xl">
-              Public Leaderboard
-            </h1>
+            <h1 className="mt-3 text-3xl font-bold text-[var(--foreground)] md:text-4xl">Public Leaderboard</h1>
             <p className="mt-2 max-w-2xl text-sm text-[var(--muted-foreground)] md:text-base">
-              Opted-in developers ranked by current streak, monthly commits,
-              and monthly pull request activity.
+              Opted-in developers ranked by current streak, monthly commits, and monthly pull request activity.
             </p>
           </div>
-
           {leaderboard && (
             <div className="text-sm text-[var(--muted-foreground)]">
               Updated {new Date(leaderboard.generatedAt).toLocaleString()}
@@ -99,14 +92,8 @@ export default async function LeaderboardPage({
         <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-soft)]">
           {!leaderboard ? (
             <div className="px-4 py-12 text-center">
-              <p className="text-sm text-[var(--muted-foreground)]">
-                Leaderboard data is temporarily unavailable. Please try again in
-                a few minutes.
-              </p>
-              <Link
-                href="/leaderboard"
-                className="mt-4 inline-block text-sm font-medium text-[var(--accent)] hover:underline"
-              >
+              <p className="text-sm text-[var(--muted-foreground)]">Leaderboard data is temporarily unavailable.</p>
+              <Link href="/leaderboard" className="mt-4 inline-block text-sm font-medium text-[var(--accent)] hover:underline">
                 Retry
               </Link>
             </div>
@@ -127,15 +114,12 @@ export default async function LeaderboardPage({
                 <div className="hidden md:block">Score</div>
                 <div>Profile</div>
               </div>
-
               {rows.map((entry) => (
                 <div
                   key={`${activeTab}-${entry.username}`}
                   className="grid grid-cols-[72px_1fr_110px_110px] items-center border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[80px_1fr_140px_140px_120px]"
                 >
-                  <div className="text-lg font-bold text-[var(--card-foreground)]">
-                    #{entry.rank}
-                  </div>
+                  <div className="text-lg font-bold text-[var(--card-foreground)]">#{entry.rank}</div>
                   <div className="flex min-w-0 items-center gap-3">
                     <Image
                       src={entry.avatarUrl}
@@ -145,35 +129,21 @@ export default async function LeaderboardPage({
                       className="h-10 w-10 rounded-full border border-[var(--border)]"
                     />
                     <div className="min-w-0">
-                      <div
-                        title={entry.username}
-                        className="flex max-w-[120px] items-center gap-2 truncate font-semibold text-[var(--card-foreground)] sm:max-w-[180px] md:max-w-none"
-                      >
-                        @{entry.username}
-                        {entry.isSponsor && <SponsorBadge />}
+                      <div title={entry.username} className="flex max-w-[120px] items-center gap-2 truncate font-semibold text-[var(--card-foreground)] sm:max-w-[180px] md:max-w-none">
+                        @{entry.username} {entry.isSponsor && <SponsorBadge />}
                       </div>
                       <div className="text-xs text-[var(--muted-foreground)]">
-                        {entry.commits} commits, {entry.prs} PRs,{" "}
-                        {entry.streak}d streak
+                        {entry.commits} commits, {entry.prs} PRs, {entry.streak}d streak
                       </div>
                     </div>
                   </div>
                   <div>
-                    <div className="text-lg font-semibold text-[var(--card-foreground)]">
-                      {getMetricValue(entry, activeTab)}
-                    </div>
-                    <div className="text-xs text-[var(--muted-foreground)]">
-                      {activeMeta.metric}
-                    </div>
+                    <div className="text-lg font-semibold text-[var(--card-foreground)]">{getMetricValue(entry, activeTab)}</div>
+                    <div className="text-xs text-[var(--muted-foreground)]">{activeMeta.metric}</div>
                   </div>
-                  <div className="hidden text-sm font-medium text-[var(--card-foreground)] md:block">
-                    {entry.score}
-                  </div>
+                  <div className="hidden text-sm font-medium text-[var(--card-foreground)] md:block">{entry.score}</div>
                   <div>
-                    <Link
-                      href={entry.profileUrl}
-                      className="secondary-button inline-flex rounded-lg px-3 py-2 text-sm font-medium"
-                    >
+                    <Link href={entry.profileUrl} className="secondary-button inline-flex rounded-lg px-3 py-2 text-sm font-medium">
                       View
                     </Link>
                   </div>

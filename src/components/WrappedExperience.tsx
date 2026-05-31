@@ -227,8 +227,20 @@ export default function WrappedExperience() {
             aria-live="polite"
             aria-busy="true"
             className="grid flex-1 place-items-center py-16"
-          >
-            <div className="h-[520px] w-full max-w-4xl animate-pulse rounded-lg border border-white/10 bg-white/5" />
+          ><div
+            className="
+              w-full
+              max-w-4xl
+              animate-pulse
+              rounded-lg
+              border
+              border-white/10
+              bg-white/5
+              aspect-[4/3]
+              min-h-[250px]
+              max-h-[520px]
+            "
+          />
             <span className="sr-only">Loading your Year in Code</span>
           </section>
         ) : error ? (
@@ -268,7 +280,13 @@ export default function WrappedExperience() {
                     <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-200">
                       {currentSlide.eyebrow}
                     </p>
-                    <h2 className="mt-6 max-w-3xl break-words text-5xl font-black leading-[0.95] text-white sm:text-7xl">
+                    <h2
+                      className={`mt-6 max-w-3xl overflow-hidden text-ellipsis break-all font-black leading-[0.95] text-white ${
+                        currentSlide.metric === "Most contributed repo"
+                          ? "line-clamp-3 text-3xl sm:text-4xl lg:text-5xl"
+                          : "text-5xl sm:text-7xl"
+                      }`}
+                    >
                       {currentSlide.title}
                     </h2>
                     <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200">
@@ -367,12 +385,11 @@ export default function WrappedExperience() {
                   type="button"
                   onClick={() => setSlide(index)}
                   aria-current={slide === index ? "step" : undefined}
+                  aria-label={`Go to slide ${index + 1}: ${item.metric}`}
                   className={`h-3 w-10 rounded-full transition ${
                     slide === index ? "bg-cyan-300" : "bg-white/20 hover:bg-white/40"
                   }`}
-                >
-                  <span className="sr-only">{item.metric}</span>
-                </button>
+                />
               ))}
             </nav>
           </>

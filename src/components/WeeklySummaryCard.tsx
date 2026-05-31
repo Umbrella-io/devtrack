@@ -1,6 +1,7 @@
 // @ts-nocheck
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,9 +31,17 @@ export default function WeeklySummaryCard() {
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const maxCommits = summary?.commits ? Math.max(summary.commits.current, summary.commits.previous, 1) : 1;
-  const maxPRs = summary?.prs ? Math.max(summary.prs.thisWeek.merged, summary.prs.lastWeek.merged, 1) : 1;
-  const maxActiveDays = summary?.activeDays ? Math.max(summary.activeDays.thisWeek, summary.activeDays.lastWeek, 1) : 1;
+const maxCommits = summary?.commits
+  ? Math.max(summary.commits.current, summary.commits.previous, 1)
+  : 1;
+
+const maxPRs = summary?.prs
+  ? Math.max(summary.prs.thisWeek.merged, summary.prs.lastWeek.merged, 1)
+  : 1;
+
+const maxActiveDays = summary?.activeDays
+  ? Math.max(summary.activeDays.thisWeek, summary.activeDays.lastWeek, 1)
+  : 1;
 
   const fetchSummary = useCallback(() => {
     setLoading(true);
