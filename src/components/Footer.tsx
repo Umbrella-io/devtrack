@@ -9,6 +9,8 @@ export default function Footer() {
   const pathname = usePathname();
   const isLanding = pathname === "/";
 
+  if (pathname === "/wrapped") return null;
+
   return (
     <footer className={`dark mt-auto border-t relative overflow-hidden ${isLanding ? 'bg-transparent border-slate-900/40' : 'border-[var(--border)] bg-[var(--background)]'}`}>
       {/* Subtle top gradient using the accent color */}

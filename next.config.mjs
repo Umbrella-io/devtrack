@@ -68,6 +68,10 @@ const withPWA = withPWAInit({
         if (url.origin !== self.location.origin) return false;
         if (url.pathname.startsWith("/api/auth/")) return false;
         if (url.pathname.startsWith("/api/webhooks/")) return false;
+        // Leaderboard is slow (GitHub + Supabase); let it bypass the SW so the
+        // 5-second networkTimeout doesn't race against it and produce unhandled
+        // "Failed to fetch" rejections when the cache is empty.
+        if (url.pathname.startsWith("/api/leaderboard")) return false;
         return url.pathname.startsWith("/api/");
       },
       handler: "NetworkFirst",

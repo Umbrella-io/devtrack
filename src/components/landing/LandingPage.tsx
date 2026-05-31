@@ -372,18 +372,59 @@ function HeroSection() {
         gap: 'clamp(32px,5vw,80px)',
         flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
+        overflow: 'hidden',
       }}
     >
+      {/* Ambient Animated Background Glow */}
+      <div 
+        style={{
+          position: 'absolute',
+          top: '20%', left: '10%',
+          width: '60vw', height: '60vw',
+          background: 'radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 60%)',
+          borderRadius: '50%',
+          filter: 'blur(60px)',
+          animation: 'floatGlow 10s ease-in-out infinite alternate',
+          pointerEvents: 'none',
+          zIndex: -1,
+        }}
+      />
+      <div 
+        style={{
+          position: 'absolute',
+          bottom: '-10%', right: '5%',
+          width: '50vw', height: '50vw',
+          background: 'radial-gradient(circle, rgba(55,48,163,0.2) 0%, transparent 60%)',
+          borderRadius: '50%',
+          filter: 'blur(80px)',
+          animation: 'floatGlow2 12s ease-in-out infinite alternate',
+          pointerEvents: 'none',
+          zIndex: -1,
+        }}
+      />
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes floatGlow {
+          0% { transform: translate(0px, 0px) scale(1); opacity: 0.5; }
+          100% { transform: translate(30px, -50px) scale(1.1); opacity: 0.8; }
+        }
+        @keyframes floatGlow2 {
+          0% { transform: translate(0px, 0px) scale(1); opacity: 0.5; }
+          100% { transform: translate(-40px, 40px) scale(1.2); opacity: 0.9; }
+        }
+      `}} />
+
       {/* Left: text */}
-      <div style={{ flex: '1 1 340px', maxWidth: 500 }}>
+      <div style={{ flex: '1 1 340px', maxWidth: 500, position: 'relative', zIndex: 2 }}>
         {/* Badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'rgba(129,140,248,0.08)', border: '1px solid rgba(129,140,248,0.2)',
-          borderRadius: 20, padding: '4px 12px', marginBottom: 24,
+          background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.25)',
+          borderRadius: 24, padding: '6px 14px', marginBottom: 28,
+          boxShadow: '0 4px 14px rgba(129,140,248,0.1)',
         }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-          <span style={{ fontFamily: MONO, fontSize: 11, color: A, letterSpacing: '0.06em' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }} />
+          <span style={{ fontFamily: MONO, fontSize: 11, color: A, letterSpacing: '0.08em', fontWeight: 600 }}>
             OPEN SOURCE · FREE FOREVER
           </span>
         </div>
@@ -392,28 +433,42 @@ function HeroSection() {
         <h1
           style={{
             fontFamily: DISP, fontWeight: 800,
-            fontSize: 'clamp(40px,6vw,76px)', lineHeight: 0.95,
+            fontSize: 'clamp(40px,6.5vw,82px)', lineHeight: 0.95,
             letterSpacing: '-0.04em', color: TEXT, margin: '0 0 24px',
             animation: 'lndHeroIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both',
+            textShadow: '0 4px 24px rgba(0,0,0,0.4)',
           }}
         >
           YOUR<br />CODE<br />HAS A<br />
-          <span style={{ color: A }}>PULSE</span>
+          <span style={{ color: A, textShadow: '0 0 30px rgba(129,140,248,0.3)' }}>PULSE</span>
           <span style={{ color: '#222' }}>.</span>
         </h1>
 
         {/* Tagline — NOW HIGH CONTRAST */}
         <p style={{
-          fontSize: 'clamp(15px,1.8vw,17px)', color: MUTED,   // was #555
-          lineHeight: 1.65, maxWidth: 400, margin: '0 0 32px',
+          fontSize: 'clamp(16px,2vw,18px)', color: MUTED,
+          lineHeight: 1.6, maxWidth: 420, margin: '0 0 36px',
+          fontWeight: 400,
         }}>
           Open-source developer productivity dashboard. Track GitHub streaks,
           PR velocity, and coding goals — automatically.
         </p>
 
         {/* CTAs */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary">
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary" style={{
+            boxShadow: '0 8px 24px rgba(129,140,248,0.3)',
+            transition: 'transform 0.3s, box-shadow 0.3s',
+            transform: 'translateY(0)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 12px 28px rgba(129,140,248,0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 8px 24px rgba(129,140,248,0.3)';
+          }}>
             <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
             </svg>
@@ -424,6 +479,18 @@ function HeroSection() {
             target="_blank"
             rel="noopener noreferrer"
             className="lnd-cta-secondary"
+            style={{
+              transition: 'transform 0.3s, background 0.3s',
+              transform: 'translateY(0)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.background = 'transparent';
+            }}
           >
             ★ Star on GitHub
           </a>
@@ -431,7 +498,7 @@ function HeroSection() {
       </div>
 
       {/* Right: bento */}
-      <div style={{ flex: '1 1 340px', display: 'flex', justifyContent: 'center' }}>
+      <div style={{ flex: '1 1 340px', display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
         <BentoGrid />
       </div>
     </section>
