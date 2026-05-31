@@ -198,6 +198,7 @@ export default function DashboardHeader() {
             </p>
           )}
         </div>
+        </div>
 
         {/* Right Section */}
         <div className="flex min-w-0 flex-col gap-3 sm:items-end">

@@ -198,11 +198,14 @@ export default async function PublicProfilePage({
       </div>
 
       {/* Custom Spotlight Repositories */}
-      {profile.spotlightRepos && profile.spotlightRepos.length > 0 && (
+      {profile.spotlightRepos?.length ? (
         <div className="mt-6">
-          <PinnedReposWidget initialRepos={profile.spotlightRepos} isPublic={true} />
+          <PinnedReposWidget
+            initialRepos={profile.spotlightRepos}
+            isPublic={true}
+          />
         </div>
-      )}
+      ) : null}
 
       {/* Row 2: Top repos */}
       <div className="mt-6">
