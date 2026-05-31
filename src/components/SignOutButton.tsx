@@ -55,6 +55,7 @@ export default function SignOutButton() {
         >
             {signingOut && (
                 <svg
+                    aria-hidden="true"
                     className="h-4 w-4 animate-spin text-[var(--destructive-foreground)]"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"

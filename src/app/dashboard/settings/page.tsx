@@ -620,7 +620,7 @@ function SettingsPageContent() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <Link href="/dashboard">
             <button aria-label="Back to Dashboard" className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--accent)] md:bg-[var(--accent)] md:text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 md:h-auto md:w-auto md:rounded-lg md:px-4 md:py-2">
-              <span className="text-lg items-center transition-transform duration-200 group-hover:-translate-x-1.5">
+              <span aria-hidden="true" className="text-lg items-center transition-transform duration-200 group-hover:-translate-x-1.5">
                 ←
               </span>
               <span className="ml-2 hidden text-sm font-medium md:inline">
