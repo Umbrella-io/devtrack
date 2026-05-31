@@ -22,17 +22,12 @@
   --control: #f1f5f9;
   --control-hover: #e2e8f0;
   --tooltip: #ffffff;
-<<<<<<< HEAD
   --tooltip-foreground: #111827;
   --destructive-muted: rgba(239, 68, 68, 0.1);
   --destructive-muted-border: rgba(239, 68, 68, 0.3);
   --destructive-foreground: #ffffff;
   --shadow-soft: 0 12px 30px -20px rgba(37, 99, 235, 0.35);
   --shadow-medium: 0 18px 35px -24px rgba(37, 99, 235, 0.4);
-=======
-  --tooltip-foreground: #0f172a;
-  --focus-ring: #6366f1;
->>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
 }
 
 .dark {
@@ -61,7 +56,6 @@
   --control-hover: #344a67;
   --tooltip: #1a2538;
   --tooltip-foreground: #f8fafc;
-<<<<<<< HEAD
   --destructive-muted: rgba(248, 113, 113, 0.1);
   --destructive-muted-border: rgba(248, 113, 113, 0.3);
   --destructive-foreground: #ffffff;
@@ -71,6 +65,9 @@
 
 html, body {
   overscroll-behavior: none;
+  /* Prevent horizontal scroll globally */
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* Strip body background on landing page so the dark bg is visible */
@@ -83,9 +80,6 @@ body:has(.lnd-root) {
 body:has(.wrapped-root) {
   background: #020817 !important;
   background-color: #020817 !important;
-=======
-  --focus-ring: #818cf8;
->>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
 }
 
 body {
@@ -109,6 +103,8 @@ body {
   background: linear-gradient(140deg, var(--accent), var(--accent-secondary));
   color: var(--accent-foreground);
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+  /* Minimum touch target size */
+  min-height: 44px;
 }
 
 .primary-button:hover {
@@ -122,6 +118,8 @@ body {
   background: color-mix(in srgb, var(--card) 88%, white 12%);
   color: var(--card-foreground);
   transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+  /* Minimum touch target size */
+  min-height: 44px;
 }
 
 .secondary-button:hover {
@@ -149,144 +147,20 @@ body {
 }
 .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
 .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: var(--muted-foreground); border-radius: 9999px; }
-.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
-.dark .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--muted-foreground); }
-.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--muted-foreground);
+  border-radius: 3px;
 }
 
-.fade-up {
-  animation: fadeUp 0.7s ease-out;
-}
-
-/* ─────────────────────────────────────────
-   DARK MODE GLOBAL TYPOGRAPHY
-   ───────────────────────────────────────── */
-.dark h1 {
+/* ─── Landing Page Styles ─────────────────────────────────── */
+.lnd-root {
   font-family: var(--font-syne, system-ui, sans-serif);
-  letter-spacing: -0.03em;
 }
-
-/* Slim dark scrollbar matching theme */
-.dark {
-  scrollbar-width: thin;
-  scrollbar-color: #222 transparent;
-}
-.dark::-webkit-scrollbar       { width: 6px; height: 6px; }
-.dark::-webkit-scrollbar-track { background: transparent; }
-.dark::-webkit-scrollbar-thumb { background: #222; border-radius: 6px; }
-.dark::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
-
-/* ─────────────────────────────────────────
-   LANDING PAGE
-   ───────────────────────────────────────── */
-@keyframes lndHeroIn {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes lndTicker {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-.lnd-ticker {
-  animation: lndTicker 40s linear infinite;
-}
-
-.lnd-root ::selection {
-  background: rgba(129, 140, 248, 0.2);
-  color: #fff;
-}
-
-.lnd-nav-link {
-  font-family: var(--font-jetbrains, ui-monospace, monospace);
-  font-size: 12px;
-  font-weight: 500;
-  color: #9ca3af;
-  text-decoration: none;
-  padding: 6px 14px;
-  border: 1px solid #222;
-  border-radius: 5px;
-  transition: all 0.2s;
-}
-.lnd-nav-link:hover { color: #e0e0e0; border-color: #6b7280; }
-
-.lnd-cta-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-jetbrains, ui-monospace, monospace);
-  font-size: 14px;
-  font-weight: 600;
-  color: #000;
-  background: #818cf8;
-  padding: 12px 24px;
-  border-radius: 6px;
-  text-decoration: none;
-  transition: background 0.2s, transform 0.1s;
-}
-.lnd-cta-primary {
-  transition: all 0.3s ease;
-}
-
-.lnd-cta-primary:hover {
-  background: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 0 18px rgba(129, 140, 248, 0.5);
-}
-
-.lnd-cta-primary:active {
-  transform: scale(0.97);
-}
-
-.lnd-cta-secondary {
-  transition: all 0.3s ease;
-}
-
-.lnd-cta-secondary:hover {
-  background: #818cf8;
-  color: #fff;
-  border-color: #818cf8;
-  transform: translateY(-2px);
-}
-
-
-.lnd-cta-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-jetbrains, ui-monospace, monospace);
-  font-size: 13px;
-  font-weight: 500;
-  color: #9ca3af;
-  background: transparent;
-  padding: 11px 22px;
-  border-radius: 6px;
-  border: 1px solid #222;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
 
 .lnd-cell {
-  background: rgba(8, 8, 10, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.035);
-  border-radius: 12px;
-  padding: 18px 20px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(8, 8, 12, 0.6);
   box-shadow: 
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 4px 20px rgba(0, 0, 0, 0.35);
@@ -364,7 +238,6 @@ body {
 }
 
 /* ── Global focus styles (WCAG 2.1 AA) ── */
-/* Visible focus ring for all interactive elements */
 :focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;

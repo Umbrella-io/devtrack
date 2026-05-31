@@ -102,25 +102,24 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/");
 
-<<<<<<< HEAD
   return (
     <DashboardSSEProvider>
-      <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
+      <div className="min-h-screen bg-[var(--background)] px-4 py-6 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
         <DashboardHeader />
 
         {/* Quick actions */}
-        <div className="mt-8 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-6 mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {/* Left side actions */}
-          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <Link
               href="/wrapped"
-              className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl border border-[var(--accent)] bg-[var(--accent)]/10 px-5 py-2.5 text-sm font-semibold text-[var(--accent)] shadow-sm shadow-[var(--accent)]/20 transition-all hover:bg-[var(--accent)]/20 hover:scale-[1.02]"
+              className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl border border-[var(--accent)] bg-[var(--accent)]/10 px-5 py-3 sm:py-2.5 text-sm font-semibold text-[var(--accent)] shadow-sm shadow-[var(--accent)]/20 transition-all hover:bg-[var(--accent)]/20 hover:scale-[1.02] min-h-[44px]"
             >
               Year in Code
             </Link>
             <Link
               href="/dashboard/settings"
-              className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium transition-all hover:bg-white/10 hover:scale-[1.02]"
+              className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 sm:py-2.5 text-sm font-medium transition-all hover:bg-white/10 hover:scale-[1.02] min-h-[44px]"
             >
               Settings
             </Link>
@@ -136,15 +135,15 @@ export default async function DashboardPage() {
         </div>
 
         {/* Hero Section */}
-        <section className="mt-8">
+        <section className="mt-6 sm:mt-8">
           <TodayFocusHero userName={session.user?.name ?? null} />
         </section>
 
         {/* 1. OVERVIEW SECTION */}
-        <section className="mt-14 space-y-6">
+        <section className="mt-10 sm:mt-14 space-y-6">
           <div className="flex items-center gap-3 border-b border-white/10 pb-4">
             <div className="h-8 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_15px_var(--accent)]"></div>
-            <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Overview</h2>
           </div>
           <div className="grid grid-cols-1 gap-6 w-full">
             <WeeklySummaryCard />
@@ -160,19 +159,23 @@ export default async function DashboardPage() {
         </section>
 
         {/* 2. ACTIVITY & CODING TIME */}
-        <section id="streaks" className="mt-14 space-y-6 scroll-mt-28">
+        <section id="streaks" className="mt-10 sm:mt-14 space-y-6 scroll-mt-20 sm:scroll-mt-28">
           <div className="flex items-center gap-3 border-b border-white/10 pb-4">
             <div className="h-8 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
-            <h2 className="text-2xl font-bold tracking-tight">Activity & Coding</h2>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Activity & Coding</h2>
           </div>
-          
+
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
             <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
-              <div className="w-full overflow-x-auto pb-2">
-                <ContributionGraph />
+              <div className="w-full overflow-x-auto pb-2 -mx-0">
+                <div className="min-w-0">
+                  <ContributionGraph />
+                </div>
               </div>
               <div className="w-full overflow-x-auto pb-2">
-                <ContributionHeatmap />
+                <div className="min-w-0">
+                  <ContributionHeatmap />
+                </div>
               </div>
               <LazyWidget fallback={<SkeletonCard />}>
                 <ActivityRingChart />
@@ -193,13 +196,12 @@ export default async function DashboardPage() {
         </section>
 
         {/* 3. ANALYTICS & REPOSITORIES */}
-        <section id="pull-requests" className="mt-14 space-y-6 scroll-mt-28">
+        <section id="pull-requests" className="mt-10 sm:mt-14 space-y-6 scroll-mt-20 sm:scroll-mt-28">
           <div className="flex items-center gap-3 border-b border-white/10 pb-4">
             <div className="h-8 w-1.5 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
-            <h2 className="text-2xl font-bold tracking-tight">Analytics & Repositories</h2>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Analytics & Repositories</h2>
           </div>
 
-          {/* Repo Analytics Explorer spans full width */}
           <div className="w-full overflow-hidden">
             <LazyWidget fallback={<SkeletonCard />}>
               <RepoAnalyticsExplorer />
@@ -235,10 +237,10 @@ export default async function DashboardPage() {
         </section>
 
         {/* 4. GOALS & INSIGHTS */}
-        <section id="goals" className="mt-14 space-y-6 scroll-mt-28 mb-12">
+        <section id="goals" className="mt-10 sm:mt-14 space-y-6 scroll-mt-20 sm:scroll-mt-28 mb-12">
           <div className="flex items-center gap-3 border-b border-white/10 pb-4">
             <div className="h-8 w-1.5 rounded-full bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
-            <h2 className="text-2xl font-bold tracking-tight">Goals & Insights</h2>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Goals & Insights</h2>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
@@ -266,46 +268,5 @@ export default async function DashboardPage() {
         </section>
       </div>
     </DashboardSSEProvider>
-=======
-  if (!session) {
-    redirect("/");
-  }
-
-  return (
-    <div
-      className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors"
-    >
-      <DashboardHeader />
-
-      <main id="main-content" aria-label="Developer dashboard">
-        {/* Live region: announces dynamic alerts to screen readers */}
-        <div aria-live="polite" aria-atomic="true" className="sr-only" id="live-announcer" />
-
-        <StreakAtRiskBanner />
-
-        {/* Row 1: Contribution graph + Streak */}
-        <section aria-label="Activity overview" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <ContributionGraph />
-          </div>
-          <div className="flex flex-col gap-6">
-            <StreakTracker />
-          </div>
-        </section>
-
-        {/* Row 2: PR metrics */}
-        <section aria-label="Pull request analytics" className="mt-6">
-          <PRMetrics />
-        </section>
-
-        {/* Row 3: Top repos + Language breakdown + Goal tracker */}
-        <section aria-label="Repositories, languages, and goals" className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <TopRepos />
-          <LanguageBreakdown />
-          <GoalTracker />
-        </section>
-      </main>
-    </div>
->>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
   );
 }

@@ -89,11 +89,10 @@ export default function DashboardHeader() {
   const [isPublic, setIsPublic] = useState<boolean | null>(null);
   const [greeting, setGreeting] = useState<string>("Welcome back");
 
-  // Determine the user's personalized greeting string based on local timestamp metrics
   useEffect(() => {
     const computeCurrentGreeting = () => {
       const currentHour = new Date().getHours();
-      
+
       if (currentHour >= 5 && currentHour < 12) {
         return "Good morning ☀️";
       } else if (currentHour >= 12 && currentHour < 17) {
@@ -107,6 +106,7 @@ export default function DashboardHeader() {
 
     setGreeting(computeCurrentGreeting());
   }, []);
+
   const { lastSynced } = useDashboardSync();
   const [now, setNow] = useState(() => Date.now());
 
@@ -135,8 +135,8 @@ export default function DashboardHeader() {
     loadSettings();
   }, [session]);
 
-  // Extract a fallback username parameter from active session data strings
   const displayName = session?.user?.name || session?.githubLogin || "Developer";
+
   useEffect(() => {
     if (!lastSynced) return;
 
@@ -152,27 +152,25 @@ export default function DashboardHeader() {
     : null;
 
   return (
-<<<<<<< HEAD
-    <header className="relative mb-8 overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]/95 p-5 shadow-[var(--shadow-soft)] backdrop-blur-md transition-all duration-300 hover:shadow-[var(--shadow-medium)] md:p-6">
+    <header className="relative mb-6 sm:mb-8 overflow-hidden rounded-2xl sm:rounded-3xl border border-[var(--border)] bg-[var(--card)]/95 p-4 sm:p-5 shadow-[var(--shadow-soft)] backdrop-blur-md transition-all duration-300 hover:shadow-[var(--shadow-medium)] md:p-6">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/40 to-transparent" />
       <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[var(--accent)]/10 blur-3xl" />
-      <div className="flex min-w-0 flex-col gap-5 md:flex-row md:items-end md:justify-between">
 
+      <div className="flex min-w-0 flex-col gap-4 sm:gap-5 md:flex-row md:items-end md:justify-between">
         {/* Left Section */}
-        <div>
+        <div className="min-w-0">
           <div className="flex flex-col gap-1">
-            {/* Dynamic Personalized Friendly Greeting Badge Element Overlay */}
-            <div className="inline-flex items-center gap-1.5 self-start rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)] transition-all duration-300">
-              <span className="relative flex h-1.5 w-1.5">
+            <div className="inline-flex items-center gap-1.5 self-start rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)] transition-all duration-300 max-w-full">
+              <span className="relative flex h-1.5 w-1.5 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--accent)]"></span>
               </span>
-              <span>
+              <span className="truncate">
                 {greeting}, {displayName}!
               </span>
             </div>
 
-            <h1 className="bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-3xl font-extrabold text-transparent md:text-4xl mt-1">
+            <h1 className="bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-2xl sm:text-3xl font-extrabold text-transparent md:text-4xl mt-1">
               Dashboard
             </h1>
           </div>
@@ -188,21 +186,21 @@ export default function DashboardHeader() {
         </div>
 
         {/* Right Section */}
-        <div className="flex min-w-0 flex-col gap-3 sm:items-end">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {isPublic === true && session?.githubLogin && (
               <a
                 href={`/u/${session.githubLogin}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
+                className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold min-h-[44px]"
                 title="View your public profile"
               >
                 Share Profile
               </a>
             )}
 
-            <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
+            <div className="flex items-center gap-1.5 sm:gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-1.5 sm:p-2 shadow-sm backdrop-blur-sm">
               <div className="transition-transform duration-200 hover:scale-[1.05]">
                 <KeyboardShortcuts />
               </div>
@@ -228,40 +226,9 @@ export default function DashboardHeader() {
       </div>
 
       {/* Bottom Toggle */}
-      <div className="mt-5">
+      <div className="mt-4 sm:mt-5">
         <AccountToggle />
       </div>
-=======
-    <header
-      className="flex flex-wrap items-center justify-between p-4 mb-8 gap-3 border-b border-[var(--border)] pb-6"
-      role="banner"
-    >
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-[var(--muted-foreground)]">
-          Your coding activity at a glance
-        </p>
-      </div>
-
-      <nav aria-label="User actions" className="flex flex-wrap items-center gap-3">
-        {settings?.is_public && session?.githubLogin && (
-          <a
-            href={`/u/${session.githubLogin}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="View your public profile (opens in new tab)"
-            className="px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors"
-          >
-            Share Profile
-          </a>
-        )}
-        <UserAvatar />
-        <ThemeToggle />
-        <SignOutButton />
-      </nav>
->>>>>>> 393b334 (fix: add keyboard navigation and ARIA labels for accessibility (closes #1308))
     </header>
   );
 }
