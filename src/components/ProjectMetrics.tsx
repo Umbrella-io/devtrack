@@ -421,9 +421,9 @@ export default function ProjectMetrics() {
             </div>
             <div className="mt-1 text-sm text-[var(--muted-foreground)]">
               {stat.label}
-            </div>
+        </div>
           </div>
-        ))}
+      ))}
       </div>
       {data?.recentIssues && data.recentIssues.length > 0 && (
         <div>
