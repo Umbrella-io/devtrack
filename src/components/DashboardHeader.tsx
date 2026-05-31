@@ -249,6 +249,7 @@ export default function DashboardHeader() {
           </div>
         </div>
       </div>
+      </div>
 
       {/* Bottom Toggle */}
       <div className="mt-5">
