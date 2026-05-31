@@ -543,8 +543,8 @@ function SettingsPageContent() {
     }
   };
 
-  // ── Save bio to API ────────────────────────────────────────────────────────
-  const handleSaveBio = async () => {
+  // ── Save plain bio to API ──────────────────────────────────────────────────
+  const handleSaveBioPlain = async () => {
     if (!settings) return;
     setSavingBio(true);
     try {
@@ -783,7 +783,7 @@ function SettingsPageContent() {
             <div className="mt-3">
               <button
                 type="button"
-                onClick={handleSaveBio}
+                onClick={handleSaveBioPlain}
                 disabled={savingBio}
                 className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
               >

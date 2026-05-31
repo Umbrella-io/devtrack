@@ -235,11 +235,14 @@ export default async function PublicProfilePage({
       </div>
 
       {/* Custom Spotlight Repositories */}
-      {profile.spotlightRepos && profile.spotlightRepos.length > 0 && (
+      {profile.spotlightRepos?.length ? (
         <div className="mt-6">
-          <PinnedReposWidget initialRepos={profile.spotlightRepos} isPublic={true} />
+          <PinnedReposWidget
+            initialRepos={profile.spotlightRepos}
+            isPublic={true}
+          />
         </div>
-      )}
+      ) : null}
 
       {/* Row 2: Top repos */}
       <div className="mt-6">
@@ -292,8 +295,8 @@ function PublicContributionGraph({
             key={d.day}
             className="aspect-square rounded-sm"
             style={{
-              backgroundColor: d.commits > 0 ? "#4f46e5" : "#e5e7eb",
-              opacity: d.commits > 0 ? Math.min(d.commits / 10, 1) : 1,
+              backgroundColor: d.commits ? "#4f46e5" : "#e5e7eb",
+              opacity: d.commits ? Math.min(d.commits / 10, 1) : 1,
             }}
             title={`${d.day}: ${d.commits} commits`}
           />
