@@ -26,7 +26,6 @@ interface UserSettings {
   discord_webhook_url?: string;
   timezone?: string;
   pinned_repos?: string[];
-  bio?: string; // ← NEW
 }
 
 interface LinkedAccount {
@@ -146,9 +145,6 @@ function SettingsPageContent() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
-  // ── Bio state ──────────────────────────────────────────────────────────────
-  const [bio, setBio] = useState("");
-
   // Spotlight Repos States
   const [userRepos, setUserRepos] = useState<string[]>([]);
   const [loadingRepos, setLoadingRepos] = useState(false);
@@ -250,7 +246,6 @@ function SettingsPageContent() {
           setBioDraft(data.bio ?? "");
           setDiscordWebhook(data.discord_webhook_url || "");
           setTimezone(data.timezone || "UTC");
-          setBio(data.bio || ""); // ← populate bio from API
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -543,32 +538,6 @@ function SettingsPageContent() {
     }
   };
 
-  // ── Save plain bio to API ──────────────────────────────────────────────────
-  const handleSaveBioPlain = async () => {
-    if (!settings) return;
-    setSavingBio(true);
-    try {
-      const res = await fetch("/api/user/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bio }),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setSettings(updated);
-        setIsDirty(false);
-        toast.success("Bio saved successfully!");
-      } else {
-        toast.error("Failed to save bio");
-      }
-    } catch (error) {
-      console.error("Error saving bio:", error);
-      toast.error("Failed to save bio");
-    } finally {
-      setSavingBio(false);
-    }
-  };
-
   const copyShareLink = () => {
     if (!settings) return;
     const link = `${window.location.origin}/u/${settings.github_login}`;
@@ -750,10 +719,9 @@ function SettingsPageContent() {
 
             <textarea
               id="bio"
-              value={bio}
+              value={bioDraft}
               onChange={(e) => {
-                // Hard-cap at BIO_MAX characters
-                setBio(e.target.value.slice(0, BIO_MAX));
+                setBioDraft(e.target.value.slice(0, BIO_MAX));
                 setIsDirty(true);
               }}
               placeholder="Tell others about yourself..."
@@ -765,25 +733,25 @@ function SettingsPageContent() {
             {/* Character counter */}
             <div className="flex items-center justify-between mt-1">
               <p className="text-xs text-[var(--muted-foreground)]">
-                {bio.length === 0 && "Shown on your public /u/ page."}
+                {bioDraft.length === 0 && "Shown on your public /u/ page."}
               </p>
               <p
                 className={`text-xs font-medium tabular-nums transition-colors ${
-                  bio.length >= BIO_MAX
+                  bioDraft.length >= BIO_MAX
                     ? "text-[var(--destructive)]"
-                    : bio.length >= Math.floor(BIO_MAX * 0.9)
+                    : bioDraft.length >= Math.floor(BIO_MAX * 0.9)
                     ? "text-yellow-500"
                     : "text-[var(--muted-foreground)]"
                 }`}
               >
-                {bio.length} / {BIO_MAX}
+                {bioDraft.length} / {BIO_MAX}
               </p>
             </div>
 
             <div className="mt-3">
               <button
                 type="button"
-                onClick={handleSaveBioPlain}
+                onClick={handleSaveBio}
                 disabled={savingBio}
                 className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
               >
