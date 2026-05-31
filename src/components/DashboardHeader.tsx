@@ -212,15 +212,11 @@ export default function DashboardHeader() {
           {/* 📋 Updated Action Button Group Container */}
           {isPublic === true && session?.githubLogin && (
             <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="flex flex-wrap items-center gap-3">
-            {isPublic === true && session?.githubLogin && (
               <a
                 href={`/u/${session.githubLogin}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="primary-button rounded-xl px-4 py-2 text-sm font-semibold flex-1 sm:flex-initial text-center"
-                style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", fontSize: 12 }}
-                className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
                 title="View your public profile"
               >
                 Share Profile
@@ -235,55 +231,27 @@ export default function DashboardHeader() {
                 {copied ? "Copied! ✓" : "Copy Link 📋"}
               </button>
             </div>
-            <a
-              href={`/u/${session.githubLogin}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
-              title="View your public profile"
-            >
-              Share Profile
-            </a>
           )}
 
-          <div className="grid w-full grid-cols-2 gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] p-3 shadow-sm sm:w-auto sm:grid-cols-5 sm:gap-3">
-
-            <div className="justify-self-stretch transition-transform duration-200 hover:scale-[1.02] sm:justify-self-start">
+          <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
+            <div className="transition-transform duration-200 hover:scale-[1.05]">
               <KeyboardShortcuts />
             </div>
 
-            <div className="justify-self-stretch transition-transform duration-200 hover:scale-[1.02] sm:justify-self-start">
+            <div className="transition-transform duration-200 hover:scale-[1.05]">
               <NotificationBell />
             </div>
 
-            <div className="col-span-2 justify-self-stretch transition-transform duration-200 hover:scale-[1.02] sm:col-span-1 sm:justify-self-start">
+            <div className="transition-transform duration-200 hover:scale-[1.05]">
               <UserAvatar />
             </div>
 
-            <div className="justify-self-stretch transition-transform duration-200 hover:rotate-12 sm:justify-self-start">
+            <div className="transition-transform duration-200 hover:rotate-12">
               <ThemeToggle />
-            )}
+            </div>
 
-            <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
-              <div className="transition-transform duration-200 hover:scale-[1.05]">
-                <KeyboardShortcuts />
-              </div>
-
-              <div className="transition-transform duration-200 hover:scale-[1.05]">
-                <NotificationBell />
-              </div>
-
-              <div className="transition-transform duration-200 hover:scale-[1.05]">
-                <UserAvatar />
-              </div>
-
-              <div className="transition-transform duration-200 hover:rotate-12">
-                <ThemeToggle />
-              </div>
-
-              <div className="transition-transform duration-200 hover:scale-[1.05]">
-                <SignOutButton />
-              </div>
+            <div className="transition-transform duration-200 hover:scale-[1.05]">
+              <SignOutButton />
             </div>
           </div>
         </div>

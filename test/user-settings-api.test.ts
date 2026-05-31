@@ -54,6 +54,7 @@ describe("User Settings API Endpoints", () => {
         weekly_digest_opt_in: false,
         discord_webhook_url: null,
         timezone: "UTC",
+        webhook_url: null,
       },
       error: null,
     });
@@ -82,6 +83,7 @@ describe("User Settings API Endpoints", () => {
                 weekly_digest_opt_in: updatesObj.weekly_digest_opt_in !== undefined ? updatesObj.weekly_digest_opt_in : false,
                 discord_webhook_url: updatesObj.discord_webhook_url !== undefined ? updatesObj.discord_webhook_url : null,
                 timezone: updatesObj.timezone !== undefined ? updatesObj.timezone : "UTC",
+                webhook_url: updatesObj.webhook_url !== undefined ? updatesObj.webhook_url : null,
               },
               error: null,
             }),
@@ -146,6 +148,7 @@ describe("User Settings API Endpoints", () => {
         has_wakatime_key: true,
         discord_webhook_url: null,
         timezone: "UTC",
+        webhook_url: null,
       });
     });
   });
@@ -231,6 +234,7 @@ describe("User Settings API Endpoints", () => {
         has_wakatime_key: true,
         discord_webhook_url: null,
         timezone: "UTC",
+        webhook_url: null,
       });
 
       // Verify that no database updates were triggered (mockUpdate not called because updates is empty)
@@ -258,6 +262,7 @@ describe("User Settings API Endpoints", () => {
         has_wakatime_key: true,
         discord_webhook_url: null,
         timezone: "UTC",
+        webhook_url: null,
       });
 
       // Verify update database query was called with the updates object
