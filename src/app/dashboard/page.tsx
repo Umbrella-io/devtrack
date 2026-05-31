@@ -1,7 +1,9 @@
+import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
 import LazyWidget from "@/components/LazyWidget";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
 import GoalTracker from "@/components/GoalTracker";
+import TodayFocusHero from "@/components/TodayFocusHero";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
@@ -25,7 +27,6 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
-import { WidgetErrorBoundary } from "@/components/WidgetErrorBoundary"; // 🛡️ Added boundary
 
 const SkeletonCard = () => (
   <div
@@ -104,158 +105,188 @@ export default async function DashboardPage() {
 
   return (
     <DashboardSSEProvider>
-      <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
-        <DashboardHeader />
+      <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
+        <WidgetErrorBoundary>
+          <DashboardHeader />
+        </WidgetErrorBoundary>
 
-        {/* Action bar */}
-        <div className="mb-6 flex flex-wrap items-stretch justify-center gap-2 sm:justify-end">
-          <Link
-            href="/wrapped"
-            className="flex min-w-0 flex-1 items-center justify-center rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-center text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90 sm:min-w-[140px] sm:flex-none"
-          >
-            Year in Code
-          </Link>
-          <Link
-            href="/dashboard/settings"
-            className="secondary-button flex min-w-0 flex-1 items-center justify-center rounded-xl px-4 py-2 text-center text-sm font-medium sm:min-w-[140px] sm:flex-none"
-          >
-            Settings
-          </Link>
+        {/* Quick actions */}
+        <div className="mt-8 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <Link
+              href="/wrapped"
+              className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl border border-[var(--accent)] bg-[var(--accent)]/10 px-5 py-2.5 text-sm font-semibold text-[var(--accent)] shadow-sm shadow-[var(--accent)]/20 transition-all hover:bg-[var(--accent)]/20 hover:scale-[1.02]"
+            >
+              Year in Code
+            </Link>
+            <Link
+              href="/dashboard/settings"
+              className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium transition-all hover:bg-white/10 hover:scale-[1.02]"
+            >
+              Settings
+            </Link>
+          </div>
           <div className="w-full sm:w-auto">
             <ExportButton />
           </div>
         </div>
 
-        <StreakAtRiskBanner />
-
-        {/* Weekly summary — full width */}
-        <div className="mt-6">
-          <WidgetErrorBoundary><WeeklySummaryCard /></WidgetErrorBoundary>
+        <div className="space-y-4">
+          <StreakAtRiskBanner />
         </div>
 
-        {/* Personal records + AI mentor side by side */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <WidgetErrorBoundary><PersonalRecords /></WidgetErrorBoundary>
-          <WidgetErrorBoundary><AIMentorWidget /></WidgetErrorBoundary>
-        </div>
+        {/* Hero Section */}
+        <section className="mt-8">
+          <WidgetErrorBoundary>
+            <TodayFocusHero userName={session.user?.name ?? null} />
+          </WidgetErrorBoundary>
+        </section>
 
-        {/* ── Row 1: Contribution graph (2/3) + Streak sidebar (1/3) ── */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 flex flex-col gap-6">
-            <WidgetErrorBoundary><ContributionGraph /></WidgetErrorBoundary>
+        {/* 1. OVERVIEW SECTION */}
+        <section className="mt-14 space-y-6">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+            <div className="h-8 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_15px_var(--accent)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
+          </div>
+          <div className="grid grid-cols-1 gap-6 w-full">
+            <WidgetErrorBoundary>
+              <WeeklySummaryCard />
+            </WidgetErrorBoundary>
+          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <WidgetErrorBoundary>
+                <PersonalRecords />
+              </WidgetErrorBoundary>
+            </div>
+            <div className="flex flex-col gap-6 w-full h-full">
+              <WidgetErrorBoundary>
+                <AIMentorWidget />
+              </WidgetErrorBoundary>
+            </div>
+          </div>
+        </section>
+
+        {/* 2. ACTIVITY & CODING TIME */}
+        <section id="streaks" className="mt-14 space-y-6 scroll-mt-28">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+            <div className="h-8 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Activity & Coding</h2>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
+            <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
+              <div className="w-full overflow-x-auto pb-2">
+                <WidgetErrorBoundary>
+                  <ContributionGraph />
+                </WidgetErrorBoundary>
+              </div>
+              <div className="w-full overflow-x-auto pb-2">
+                <LazyWidget fallback={<SkeletonCard />}>
+                  <ContributionHeatmap />
+                </LazyWidget>
+              </div>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <ActivityRingChart />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <CodingActivityInsightsCard />
+              </LazyWidget>
+            </div>
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <WidgetErrorBoundary>
+                <StreakTracker />
+              </WidgetErrorBoundary>
+              <WidgetErrorBoundary>
+                <LocalCodingTime />
+              </WidgetErrorBoundary>
+              <WidgetErrorBoundary>
+                <CodingTimeWidget />
+              </WidgetErrorBoundary>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <CommitTimeChart />
+              </LazyWidget>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. ANALYTICS & REPOSITORIES */}
+        <section id="pull-requests" className="mt-14 space-y-6 scroll-mt-28">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+            <div className="h-8 w-1.5 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Analytics & Repositories</h2>
+          </div>
+
+          <div className="w-full overflow-hidden">
             <LazyWidget fallback={<SkeletonCard />}>
-              <WidgetErrorBoundary><ContributionHeatmap /></WidgetErrorBoundary>
+              <RepoAnalyticsExplorer />
             </LazyWidget>
           </div>
 
-          <div className="flex flex-col gap-6">
-            <WidgetErrorBoundary><StreakTracker /></WidgetErrorBoundary>
-            <WidgetErrorBoundary><LocalCodingTime /></WidgetErrorBoundary>
-            <WidgetErrorBoundary><CodingTimeWidget /></WidgetErrorBoundary>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <WidgetErrorBoundary>
+                <PRMetrics />
+              </WidgetErrorBoundary>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <PRBreakdownChart />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <PRReviewTrendChart />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <DiscussionsWidget />
+              </LazyWidget>
+            </div>
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <WidgetErrorBoundary>
+                <CommunityMetrics />
+              </WidgetErrorBoundary>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <PinnedReposWidget />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <TopRepos />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <InactiveRepositoriesCard />
+              </LazyWidget>
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* Friend comparison */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><FriendComparison /></WidgetErrorBoundary>
-          </LazyWidget>
-        </div>
-
-        {/* Repo analytics explorer */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><RepoAnalyticsExplorer /></WidgetErrorBoundary>
-          </LazyWidget>
-        </div>
-
-        {/* ── Row 2: PR metrics + Community metrics ── */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <WidgetErrorBoundary><PRMetrics /></WidgetErrorBoundary>
-          <WidgetErrorBoundary><CommunityMetrics /></WidgetErrorBoundary>
-        </div>
-
-        {/* PR breakdown + commit time */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><PRBreakdownChart /></WidgetErrorBoundary>
-          </LazyWidget>
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><CommitTimeChart /></WidgetErrorBoundary>
-          </LazyWidget>
-        </div>
-
-        {/* Activity ring */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><ActivityRingChart /></WidgetErrorBoundary>
-          </LazyWidget>
-        </div>
-
-        {/* Coding activity insights */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><CodingActivityInsightsCard /></WidgetErrorBoundary>
-          </LazyWidget>
-        </div>
-
-        {/* PR review trend */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><PRReviewTrendChart /></WidgetErrorBoundary>
-          </LazyWidget>
-        </div>
-
-        {/* ── Row 3: Issues + CI analytics ── */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <LazyWidget fallback={<SkeletonCard />}>
-              <WidgetErrorBoundary><IssueMetrics /></WidgetErrorBoundary>
-            </LazyWidget>
+        {/* 4. GOALS & INSIGHTS */}
+        <section id="goals" className="mt-14 space-y-6 scroll-mt-28 mb-12">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+            <div className="h-8 w-1.5 rounded-full bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Goals & Insights</h2>
           </div>
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><CIAnalytics /></WidgetErrorBoundary>
-          </LazyWidget>
-        </div>
 
-        {/* Discussions */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><DiscussionsWidget /></WidgetErrorBoundary>
-          </LazyWidget>
-        </div>
-
-        {/* Pinned spotlight repos */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><PinnedReposWidget /></WidgetErrorBoundary>
-          </LazyWidget>
-        </div>
-
-        {/* Inactive repo reminder */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><InactiveRepositoriesCard /></WidgetErrorBoundary>
-          </LazyWidget>
-        </div>
-
-        {/* ── Row 4: Top repos + Language breakdown + Goal tracker ── */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><TopRepos /></WidgetErrorBoundary>
-          </LazyWidget>
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><LanguageBreakdown /></WidgetErrorBoundary>
-          </LazyWidget>
-          <WidgetErrorBoundary><GoalTracker /></WidgetErrorBoundary>
-        </div>
-
-        {/* Recent activity */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <WidgetErrorBoundary><RecentActivity /></WidgetErrorBoundary>
-          </LazyWidget>
-        </div>
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
+            <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
+              <LazyWidget fallback={<SkeletonCard />}>
+                <IssueMetrics />
+              </LazyWidget>
+              <WidgetErrorBoundary>
+                <GoalTracker />
+              </WidgetErrorBoundary>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <RecentActivity />
+              </LazyWidget>
+            </div>
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <LazyWidget fallback={<SkeletonCard />}>
+                <CIAnalytics />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <LanguageBreakdown />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <FriendComparison />
+              </LazyWidget>
+            </div>
+          </div>
+        </section>
       </div>
     </DashboardSSEProvider>
   );
