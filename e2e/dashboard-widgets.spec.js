@@ -155,6 +155,9 @@ test.beforeEach(async ({ page }) => {
     "**/api/local-coding/stats**",
     "**/api/metrics/coding-time**",
     "**/api/metrics/coding-activity-insights**",
+    "**/api/metrics/repo-explorer**",
+    "**/api/user/pinned-repos/details**",
+    "**/api/metrics/pr-review-time**",
   ];
 
   for (const pattern of metricRoutes) {
@@ -319,6 +322,15 @@ function mockMetricResponse(url) {
       productivityLevel: "Low",
       timezone: "UTC",
     };
+  }
+  if (url.includes("/api/metrics/repo-explorer")) {
+    return { repos: [] };
+  }
+  if (url.includes("/api/user/pinned-repos/details")) {
+    return { repos: [] };
+  }
+  if (url.includes("/api/metrics/pr-review-time")) {
+    return { avgReviewHours: 0, avgFirstReviewHours: 0 };
   }
   return {};
 }
