@@ -10,6 +10,10 @@ import MarkdownBio from "@/components/MarkdownBio";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import WebhookManager from "@/components/webhook/WebhookManager";
+
+// ── Max length for the profile bio ──────────────────────────────────────────
+const BIO_MAX = 160;
 
 interface UserSettings {
   id: string;
@@ -641,6 +645,7 @@ function SettingsPageContent() {
             {statusMessage.message}
           </div>
         )}
+
         {/* Public Profile Section */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="flex items-start justify-between mb-6 gap-4">
@@ -659,6 +664,7 @@ function SettingsPageContent() {
                 <input
                   type="checkbox"
                   checked={settings.is_public}
+                  aria-label="Toggle Public Profile"
                   onChange={(e) => handleTogglePublic(e.target.checked)}
                   disabled={saving}
                   className="sr-only"
@@ -701,6 +707,58 @@ function SettingsPageContent() {
               </div>
             </div>
           )}
+
+          {/* ── Bio field with character counter ── NEW ─────────────────────── */}
+          <div className="mt-6 pt-6 border-t border-[var(--border)]">
+            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-1">
+              Bio
+            </h3>
+            <p className="text-sm text-[var(--muted-foreground)] mb-3">
+              Write a short bio shown on your public profile.
+            </p>
+
+            <textarea
+              id="bio"
+              value={bioDraft}
+              onChange={(e) => {
+                setBioDraft(e.target.value.slice(0, BIO_MAX));
+                setIsDirty(true);
+              }}
+              placeholder="Tell others about yourself..."
+              rows={3}
+              maxLength={BIO_MAX}
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] resize-none"
+            />
+
+            {/* Character counter */}
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-xs text-[var(--muted-foreground)]">
+                {bioDraft.length === 0 && "Shown on your public /u/ page."}
+              </p>
+              <p
+                className={`text-xs font-medium tabular-nums transition-colors ${
+                  bioDraft.length >= BIO_MAX
+                    ? "text-[var(--destructive)]"
+                    : bioDraft.length >= Math.floor(BIO_MAX * 0.9)
+                    ? "text-yellow-500"
+                    : "text-[var(--muted-foreground)]"
+                }`}
+              >
+                {bioDraft.length} / {BIO_MAX}
+              </p>
+            </div>
+
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={handleSaveBio}
+                disabled={savingBio}
+                className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {savingBio ? "Saving..." : "Save Bio"}
+              </button>
+            </div>
+          </div>
 
           <div className="mt-6 pt-6 border-t border-[var(--border)]">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -827,7 +885,7 @@ function SettingsPageContent() {
                 type="button"
                 onClick={() => {
                   // The toggles themselves already call the API,
-                  // but for the heatmap theme which is local only, 
+                  // but for the heatmap theme which is local only,
                   // or to clear the dirty state after a manual change,
                   // we provide this clear feedback.
                   setIsDirty(false);
@@ -858,6 +916,7 @@ function SettingsPageContent() {
                 <input
                   type="checkbox"
                   checked={settings.leaderboard_opt_in}
+                  aria-label="Toggle Public Leaderboard"
                   onChange={(e) => handleToggleLeaderboard(e.target.checked)}
                   disabled={saving}
                   className="sr-only"
@@ -937,7 +996,7 @@ function SettingsPageContent() {
                       >
                         ↓
                       </button>
-                      
+
                       {/* Unpin Button */}
                       <button
                         type="button"
@@ -1031,6 +1090,7 @@ function SettingsPageContent() {
                 <input
                   type="checkbox"
                   checked={settings.weekly_digest_opt_in}
+                  aria-label="Toggle Weekly Email Digest"
                   onChange={(e) => handleToggleWeeklyDigest(e.target.checked)}
                   disabled={saving}
                   className="sr-only"
@@ -1269,6 +1329,8 @@ function SettingsPageContent() {
             </button>
           </Link>
         </div>
+
+        <WebhookManager />
 
         <ConfirmModal
           isOpen={showConfirmModal}

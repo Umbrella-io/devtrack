@@ -87,6 +87,26 @@ function useDashboardSync() {
 export default function DashboardHeader() {
   const { data: session } = useSession();
   const [isPublic, setIsPublic] = useState<boolean | null>(null);
+  const [greeting, setGreeting] = useState<string>("Welcome back");
+
+  // Determine the user's personalized greeting string based on local timestamp metrics
+  useEffect(() => {
+    const computeCurrentGreeting = () => {
+      const currentHour = new Date().getHours();
+      
+      if (currentHour >= 5 && currentHour < 12) {
+        return "Good morning ☀️";
+      } else if (currentHour >= 12 && currentHour < 17) {
+        return "Good afternoon 🌤️";
+      } else if (currentHour >= 17 && currentHour < 22) {
+        return "Good evening 🌙";
+      } else {
+        return "Burning the midnight oil 🦉";
+      }
+    };
+
+    setGreeting(computeCurrentGreeting());
+  }, []);
   const { lastSynced } = useDashboardSync();
   const [now, setNow] = useState(() => Date.now());
 
@@ -115,6 +135,8 @@ export default function DashboardHeader() {
     loadSettings();
   }, [session]);
 
+  // Extract a fallback username parameter from active session data strings
+  const displayName = session?.user?.name || session?.githubLogin || "Developer";
   useEffect(() => {
     if (!lastSynced) return;
 
@@ -136,21 +158,26 @@ export default function DashboardHeader() {
       <div className="flex min-w-0 flex-col gap-5 md:flex-row md:items-end md:justify-between">
 
         {/* Left Section */}
-        <div className="min-w-0">
-          <p
-            className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted-foreground)]"
-            style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)" }}
-          >
-            Dashboard overview
-          </p>
-          <h1 className="mt-2 bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-3xl font-extrabold text-transparent md:text-4xl">
-            Dashboard
-          </h1>
-          <p
-            className="mt-2 max-w-xl text-sm leading-6 text-[var(--muted-foreground)]"
-            style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", letterSpacing: "0.06em" }}
-          >
-            coding activity at a glance
+        <div>
+          <div className="flex flex-col gap-1">
+            {/* Dynamic Personalized Friendly Greeting Badge Element Overlay */}
+            <div className="inline-flex items-center gap-1.5 self-start rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)] transition-all duration-300">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--accent)]"></span>
+              </span>
+              <span>
+                {greeting}, {displayName}!
+              </span>
+            </div>
+
+            <h1 className="bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-3xl font-extrabold text-transparent md:text-4xl mt-1">
+              Dashboard
+            </h1>
+          </div>
+
+          <p className="mt-2 text-sm md:text-base text-[var(--muted-foreground)]">
+            Your coding activity at a glance 🚀
           </p>
           {minutesAgo !== null && (
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">
@@ -161,45 +188,40 @@ export default function DashboardHeader() {
 
         {/* Right Section */}
         <div className="flex min-w-0 flex-col gap-3 sm:items-end">
-          <div className="inline-flex items-center gap-2 self-start rounded-full border border-[var(--border)] bg-[var(--card-muted)] px-3 py-1 text-[11px] font-medium text-[var(--muted-foreground)] shadow-sm sm:self-end">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            Account controls
-          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {isPublic === true && session?.githubLogin && (
+              <a
+                href={`/u/${session.githubLogin}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
+                title="View your public profile"
+              >
+                Share Profile
+              </a>
+            )}
 
-          {isPublic === true && session?.githubLogin && (
-            <a
-              href={`/u/${session.githubLogin}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
-              title="View your public profile"
-            >
-              Share Profile
-            </a>
-          )}
+            <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
+              <div className="transition-transform duration-200 hover:scale-[1.05]">
+                <KeyboardShortcuts />
+              </div>
 
-          <div className="grid w-full grid-cols-2 gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] p-3 shadow-sm sm:w-auto sm:grid-cols-5 sm:gap-3">
+              <div className="transition-transform duration-200 hover:scale-[1.05]">
+                <NotificationBell />
+              </div>
 
-            <div className="justify-self-stretch transition-transform duration-200 hover:scale-[1.02] sm:justify-self-start">
-              <KeyboardShortcuts />
+              <div className="transition-transform duration-200 hover:scale-[1.05]">
+                <UserAvatar />
+              </div>
+
+              <div className="transition-transform duration-200 hover:rotate-12">
+                <ThemeToggle />
+              </div>
+
+              <div className="transition-transform duration-200 hover:scale-[1.05]">
+                <SignOutButton />
+              </div>
             </div>
-
-            <div className="justify-self-stretch transition-transform duration-200 hover:scale-[1.02] sm:justify-self-start">
-              <NotificationBell />
-            </div>
-
-            <div className="col-span-2 justify-self-stretch transition-transform duration-200 hover:scale-[1.02] sm:col-span-1 sm:justify-self-start">
-              <UserAvatar />
-            </div>
-
-            <div className="justify-self-stretch transition-transform duration-200 hover:rotate-12 sm:justify-self-start">
-              <ThemeToggle />
-            </div>
-
-            <div className="col-span-2 justify-self-stretch transition-transform duration-200 hover:scale-[1.02] sm:col-span-1 sm:justify-self-start">
-              <SignOutButton />
-            </div>
-
           </div>
         </div>
       </div>
