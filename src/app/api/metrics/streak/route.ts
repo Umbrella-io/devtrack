@@ -253,10 +253,6 @@ export async function GET(req: NextRequest) {
         session.accessToken,
         { bypass, userId: session.githubId }
       );
-      return Response.json(
-        calculateStreakFromDates(activeDates, freezeDates)
-      );
-    } catch (e) {
       const streakData = calculateStreakFromDates(activeDates, freezeDates);
 
       if (appUserId && streakData.current > 0) {
@@ -346,8 +342,6 @@ export async function GET(req: NextRequest) {
       bypass,
       userId: accountId,
     });
-    return Response.json(calculateStreakFromDates(activeDates, freezeDates));
-  } catch (e) {
     const streakData = calculateStreakFromDates(activeDates, freezeDates);
 
     if (accountId === session.githubId && streakData.current > 0) {

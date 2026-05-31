@@ -41,8 +41,6 @@ export default function NotificationBell() {
         localStorage.setItem("devtrack:unread-notification-count", count.toString());
       }
     } catch (e) {
-      // silent fail
-    } catch {
       setError("Failed to load notifications. Please try again later.");
     } finally {
       setLoading(false);

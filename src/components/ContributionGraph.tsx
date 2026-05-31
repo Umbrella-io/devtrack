@@ -172,7 +172,6 @@ export default function ContributionGraph() {
       try {
         localStorage.setItem("devtrack:contribution-range", String(newDays));
       } catch (e) {}
-      } catch { }
     }
   };
 

@@ -18,15 +18,6 @@ export async function PATCH(
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
-  const body = await req.json().catch(() => ({}));
-  const { current } = body;
-
-  if (typeof current !== "number" || current < 0) {
-    return Response.json(
-      { error: "Invalid current value" },
-      { status: 400 }
-    );
-  }
 
   const { data: existingGoal } = await supabaseAdmin
     .from("goals")
@@ -79,10 +70,42 @@ export async function PATCH(
     }
     updates.target = target;
   }
+
+  if (unit !== undefined) {
+    if (typeof unit !== "string" || unit.trim().length === 0) {
+      return Response.json({ error: "unit must be a non-empty string" }, { status: 400 });
+    }
+    updates.unit = unit.trim();
+  }
+
+  if (recurrence !== undefined) {
+    if (recurrence !== "daily" && recurrence !== "weekly" && recurrence !== "monthly") {
+      return Response.json(
+        { error: "recurrence must be 'daily', 'weekly', or 'monthly'" },
+        { status: 400 }
+      );
+    }
+    updates.recurrence = recurrence;
+  }
+
+  if (current !== undefined) {
+    if (typeof current !== "number" || current < 0) {
+      return Response.json(
+        { error: "Invalid current value" },
+        { status: 400 }
+      );
+    }
+    updates.current = current;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return Response.json({ goal: existingGoal });
+  }
+
   const wasCompleted = existingGoal.current >= existingGoal.target;
   const { data: updatedGoal, error } = await supabaseAdmin
     .from("goals")
-    .update({ current })
+    .update(updates)
     .eq("id", params.id)
     .eq("user_id", user.id)
     .select()
