@@ -104,6 +104,11 @@ export default function NotificationBell() {
 
   return (
     <div className="relative" ref={dropdownRef}>
+      {/* Dynamic announcement live region */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {unreadCount > 0 ? `${unreadCount} unread notifications` : "No unread notifications"}
+      </div>
+
       {/* Bell button */}
       <button
         type="button"
