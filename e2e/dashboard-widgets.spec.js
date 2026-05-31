@@ -182,7 +182,7 @@ test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "Goals", exact: true })).toBeVisible({ timeout: 10000 });
   await expect(page.getByText("Make 10 commits")).toBeVisible({ timeout: 10000 });
 });
 
@@ -198,7 +198,7 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
   await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   // Wait for initial data to load so we know the component is hydrated
   await expect(page.getByRole("button", { name: "Bar" })).toBeVisible({ timeout: 15000 });
-  await page.getByRole("button", { name: "Show 90-day range" }).click();
+  await page.getByRole("button", { name: "Show 90-day range" }).first().click();
 
   await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
 });

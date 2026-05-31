@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
-const authSecret = "playwright-placeholder-secret-that-is-long-enough";
+const authSecret =
+  process.env.NEXTAUTH_SECRET ||
+  "test-nextauth-secret-for-playwright-tests";
 
 async function mockSession(page: any) {
   const token = await encode({

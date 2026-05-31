@@ -68,12 +68,21 @@ export async function GET(req: NextRequest) {
       await checkData();
 
       const interval = setInterval(() => {
+        if (req.signal.aborted) {
+          clearInterval(interval);
+          try {
+            controller.close();
+          } catch {}
+          return;
+        }
         checkData();
       }, 2000);
 
       req.signal.addEventListener("abort", () => {
         clearInterval(interval);
-        controller.close();
+        try {
+          controller.close();
+        } catch {}
       });
     },
   });

@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
     "test-nextauth-secret-for-playwright-tests";
 
   const token = await encode({
-    secret: "playwright-placeholder-secret-that-is-long-enough",
+    secret: authSecret,
     token: {
       name: "Playwright User",
       email: "playwright@example.com",

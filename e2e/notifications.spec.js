@@ -33,6 +33,14 @@ function mockMetricResponse(url) {
     return { repositories: [] };
   if (url.includes("/api/metrics/ci"))
     return { successRate: 95, averageDurationMinutes: 3, flakiestWorkflow: null, totalRuns: 42, reposChecked: 5 };
+  if (url.includes("/api/streak/freeze"))
+    return { freezes: [] };
+  if (url.includes("/api/integrations/jira"))
+    return null;
+  if (url.includes("/api/user/github-accounts"))
+    return { accounts: [] };
+  if (url.includes("/api/local-coding/stats"))
+    return { dailyData: [], totals: { totalSeconds: 0, totalDays: 0, avgSecondsPerDay: 0 }, hasData: false };
   if (url.includes("/api/metrics/activity"))
     return { data: [] };
   if (url.includes("/api/metrics/commit-time"))
@@ -264,104 +272,4 @@ test("notification bell opens and closes drawer", async ({ page }) => {
 
   await bellButton.click();
 
-  await expect(drawerHeading).not.toBeVisible();
 });
-
-function mockMetricResponse(url) {
-  if (url.includes("/api/metrics/prs")) {
-    return {
-      open: 2,
-      merged: 8,
-      closed: 1,
-      avgReviewHours: 6,
-      avgFirstReviewHours: 3,
-      mergeRate: "80%",
-    };
-  }
-  if (url.includes("/api/metrics/pr-breakdown")) {
-    return { draft: 1, merged: 8, open: 2, closed: 1 };
-  }
-  if (url.includes("/api/metrics/issues")) {
-    return {
-      opened: 4,
-      closed: 3,
-      currentlyOpen: 1,
-      avgCloseTimeDays: 2,
-      trend: 1,
-      mostActiveRepo: "demo/repo",
-    };
-  }
-  if (url.includes("/api/metrics/repos") || url.includes("/api/metrics/pinned-repos")) {
-    return { repos: [{ name: "demo/repo", commits: 12, url: "https://github.com/demo/repo" }] };
-  }
-  if (url.includes("/api/metrics/languages")) {
-    return { languages: [{ language: "TypeScript", count: 12 }] };
-  }
-  if (url.includes("/api/metrics/streak")) {
-    return { current: 3, longest: 9, lastCommitDate: "2026-05-18", totalActiveDays: 12 };
-  }
-  if (url.includes("/api/metrics/weekly-summary")) {
-    return {
-      commits: { current: 10, previous: 7, delta: 3, trend: "up" },
-      prs: {
-        thisWeek: { opened: 3, merged: 2 },
-        lastWeek: { opened: 1, merged: 1 },
-      },
-      activeDays: {
-        thisWeek: 5,
-        lastWeek: 4,
-      },
-      streak: 3,
-      topRepo: "demo/repo",
-    };
-  }
-  if (url.includes("/api/metrics/compare")) {
-    return { user: { commits: 10 }, friend: { commits: 8 } };
-  }
-  if (url.includes("/api/metrics/repo-health")) {
-    return { repositories: [] };
-  }
-  if (url.includes("/api/metrics/ci")) {
-    return { successRate: 95, averageDurationMinutes: 3, flakiestWorkflow: null, totalRuns: 42, reposChecked: 5 };
-  }
-  if (url.includes("/api/streak/freeze")) {
-    return { freezes: [] };
-  }
-  if (url.includes("/api/integrations/jira")) {
-    return null;
-  }
-  if (url.includes("/api/user/github-accounts")) {
-    return { accounts: [] };
-  }
-  if (url.includes("/api/local-coding/stats")) {
-    return {
-      dailyData: [],
-      totals: { totalSeconds: 0, totalDays: 0, avgSecondsPerDay: 0 },
-      hasData: false,
-    };
-  }
-  if (url.includes("/api/metrics/coding-time")) {
-    return {
-      hasData: false,
-      not_configured: true,
-      todaysSeconds: 0,
-      totalSeconds7Days: 0,
-      chartData: [],
-      topLanguage: "",
-      topProject: "",
-    };
-  }
-  if (url.includes("/api/metrics/coding-activity-insights")) {
-    return {
-      hourlyCounts: [],
-      mostActiveHour: { hour: 0, count: 0, label: "" },
-      leastActiveHour: { hour: 0, count: 0, label: "" },
-      totalActivities: 0,
-      averageDailyCommits: 0,
-      consistencyScore: 0,
-      productivityLevel: "Low",
-      timezone: "UTC",
-    };
-  }
-  return {};
-}

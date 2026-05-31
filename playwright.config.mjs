@@ -19,6 +19,8 @@ try {
       });
     }
   }
+  // Force E2E auth secret to match the webServer's secret to prevent decryption failures
+  process.env.NEXTAUTH_SECRET = "test-nextauth-secret-for-playwright-tests";
 } catch (e) {}
 
 const PORT = Number(process.env.PORT ?? 3000);
