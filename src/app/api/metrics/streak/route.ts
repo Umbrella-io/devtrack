@@ -20,6 +20,7 @@ async function fetchActiveDates(
   githubLogin: string,
   token: string,
   cacheContext: { bypass: boolean; userId: string }
+  , timeZone = "UTC"
 ): Promise<Set<string>> {
   // Cache key is scoped per user + githubLogin so multi-account "combined" view
   // stores each account's dates separately and merges them in the GET handler.
@@ -81,10 +82,24 @@ async function fetchActiveDates(
           items: Array<{ commit: { author: { date: string } } }>;
         };
 
-        // Extract just the date part ("YYYY-MM-DD") from each commit timestamp.
-        // Using a Set deduplicates — multiple commits on the same day count as one active day.
+        // Extract the date part ("YYYY-MM-DD") from each commit timestamp
+        // but bucket the commit into the user's local timezone so streaks are
+        // calculated relative to the user's day boundaries rather than UTC.
         for (const item of data.items) {
-          activeDates.add(item.commit.author.date.slice(0, 10));
+          const commitDate = new Date(item.commit.author.date);
+          // Format the commit into a YYYY-MM-DD in the user's timezone.
+          const parts = new Intl.DateTimeFormat("en", {
+            timeZone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).formatToParts(commitDate);
+          const year = parts.find((p) => p.type === "year")?.value;
+          const month = parts.find((p) => p.type === "month")?.value;
+          const day = parts.find((p) => p.type === "day")?.value;
+          if (year && month && day) {
+            activeDates.add(`${year}-${month}-${day}`);
+          }
         }
 
         // Stop paginating when GitHub returns fewer than 100 items (last page)
@@ -103,6 +118,7 @@ async function fetchActiveDates(
 function calculateStreakFromDates(
   activeDates: Set<string>,
   freezeDates: Set<string>
+  , timeZone = "UTC"
 ): {
   current: number;
   longest: number;
@@ -129,15 +145,66 @@ function calculateStreakFromDates(
     };
   }
 
-  const { currentStreak, longestStreak } = calculateStreak(
-    commitDays.map((day) => new Date(day))
-  );
-  const lastDay = commitDays[commitDays.length - 1];
+  // Helper: convert "YYYY-MM-DD" -> days since epoch (integer) using UTC
+  function dayKeyToDays(d: string): number {
+    const [y, m, day] = d.split("-").map((s) => Number(s));
+    return Date.UTC(y, m - 1, day) / 86400000;
+  }
+
+  // Compute runs of consecutive days (increasing by 1 day)
+  const daysNums = commitDays.map(dayKeyToDays).sort((a, b) => a - b);
+
+  let longestStreak = 1;
+  let currentRun = 1;
+  const runs: { end: string; length: number }[] = [];
+
+  for (let i = 1; i < daysNums.length; i += 1) {
+    const diff = daysNums[i] - daysNums[i - 1];
+    if (diff === 1) {
+      currentRun += 1;
+      longestStreak = Math.max(longestStreak, currentRun);
+      continue;
+    }
+    runs.push({ end: commitDays[i - 1], length: currentRun });
+    currentRun = 1;
+  }
+  runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
+
+  // Compute today/yesterday as YYYY-MM-DD in the user's timezone
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const y = parts.find((p) => p.type === "year")?.value ?? "0000";
+  const m = parts.find((p) => p.type === "month")?.value ?? "00";
+  const d = parts.find((p) => p.type === "day")?.value ?? "00";
+  const today = `${y}-${m}-${d}`;
+
+  // Yesterday computed by converting today's YYYY-MM-DD to UTC days and subtracting 1
+  const todayDays = dayKeyToDays(today);
+  const yesterdayDays = todayDays - 1;
+  const yesterdayDate = new Date(yesterdayDays * 86400000);
+  const yParts = new Intl.DateTimeFormat("en", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(yesterdayDate);
+  const yy = yParts.find((p) => p.type === "year")?.value ?? "0000";
+  const mm = yParts.find((p) => p.type === "month")?.value ?? "00";
+  const dd = yParts.find((p) => p.type === "day")?.value ?? "00";
+  const yesterday = `${yy}-${mm}-${dd}`;
+
+  const lastRun = runs[runs.length - 1];
 
   return {
-    current: currentStreak,
+    current:
+      lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0,
     longest: longestStreak,
-    lastCommitDate: lastDay,
+    lastCommitDate: commitDays[commitDays.length - 1],
     // totalActiveDays counts only days with real commits or freezes in the 90-day window,
     // not the full streak length — useful for the "active days" stat on the dashboard.
     totalActiveDays: commitDays.length,
@@ -210,15 +277,27 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Resolve the user's timezone (stored on the Supabase users row). Default to UTC.
+  let timeZone = "UTC";
+  if (appUserId) {
+    const { data: userRow } = await supabaseAdmin
+      .from("users")
+      .select("timezone")
+      .eq("id", appUserId)
+      .single();
+    if (userRow?.timezone) timeZone = userRow.timezone;
+  }
+
   // No accountId = use the primary signed-in GitHub account.
   if (!accountId) {
     try {
       const activeDates = await fetchActiveDates(
         session.githubLogin,
         session.accessToken,
-        { bypass, userId: session.githubId }
+        { bypass, userId: session.githubId },
+        timeZone
       );
-      const streakData = calculateStreakFromDates(activeDates, freezeDates);
+      const streakData = calculateStreakFromDates(activeDates, freezeDates, timeZone);
 
       if (appUserId && streakData.current > 0) {
         checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
@@ -254,7 +333,7 @@ export async function GET(req: NextRequest) {
         fetchActiveDates(account.githubLogin, account.token, {
           bypass,
           userId: account.githubId,
-        })
+        }, timeZone)
       )
     );
 
@@ -267,7 +346,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const streakData = calculateStreakFromDates(unifiedDates, freezeDates);
+    const streakData = calculateStreakFromDates(unifiedDates, freezeDates, timeZone);
 
     if (streakData.current > 0) {
       checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
@@ -303,11 +382,16 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const activeDates = await fetchActiveDates(resolvedLogin, resolvedToken, {
-      bypass,
-      userId: accountId,
-    });
-    const streakData = calculateStreakFromDates(activeDates, freezeDates);
+    const activeDates = await fetchActiveDates(
+      resolvedLogin,
+      resolvedToken,
+      {
+        bypass,
+        userId: accountId,
+      },
+      timeZone
+    );
+    const streakData = calculateStreakFromDates(activeDates, freezeDates, timeZone);
 
     if (accountId === session.githubId && streakData.current > 0) {
       checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
