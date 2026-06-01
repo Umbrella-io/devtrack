@@ -101,7 +101,38 @@ export default function WrappedExperience() {
 
     return () => controller.abort();
   }, [selectedYear, reloadKey]);
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!slides.length) return;
 
+      switch (event.key) {
+        case "ArrowLeft":
+          setSlide((value) => Math.max(0, value - 1));
+          break;
+
+        case "ArrowRight":
+          setSlide((value) => Math.min(slides.length - 1, value + 1));
+          break;
+
+        case "Home":
+          setSlide(0);
+          break;
+
+        case "End":
+          setSlide(slides.length - 1);
+          break;
+
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [slides.length]);
   const slides = useMemo(() => {
     if (!stats) return [];
 
@@ -260,7 +291,10 @@ export default function WrappedExperience() {
         ) : stats && currentSlide ? (
           <>
             <section className="grid flex-1 items-center gap-6 py-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
-              <div
+             <div
+                tabIndex={0}
+                role="region"
+                aria-label="Year in Code slides"
                 className={`relative min-h-[520px] overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br ${
                   SLIDE_THEMES[slide % SLIDE_THEMES.length]
                 } p-6 shadow-2xl shadow-cyan-950/30 sm:p-10`}
