@@ -130,11 +130,6 @@ function SignInContent() {
       <div
         style={{
           width: "100%",
-          maxWidth: 520,
-          border: "1px solid #1a1a1a",
-          borderRadius: 12,
-          padding: "clamp(28px,5vw,48px) clamp(24px,5vw,40px)",
-          background: "#0e0e0e",
           textAlign: "center",
           position: "relative",
           zIndex: 1,
@@ -158,11 +153,14 @@ function SignInContent() {
           href="/"
           style={{
             fontFamily: MONO,
-    color: "#e8e8e8",
-    textDecoration: "none",
-  fontSize:12 }}
+            color: "var(--muted-foreground)",
+            textDecoration: "none",
+            fontSize: 12,
+          }}
+          className="hover:text-[var(--foreground)] transition-colors"
         >
            ← Back to home
+
         </Link>
       </div>
 
@@ -174,10 +172,11 @@ function SignInContent() {
               fontFamily: MONO,
               fontWeight: 700,
               fontSize: 13,
-              color: "#e8e8e8",
+              color: "var(--foreground)",
               letterSpacing: "-0.02em",
             }}
           >
+
             <span style={{ color: A }}>▲</span> DEVTRACK
           </span>
         </div>
@@ -189,10 +188,11 @@ function SignInContent() {
             fontSize: "clamp(34px,6vw,35px)",
             letterSpacing: "-0.04em",
             lineHeight: 1.25,
-            color: "#e8e8e8",
+            color: "var(--foreground)",
             margin: "0 0 16px",
           }}
         >
+
           WELCOME<br />
           <span style={{ color: A }}>BACK.</span>
         </h1>
@@ -200,12 +200,13 @@ function SignInContent() {
         <p
           style={{
             fontSize: 14,
-            color: "#9ca3af",
+            color: "var(--muted-foreground)",
             lineHeight: 1.65,
             margin: "0 0 36px",
             fontFamily: MONO,
           }}
         >
+
           Track streaks, PR velocity &amp; coding growth.
         </p>
 
@@ -222,11 +223,13 @@ function SignInContent() {
           style={{
             fontFamily: MONO,
             fontSize: 11,
-            color: "#9ca3af",
+            color: "var(--muted-foreground)",
             letterSpacing: "0.06em",
             lineHeight: 1.8,
+            marginTop: 24,
           }}
         >
+
           MIT License · Self-hostable · Free forever
         </div>
       </div>
