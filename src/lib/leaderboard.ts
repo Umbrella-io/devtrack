@@ -22,6 +22,7 @@ export interface PublicUser {
 }
 
 export interface LeaderboardEntry {
+  id: string;
   rank: number;
   username: string;
   avatarUrl: string;
@@ -249,6 +250,7 @@ export async function buildLeaderboard(): Promise<LeaderboardPayload> {
       const score = streak * 5 + commits + prs * 3;
 
       return {
+        id: user.id,
         rank: 0,
         username: user.github_login,
         avatarUrl: `https://github.com/${user.github_login}.png?size=96`,

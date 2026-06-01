@@ -7,6 +7,7 @@ import { getLeaderboardData, type LeaderboardPayload } from "@/lib/leaderboard";
 type LeaderboardTab = "streak" | "commits" | "prs";
 
 interface LeaderboardEntry {
+  id: string;
   rank: number;
   username: string;
   avatarUrl: string;
@@ -116,7 +117,7 @@ export default async function LeaderboardPage({
               </div>
               {rows.map((entry) => (
                 <div
-                  key={`${activeTab}-${entry.username}`}
+                  key={entry.id}
                   className="grid grid-cols-[72px_1fr_110px_110px] items-center border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[80px_1fr_140px_140px_120px]"
                 >
                   <div className="text-lg font-bold text-[var(--card-foreground)]">#{entry.rank}</div>
