@@ -1,6 +1,7 @@
 // @ts-nocheck
 "use client";
 
+import ThemePresetPicker from "@/components/ThemePresetPicker";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
@@ -640,11 +641,10 @@ function SettingsPageContent() {
 
         {statusMessage && (
           <div
-            className={`mb-6 rounded-xl border p-4 text-sm ${
-              statusMessage.kind === "success"
-                ? "border-[var(--success)]/30 bg-[var(--success)]/10 text-[var(--success)]"
-                : "border-[var(--error)]/30 bg-[var(--error)]/10 text-[var(--error)]"
-            }`}
+            className={`mb-6 rounded-xl border p-4 text-sm ${statusMessage.kind === "success"
+              ? "border-[var(--success)]/30 bg-[var(--success)]/10 text-[var(--success)]"
+              : "border-[var(--error)]/30 bg-[var(--error)]/10 text-[var(--error)]"
+              }`}
           >
             {statusMessage.message}
           </div>
@@ -740,13 +740,12 @@ function SettingsPageContent() {
                 {bioDraft.length === 0 && "Shown on your public /u/ page."}
               </p>
               <p
-                className={`text-xs font-medium tabular-nums transition-colors ${
-                  bioDraft.length >= BIO_MAX
-                    ? "text-[var(--destructive)]"
-                    : bioDraft.length >= Math.floor(BIO_MAX * 0.9)
+                className={`text-xs font-medium tabular-nums transition-colors ${bioDraft.length >= BIO_MAX
+                  ? "text-[var(--destructive)]"
+                  : bioDraft.length >= Math.floor(BIO_MAX * 0.9)
                     ? "text-yellow-500"
                     : "text-[var(--muted-foreground)]"
-                }`}
+                  }`}
               >
                 {bioDraft.length} / {BIO_MAX}
               </p>
@@ -812,11 +811,10 @@ function SettingsPageContent() {
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <span
-                className={`text-xs ${
-                  bioDraft.length > 500
-                    ? "text-[var(--error)]"
-                    : "text-[var(--muted-foreground)]"
-                }`}
+                className={`text-xs ${bioDraft.length > 500
+                  ? "text-[var(--error)]"
+                  : "text-[var(--muted-foreground)]"
+                  }`}
               >
                 {bioDraft.length}/500 characters
               </span>
@@ -904,6 +902,18 @@ function SettingsPageContent() {
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+            Application Theme
+          </h2>
+
+          <p className="mt-1 text-sm text-[var(--muted-foreground)] mb-6">
+            Choose a theme for the DevTrack interface.
+          </p>
+
+          <ThemePresetPicker />
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
@@ -944,6 +954,7 @@ function SettingsPageContent() {
               Turning this on also enables your public profile so leaderboard
               rows can link to your DevTrack stats.
             </p>
+
           </div>
         </div>
 
@@ -1068,10 +1079,10 @@ function SettingsPageContent() {
                       !(settings.pinned_repos || []).includes(repoName) &&
                       repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
                   ).length === 0 && (
-                    <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
-                      No repositories available to pin.
-                    </div>
-                  )}
+                      <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
+                        No repositories available to pin.
+                      </div>
+                    )}
                 </div>
               )}
             </div>
@@ -1100,16 +1111,14 @@ function SettingsPageContent() {
                   className="sr-only"
                 />
                 <div
-                  className={`block h-6 w-10 rounded-full transition-colors ${
-                    settings.weekly_digest_opt_in
-                      ? "bg-[var(--accent)]"
-                      : "bg-[var(--control)]"
-                  }`}
+                  className={`block h-6 w-10 rounded-full transition-colors ${settings.weekly_digest_opt_in
+                    ? "bg-[var(--accent)]"
+                    : "bg-[var(--control)]"
+                    }`}
                 />
                 <div
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
-                    settings.weekly_digest_opt_in ? "translate-x-4" : ""
-                  }`}
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${settings.weekly_digest_opt_in ? "translate-x-4" : ""
+                    }`}
                 />
               </div>
             </label>
