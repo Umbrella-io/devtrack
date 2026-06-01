@@ -94,6 +94,40 @@ function loadInternalAliases(rootDir) {
 
   return aliases;
 }
+function isValidPackageSubpath(pkgName, mod, cwd) {
+  try {
+    const pkgJsonPath = require.resolve(
+      `${pkgName}/package.json`,
+      { paths: [cwd] }
+    );
+
+    const pkgJson = JSON.parse(
+      fs.readFileSync(pkgJsonPath, "utf8")
+    );
+
+    const exportsField = pkgJson.exports;
+
+    if (!exportsField) return true;
+
+    const subpath = mod.slice(pkgName.length);
+
+    if (!subpath) return true;
+
+    const exportKey =
+      "." + (subpath.startsWith("/") ? subpath : "/" + subpath);
+
+    if (typeof exportsField === "string") {
+      return exportKey === ".";
+    }
+
+    return (
+      exportKey in exportsField ||
+      "./*" in exportsField
+    );
+  } catch {
+    return true;
+  }
+}
 function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
   const missing = new Map(); // pkgName → Set of files
   // Load Aliases 
@@ -123,7 +157,20 @@ function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
       ) {
         continue;
       }
-      if (allDeps.has(pkgName)) continue;
+      if (allDeps.has(pkgName)) {
+        if (
+          mod !== pkgName &&
+          !isValidPackageSubpath(pkgName, mod, cwd)
+      ) {
+        if (!missing.has(mod)) {
+          missing.set(mod, new Set());
+        }
+
+        missing.get(mod).add(rel);
+      }
+
+       continue;
+     }
 
       if (!missing.has(pkgName)) missing.set(pkgName, new Set());
       missing.get(pkgName).add(rel);

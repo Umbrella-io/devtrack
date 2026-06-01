@@ -6,6 +6,7 @@ import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
 import RepoHealthPanel from "@/components/RepoHealthPanel";
 import RepoActivityDrawer from "@/components/RepoActivityDrawer";
+import { Search } from "lucide-react";
 
 interface RepoItemProps {
   repo: Repo;
@@ -265,6 +266,19 @@ export default function TopRepos() {
       .then((d) => setPinnedRepos(d.pinned_repos || []))
       .catch((err) => console.error("Failed to load pinned repos", err));
   }, []);
+  // --- PERSISTENCE LOGIC ---
+  // 1. Load initial preference from localStorage on mount
+  useEffect(() => {
+    const savedDays = localStorage.getItem("devtrack_dashboard_range");
+    if (savedDays) {
+      setDays(Number(savedDays));
+    }
+  }, []);
+
+  // 2. Save preference to localStorage whenever 'days' state changes
+  useEffect(() => {
+    localStorage.setItem("devtrack_dashboard_range", String(days));
+  }, [days]);
 
   const togglePin = async (repoFullName: string) => {
     const isPinned = pinnedRepos.includes(repoFullName);
@@ -407,7 +421,7 @@ export default function TopRepos() {
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
           aria-label="Select time range for top repositories"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus:outline-none focus:border-[var(--accent)]"
+          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus-visible:outline-none focus:border-[var(--accent)]"
         >
           <option value={7}>Last 7d</option>
           <option value={30}>Last 30d</option>
@@ -453,7 +467,7 @@ export default function TopRepos() {
       onChange={(e) => setSearchQuery(e.target.value)}
       placeholder="Search repositories…"
       aria-label="Search repositories"
-      className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
+      className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:outline-none focus:border-[var(--accent)]"
     />
 
     {searchQuery.length > 0 && (
@@ -492,6 +506,16 @@ export default function TopRepos() {
             </span>
           </button>
         </div>
+        <div className="relative mb-4">
+  <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--muted-foreground)]" />
+  <input
+    type="text"
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    placeholder="Search repositories…"
+    className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-9 py-2 text-sm focus:border-[var(--accent)] focus:outline-none"
+  />
+</div>
         <ul className="space-y-3">
           {filteredRepos.length === 0 ? (
             <p className="text-sm text-[var(--muted-foreground)] py-4 text-center">

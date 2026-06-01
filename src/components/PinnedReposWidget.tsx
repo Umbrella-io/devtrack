@@ -44,7 +44,7 @@ export default function PinnedReposWidget({
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
           Repository Spotlight 🚀
         </h2>
@@ -52,7 +52,7 @@ export default function PinnedReposWidget({
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-32 rounded-xl bg-[var(--card-muted)] animate-pulse border border-[var(--border)]"
+              className="h-32 rounded-xl skeleton-shimmer border border-[var(--border)]"
             />
           ))}
         </div>
@@ -62,7 +62,7 @@ export default function PinnedReposWidget({
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
           Repository Spotlight 🚀
         </h2>
@@ -85,7 +85,7 @@ export default function PinnedReposWidget({
     if (isPublic) return null; // Hide completely on public profile if empty
 
     return (
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
           Repository Spotlight 🚀
         </h2>
@@ -108,7 +108,7 @@ export default function PinnedReposWidget({
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)] flex items-center justify-between">
         <span>Repository Spotlight 🚀</span>
         {!isPublic && (

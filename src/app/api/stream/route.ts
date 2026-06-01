@@ -3,8 +3,19 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { activeStreamConnections } from "@/lib/sse";
 
 export const dynamic = "force-dynamic";
+
+// Maximum number of concurrent SSE connections allowed per authenticated user.
+// This prevents a single user's browser tabs from generating unbounded database
+// load: each connection independently polls two tables on every tick.
+const MAX_CONNECTIONS_PER_USER = 4;
+
+// How often each connection polls the database. 15 s is fast enough for the
+// data types involved (goal sync timestamps and unread notification counts)
+// while being 7.5x cheaper per connection than the previous 2 s interval.
+const POLL_INTERVAL_MS = 15_000;
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -17,17 +28,38 @@ export async function GET(req: NextRequest) {
     return new Response("User not found", { status: 404 });
   }
 
+  const userId = user.id;
+
+  // Enforce per-user connection cap before opening the stream.
+  const current = activeStreamConnections.get(userId) ?? 0;
+  if (current >= MAX_CONNECTIONS_PER_USER) {
+    return new Response(
+      JSON.stringify({ error: "Too many concurrent stream connections" }),
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": "30",
+        },
+      }
+    );
+  }
+
+  // Register this connection before the stream starts so that the count is
+  // accurate even if two requests race during the check above.
+  activeStreamConnections.set(userId, current + 1);
+
   let lastCheckedSyncedAt: string | null = null;
   let lastCheckedUnreadCount: number | null = null;
 
   const stream = new ReadableStream({
-    async start(controller) {
+    start(controller) {
       const checkData = async () => {
         try {
           const { data: goals } = await supabaseAdmin
             .from("goals")
             .select("last_synced_at")
-            .eq("user_id", user.id)
+            .eq("user_id", userId)
             .order("last_synced_at", { ascending: false })
             .limit(1);
 
@@ -36,7 +68,7 @@ export async function GET(req: NextRequest) {
           const { count } = await supabaseAdmin
             .from("notifications")
             .select("*", { count: "exact", head: true })
-            .eq("user_id", user.id)
+            .eq("user_id", userId)
             .eq("read", false);
 
           const currentUnreadCount = count ?? 0;
@@ -65,16 +97,28 @@ export async function GET(req: NextRequest) {
         }
       };
 
-      await checkData();
-
+      // Register the interval and abort handler synchronously so they are
+      // guaranteed to be in place before any async work begins. This prevents
+      // a race where abort() fires before the listener is attached.
       const interval = setInterval(() => {
         checkData();
-      }, 2000);
+      }, POLL_INTERVAL_MS);
 
       req.signal.addEventListener("abort", () => {
         clearInterval(interval);
         controller.close();
+
+        // Decrement the connection counter so the slot becomes available again.
+        const remaining = activeStreamConnections.get(userId) ?? 1;
+        if (remaining <= 1) {
+          activeStreamConnections.delete(userId);
+        } else {
+          activeStreamConnections.set(userId, remaining - 1);
+        }
       });
+
+      // Kick off the first poll immediately (non-blocking).
+      checkData();
     },
   });
 

@@ -11,7 +11,8 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { calculateStreak } from "@/lib/streak";
+import { dispatchToAllWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
 
@@ -128,45 +129,10 @@ function calculateStreakFromDates(
     };
   }
 
-  let longestStreak = 1;
-  let currentRun = 1;
-  const runs: { start: string; end: string; length: number }[] = [];
-  let runStart = commitDays[0];
-
-  // Walk the sorted date list and split into consecutive runs.
-  // dateDiffDays returns 1 for adjacent calendar days — any gap > 1 breaks the streak.
-  for (let i = 1; i < commitDays.length; i++) {
-    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
-    if (diff === 1) {
-      // Consecutive day — extend the current run.
-      currentRun++;
-      if (currentRun > longestStreak) {
-        longestStreak = currentRun;
-      }
-    } else {
-      // Gap detected — close the current run and start a new one.
-      runs.push({ start: runStart, end: commitDays[i - 1], length: currentRun });
-      runStart = commitDays[i];
-      currentRun = 1;
-    }
-  }
-  // Push the final run.
-  runs.push({
-    start: runStart,
-    end: commitDays[commitDays.length - 1],
-    length: currentRun,
-  });
-
+  const { currentStreak, longestStreak } = calculateStreak(
+    commitDays.map((day) => new Date(day))
+  );
   const lastDay = commitDays[commitDays.length - 1];
-  const today = toDateStr(new Date());
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
-
-  // Current streak is alive if the last active day is today OR yesterday.
-  // Allowing yesterday prevents the streak from resetting at midnight before
-  // the user has had a chance to make their first commit of the new day.
-  const lastRun = runs[runs.length - 1];
-  const currentStreak =
-    lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
 
   return {
     current: currentStreak,
@@ -177,6 +143,27 @@ function calculateStreakFromDates(
     totalActiveDays: commitDays.length,
     freezeDates: Array.from(freezeDates),
   };
+}
+
+async function checkAndRecordMilestone(
+  userId: string,
+  currentStreak: number
+): Promise<void> {
+  if (currentStreak < 7 || currentStreak % 7 !== 0) return;
+
+  const { error } = await supabaseAdmin
+    .from("streak_milestones")
+    .upsert(
+      { user_id: userId, streak_count: currentStreak },
+      { onConflict: "user_id,streak_count" }
+    );
+
+  if (!error) {
+    dispatchToAllWebhooks(userId, "streak.milestone", {
+      streakCount: currentStreak,
+      achievedAt: new Date().toISOString(),
+    }).catch(() => {});
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -231,9 +218,13 @@ export async function GET(req: NextRequest) {
         session.accessToken,
         { bypass, userId: session.githubId }
       );
-      return Response.json(
-        calculateStreakFromDates(activeDates, freezeDates)
-      );
+      const streakData = calculateStreakFromDates(activeDates, freezeDates);
+
+      if (appUserId && streakData.current > 0) {
+        checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
+      }
+
+      return Response.json(streakData);
     } catch {
       // fetchActiveDates throws on GitHub API errors (rate limit, network failure).
       // Return 502 so the client shows an error state rather than a false 0-day streak.
@@ -276,7 +267,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return Response.json(calculateStreakFromDates(unifiedDates, freezeDates));
+    const streakData = calculateStreakFromDates(unifiedDates, freezeDates);
+
+    if (streakData.current > 0) {
+      checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
+    }
+
+    return Response.json(streakData);
   }
 
   // Single specific account — resolve its token and login from Supabase.
@@ -310,7 +307,13 @@ export async function GET(req: NextRequest) {
       bypass,
       userId: accountId,
     });
-    return Response.json(calculateStreakFromDates(activeDates, freezeDates));
+    const streakData = calculateStreakFromDates(activeDates, freezeDates);
+
+    if (accountId === session.githubId && streakData.current > 0) {
+      checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
+    }
+
+    return Response.json(streakData);
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }

@@ -21,7 +21,7 @@ export async function fetchCIAnalyticsForAccount(token: string, githubLogin: str
   
   const repoMap = new Map<string, number>();
   for (const item of data.items) { const n = item.repository.full_name; repoMap.set(n, (repoMap.get(n) ?? 0) + 1); }
-  const repos = Array.from(repoMap.entries()).map(([name, commits]) => ({ name, commits })).sort((a, b) => b.commits - a.commits).slice(0, 5);
+  const repos = Array.from(repoMap.entries()).map(([name, commits]) => ({ name, commits })).sort((a, b) => b.commits - a.commits).slice(0, 3);
 
   const failedRepos: string[] = [];
   const runsByRepo = await Promise.all(repos.map(async (repo) => {

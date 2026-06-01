@@ -1,4 +1,4 @@
-﻿import LazyWidget from "@/components/LazyWidget";
+import LazyWidget from "@/components/LazyWidget";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
 import GoalTracker from "@/components/GoalTracker";
@@ -26,6 +26,9 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
+
+import DailyNoteWidget from "@/components/DailyNoteWidget";
+
 import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
 
 const SkeletonCard = () => (
@@ -79,6 +82,14 @@ const ContributionHeatmap = dynamic(
   { ssr: false, loading: () => <SkeletonCard /> },
 );
 
+const RepoContributionDistribution = dynamic(
+  () => import("@/components/RepoContributionDistribution"),
+  {
+    ssr: false,
+    loading: () => <SkeletonCard />,
+  },
+);
+
 const PRMetrics = dynamic(() => import("@/components/PRMetrics"), {
   ssr: false,
   loading: () => <PRMetricsSkeleton />,
@@ -105,47 +116,42 @@ export default async function DashboardPage() {
 
   return (
     <DashboardSSEProvider>
-      <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
+      <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
         <DashboardHeader />
 
         {/* Quick actions */}
-        <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-3">
-          <Link
-            href="/wrapped"
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90"
-          >
-            ✨ Year in Code
-          </Link>
-          <Link
-            href="/dashboard/settings"
-            className="secondary-button inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium"
-          >
-            Settings
-          </Link>
-          <div className="sm:ml-auto">
+        <div className="mt-8 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Left side actions */}
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <Link
+              href="/wrapped"
+              className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl border border-[var(--accent)] bg-[var(--accent)]/10 px-5 py-2.5 text-sm font-semibold text-[var(--accent)] shadow-sm shadow-[var(--accent)]/20 transition-all hover:bg-[var(--accent)]/20 hover:scale-[1.02]"
+            >
+              Year in Code
+            </Link>
+            <Link
+              href="/dashboard/settings"
+              className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium transition-all hover:bg-white/10 hover:scale-[1.02]"
+            >
+              Settings
+            </Link>
+          </div>
+          {/* Right side exports */}
+          <div className="w-full sm:w-auto">
             <ExportButton />
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="space-y-4">
           <StreakAtRiskBanner />
         </div>
 
-        <div className="mt-6 mb-6">
+        {/* Hero Section */}
+        <section className="mt-8">
           <TodayFocusHero userName={session.user?.name ?? null} />
-        </div>
+        </section>
 
-        {/* Weekly summary — full width */}
-        <div className="mt-6">
-          <WeeklySummaryCard />
-        </div>
-
-        {/* Personal records + AI mentor side by side */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <PersonalRecords />
-          <AIMentorWidget />
-        </div>
-
+ 
         {/* -- Row 1: Contribution graph (2/3) + Streak sidebar (1/3) -- */}
         <div id="streaks" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 lg:grid-cols-3">
           {/* Left: contribution graph + heatmap */}
@@ -205,53 +211,86 @@ export default async function DashboardPage() {
           </LazyWidget>
         </div>
 
-        {/* Coding activity insights — full width */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <CodingActivityInsightsCard />
-          </LazyWidget>
-        </div>
 
-        {/* PR review trend — full width */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <PRReviewTrendChart />
-          </LazyWidget>
-        </div>
+        {/* 2. ACTIVITY & CODING TIME */}
+        <section id="streaks" className="mt-14 space-y-6 scroll-mt-28">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+            <div className="h-8 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Activity & Coding</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
+            <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
+              <div className="w-full overflow-x-auto pb-2">
+                <ContributionGraph />
+              </div>
+              <div className="w-full overflow-x-auto pb-2">
+                <ContributionHeatmap />
+              </div>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <RepoContributionDistribution />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <ActivityRingChart />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <CodingActivityInsightsCard />
+              </LazyWidget>
+            </div>
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <StreakTracker />
+              <LocalCodingTime />
+              <CodingTimeWidget />
+              <LazyWidget fallback={<SkeletonCard />}>
+                <CommitTimeChart />
+              </LazyWidget>
+            </div>
+          </div>
+        </section>
 
-        {/* -- Row 3: Issues (2/3) + CI analytics (1/3) -- */}
-        <div id="goals" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+        {/* 3. ANALYTICS & REPOSITORIES */}
+        <section id="pull-requests" className="mt-14 space-y-6 scroll-mt-28">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+            <div className="h-8 w-1.5 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Analytics & Repositories</h2>
+          </div>
+
+          {/* Repo Analytics Explorer spans full width */}
+          <div className="w-full overflow-hidden">
             <LazyWidget fallback={<SkeletonCard />}>
-              <IssueMetrics />
+              <RepoAnalyticsExplorer />
             </LazyWidget>
           </div>
-          <LazyWidget fallback={<SkeletonCard />}>
-            <CIAnalytics />
-          </LazyWidget>
-        </div>
 
-        {/* Discussions — full width */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <DiscussionsWidget />
-          </LazyWidget>
-        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <PRMetrics />
+              <LazyWidget fallback={<SkeletonCard />}>
+                <PRBreakdownChart />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <PRReviewTrendChart />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <DiscussionsWidget />
+              </LazyWidget>
+            </div>
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <CommunityMetrics />
+              <LazyWidget fallback={<SkeletonCard />}>
+                <PinnedReposWidget />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <TopRepos />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <InactiveRepositoriesCard />
+              </LazyWidget>
+            </div>
+          </div>
+        </section>
 
-        {/* Pinned spotlight repos — full width */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <PinnedReposWidget />
-          </LazyWidget>
-        </div>
-
-        {/* Inactive repo reminder — full width */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <InactiveRepositoriesCard />
-          </LazyWidget>
-        </div>
-
+ 
         {/* -- Row 4: Top repos + Language breakdown + Goal tracker -- */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <LazyWidget fallback={<SkeletonCard />}>
@@ -267,12 +306,29 @@ export default async function DashboardPage() {
           </WidgetErrorBoundary>
         </div>
 
-        {/* Recent activity — full width */}
-        <div className="mt-6">
-          <LazyWidget fallback={<SkeletonCard />}>
-            <RecentActivity />
-          </LazyWidget>
-        </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
+            <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
+              <LazyWidget fallback={<SkeletonCard />}>
+                <IssueMetrics />
+              </LazyWidget>
+              <DailyNoteWidget />
+              <LazyWidget fallback={<SkeletonCard />}>
+                <RecentActivity />
+              </LazyWidget>
+            </div>
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <LazyWidget fallback={<SkeletonCard />}>
+                <CIAnalytics />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <LanguageBreakdown />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <FriendComparison />
+              </LazyWidget>
+            </div>
+          </div>
       </div>
     </DashboardSSEProvider>
   );
