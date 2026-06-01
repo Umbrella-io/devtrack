@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import CopyLinkButton from "@/components/CopyLinkButton";
+import { toPng } from "html-to-image";
+import ProfileShareCard from "./ProfileShareCard";
 
 interface ShareProfileSectionProps {
   username: string;
@@ -16,6 +18,8 @@ export default function ShareProfileSection({
   profileUrl,
 }: ShareProfileSectionProps) {
   const [canUseNativeShare, setCanUseNativeShare] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     setCanUseNativeShare(
@@ -46,57 +50,111 @@ export default function ShareProfileSection({
       }
     }
   };
+  
+  const downloadCard = async () => {
+    if (!cardRef.current) return;
+  
+    try {
+      const dataUrl = await toPng(cardRef.current);
+  
+      const link = document.createElement("a");
+      link.download = `${username}-devtrack-card.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch {
+      toast.error("Failed to download card");
+    }
+  };
 
   return (
-    <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm md:p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)]">
-            Share Profile
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
-            Share your public stats on X, LinkedIn, or copy the profile link.
-          </p>
+    <>
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm md:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)]">
+              Share Profile
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
+              Share your public stats on X, LinkedIn, or copy the profile link.
+            </p>
+          </div>
+              <button
+                type="button"
+                onClick={() => setShowPreview(true)}
+                className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium"
+              >
+                Generate Share Card
+              </button>
+  
+          <div className="flex flex-wrap gap-2">
+            {canUseNativeShare ? (
+              <button
+                type="button"
+                onClick={handleNativeShare}
+                aria-label={`Share ${username}'s profile using the device share sheet`}
+                className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
+              >
+                <span aria-hidden="true">📲</span>
+                <span>Share</span>
+              </button>
+            ) : null}
+  
+            <a
+              href={xShareUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label={`Share ${username}'s profile on X`}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
+            >
+              <span aria-hidden="true">𝕏</span>
+              <span>X</span>
+            </a>
+  
+            <a
+              href={linkedInShareUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label={`Share ${username}'s profile on LinkedIn`}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
+            >
+              <span aria-hidden="true">in</span>
+              <span>LinkedIn</span>
+            </a>
+  
+            <CopyLinkButton url={profileUrl} />
+          </div>
         </div>
+      </section>
 
-        <div className="flex flex-wrap gap-2">
-          {canUseNativeShare ? (
+      {showPreview && (
+        <div className="mt-4 rounded-xl border p-4">
+          <div ref={cardRef}>
+            <ProfileShareCard
+              username={username}
+              streak={streak}
+              profileUrl={profileUrl}
+            />
+          </div>
+      
+          <div className="mt-4 flex gap-2">
             <button
               type="button"
-              onClick={handleNativeShare}
-              aria-label={`Share ${username}'s profile using the device share sheet`}
-              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
+              onClick={downloadCard}
+              className="rounded-lg border px-3 py-2"
             >
-              <span aria-hidden="true">📲</span>
-              <span>Share</span>
+              Download PNG
             </button>
-          ) : null}
-
-          <a
-            href={xShareUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            aria-label={`Share ${username}'s profile on X`}
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
-          >
-            <span aria-hidden="true">𝕏</span>
-            <span>X</span>
-          </a>
-
-          <a
-            href={linkedInShareUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            aria-label={`Share ${username}'s profile on LinkedIn`}
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
-          >
-            <span aria-hidden="true">in</span>
-            <span>LinkedIn</span>
-          </a>
-
-          <CopyLinkButton url={profileUrl} />
+      
+            <button
+              type="button"
+              onClick={() => setShowPreview(false)}
+              className="rounded-lg border px-3 py-2"
+            >
+              Close
+            </button>
+          </div>
         </div>
-      </div>
-    </section>
+      )}
+    </>
   );
 }
