@@ -29,7 +29,6 @@ import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import DashboardSidebar from "@/components/DashboardSidebar";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -37,9 +36,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-      <div className="flex min-h-screen">
-      <DashboardSidebar />
-      <div className="flex-1 p-4 md:p-8">
       <DashboardHeader />
       <div className="mb-6 flex justify-end items-center gap-2">
         <Link
@@ -52,38 +48,38 @@ export default async function DashboardPage() {
       </div>
       <StreakAtRiskBanner />
 
-      <div id="weekly-summary" className="mb-6">
+      <div className="mb-6">
         <WeeklySummaryCard />
       </div>
 
-      <div id="ai-mentor" className="mb-6">
+      <div className="mb-6">
         <AIMentorWidget />
       </div>
 
-      <div id="personal-records" className="mb-6">
+      <div className="mb-6">
         <PersonalRecords />
       </div>
 
       {/* Row 1: Contribution graph + Streak + Local Coding Time */}
-      <div id="contribution" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ContributionGraph />
           <div className="mt-6">
             <ContributionHeatmap />
           </div>
-          <div id="friend-comparison" className="mt-6">
+          <div className="mt-6">
             <FriendComparison />
           </div>
         </div>
 
-        <div id="streak">
+        <div>
           <StreakTracker />
           <LocalCodingTime />
         </div>
       </div>
 
       {/* Row 2: PR metrics, community metrics, PR breakdown & Time Chart */}
-      <div id="pr-analytics" className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <PRMetrics />
         <CommunityMetrics />
         <PRBreakdownChart />
@@ -103,7 +99,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Row 3: Issue metrics + CI analytics */}
-      <div id="issues"className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <IssueMetrics />
         </div>
@@ -125,18 +121,16 @@ export default async function DashboardPage() {
       </div>
 
       {/* Row 6: Top repos + Language breakdown + Goal tracker */}
-      <div id="top-repos" className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <TopRepos />
         <LanguageBreakdown />
         <GoalTracker />
       </div>
 
       {/* Row 7: Recent GitHub activity */}
-      <div id="recent-activity" className="mt-6">
+      <div className="mt-6">
         <RecentActivity />
       </div>
-    </div>
-    </div>
     </div>
   );
 }
