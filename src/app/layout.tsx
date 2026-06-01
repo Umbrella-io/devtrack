@@ -67,13 +67,13 @@ export default async function RootLayout({
               (function() {
                 try {
                   const stored = localStorage.getItem('theme');
-                  if (stored === 'light') {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.style.colorScheme = 'light';
-                  } else {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.style.colorScheme = 'dark';
-                  }
+                  const validThemes = ['classic-dark', 'modern-light-blue', 'nordic-frost', 'cyberpunk-matrix'];
+                  const theme = validThemes.includes(stored || '') ? stored : 'classic-dark';
+                  const isDark = theme !== 'modern-light-blue';
+
+                  document.documentElement.dataset.theme = theme;
+                  document.documentElement.classList.toggle('dark', isDark);
+                  document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
                 } catch (e) {}
               })();
             `,
