@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 
 interface IssueData {
   opened: number;
@@ -12,15 +13,20 @@ interface IssueData {
 }
 
 export default function IssueMetrics() {
+  const { selectedAccount } = useAccount();
   const [metrics, setMetrics] = useState<IssueData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMetrics = () => {
+  const fetchMetrics = useCallback(() => {
     setLoading(true);
     setError(null);
 
-    fetch("/api/metrics/issues")
+    const url = selectedAccount !== null
+      ? `/api/metrics/issues?accountId=${encodeURIComponent(selectedAccount)}`
+      : "/api/metrics/issues";
+
+    fetch(url)
       .then((r) => r.json())
       .then((data: IssueData) => setMetrics(data))
       .catch(() =>
@@ -29,11 +35,11 @@ export default function IssueMetrics() {
         )
       )
       .finally(() => setLoading(false));
-  };
+  }, [selectedAccount]);
 
   useEffect(() => {
     fetchMetrics();
-  }, []);
+  }, [fetchMetrics]);
 
   const stats = metrics
     ? [
@@ -56,7 +62,7 @@ export default function IssueMetrics() {
     metrics && metrics.trend > 0 ? "text-green-400" : "text-[var(--destructive)]";
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
         Issue Analytics
       </h2>
@@ -72,7 +78,7 @@ export default function IssueMetrics() {
             <div
               key={i}
               aria-hidden="true"
-              className="h-20 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse"
+              className="h-20 rounded-lg skeleton-shimmer"
             />
           ))}
         </div>
@@ -88,11 +94,11 @@ export default function IssueMetrics() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 stagger-children">
           {stats.map((stat, idx) => (
             <div
               key={stat.label}
-              className="rounded-lg bg-[var(--control)] p-4 text-center"
+              className="rounded-lg bg-[var(--control)] p-4 text-center stat-cell animate-fade-in-up"
             >
               <div className="text-2xl font-bold text-[var(--accent)] truncate" title={String(stat.value)}>
                 {stat.value}

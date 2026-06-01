@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useAccount } from "@/components/AccountContext";
 
 interface WeeklySummaryData {
   commits: {
@@ -19,20 +21,33 @@ interface WeeklySummaryData {
 }
 
 export default function WeeklySummaryCard() {
+  const { selectedAccount } = useAccount();
   const [summary, setSummary] = useState<WeeklySummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const maxCommits = summary ? Math.max(summary.commits.current, summary.commits.previous, 1) : 1;
-  const maxPRs = summary ? Math.max(summary.prs.thisWeek.merged, summary.prs.lastWeek.merged, 1) : 1;
-  const maxActiveDays = summary ? Math.max(summary.activeDays.thisWeek, summary.activeDays.lastWeek, 1) : 1;
+const maxCommits = summary?.commits
+  ? Math.max(summary.commits.current, summary.commits.previous, 1)
+  : 1;
 
-  useEffect(() => {
+const maxPRs = summary?.prs
+  ? Math.max(summary.prs.thisWeek.merged, summary.prs.lastWeek.merged, 1)
+  : 1;
+
+const maxActiveDays = summary?.activeDays
+  ? Math.max(summary.activeDays.thisWeek, summary.activeDays.lastWeek, 1)
+  : 1;
+
+  const fetchSummary = useCallback(() => {
     setLoading(true);
     setError(null);
 
-    fetch("/api/metrics/weekly-summary")
+    const url = selectedAccount !== null
+      ? `/api/metrics/weekly-summary?accountId=${encodeURIComponent(selectedAccount)}`
+      : "/api/metrics/weekly-summary";
+
+    fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error("API error");
         return r.json();
@@ -44,7 +59,11 @@ export default function WeeklySummaryCard() {
         )
       )
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedAccount]);
+
+  useEffect(() => {
+    fetchSummary();
+  }, [fetchSummary]);
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -60,8 +79,9 @@ export default function WeeklySummaryCard() {
           aria-label={
             isCollapsed ? "Expand weekly summary" : "Collapse weekly summary"
           }
+          suppressHydrationWarning
         >
-          {isCollapsed ? ">" : "v"}
+          <ChevronDown className="h-4 w-4" />
         </button>
       </div>
 
@@ -122,9 +142,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.commits.previous / (summary.commits.current + summary.commits.previous || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
@@ -138,9 +155,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.commits.current / (summary.commits.current + summary.commits.previous || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
               </div>
             </div>
@@ -166,9 +180,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.prs.lastWeek.merged / (summary.prs.thisWeek.merged + summary.prs.lastWeek.merged || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
@@ -182,9 +193,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.prs.thisWeek.merged / (summary.prs.thisWeek.merged + summary.prs.lastWeek.merged || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
               </div>
             </div>
@@ -210,9 +218,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.activeDays.lastWeek / (summary.activeDays.thisWeek + summary.activeDays.lastWeek || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
@@ -226,9 +231,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.activeDays.thisWeek / (summary.activeDays.thisWeek + summary.activeDays.lastWeek || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
               </div>
             </div>

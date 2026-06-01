@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { Trophy, Zap, Flame, Calendar, Star } from "lucide-react";
+
 interface StreakData {
   current: number;
   longest: number;
@@ -175,7 +177,7 @@ export default function PersonalRecords() {
       value: streak?.longest ?? 0,
       unit: "days",
       subtext: "All time",
-      icon: "🏆",
+      icon: Trophy,
       isRepo: false,
       repoUrl: null,
     },
@@ -184,7 +186,7 @@ export default function PersonalRecords() {
       value: bestDay.count,
       unit: "commits",
       subtext: bestDay.dateLabel ?? "—",
-      icon: "⚡",
+      icon: Zap,
       isRepo: false,
       repoUrl: null,
     },
@@ -193,7 +195,7 @@ export default function PersonalRecords() {
       value: bestWeek.count,
       unit: "commits",
       subtext: bestWeek.weekLabel ?? "—",
-      icon: "🔥",
+      icon: Flame,
       isRepo: false,
       repoUrl: null,
     },
@@ -202,7 +204,7 @@ export default function PersonalRecords() {
       value: bestMonth.count,
       unit: "commits",
       subtext: bestMonth.monthLabel ?? "—",
-      icon: "📅",
+      icon: Calendar,
       isRepo: false,
       repoUrl: null,
     },
@@ -211,13 +213,13 @@ export default function PersonalRecords() {
       value: busiestRepo.count,
       unit: "commits",
       subtext: busiestRepo.repoLabel ?? "—",
-      icon: "⭐",
+      icon: Star,
       isRepo: true,
       repoUrl: busiestRepo.repoUrl ?? null,
     },
   ];
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
         Personal Records
       </h2>
@@ -234,7 +236,7 @@ export default function PersonalRecords() {
             <div
               key={i}
               aria-hidden="true"
-              className="h-32 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse"
+              className="h-32 rounded-lg skeleton-shimmer p-4"
             />
           ))}
         </div>
@@ -250,15 +252,15 @@ export default function PersonalRecords() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-stretch">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-stretch stagger-children">
           {records.map((rec) => (
             <div
               key={rec.label}
-              className="h-full rounded-lg bg-[var(--control)] p-4 text-center flex flex-col justify-between border border-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[var(--accent)]/30"
+              className="h-full rounded-lg bg-[var(--control)] p-4 text-center flex flex-col justify-between border border-transparent stat-cell animate-fade-in-up hover:border-[var(--accent)]/30"
             >
               <div>
-                <div className="text-xl mb-2" role="img" aria-label={rec.label}>
-                  {rec.icon}
+                <div className="text-xl mb-2 flex justify-center">
+                  <rec.icon size={28} className="text-[var(--accent)]" aria-hidden="true" />
                 </div>
                 <div className="text-3xl font-extrabold text-[var(--accent)] tracking-tight mb-1">
                   {rec.value}

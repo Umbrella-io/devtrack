@@ -51,7 +51,7 @@ function extractImports(src) {
   // Strip single-line and multi-line comments to prevent quotes inside comments from throwing off the regex
   const cleanSrc = src
     .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/\/\/.*/g, "");
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
 
   for (const re of [IMPORT_RE, SIDE_EFFECT_IMPORT_RE, DYNAMIC_RE]) {
     re.lastIndex = 0;
@@ -94,16 +94,50 @@ function loadInternalAliases(rootDir) {
 
   return aliases;
 }
+function isValidPackageSubpath(pkgName, mod, cwd) {
+  try {
+    const pkgJsonPath = require.resolve(
+      `${pkgName}/package.json`,
+      { paths: [cwd] }
+    );
+
+    const pkgJson = JSON.parse(
+      fs.readFileSync(pkgJsonPath, "utf8")
+    );
+
+    const exportsField = pkgJson.exports;
+
+    if (!exportsField) return true;
+
+    const subpath = mod.slice(pkgName.length);
+
+    if (!subpath) return true;
+
+    const exportKey =
+      "." + (subpath.startsWith("/") ? subpath : "/" + subpath);
+
+    if (typeof exportsField === "string") {
+      return exportKey === ".";
+    }
+
+    return (
+      exportKey in exportsField ||
+      "./*" in exportsField
+    );
+  } catch {
+    return true;
+  }
+}
 function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
   const missing = new Map(); // pkgName → Set of files
+  // Load Aliases 
+  const INTERNAL_ALIASES = loadInternalAliases(cwd);
 
   for (const file of files) {
     const src = fs.readFileSync(file, "utf8");
     const rel = path.relative(cwd, file).replace(/\\/g, "/");
 
     for (const mod of extractImports(src)) {
-      // Skip relative imports, path aliases (@/ is the src alias — not a pkg)
-      const INTERNAL_ALIASES = loadInternalAliases(cwd);
       if (
         mod.startsWith(".") || 
         mod.startsWith("/") || 
@@ -123,7 +157,20 @@ function collectMissingDeps(files, allDeps, cwd = process.cwd()) {
       ) {
         continue;
       }
-      if (allDeps.has(pkgName)) continue;
+      if (allDeps.has(pkgName)) {
+        if (
+          mod !== pkgName &&
+          !isValidPackageSubpath(pkgName, mod, cwd)
+      ) {
+        if (!missing.has(mod)) {
+          missing.set(mod, new Set());
+        }
+
+        missing.get(mod).add(rel);
+      }
+
+       continue;
+     }
 
       if (!missing.has(pkgName)) missing.set(pkgName, new Set());
       missing.get(pkgName).add(rel);

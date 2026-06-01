@@ -8,11 +8,14 @@ export const METRICS_CACHE_TTL_SECONDS = {
   "inactive-repos": 10 * 60,
   prs: 10 * 60,
   "pr-review-time": 10 * 60,
+  insights: 10 * 60,
   streak: 2 * 60,
   streak_freeze: 2 * 60,
   activity: 5 * 60,
   issues: 10 * 60,
+  languages: 21600,
   "coding-activity-insights": 5 * 60,
+  compare: 10 * 60,
 } as const;
 
 type MetricsCacheEndpoint = keyof typeof METRICS_CACHE_TTL_SECONDS;
@@ -197,4 +200,48 @@ export async function withMetricsCache<T>(
   const fresh = await loadFresh();
   await cacheSet(options.key, fresh, options.ttlSeconds);
   return fresh;
+}
+
+/**
+ * Removes a single cache key from both the in-process memory store and Redis.
+ * Used to evict a specific entry (e.g. the shared leaderboard key) without
+ * scanning all keys the way invalidateUserMetricsCache does for per-user data.
+ */
+export async function cacheDelete(key: string): Promise<void> {
+  memoryCache.delete(key);
+
+  const redis = getRedisClient();
+  if (!redis) return;
+
+  try {
+    await redis.del(key);
+  } catch {
+    // Cache invalidation failures must not surface to callers.
+  }
+}
+
+export async function invalidateUserMetricsCache(userId: string): Promise<void> {
+  const prefix = `metrics:${userId}:`;
+
+  for (const key of memoryCache.keys()) {
+    if (key.startsWith(prefix)) {
+      memoryCache.delete(key);
+    }
+  }
+
+  const redis = getRedisClient();
+  if (!redis) return;
+
+  try {
+    let cursor = 0;
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, { match: `${prefix}*`, count: 100 });
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+      cursor = Number(nextCursor);
+    } while (cursor !== 0);
+  } catch {
+    // Invalidation failures must not break the webhook response.
+  }
 }

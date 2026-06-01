@@ -70,6 +70,22 @@ export async function POST() {
 
   const today = todayStr();
 
+  // Prevent users from stockpiling unused freezes
+  const { count } = await supabaseAdmin
+    .from("streak_freezes")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .gte("freeze_date", today);
+
+  const MAX_PENDING_FREEZES = 1;
+
+  if (count !== null && count >= MAX_PENDING_FREEZES) {
+    return Response.json(
+      { error: "You already have a pending freeze." },
+      { status: 409 }
+    );
+  }
+
   const { data: existing } = await supabaseAdmin
     .from("streak_freezes")
     .select("id")
@@ -77,16 +93,12 @@ export async function POST() {
     .eq("freeze_date", today)
     .maybeSingle();
 
-  if (existing) {
-    return Response.json(
-      { error: "You already have an unused streak freeze." },
-      { status: 409 }
-    );
-  }
-
   const { data: freeze, error } = await supabaseAdmin
     .from("streak_freezes")
-    .upsert({ user_id: user.id, freeze_date: today }, { onConflict: "user_id,freeze_date" })
+    .upsert(
+      { user_id: user.id, freeze_date: today },
+      { onConflict: "user_id,freeze_date" }
+    )
     .select()
     .single();
 
@@ -94,7 +106,13 @@ export async function POST() {
     return Response.json({ error: "Failed to apply freeze." }, { status: 500 });
   }
 
-  return Response.json({ freeze }, { status: 201 });
+  const alreadyExisted = existing !== null;
+  const statusCode = alreadyExisted ? 200 : 201;
+
+  return Response.json(
+    { freeze, already_existed: alreadyExisted },
+    { status: statusCode }
+  );
 }
 
 // DELETE /api/streak/freeze
@@ -114,7 +132,8 @@ export async function DELETE() {
     .eq("user_id", user.id)
     .eq("freeze_date", todayStr());
 
-  if (error) return Response.json({ error: "Failed to cancel freeze" }, { status: 500 });
+  if (error)
+    return Response.json({ error: "Failed to cancel freeze" }, { status: 500 });
 
   return Response.json({ success: true });
 }
