@@ -40,11 +40,11 @@ class WidgetErrorBoundary extends React.Component<Props, State> {
       return (
         <div className="rounded-xl border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-center">
           <h2 className="mb-2 text-lg font-semibold">
-            Something went wrong
+            Unable to load data
           </h2>
-
+          
           <p className="mb-4 text-sm text-[var(--muted-foreground)]">
-            This widget failed to load.
+            Please try refreshing or try again later.
           </p>
 
           <button

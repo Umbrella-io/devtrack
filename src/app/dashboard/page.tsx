@@ -26,6 +26,7 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
+import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
 
 const SkeletonCard = () => (
   <div
@@ -149,13 +150,17 @@ export default async function DashboardPage() {
         <div id="streaks" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 lg:grid-cols-3">
           {/* Left: contribution graph + heatmap */}
           <div className="lg:col-span-2 flex flex-col gap-6">
-            <ContributionGraph />
+            <WidgetErrorBoundary>
+              <ContributionGraph />
+            </WidgetErrorBoundary>
             <ContributionHeatmap />
           </div>
 
           {/* Right: streak + coding time */}
           <div className="flex flex-col gap-6">
-            <StreakTracker />
+            <WidgetErrorBoundary>
+              <StreakTracker />
+            </WidgetErrorBoundary>
             <LocalCodingTime />
             <CodingTimeWidget />
           </div>
@@ -177,7 +182,9 @@ export default async function DashboardPage() {
 
         {/* -- Row 2: PR metrics + Community metrics -- */}
         <div id="pull-requests" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 md:grid-cols-2">
-          <PRMetrics />
+          <WidgetErrorBoundary>
+            <PRMetrics />
+          </WidgetErrorBoundary>
           <CommunityMetrics />
         </div>
 
@@ -248,12 +255,16 @@ export default async function DashboardPage() {
         {/* -- Row 4: Top repos + Language breakdown + Goal tracker -- */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <LazyWidget fallback={<SkeletonCard />}>
-            <TopRepos />
+            <WidgetErrorBoundary>
+              <TopRepos />
+            </WidgetErrorBoundary>
           </LazyWidget>
           <LazyWidget fallback={<SkeletonCard />}>
             <LanguageBreakdown />
           </LazyWidget>
-          <GoalTracker />
+          <WidgetErrorBoundary>
+            <GoalTracker />
+          </WidgetErrorBoundary>
         </div>
 
         {/* Recent activity — full width */}
