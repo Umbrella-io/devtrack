@@ -108,6 +108,9 @@ function getStaleSearchUrl(
   return `https://github.com/pulls?${params.toString()}`;
 }
 
+const FIRST_REVIEW_SAMPLE_SIZE = 10;
+const CONCURRENCY_BATCH = 5;
+
 async function fetchFirstReviewTimestamp(
   token: string,
   pr: PullRequestSearchItem
@@ -118,15 +121,7 @@ async function fetchFirstReviewTimestamp(
     return null;
   }
 
-  // GitHub REST API — fetches reviews and inline comments for a single PR.
-  // Rate limit: 5,000 requests/hour (authenticated with OAuth token / PAT).
-  // This is called for up to 30 PRs in getAverageFirstReviewHours, so it can
-  // consume up to 60 requests per dashboard load (2 endpoints × 30 PRs).
-  // The withMetricsCache wrapper in fetchCachedPRMetrics prevents re-fetching
-  // within the TTL window, keeping total usage low across page loads.
   const headers = {
-    // OAuth token / PAT: required to stay in the 5,000 req/hr authenticated tier.
-    // Without a token, GitHub allows only 60 req/hr per IP — easily exhausted here.
     Authorization: `Bearer ${token}`,
     Accept: "application/vnd.github+json",
   };
@@ -141,9 +136,6 @@ async function fetchFirstReviewTimestamp(
     }),
   ]);
 
-  // Silently return null on failure (rate limit, private repo access denied, etc.)
-  // rather than throwing — first-review time is a supplementary metric and should
-  // not break the entire PR widget if these secondary calls fail.
   if (!reviewsRes.ok || !commentsRes.ok) {
     return null;
   }
@@ -161,25 +153,31 @@ async function getAverageFirstReviewHours(
   token: string,
   prs: PullRequestSearchItem[]
 ): Promise<number | null> {
-  // Capped at 30 PRs to limit API usage: each PR costs 2 requests (reviews + comments).
-  // 30 PRs × 2 = 60 requests, well within the 5,000/hr authenticated REST API limit.
-  const reviewedPrs = await Promise.all(
-    prs.slice(0, 30).map(async (pr) => {
-      const firstReviewAt = await fetchFirstReviewTimestamp(token, pr);
+  const sample = prs.slice(0, FIRST_REVIEW_SAMPLE_SIZE);
+  const results: (number | null)[] = [];
 
-      if (!firstReviewAt) {
-        return null;
-      }
+  for (let i = 0; i < sample.length; i += CONCURRENCY_BATCH) {
+    const batch = sample.slice(i, i + CONCURRENCY_BATCH);
+    const batchResults = await Promise.all(
+      batch.map(async (pr) => {
+        const firstReviewAt = await fetchFirstReviewTimestamp(token, pr);
 
-      const openedAt = new Date(pr.created_at).getTime();
-      if (Number.isNaN(openedAt) || firstReviewAt < openedAt) {
-        return null;
-      }
+        if (!firstReviewAt) {
+          return null;
+        }
 
-      return (firstReviewAt - openedAt) / 3600000;
-    })
-  );
-  const validDurations = reviewedPrs.filter(
+        const openedAt = new Date(pr.created_at).getTime();
+        if (Number.isNaN(openedAt) || firstReviewAt < openedAt) {
+          return null;
+        }
+
+        return (firstReviewAt - openedAt) / 3600000;
+      })
+    );
+    results.push(...batchResults);
+  }
+
+  const validDurations = results.filter(
     (value): value is number => typeof value === "number"
   );
 
