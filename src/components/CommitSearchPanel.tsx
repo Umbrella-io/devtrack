@@ -208,7 +208,7 @@ export default function CommitSearchPanel({ commits, loading }: CommitSearchPane
                       </span>
 
                       {/* Repo badge */}
-                      <span className="shrink-0 rounded-md bg-[var(--control)] px-2 py-0.5 text-xs font-medium text-[var(--foreground)] max-w-[12rem] truncate">
+                      <span className="shrink-0 rounded-md bg-[var(--control)] px-2 py-0.5 text-xs font-medium text-[var(--foreground)] max-w-[6rem] sm:max-w-[12rem] truncate">
                         <HighlightMatch text={commit.repo} query={debouncedQuery} />
                       </span>
 

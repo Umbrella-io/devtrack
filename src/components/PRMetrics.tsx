@@ -206,10 +206,21 @@ export default function PRMetrics() {
       </div>
 
       {loading ? (
-        <div className="space-y-4">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="space-y-4"
+        >
+          <span className="sr-only">Loading PR analytics</span>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse" />
+              <div
+                key={i}
+                aria-hidden="true"
+                className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
+              />
             ))}
           </div>
         </div>

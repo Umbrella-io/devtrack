@@ -455,7 +455,7 @@ export default function ContributionGraph() {
     >
       <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-[var(--foreground)]">
+          <h2 className="text-sm md:text-base lg:text-lg font-semibold text-[var(--foreground)]">
             {compareMode && compareUser ? `You vs ${compareUser}` : "Your Commits"}
           </h2>
           {compareMode && compareError && (
@@ -633,48 +633,52 @@ export default function ContributionGraph() {
         </p>
       ) : (
         <div className="h-[220px] w-full overflow-hidden">
-          <ResponsiveContainer width="100%" height="100%">
-            {chartType === "bar" ? (
-              <BarChart data={displayData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis
-                  dataKey={compareMode ? "date" : "day"}
-                  hide
-                />
-                <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
-                <Tooltip
-                  trigger={tooltipTrigger}
-                  contentStyle={{
-                    background: "var(--card)",
-                    color: "var(--foreground)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "8px",
-                  }}
-                  labelStyle={{
-                    color: "var(--foreground)",
-                    fontSize: "12px",
-                  }}
-                  cursor={false}
-                />
-                {hasFriendData && (
-                  <Legend wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }} />
-                )}
-                {compareMode && hasFriendData ? (
-                  <>
-                    <Bar
-                      dataKey="you"
-                      fill="var(--accent)"
-                      radius={[4, 4, 0, 0]}
-                      name="You"
-                    />
-                    <Bar
-                      dataKey="friend"
-                      fill="var(--muted-foreground)"
-                      radius={[4, 4, 0, 0]}
-                      name={`${compareUser}`}
-                    />
-                  </>
-                ) : (
+<ResponsiveContainer width="100%" height="100%">
+  {chartType === "bar" ? (
+    <BarChart data={displayData}>
+      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+      <XAxis
+        dataKey={compareMode ? "date" : "day"}
+        hide
+      />
+      <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
+      <Tooltip
+        trigger={tooltipTrigger}
+        contentStyle={{
+          background: "var(--card)",
+          color: "var(--foreground)",
+          border: "1px solid var(--border)",
+          borderRadius: "8px",
+        }}
+        labelStyle={{
+          color: "var(--foreground)",
+          fontSize: "12px",
+        }}
+        cursor={false}
+      />
+      {hasFriendData && (
+        <Legend
+          wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }}
+          className="hidden sm:block"
+        />
+      )}
+
+      {compareMode && hasFriendData ? (
+        <>
+          <Bar
+            dataKey="you"
+            fill="var(--accent)"
+            radius={[4, 4, 0, 0]}
+            name="You"
+          />
+          <Bar
+            dataKey="friend"
+            fill="var(--muted-foreground)"
+            radius={[4, 4, 0, 0]}
+            name={`${compareUser}`}
+          />
+        </>
+      )   : (
                   <Bar
                     dataKey="commits"
                     fill="var(--accent)"
@@ -689,46 +693,50 @@ export default function ContributionGraph() {
                   dataKey={compareMode ? "date" : "day"}
                   hide
                 />
-                <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
-                <Tooltip
-                  trigger={tooltipTrigger}
-                  contentStyle={{
-                    background: "var(--card)",
-                    color: "var(--foreground)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "8px",
-                  }}
-                  labelStyle={{
-                    color: "var(--foreground)",
-                    fontSize: "12px",
-                  }}
-                  cursor={false}
-                />
-                {hasFriendData && (
-                  <Legend wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }} />
-                )}
-                {compareMode && hasFriendData ? (
-                  <>
-                    <Line
-                      type="monotone"
-                      dataKey="you"
-                      stroke="var(--accent)"
-                      strokeWidth={2}
-                      dot={false}
-                      name="You"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="friend"
-                      stroke="var(--muted-foreground)"
-                      strokeWidth={2}
-                      strokeDasharray="4 4"
-                      dot={false}
-                      name={`${compareUser}`}
-                    />
-                  </>
-                ) : (
-                  <Line
+<YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
+<Tooltip
+  trigger={tooltipTrigger}
+  contentStyle={{
+    background: "var(--card)",
+    color: "var(--foreground)",
+    border: "1px solid var(--border)",
+    borderRadius: "8px",
+  }}
+  labelStyle={{
+    color: "var(--foreground)",
+    fontSize: "12px",
+  }}
+  cursor={false}
+/>
+
+{hasFriendData && (
+  <Legend
+    wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }}
+    className="hidden sm:block"
+  />
+)}
+
+{compareMode && hasFriendData ? (
+  <>
+    <Line
+      type="monotone"
+      dataKey="you"
+      stroke="var(--accent)"
+      strokeWidth={2}
+      dot={false}
+      name="You"
+    />
+    <Line
+      type="monotone"
+      dataKey="friend"
+      stroke="var(--muted-foreground)"
+      strokeWidth={2}
+      strokeDasharray="4 4"
+      dot={false}
+      name={`${compareUser}`}
+    />
+  </>
+) : (                  <Line
                     type="monotone"
                     dataKey="commits"
                     stroke="var(--accent)"
@@ -744,44 +752,48 @@ export default function ContributionGraph() {
                   dataKey={compareMode ? "date" : "day"}
                   hide
                 />
-                <YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--card)",
-                    color: "var(--foreground)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "8px",
-                  }}
-                  labelStyle={{
-                    color: "var(--foreground)",
-                    fontSize: "12px",
-                  }}
-                  cursor={false}
-                />
-                {hasFriendData && (
-                  <Legend wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }} />
-                )}
-                {compareMode && hasFriendData ? (
-                  <>
-                    <Area
-                      type="monotone"
-                      dataKey="you"
-                      stroke="var(--accent)"
-                      fill="var(--accent)"
-                      fillOpacity={0.3}
-                      name="You"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="friend"
-                      stroke="var(--muted-foreground)"
-                      fill="var(--muted-foreground)"
-                      fillOpacity={0.3}
-                      name={`${compareUser}`}
-                    />
-                  </>
-                ) : (
-                  <Area
+<YAxis stroke="var(--muted-foreground)" allowDecimals={false} />
+<Tooltip
+  contentStyle={{
+    background: "var(--card)",
+    color: "var(--foreground)",
+    border: "1px solid var(--border)",
+    borderRadius: "8px",
+  }}
+  labelStyle={{
+    color: "var(--foreground)",
+    fontSize: "12px",
+  }}
+  cursor={false}
+/>
+
+{hasFriendData && (
+  <Legend
+    wrapperStyle={{ color: "var(--muted-foreground)", fontSize: "12px" }}
+    className="hidden sm:block"
+  />
+)}
+
+{compareMode && hasFriendData ? (
+  <>
+    <Area
+      type="monotone"
+      dataKey="you"
+      stroke="var(--accent)"
+      fill="var(--accent)"
+      fillOpacity={0.3}
+      name="You"
+    />
+    <Area
+      type="monotone"
+      dataKey="friend"
+      stroke="var(--muted-foreground)"
+      fill="var(--muted-foreground)"
+      fillOpacity={0.3}
+      name={`${compareUser}`}
+    />
+  </>
+) : (                  <Area
                     type="monotone"
                     dataKey="commits"
                     stroke="var(--accent)"

@@ -248,16 +248,13 @@ export default function PRReviewTrendChart() {
                 />
 
                 <XAxis
-                  dataKey="label"
-                  axisLine={false}
-                  tickLine={false}
-                  tickMargin={12}
-                  interval={0}
-                  style={{
-                    fill: "var(--muted-foreground)",
-                    fontSize: "0.8rem",
-                  }}
-                />
+  dataKey="label"
+  axisLine={false}
+  tickLine={false}
+  tickMargin={12}
+  interval="preserveStartEnd"
+  tick={{ fill: "var(--muted-foreground)", fontSize: "0.7rem" }}
+/>
 
                 <YAxis
                   axisLine={false}
