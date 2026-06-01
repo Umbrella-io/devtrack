@@ -3,10 +3,17 @@ import { NextRequest } from "next/server";
 const WINDOW_MS = 60 * 1000;
 const BADGE_LIMIT = 20;
 
-// NOTE: This rate limiter is separate from the API middleware rate limiting.
-// It applies per-IP limiting specifically for badge generation endpoints.
+type RateLimitBucket = {
+  windowStart: number;
+  count: number;
+};
 
-const buckets = new Map<string, number[]>();
+type Bucket = {
+  windowStart: number;
+  count: number;
+};
+
+const buckets = new Map<string, Bucket>();
 
 export type BadgeRateLimitResult = {
   allowed: boolean;
@@ -16,29 +23,55 @@ export type BadgeRateLimitResult = {
 
 function pruneBuckets(now: number) {
   if (buckets.size < 500) return;
+
   const cutoff = now - WINDOW_MS;
-  for (const [key, timestamps] of Array.from(buckets.entries())) {
-    if (timestamps.every((t) => t <= cutoff)) buckets.delete(key);
+
+  for (const [key, bucket] of buckets.entries()) {
+    if (bucket.windowStart <= cutoff) {
+      buckets.delete(key);
+    }
   }
 }
 
 export function checkBadgeRateLimit(ip: string): BadgeRateLimitResult {
   const now = Date.now();
+
   pruneBuckets(now);
 
   const key = `badge:${ip}`;
-  const cutoff = now - WINDOW_MS;
-  const active = (buckets.get(key) ?? []).filter((t) => t > cutoff);
-  const reset = Math.ceil(((active[0] ?? now) + WINDOW_MS) / 1000);
 
-  if (active.length >= BADGE_LIMIT) {
-    buckets.set(key, active);
-    return { allowed: false, remaining: 0, reset };
+  let bucket = buckets.get(key);
+
+  if (!bucket || now - bucket.windowStart >= WINDOW_MS) {
+    bucket = {
+      windowStart: now,
+      count: 0,
+    };
   }
 
-  active.push(now);
-  buckets.set(key, active);
-  return { allowed: true, remaining: BADGE_LIMIT - active.length, reset };
+  const reset = Math.ceil(
+    (bucket.windowStart + WINDOW_MS) / 1000
+  );
+
+  if (bucket.count >= BADGE_LIMIT) {
+    buckets.set(key, bucket);
+
+    return {
+      allowed: false,
+      remaining: 0,
+      reset,
+    };
+  }
+
+  bucket.count++;
+
+  buckets.set(key, bucket);
+
+  return {
+    allowed: true,
+    remaining: BADGE_LIMIT - bucket.count,
+    reset,
+  };
 }
 
 export function getBadgeClientIp(req: NextRequest): string {
