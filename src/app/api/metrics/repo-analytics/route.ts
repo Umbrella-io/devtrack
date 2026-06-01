@@ -5,13 +5,12 @@ import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib
 import { computeHealthScore } from "@/lib/repo-health";
 import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
 import { isSafeUrl } from "@/lib/ssrf-protection";
+import { parseRepoParam } from "@/lib/repo-analytics-utils";
 
 export const dynamic = "force-dynamic";
 const GITHUB_API = "https://api.github.com";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
-
-const REPO_REGEX = /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/;
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -19,14 +18,23 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const repoParam = req.nextUrl.searchParams.get("repo");
-  if (!repoParam) return Response.json({ error: "Missing repo parameter" }, { status: 400 });
-
-  if (!REPO_REGEX.test(repoParam)) {
-    return Response.json({ error: "Invalid repo format. Expected owner/repo-name" }, { status: 400 });
+  const rawRepo = req.nextUrl.searchParams.get("repo");
+  if (!rawRepo) {
+    return Response.json({ error: "Missing repo parameter" }, { status: 400 });
   }
 
-  const repoUrl = `${GITHUB_API}/repos/${repoParam}`;
+  const parsed = parseRepoParam(rawRepo);
+  if (!parsed) {
+    return Response.json(
+      { error: "Invalid repo parameter. Expected format: owner/repo (e.g. octocat/Hello-World)" },
+      { status: 400 }
+    );
+  }
+
+  const { owner, repo } = parsed;
+  const safeRepoPath = `${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
+
+  const repoUrl = `${GITHUB_API}/repos/${safeRepoPath}`;
   let urlSafe = false;
   try {
     urlSafe = await isSafeUrl(repoUrl);
@@ -38,7 +46,11 @@ export async function GET(req: NextRequest) {
   }
 
   const bypass = isMetricsCacheBypassed(req);
-  const key = metricsCacheKey(session.githubId ?? session.githubLogin, `repo-analytics-${repoParam}` as any, { days: 30 });
+  const key = metricsCacheKey(
+    session.githubId ?? session.githubLogin,
+    `repo-analytics-${owner}/${repo}` as any,
+    { days: 30 }
+  );
 
   try {
     const data = await withMetricsCache({ bypass, key, ttlSeconds: 60 * 60 }, async () => {
@@ -49,13 +61,13 @@ export async function GET(req: NextRequest) {
       if (!repoRes.ok) throw new Error("API error fetching repo overview");
       const repoData = await repoRes.json();
 
-      const contribRes = await fetch(`${GITHUB_API}/repos/${repoParam}/contributors?per_page=10`, {
+      const contribRes = await fetch(`${GITHUB_API}/repos/${safeRepoPath}/contributors?per_page=10`, {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });
       const contribData = contribRes.ok ? await contribRes.json() : [];
 
-      const langRes = await fetch(`${GITHUB_API}/repos/${repoParam}/languages`, {
+      const langRes = await fetch(`${GITHUB_API}/repos/${safeRepoPath}/languages`, {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });
@@ -72,11 +84,11 @@ export async function GET(req: NextRequest) {
 
       const primaryStack = languageBreakdown.slice(0, 3).map((l) => l.name);
 
-      const activityRes = await fetch(`${GITHUB_API}/repos/${repoParam}/stats/commit_activity`, {
+      const activityRes = await fetch(`${GITHUB_API}/repos/${safeRepoPath}/stats/commit_activity`, {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });
-      
+
       let timeline: { date: string; events: number }[] = [];
       if (activityRes.ok && activityRes.status === 200) {
         const activityData = await activityRes.json();
@@ -94,7 +106,7 @@ export async function GET(req: NextRequest) {
           }
         }
       }
-      
+
       if (timeline.length === 0) {
         for (let i = 6; i >= 0; i--) {
           const d = new Date();
@@ -110,7 +122,7 @@ export async function GET(req: NextRequest) {
         openIssuesCount: repoData.open_issues_count || 0,
         daysSinceLastCommit: 1,
       };
-      
+
       const health = computeHealthScore(repoData.name, healthSignals);
 
       const result: RepoAnalyticsResponse = {
@@ -138,7 +150,7 @@ export async function GET(req: NextRequest) {
 
       return result;
     });
-    
+
     return Response.json(data);
   } catch (error) {
     console.error(error);

@@ -175,11 +175,12 @@ export default function ProjectMetrics() {
               </h3>
               <form onSubmit={handleConnect} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="jiraDomain" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Jira Domain
                   </label>
                   <input
                     type="text"
+                    id="jiraDomain"
                     placeholder="your-company.atlassian.net"
                     value={formData.jiraDomain}
                     onChange={(e) =>
@@ -190,10 +191,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="email" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Email
                   </label>
                   <input
+                    id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) =>
@@ -204,10 +206,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="apiToken" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     API Token
                   </label>
                   <input
+                    id="apiToken"
                     type="password"
                     placeholder="Get from id.atlassian.com/manage-profile"
                     value={formData.apiToken}
@@ -219,11 +222,12 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="projectKey" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Project Key (optional)
                   </label>
                   <input
                     type="text"
+                    id="projectKey"
                     placeholder="e.g. PROJ"
                     value={formData.projectKey}
                     onChange={(e) =>
@@ -293,11 +297,12 @@ export default function ProjectMetrics() {
               </h3>
               <form onSubmit={handleConnect} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="jiraDomain" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Jira Domain
                   </label>
                   <input
                     type="text"
+                    id="jiraDomain"
                     placeholder="your-company.atlassian.net"
                     value={formData.jiraDomain}
                     onChange={(e) =>
@@ -308,10 +313,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="email" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Email
                   </label>
                   <input
+                    id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) =>
@@ -322,10 +328,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="apiToken" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     API Token
                   </label>
                   <input
+                    id="apiToken"
                     type="password"
                     placeholder="Get from id.atlassian.com/manage-profile"
                     value={formData.apiToken}
@@ -337,11 +344,12 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="projectKey" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Project Key (optional)
                   </label>
                   <input
                     type="text"
+                    id="projectKey"
                     placeholder="e.g. PROJ"
                     value={formData.projectKey}
                     onChange={(e) =>

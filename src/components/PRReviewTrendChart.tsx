@@ -153,7 +153,7 @@ export default function PRReviewTrendChart() {
   const hasData = data.some((week) => week.avgReviewDays !== null);
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="flex h-full flex-col rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">

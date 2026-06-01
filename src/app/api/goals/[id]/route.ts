@@ -6,6 +6,11 @@ import { dispatchToAllWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
 
+// Goals whose progress is derived from verified GitHub activity.
+// The sync endpoint (/api/goals/sync) is the sole authority for these values;
+// client-supplied progress updates must be rejected to prevent fabrication.
+const ACTIVITY_DERIVED_UNITS = new Set(["commits", "prs"]);
+
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
@@ -21,9 +26,9 @@ export async function PATCH(
   const body = await req.json().catch(() => ({}));
   const { current } = body;
 
-  if (typeof current !== "number" || current < 0) {
+  if (typeof current !== "number" || !Number.isInteger(current) || current < 0) {
     return Response.json(
-      { error: "Invalid current value" },
+      { error: "current must be a non-negative integer" },
       { status: 400 }
     );
   }
@@ -37,6 +42,26 @@ export async function PATCH(
 
   if (!existingGoal) {
     return Response.json({ error: "Goal not found" }, { status: 404 });
+  }
+
+  // Block manual progress edits for activity-derived goal types.
+  // These goals are synced from GitHub and setting current directly would
+  // allow goal completion without any corresponding real activity.
+  if (ACTIVITY_DERIVED_UNITS.has(existingGoal.unit)) {
+    return Response.json(
+      {
+        error:
+          "Progress for activity-derived goals is updated automatically via GitHub sync.",
+      },
+      { status: 422 }
+    );
+  }
+
+  if (current > existingGoal.target) {
+    return Response.json(
+      { error: "current cannot exceed target" },
+      { status: 400 }
+    );
   }
 
   const wasCompleted = existingGoal.current >= existingGoal.target;

@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
 
   const event = req.headers.get(GITHUB_EVENT_HEADER);
   if (event !== "push") {
-    return NextResponse.json({ received: true, ignored: true, event });
+    return NextResponse.json({ received: true });
   }
 
   let payload: GitHubPushPayload;
@@ -113,10 +113,7 @@ export async function POST(req: NextRequest) {
 
   const githubLogin = getPushActor(payload);
   if (!githubLogin) {
-    return NextResponse.json(
-      { received: true, userMatched: false, reason: "Missing GitHub actor" },
-      { status: 200 }
-    );
+    return NextResponse.json({ received: true }, { status: 200 });
   }
 
   let staleResult: Awaited<ReturnType<typeof markUserMetricsStale>>;
@@ -152,14 +149,5 @@ export async function POST(req: NextRequest) {
     revalidatePath("/dashboard");
   }
 
-  return NextResponse.json({
-    received: true,
-    userMatched: Boolean(staleResult),
-    accountType: staleResult?.accountType ?? null,
-    githubId: staleResult?.githubId ?? null,
-    githubLogin,
-    repository: payload.repository?.full_name ?? null,
-    after: payload.after ?? null,
-    commitCount: payload.commits?.length ?? 0,
-  });
+  return NextResponse.json({ received: true });
 }

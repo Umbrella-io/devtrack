@@ -290,7 +290,7 @@ export default function FriendComparison() {
           <button
             type="submit"
             disabled={loading || !trimmedFriendUsername}
-            className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors disabled:opacity-50 hover:opacity-90"
+            className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-all disabled:opacity-50 hover:opacity-90 active:scale-95"
           >
             {loading ? "Loading..." : "Compare"}
           </button>
@@ -386,7 +386,7 @@ export default function FriendComparison() {
             </a>
             <button
               onClick={clearComparison}
-              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)]"
+              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-all hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)] hover:opacity-90 active:scale-95"
             >
               Clear Comparison
             </button>
