@@ -1,6 +1,8 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 const isDev = process.env.NODE_ENV === "development";
 const WINDOW_SECONDS = 60;
 
@@ -19,7 +21,14 @@ const WINDOW_SECONDS = 60;
 const AUTHENTICATED_LIMIT = isDev ? 5000 : 60;
 const ANONYMOUS_LIMIT = isDev ? 1000 : 10;
 
-const memoryBuckets = new Map<string, number[]>();
+type MemoryBucket = {
+  count: number;
+  resetAt: number;
+};
+
+const memoryBuckets = new Map<string, MemoryBucket>();
+const MEMORY_BUCKET_CLEANUP_INTERVAL = 5 * 60 * 1000;
+let lastMemoryBucketCleanup = 0;
 
 type RateLimitResult = {
   allowed: boolean;
@@ -30,7 +39,6 @@ type RateLimitResult = {
 
 function getIp(req: NextRequest) {
   return (
-    req.ip ??
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     req.headers.get("x-real-ip") ??
     "unknown"
@@ -54,17 +62,15 @@ function buildHeaders(result: RateLimitResult) {
 }
 
 function pruneMemoryBuckets(now: number) {
-  if (memoryBuckets.size < 500) {
+  if (now - lastMemoryBucketCleanup <= MEMORY_BUCKET_CLEANUP_INTERVAL) {
     return;
   }
 
-  const cutoff = now - WINDOW_SECONDS * 1000;
-  for (const [key, values] of Array.from(memoryBuckets.entries())) {
-    const active = values.filter((timestamp: number) => timestamp > cutoff);
-    if (active.length === 0) {
+  lastMemoryBucketCleanup = now;
+
+  for (const [key, bucket] of memoryBuckets.entries()) {
+    if (bucket.resetAt <= now) {
       memoryBuckets.delete(key);
-    } else {
-      memoryBuckets.set(key, active);
     }
   }
 }
@@ -76,14 +82,18 @@ function checkMemoryLimit(
 ): RateLimitResult {
   pruneMemoryBuckets(now);
 
-  const cutoff = now - WINDOW_SECONDS * 1000;
-  const active = (memoryBuckets.get(key) ?? []).filter(
-    (timestamp) => timestamp > cutoff
-  );
-  const reset = Math.ceil(((active[0] ?? now) + WINDOW_SECONDS * 1000) / 1000);
+  const existingBucket = memoryBuckets.get(key);
+  const bucket =
+    existingBucket && existingBucket.resetAt > now
+      ? existingBucket
+      : {
+          count: 0,
+          resetAt: now + WINDOW_SECONDS * 1000,
+        };
+  const reset = Math.ceil(bucket.resetAt / 1000);
 
-  if (active.length >= limit) {
-    memoryBuckets.set(key, active);
+  if (bucket.count >= limit) {
+    memoryBuckets.set(key, bucket);
     return {
       allowed: false,
       limit,
@@ -92,13 +102,13 @@ function checkMemoryLimit(
     };
   }
 
-  active.push(now);
-  memoryBuckets.set(key, active);
+  bucket.count += 1;
+  memoryBuckets.set(key, bucket);
 
   return {
     allowed: true,
     limit,
-    remaining: Math.max(limit - active.length, 0),
+    remaining: Math.max(limit - bucket.count, 0),
     reset,
   };
 }
@@ -200,27 +210,45 @@ async function checkRateLimit(identifier: string, limit: number) {
 }
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-
-  // Protect dashboard and settings routes
   const pathname = req.nextUrl.pathname;
 
-  const protectedRoutes = ["/dashboard", "/settings"];
+  // PLAYWRIGHT_SERVER_MODE is not forwarded into the webServer env by
+  // playwright.config.mjs, so isPlaywrightServer is always false at runtime.
+  // Instead, attempt token resolution with both cookie name variants so the
+  // non-secure cookie set by Playwright tests is always found.
+  let token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: false,
+    cookieName: "next-auth.session-token",
+  });
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-
-  if (isProtectedRoute && !token) {
-    return NextResponse.redirect(new URL("/", req.url));
+  if (!token) {
+    token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: true,
+      cookieName: "__Secure-next-auth.session-token",
+    });
   }
 
-  const githubId =
-    typeof token?.githubId === "string" ? token.githubId : null;
+  const protectedRoutes = ["/dashboard", "/settings"];
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
 
+  if (isProtectedRoute) {
+    if (!token) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    return NextResponse.next();
+  }
+
+  const githubId = typeof token?.githubId === "string" ? token.githubId : null;
   const identifier = githubId ? `user:${githubId}` : `ip:${getIp(req)}`;
 
   const limit = githubId
@@ -232,14 +260,19 @@ export async function middleware(req: NextRequest) {
   const headers = buildHeaders(result);
 
   if (!result.allowed) {
-    console.warn("metrics_rate_limit_hit", {
+    const isContact = req.nextUrl.pathname.startsWith("/api/contact");
+    console.warn(isContact ? "contact_rate_limit_hit" : "metrics_rate_limit_hit", {
       identifier,
       path: req.nextUrl.pathname,
       limit,
     });
 
     return NextResponse.json(
-      { error: "Too many metrics requests. Please retry shortly." },
+      {
+        error: isContact
+          ? "Too many submissions. Please retry shortly."
+          : "Too many metrics requests. Please retry shortly.",
+      },
       { status: 429, headers }
     );
   }
@@ -266,9 +299,11 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/dashboard",
     "/dashboard/:path*",
+    "/settings",
     "/settings/:path*",
     "/api/metrics/:path*",
+    "/api/contact",
   ],
 };
-

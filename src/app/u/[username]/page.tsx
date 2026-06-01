@@ -116,9 +116,11 @@ function getProfileUrl(username: string) {
 export async function generateMetadata({
   params,
 }: {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = params;
+  const { username } = await params;
+  // Minimal lookup — avoids duplicating 3 GitHub API calls that the page already makes
   const user = await getUserByUsername(username);
   const profileUrl = getProfileUrl(username);
 
@@ -150,9 +152,9 @@ export async function generateMetadata({
 export default async function PublicProfilePage({
   params,
 }: {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }) {
-  const { username } = params;
+  const { username } = await params;
   const [profile, loggedInUsername] = await Promise.all([
     fetchPublicProfile(username, { includeAchievements: true }),
     getLoggedInGitHubUsername(),
@@ -236,7 +238,7 @@ export default async function PublicProfilePage({
                 </span>
               )}
             </h1>
-            <CopyLinkButton />
+            <CopyLinkButton url={profileUrl} />
           </div>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats

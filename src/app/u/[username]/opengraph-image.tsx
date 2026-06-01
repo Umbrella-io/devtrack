@@ -81,7 +81,7 @@ export default async function Image({
           {/* Header Section */}
           <div style={{ display: "flex", alignItems: "center", marginBottom: 60 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <img loading="lazy"
               src={avatarUrl}
               alt={user.github_login}
               style={{

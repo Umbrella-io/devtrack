@@ -20,9 +20,7 @@ export default function ShareProfileSection({
   useEffect(() => {
     setCanUseNativeShare(
       typeof navigator !== "undefined" &&
-        "share" in navigator &&
-        typeof window !== "undefined" &&
-        window.matchMedia("(pointer: coarse)").matches
+        "share" in navigator
     );
   }, []);
 
@@ -50,7 +48,7 @@ export default function ShareProfileSection({
   };
 
   return (
-    <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm md:p-5">
+    <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm md:p-5 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)]">
@@ -67,7 +65,7 @@ export default function ShareProfileSection({
               type="button"
               onClick={handleNativeShare}
               aria-label={`Share ${username}'s profile using the device share sheet`}
-              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 active:scale-95"
             >
               <span aria-hidden="true">📲</span>
               <span>Share</span>
@@ -79,7 +77,7 @@ export default function ShareProfileSection({
             target="_blank"
             rel="noreferrer noopener"
             aria-label={`Share ${username}'s profile on X`}
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
           >
             <span aria-hidden="true">𝕏</span>
             <span>X</span>
@@ -90,7 +88,7 @@ export default function ShareProfileSection({
             target="_blank"
             rel="noreferrer noopener"
             aria-label={`Share ${username}'s profile on LinkedIn`}
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
           >
             <span aria-hidden="true">in</span>
             <span>LinkedIn</span>
