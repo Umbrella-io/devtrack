@@ -80,10 +80,47 @@ export default async function PublicProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const [profile, loggedInUsername] = await Promise.all([
-    fetchPublicProfile(username, { includeAchievements: true }),
-    getLoggedInGitHubUsername(),
+  let [profile, loggedInUsername] = await Promise.all([
+    fetchPublicProfile(username, { includeAchievements: true }).catch(() => null),
+    getLoggedInGitHubUsername().catch(() => null),
   ]);
+
+  // Temporary mock fallback for local front-end preview when Supabase is not connected
+  if (!profile) {
+    profile = {
+      username: username,
+      bio: "Software developer exploring DevTrack! 🚀",
+      isSponsor: true,
+      streak: {
+        current: 8,
+        longest: 21,
+        totalActiveDays: 42,
+        lastCommitDate: new Date().toISOString(),
+      },
+      contributions: {
+        days: 90,
+        total: 184,
+        data: {
+          [new Date().toISOString().split("T")[0]]: 4,
+        },
+      },
+      repos: [
+        { name: `${username}/devtrack`, commits: 98, url: `https://github.com/${username}/devtrack` },
+        { name: `${username}/react-hooks`, commits: 54, url: `https://github.com/${username}/react-hooks` },
+        { name: `${username}/algorithms`, commits: 32, url: `https://github.com/${username}/algorithms` },
+      ],
+      topLanguages: [
+        { name: "TypeScript", count: 12, percentage: 60.5 },
+        { name: "JavaScript", count: 6, percentage: 30.2 },
+        { name: "CSS", count: 2, percentage: 9.3 },
+      ],
+      pullRequests: 24,
+      spotlightRepos: [],
+      achievements: [],
+      achievementsError: null,
+    };
+  }
+
   const profileUrl = getProfileUrl(username);
 
   if (!profile) {

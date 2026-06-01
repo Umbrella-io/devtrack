@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import CopyLinkButton from "@/components/CopyLinkButton";
+import ProfileQrModal from "@/components/ProfileQrModal";
+import { QrCode } from "lucide-react";
 
 interface ShareProfileSectionProps {
   username: string;
@@ -16,6 +18,7 @@ export default function ShareProfileSection({
   profileUrl,
 }: ShareProfileSectionProps) {
   const [canUseNativeShare, setCanUseNativeShare] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   useEffect(() => {
     setCanUseNativeShare(
@@ -48,55 +51,74 @@ export default function ShareProfileSection({
   };
 
   return (
-    <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm md:p-5 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)]">
-            Share Profile
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
-            Share your public stats on X, LinkedIn, or copy the profile link.
-          </p>
-        </div>
+    <>
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm md:p-5 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)]">
+              Share Profile
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
+              Share your public stats on X, LinkedIn, or copy the profile link.
+            </p>
+          </div>
 
-        <div className="flex flex-wrap gap-2">
-          {canUseNativeShare ? (
+          <div className="flex flex-wrap gap-2">
+            {canUseNativeShare ? (
+              <button
+                type="button"
+                onClick={handleNativeShare}
+                aria-label={`Share ${username}'s profile using the device share sheet`}
+                className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 active:scale-95"
+              >
+                <span aria-hidden="true">📲</span>
+                <span>Share</span>
+              </button>
+            ) : null}
+
             <button
               type="button"
-              onClick={handleNativeShare}
-              aria-label={`Share ${username}'s profile using the device share sheet`}
-              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 active:scale-95"
+              onClick={() => setShowQrModal(true)}
+              aria-label={`Show QR Code for ${username}'s profile`}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 active:scale-95"
             >
-              <span aria-hidden="true">📲</span>
-              <span>Share</span>
+              <QrCode size={16} aria-hidden="true" />
+              <span>QR Code</span>
             </button>
-          ) : null}
 
-          <a
-            href={xShareUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            aria-label={`Share ${username}'s profile on X`}
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
-          >
-            <span aria-hidden="true">𝕏</span>
-            <span>X</span>
-          </a>
+            <a
+              href={xShareUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label={`Share ${username}'s profile on X`}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+            >
+              <span aria-hidden="true">𝕏</span>
+              <span>X</span>
+            </a>
 
-          <a
-            href={linkedInShareUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            aria-label={`Share ${username}'s profile on LinkedIn`}
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
-          >
-            <span aria-hidden="true">in</span>
-            <span>LinkedIn</span>
-          </a>
+            <a
+              href={linkedInShareUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label={`Share ${username}'s profile on LinkedIn`}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+            >
+              <span aria-hidden="true">in</span>
+              <span>LinkedIn</span>
+            </a>
 
-          <CopyLinkButton url={profileUrl} />
+            <CopyLinkButton url={profileUrl} />
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <ProfileQrModal
+        isOpen={showQrModal}
+        onClose={() => setShowQrModal(false)}
+        username={username}
+        profileUrl={profileUrl}
+      />
+    </>
   );
 }
