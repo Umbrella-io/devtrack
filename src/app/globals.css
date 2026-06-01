@@ -84,3 +84,6 @@ body {
 .fade-up {
   animation: fadeUp 0.7s ease-out;
 }
+html {
+  scroll-behavior: smooth;
+}

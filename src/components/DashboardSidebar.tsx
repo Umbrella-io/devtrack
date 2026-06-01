@@ -16,13 +16,9 @@ import {
 
 const sections = [
   { id: "weekly-summary", label: "Weekly Summary", icon: CalendarDays },
-  { id: "ai-mentor", label: "AI Mentor", icon: Bot },
   { id: "personal-records", label: "Personal Records", icon: Trophy },
   { id: "contribution", label: "Contributions", icon: GitCommit },
-  { id: "friend-comparison", label: "Friend Comparison", icon: Flame },
-  { id: "streak", label: "Streak", icon: Flame },
   { id: "pr-analytics", label: "PR Analytics", icon: GitPullRequest },
-  { id: "issues", label: "Issues", icon: AlertCircle },
   { id: "top-repos", label: "Top Repos & Goals", icon: Target },
   { id: "recent-activity", label: "Recent Activity", icon: BarChart2 },
 ];
@@ -58,7 +54,7 @@ export default function DashboardSidebar() {
 
   return (
     <>
-      <aside className="hidden lg:flex flex-col sticky top-16 rounded-xl h-full gap-1 bg-[var(--control)] border-r border-[var(--border)] p-3 min-w-[48px] xl:min-w-[200px]">
+      <aside className="hidden lg:flex flex-col sticky top-8 ml-5 rounded-xl h-full gap-1 bg-[var(--control)] border-r border-[var(--border)] p-3 min-w-[48px] xl:min-w-[200px]">
         <div
           className="text-lg flex items-center font-bold text-[var(--foreground)] mb-4 px-3">
           Devtrack
@@ -85,16 +81,12 @@ export default function DashboardSidebar() {
       >
         <Menu size={20} />
       </button>
-
-      {/* Mobile Overlay */}
       {mobileOpen && (
         <div
           className="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
         />
       )}
-
-      {/* Mobile Drawer */}
       <div
         className={`lg:hidden fixed top-0 left-0 h-full z-50 w-64 bg-[var(--control)]/90 backdrop-blur-md border-r border-[var(--border)] p-4 shadow-xl transition-transform duration-300 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
