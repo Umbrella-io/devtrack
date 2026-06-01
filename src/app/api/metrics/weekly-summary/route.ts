@@ -3,10 +3,11 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { GITHUB_API } from "@/lib/github";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 import { getAccountToken } from "@/lib/github-accounts";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { calculateStreak } from "@/lib/streak";
+import { toDateStr } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -24,28 +25,10 @@ function getCurrentWeekStartUtc(): Date {
 }
 
 function calculateCurrentStreak(activeDates: Set<string>): number {
-  const commitDays = Array.from(activeDates).sort(); // ascending "YYYY-MM-DD"
-  if (commitDays.length === 0) return 0;
-
-  let currentRun = 1;
-  const runs: { end: string; length: number }[] = [];
-
-  // Split dates into consecutive runs — any gap > 1 day breaks the streak.
-  for (let i = 1; i < commitDays.length; i++) {
-    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
-    if (diff === 1) { currentRun++; }
-    else { runs.push({ end: commitDays[i - 1], length: currentRun }); currentRun = 1; }
-  }
-  runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
-
-  const today = toDateStr(new Date());
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
-  const lastRun = runs[runs.length - 1];
-
-  // Streak is alive if the last active day is today OR yesterday.
-  // Allowing yesterday prevents the streak from resetting at midnight before
-  // the user has had a chance to commit on the new day.
-  return lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
+  const { currentStreak } = calculateStreak(
+    Array.from(activeDates).map((day) => new Date(day))
+  );
+  return currentStreak;
 }
 
 async function fetchActiveDates(githubLogin: string, token: string): Promise<Set<string>> {
