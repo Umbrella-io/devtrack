@@ -18,6 +18,9 @@ export default function ProfileQrModal({
   profileUrl,
 }: ProfileQrModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const downloadButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -25,23 +28,55 @@ export default function ProfileQrModal({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        const focusable = [closeButtonRef.current, downloadButtonRef.current].filter(Boolean) as HTMLElement[];
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            last.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === last) {
+            first.focus();
+            e.preventDefault();
+          }
+        }
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
-    // Lock background scrolling when modal is open
+    
+    // Save original active element to restore focus on close
+    const originalActiveElement = document.activeElement as HTMLElement | null;
+    
+    // Shift initial focus to close button for screen readers
+    setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 50);
+
+    // Lock background scrolling while preserving original overflow
+    const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = originalOverflow;
+      originalActiveElement?.focus();
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   const downloadQRCode = () => {
-    const canvas = document.getElementById("profile-qr-canvas") as HTMLCanvasElement;
+    const canvas = canvasRef.current;
     if (!canvas) return;
 
     try {
@@ -59,8 +94,9 @@ export default function ProfileQrModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-      {/* Backdrop with blur */}
+      {/* Backdrop with blur and stable test-id */}
       <div
+        data-testid="qr-modal-backdrop"
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
         aria-hidden="true"
@@ -76,6 +112,7 @@ export default function ProfileQrModal({
       >
         {/* Close Button */}
         <button
+          ref={closeButtonRef}
           onClick={onClose}
           type="button"
           className="absolute top-4 right-4 rounded-lg p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--control)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
@@ -101,7 +138,7 @@ export default function ProfileQrModal({
         <div className="my-6 flex justify-center">
           <div className="rounded-2xl bg-white p-4 shadow-md border border-gray-100 flex items-center justify-center">
             <QRCodeCanvas
-              id="profile-qr-canvas"
+              ref={canvasRef}
               value={profileUrl}
               size={200}
               level="H"
@@ -113,6 +150,7 @@ export default function ProfileQrModal({
         {/* Action Button */}
         <div className="flex flex-col gap-2">
           <button
+            ref={downloadButtonRef}
             type="button"
             onClick={downloadQRCode}
             className="w-full rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 shadow-lg shadow-[var(--accent)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] flex items-center justify-center gap-2"

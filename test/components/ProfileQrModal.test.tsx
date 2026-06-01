@@ -28,7 +28,7 @@ describe("ProfileQrModal", () => {
   });
 
   it("renders modal content when isOpen is true", () => {
-    render(<ProfileQrModal {...defaultProps} />);
+    const { container } = render(<ProfileQrModal {...defaultProps} />);
 
     // Check heading
     expect(screen.getByRole("heading", { name: /Share Profile QR/i })).toBeInTheDocument();
@@ -42,7 +42,7 @@ describe("ProfileQrModal", () => {
     expect(screen.getByRole("button", { name: /Close modal/i })).toBeInTheDocument();
 
     // Check QR code canvas is rendered
-    const canvas = document.getElementById("profile-qr-canvas");
+    const canvas = container.querySelector("canvas");
     expect(canvas).toBeInTheDocument();
   });
 
@@ -58,11 +58,9 @@ describe("ProfileQrModal", () => {
   it("calls onClose when backdrop is clicked", () => {
     render(<ProfileQrModal {...defaultProps} />);
 
-    // Click backdrop
-    const backdrop = screen.getByRole("dialog").previousSibling;
-    if (backdrop) {
-      fireEvent.click(backdrop);
-    }
+    // Click backdrop using stable testid
+    const backdrop = screen.getByTestId("qr-modal-backdrop");
+    fireEvent.click(backdrop);
 
     expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
   });
@@ -83,19 +81,19 @@ describe("ProfileQrModal", () => {
 
     unmount();
 
-    // When unmounted/closed, overflow should be unset
+    // When unmounted/closed, overflow should be restored
     expect(document.body.style.overflow).toBe("unset");
   });
 
   it("triggers download of QR code when download button is clicked", () => {
     render(<ProfileQrModal {...defaultProps} />);
 
-    // Mock HTMLCanvasElement.prototype.toDataURL
-    const toDataURLMock = vi.fn().mockReturnValue("data:image/png;base64,mocked_image_data");
-    const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
-    HTMLCanvasElement.prototype.toDataURL = toDataURLMock;
+    // Mock HTMLCanvasElement.prototype.toDataURL cleanly via spyOn
+    const toDataURLSpy = vi.spyOn(HTMLCanvasElement.prototype, "toDataURL")
+      .mockReturnValue("data:image/png;base64,mocked_image_data");
 
-    // Spy on document.createElement to check link generation
+    // Spy on document.createElement capturing original implementation to avoid infinite recursion
+    const originalCreateElement = document.createElement.bind(document);
     const linkClickSpy = vi.fn();
     const createElementSpy = vi.spyOn(document, "createElement").mockImplementation((tagName) => {
       if (tagName === "a") {
@@ -105,7 +103,7 @@ describe("ProfileQrModal", () => {
           click: linkClickSpy,
         } as any;
       }
-      return document.createElement(tagName);
+      return originalCreateElement(tagName);
     });
 
     const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => ({} as any));
@@ -115,15 +113,12 @@ describe("ProfileQrModal", () => {
     fireEvent.click(downloadButton);
 
     // Verify canvas toDataURL was called
-    expect(toDataURLMock).toHaveBeenCalledWith("image/png");
+    expect(toDataURLSpy).toHaveBeenCalledWith("image/png");
 
     // Verify link properties and interaction
     expect(createElementSpy).toHaveBeenCalledWith("a");
     expect(appendChildSpy).toHaveBeenCalled();
     expect(linkClickSpy).toHaveBeenCalled();
     expect(removeChildSpy).toHaveBeenCalled();
-
-    // Clean up prototypes
-    HTMLCanvasElement.prototype.toDataURL = originalToDataURL;
   });
 });

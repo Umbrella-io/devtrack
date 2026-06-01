@@ -86,7 +86,7 @@ export default async function PublicProfilePage({
   ]);
 
   // Temporary mock fallback for local front-end preview when Supabase is not connected
-  if (!profile) {
+  if (!profile && process.env.NODE_ENV === "development") {
     profile = {
       username: username,
       bio: "Software developer exploring DevTrack! 🚀",
