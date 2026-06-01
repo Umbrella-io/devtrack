@@ -51,11 +51,11 @@ export default function SignOutButton() {
             suppressHydrationWarning
             onClick={() => setConfirming(true)}
             aria-label="Sign out"
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--destructive)]/50 bg-[var(--destructive)]/80 px-4 text-sm font-semibold text-[var(--destructive-foreground)] transition-colors hover:bg-[var(--destructive)] disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--destructive)]/50 bg-[var(--destructive)]/80 px-4 text-sm font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--destructive)] disabled:cursor-not-allowed disabled:opacity-70"
         >
             {signingOut && (
                 <svg
-                    className="h-4 w-4 animate-spin text-[var(--destructive-foreground)]"
+                    className="h-4 w-4 animate-spin text-[var(--foreground)]"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
