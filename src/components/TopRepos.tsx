@@ -421,7 +421,7 @@ export default function TopRepos() {
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
           aria-label="Select time range for top repositories"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus:outline-none focus:border-[var(--accent)]"
+          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus-visible:outline-none focus:border-[var(--accent)]"
         >
           <option value={7}>Last 7d</option>
           <option value={30}>Last 30d</option>
@@ -467,7 +467,7 @@ export default function TopRepos() {
       onChange={(e) => setSearchQuery(e.target.value)}
       placeholder="Search repositories…"
       aria-label="Search repositories"
-      className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
+      className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:outline-none focus:border-[var(--accent)]"
     />
 
     {searchQuery.length > 0 && (

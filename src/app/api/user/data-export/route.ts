@@ -301,17 +301,38 @@ export async function DELETE(req: NextRequest) {
   await writeAuditLog(user.id, "delete", req);
 
   // --- Data deletion ---------------------------------------------------
+  // Delete webhook_deliveries first — they reference webhook_configs via
+  // webhook_id (not user_id), so we must resolve the IDs before removing
+  // the parent webhook_configs rows.
+  const { data: userWebhooks } = await supabaseAdmin
+    .from("webhook_configs")
+    .select("id")
+    .eq("user_id", user.id);
+
+  const webhookIds = userWebhooks?.map((w) => w.id) ?? [];
+  if (webhookIds.length > 0) {
+    await supabaseAdmin
+      .from("webhook_deliveries")
+      .delete()
+      .in("webhook_id", webhookIds);
+  }
+
+  // Tables with a direct user_id foreign key, ordered to respect any
+  // potential FK constraints (children before parents).
   const tablesToDelete = [
-  "streak_freezes",
-  "streak_milestones",
-  "local_coding_sessions",
-  "local_coding_api_keys",
-  "jira_credentials",
-  "webhook_configs",
-  "user_github_accounts",
-  "goals",
-  "metric_snapshots",
-];
+    "notifications",
+    "ai_insights",
+    "data_export_audit",
+    "streak_freezes",
+    "streak_milestones",
+    "local_coding_sessions",
+    "local_coding_api_keys",
+    "jira_credentials",
+    "webhook_configs",
+    "user_github_accounts",
+    "goals",
+    "metric_snapshots",
+  ];
 
   for (const table of tablesToDelete) {
     await supabaseAdmin.from(table).delete().eq("user_id", user.id);

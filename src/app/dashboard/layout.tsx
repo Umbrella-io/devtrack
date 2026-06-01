@@ -19,8 +19,13 @@ async function hasActiveSession(fetcher: typeof window.fetch) {
 }
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { status } = useSession({ required: true });
   const router = useRouter();
+  const { status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      router.push("/");
+    },
+  });
 
   useEffect(() => {
     const originalFetch = window.fetch;
