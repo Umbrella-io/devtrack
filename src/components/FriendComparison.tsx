@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 
 const ComparisonChart = dynamic(() => import("./ComparisonChart"), { ssr: false });
@@ -193,7 +194,7 @@ export default function FriendComparison() {
   };
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
       <div className="mb-6 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
@@ -265,10 +266,11 @@ export default function FriendComparison() {
                         : "hover:bg-[var(--control)]",
                     ].join(" ")}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={u.avatarUrl}
-                      alt=""
+                      alt={`${u.username} avatar`}
+                      width={20}
+                      height={20}
                       className="h-5 w-5 rounded-full"
                       loading="lazy"
                     />
@@ -288,7 +290,7 @@ export default function FriendComparison() {
           <button
             type="submit"
             disabled={loading || !trimmedFriendUsername}
-            className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors disabled:opacity-50 hover:opacity-90"
+            className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-all disabled:opacity-50 hover:opacity-90 active:scale-95"
           >
             {loading ? "Loading..." : "Compare"}
           </button>
@@ -374,17 +376,17 @@ export default function FriendComparison() {
             />
           )}
 
-          <div className="flex justify-center items-center gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 pt-4">
             <a
               href="#contribution-activity"
               onClick={handleCommitActivityClick}
-              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
+              className="text-center rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
             >
               View Commit Activity
             </a>
             <button
               onClick={clearComparison}
-              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)]"
+              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-all hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)] hover:opacity-90 active:scale-95"
             >
               Clear Comparison
             </button>

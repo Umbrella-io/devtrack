@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Skeleton } from "@/components/Skeleton";
 
 interface ProjectData {
   metrics: {
@@ -120,16 +121,24 @@ export default function ProjectMetrics() {
   if (loading) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
-          Project Tracking
-        </h2>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+            Project Tracking
+          </h2>
+          <Skeleton className="h-4 w-16" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
-            />
+            <Skeleton key={i} className="h-[88px] w-full rounded-lg" />
           ))}
+        </div>
+        <div>
+          <Skeleton className="h-4 w-24 mb-3" />
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-[60px] w-full rounded-lg" />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -166,11 +175,12 @@ export default function ProjectMetrics() {
               </h3>
               <form onSubmit={handleConnect} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="jiraDomain" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Jira Domain
                   </label>
                   <input
                     type="text"
+                    id="jiraDomain"
                     placeholder="your-company.atlassian.net"
                     value={formData.jiraDomain}
                     onChange={(e) =>
@@ -181,10 +191,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="email" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Email
                   </label>
                   <input
+                    id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) =>
@@ -195,10 +206,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="apiToken" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     API Token
                   </label>
                   <input
+                    id="apiToken"
                     type="password"
                     placeholder="Get from id.atlassian.com/manage-profile"
                     value={formData.apiToken}
@@ -210,11 +222,12 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="projectKey" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Project Key (optional)
                   </label>
                   <input
                     type="text"
+                    id="projectKey"
                     placeholder="e.g. PROJ"
                     value={formData.projectKey}
                     onChange={(e) =>
@@ -270,6 +283,7 @@ export default function ProjectMetrics() {
           <button
             type="button"
             onClick={fetchData}
+
             className="mt-3 rounded-md border border-[var(--destructive)]/30 px-3 py-1.5 text-xs font-medium text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10"
           >
             Try again
@@ -283,11 +297,12 @@ export default function ProjectMetrics() {
               </h3>
               <form onSubmit={handleConnect} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="jiraDomain" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Jira Domain
                   </label>
                   <input
                     type="text"
+                    id="jiraDomain"
                     placeholder="your-company.atlassian.net"
                     value={formData.jiraDomain}
                     onChange={(e) =>
@@ -298,10 +313,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="email" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Email
                   </label>
                   <input
+                    id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) =>
@@ -312,10 +328,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="apiToken" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     API Token
                   </label>
                   <input
+                    id="apiToken"
                     type="password"
                     placeholder="Get from id.atlassian.com/manage-profile"
                     value={formData.apiToken}
@@ -327,11 +344,12 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="projectKey" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Project Key (optional)
                   </label>
                   <input
                     type="text"
+                    id="projectKey"
                     placeholder="e.g. PROJ"
                     value={formData.projectKey}
                     onChange={(e) =>
@@ -402,9 +420,9 @@ export default function ProjectMetrics() {
             </div>
             <div className="mt-1 text-sm text-[var(--muted-foreground)]">
               {stat.label}
-            </div>
+        </div>
           </div>
-        ))}
+      ))}
       </div>
       {data?.recentIssues && data.recentIssues.length > 0 && (
         <div>

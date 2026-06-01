@@ -5,7 +5,7 @@ import { supabaseAdmin } from "./supabase";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 const SESSION_UPDATE_AGE = 24 * 60 * 60;
-const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://") ?? process.env.NODE_ENV === "production";
+const isPlaywrightServer = process.env.PLAYWRIGHT_SERVER_MODE === "start";
 
 const GITHUB_API = "https://api.github.com";
 // Re-validate the stored GitHub token at most once every 24 hours per session.
@@ -14,6 +14,11 @@ const GITHUB_API = "https://api.github.com";
 const TOKEN_VALIDATION_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export const authOptions: NextAuthOptions = {
+  // Playwright runs on plain HTTP (127.0.0.1) and relies on the default
+  // `next-auth.session-token` cookie name. If NextAuth infers HTTPS via
+  // forwarded headers, it may switch to secure cookie prefixes and the E2E
+  // session cookie won't be read. Force non-secure cookies in this mode.
+  ...(isPlaywrightServer ? { useSecureCookies: false } : {}),
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_ID ?? "",
@@ -26,18 +31,9 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/auth/signin",
   },
-  // From PR #1334: use secure cookies on HTTPS deployments, plain cookies on HTTP (local dev).
-  cookies: {
-    sessionToken: {
-      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: useSecureCookies,
-      },
-    },
-  },
+  // Use NextAuth's default cookie behavior (secure cookies on HTTPS deployments),
+  // which keeps Playwright E2E (http://127.0.0.1) aligned with the default
+  // `next-auth.session-token` cookie name.
   session: {
     strategy: "jwt",
     maxAge: SESSION_MAX_AGE,

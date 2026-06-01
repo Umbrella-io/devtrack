@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { encryptToken } from "@/lib/crypto";
+import { clearLeaderboardCache } from "@/lib/leaderboard";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ async function fetchUserSettings(userId: string) {
   // Tier 1: All columns
   const res1 = await supabaseAdmin
     .from("users")
-    .select("id, github_login, is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, weekly_digest_opt_in, discord_webhook_url, timezone")
+    .select("id, github_login, bio, is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, weekly_digest_opt_in, discord_webhook_url, timezone, webhook_url")
     .eq("id", userId)
     .single();
 
@@ -24,6 +25,8 @@ async function fetchUserSettings(userId: string) {
       hasWakatimeKey: true,
       hasWeeklyDigestOptIn: true,
       hasDiscordSettings: true,
+      hasBio: true,
+      hasWebhookUrl: true,
       leaderboard_opt_in: (res1.data as any).leaderboard_opt_in ?? false,
       weekly_digest_opt_in: (res1.data as any).weekly_digest_opt_in ?? false,
       pinned_repos: (res1.data as any).pinned_repos || [],
@@ -31,6 +34,7 @@ async function fetchUserSettings(userId: string) {
       wakatime_api_key_iv: (res1.data as any).wakatime_api_key_iv || null,
       discord_webhook_url: (res1.data as any).discord_webhook_url || null,
       timezone: (res1.data as any).timezone || "UTC",
+      webhook_url: (res1.data as any).webhook_url || null,
     };
   }
 
@@ -43,6 +47,8 @@ async function fetchUserSettings(userId: string) {
       hasWakatimeKey: false,
       hasWeeklyDigestOptIn: false,
       hasDiscordSettings: false,
+      hasBio: false,
+      hasWebhookUrl: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -50,13 +56,14 @@ async function fetchUserSettings(userId: string) {
       wakatime_api_key_iv: null,
       discord_webhook_url: null,
       timezone: "UTC",
+      webhook_url: null,
     };
   }
 
-  // Tier 2: Without pinned_repos
+  // Tier 2: Without bio, for deployments that have not run the latest migration.
   const res2 = await supabaseAdmin
     .from("users")
-    .select("id, github_login, is_public, leaderboard_opt_in")
+    .select("id, github_login, is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, webhook_url")
     .eq("id", userId)
     .single();
 
@@ -65,17 +72,20 @@ async function fetchUserSettings(userId: string) {
       data: res2.data as any,
       error: null,
       hasLeaderboardOptIn: true,
-      hasPinnedRepos: false,
-      hasWakatimeKey: false,
+      hasPinnedRepos: true,
+      hasWakatimeKey: true,
       hasWeeklyDigestOptIn: false,
       hasDiscordSettings: false,
+      hasBio: false,
+      hasWebhookUrl: true,
       leaderboard_opt_in: (res2.data as any).leaderboard_opt_in ?? false,
       weekly_digest_opt_in: false,
-      pinned_repos: [] as string[],
-      wakatime_api_key_encrypted: null,
-      wakatime_api_key_iv: null,
+      pinned_repos: (res2.data as any).pinned_repos || [],
+      wakatime_api_key_encrypted: (res2.data as any).wakatime_api_key_encrypted || null,
+      wakatime_api_key_iv: (res2.data as any).wakatime_api_key_iv || null,
       discord_webhook_url: null,
       timezone: "UTC",
+      webhook_url: (res2.data as any).webhook_url || null,
     };
   }
 
@@ -88,6 +98,8 @@ async function fetchUserSettings(userId: string) {
       hasWakatimeKey: false,
       hasWeeklyDigestOptIn: false,
       hasDiscordSettings: false,
+      hasBio: false,
+      hasWebhookUrl: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -95,6 +107,7 @@ async function fetchUserSettings(userId: string) {
       wakatime_api_key_iv: null,
       discord_webhook_url: null,
       timezone: "UTC",
+      webhook_url: null,
     };
   }
 
@@ -114,6 +127,7 @@ async function fetchUserSettings(userId: string) {
       hasWakatimeKey: false,
       hasWeeklyDigestOptIn: false,
       hasDiscordSettings: false,
+      hasBio: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -132,6 +146,7 @@ async function fetchUserSettings(userId: string) {
     hasWakatimeKey: false,
     hasWeeklyDigestOptIn: false,
     hasDiscordSettings: false,
+    hasBio: false,
     leaderboard_opt_in: false,
     weekly_digest_opt_in: false,
     pinned_repos: [] as string[],
@@ -167,6 +182,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     id: (result.data as any).id,
     github_login: (result.data as any).github_login,
+    bio: (result.data as any).bio ?? "",
     is_public: (result.data as any).is_public,
     leaderboard_opt_in: result.leaderboard_opt_in,
     weekly_digest_opt_in: result.weekly_digest_opt_in,
@@ -174,8 +190,10 @@ export async function GET(req: NextRequest) {
     has_wakatime_key: !!result.wakatime_api_key_encrypted && !!result.wakatime_api_key_iv,
     discord_webhook_url: result.discord_webhook_url,
     timezone: result.timezone,
+    webhook_url: result.webhook_url ?? null,
   });
 }
+
 
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -193,14 +211,14 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  let body: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key?: string; discord_webhook_url?: string | null; timezone?: string };
+  let body: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key?: string; discord_webhook_url?: string | null; timezone?: string; bio?: string; webhook_url?: string | null };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { is_public, leaderboard_opt_in, weekly_digest_opt_in, pinned_repos, wakatime_api_key, discord_webhook_url, timezone } = body;
+  const { is_public, leaderboard_opt_in, weekly_digest_opt_in, pinned_repos, wakatime_api_key, discord_webhook_url, timezone, bio, webhook_url } = body;
 
   // Retrieve supported columns first
   const settingsResult = await fetchUserSettings(user.id);
@@ -209,8 +227,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
 
-  const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey, hasWeeklyDigestOptIn, hasDiscordSettings } = settingsResult;
-  const updates: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key_encrypted?: string | null; wakatime_api_key_iv?: string | null; discord_webhook_url?: string | null; timezone?: string } = {};
+  const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey, hasWeeklyDigestOptIn, hasDiscordSettings, hasBio, hasWebhookUrl } = settingsResult;
+  const updates: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key_encrypted?: string | null; wakatime_api_key_iv?: string | null; discord_webhook_url?: string | null; timezone?: string; bio?: string; webhook_url?: string | null } = {};
 
   if (is_public !== undefined && is_public !== null && typeof is_public === "boolean") {
     updates.is_public = is_public;
@@ -227,6 +245,9 @@ export async function PATCH(req: NextRequest) {
       updates.is_public = true;
     }
   }
+  if (hasWebhookUrl && (typeof webhook_url === "string" || webhook_url === null)) {
+    updates.webhook_url = webhook_url;
+  }
 
   if (
     hasWeeklyDigestOptIn &&
@@ -242,6 +263,25 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Maximum 3 pins allowed" }, { status: 400 });
     }
     updates.pinned_repos = pinned_repos;
+  }
+
+  if (!hasBio && bio !== undefined) {
+    return NextResponse.json(
+      { error: "Bio settings are not available until the latest database migration is applied" },
+      { status: 400 }
+    );
+  }
+
+  if (hasBio && bio !== undefined) {
+    if (typeof bio !== "string") {
+      return NextResponse.json({ error: "Bio must be a string" }, { status: 400 });
+    }
+
+    if (bio.length > 500) {
+      return NextResponse.json({ error: "Bio must be 500 characters or fewer" }, { status: 400 });
+    }
+
+    updates.bio = bio;
   }
 
   if (hasWakatimeKey && wakatime_api_key !== undefined) {
@@ -292,6 +332,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({
       id: (settingsResult.data as any).id,
       github_login: (settingsResult.data as any).github_login,
+      bio: (settingsResult.data as any).bio ?? "",
       is_public: (settingsResult.data as any).is_public,
       leaderboard_opt_in: settingsResult.leaderboard_opt_in,
       weekly_digest_opt_in: settingsResult.weekly_digest_opt_in,
@@ -299,11 +340,13 @@ export async function PATCH(req: NextRequest) {
       has_wakatime_key: !!settingsResult.wakatime_api_key_encrypted && !!settingsResult.wakatime_api_key_iv,
       discord_webhook_url: settingsResult.discord_webhook_url,
       timezone: settingsResult.timezone,
+      webhook_url: settingsResult.webhook_url ?? null,
     });
   }
 
   // Query only supported columns in the returning select statement
   const selectCols = ["id", "github_login", "is_public"];
+  if (hasBio) selectCols.push("bio");
   if (hasLeaderboardOptIn) selectCols.push("leaderboard_opt_in");
   if (hasWeeklyDigestOptIn) selectCols.push("weekly_digest_opt_in");
   if (hasPinnedRepos) selectCols.push("pinned_repos");
@@ -312,6 +355,7 @@ export async function PATCH(req: NextRequest) {
     selectCols.push("wakatime_api_key_iv");
   }
   if (hasDiscordSettings) selectCols.push("discord_webhook_url", "timezone");
+  if (hasWebhookUrl) selectCols.push("webhook_url");
 
   const { data: updated, error: updateError } = await supabaseAdmin
     .from("users")
@@ -325,9 +369,26 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
 
+  // If is_public or leaderboard_opt_in changed, the cached leaderboard would
+  // show stale eligibility until it expires (up to 1 hour). Bust the cache
+  // immediately so the next request reflects the updated preference.
+  const leaderboardEligibilityChanged =
+    "is_public" in updates || "leaderboard_opt_in" in updates;
+
+  if (leaderboardEligibilityChanged) {
+    try {
+      await clearLeaderboardCache();
+    } catch {
+      // Cache invalidation is best-effort — a failure must not prevent the
+      // settings response from reaching the client.
+      console.error("[settings] Failed to invalidate leaderboard cache after visibility change");
+    }
+  }
+
   return NextResponse.json({
     id: (updated as any).id,
     github_login: (updated as any).github_login,
+    bio: (updated as any).bio ?? "",
     is_public: (updated as any).is_public,
     leaderboard_opt_in: (updated as any).leaderboard_opt_in ?? false,
     weekly_digest_opt_in: (updated as any).weekly_digest_opt_in ?? false,
@@ -335,5 +396,6 @@ export async function PATCH(req: NextRequest) {
     has_wakatime_key: !!(updated as any).wakatime_api_key_encrypted && !!(updated as any).wakatime_api_key_iv,
     discord_webhook_url: (updated as any).discord_webhook_url,
     timezone: (updated as any).timezone || "UTC",
+    webhook_url: (updated as any).webhook_url ?? null,
   });
 }

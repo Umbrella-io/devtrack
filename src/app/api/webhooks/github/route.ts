@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { safeCompare } from "./safe-compare";
 import { logError } from "@/lib/error-handler";
+import { sendSSEEvent } from "@/lib/sse";
+import { invalidateUserMetricsCache } from "@/lib/metrics-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +30,6 @@ function getExpectedSignature(secret: string, body: string): string {
   return `sha256=${createHmac("sha256", secret).update(body).digest("hex")}`;
 }
 
-
 function verifyGitHubSignature(
   body: string,
   signature: string | null,
@@ -52,41 +53,33 @@ async function markUserMetricsStale(githubLogin: string) {
     .from("users")
     .update({ updated_at: updatedAt })
     .eq("github_login", githubLogin)
-    .select("id")
+    .select("id, github_id")
     .maybeSingle();
 
-  if (primaryError) {
-    throw primaryError;
-  }
+  if (primaryError) throw primaryError;
 
   if (primaryUser) {
-    return { userId: primaryUser.id as string, accountType: "primary" };
+    return { userId: primaryUser.id as string, githubId: String(primaryUser.github_id), accountType: "primary" };
   }
 
   const { data: linkedAccount, error: linkedError } = await supabaseAdmin
     .from("user_github_accounts")
-    .select("user_id")
+    .select("user_id, github_id")
     .eq("github_login", githubLogin)
     .maybeSingle();
 
-  if (linkedError) {
-    throw linkedError;
-  }
+  if (linkedError) throw linkedError;
 
-  if (!linkedAccount?.user_id) {
-    return null;
-  }
+  if (!linkedAccount?.user_id) return null;
 
   const { error: updateError } = await supabaseAdmin
     .from("users")
     .update({ updated_at: updatedAt })
     .eq("id", linkedAccount.user_id);
 
-  if (updateError) {
-    throw updateError;
-  }
+  if (updateError) throw updateError;
 
-  return { userId: linkedAccount.user_id as string, accountType: "linked" };
+  return { userId: linkedAccount.user_id as string, githubId: String(linkedAccount.github_id), accountType: "linked" };
 }
 
 export async function POST(req: NextRequest) {
@@ -108,7 +101,7 @@ export async function POST(req: NextRequest) {
 
   const event = req.headers.get(GITHUB_EVENT_HEADER);
   if (event !== "push") {
-    return NextResponse.json({ received: true, ignored: true, event });
+    return NextResponse.json({ received: true });
   }
 
   let payload: GitHubPushPayload;
@@ -120,10 +113,7 @@ export async function POST(req: NextRequest) {
 
   const githubLogin = getPushActor(payload);
   if (!githubLogin) {
-    return NextResponse.json(
-      { received: true, userMatched: false, reason: "Missing GitHub actor" },
-      { status: 200 }
-    );
+    return NextResponse.json({ received: true }, { status: 200 });
   }
 
   let staleResult: Awaited<ReturnType<typeof markUserMetricsStale>>;
@@ -135,7 +125,7 @@ export async function POST(req: NextRequest) {
       operation: "mark_metrics_stale",
       userId: githubLogin,
       additionalContext: {
-        repository: (payload.repository?.full_name),
+        repository: payload.repository?.full_name,
         commitCount: payload.commits?.length,
       },
     });
@@ -146,17 +136,18 @@ export async function POST(req: NextRequest) {
   }
 
   if (staleResult) {
+    await invalidateUserMetricsCache(githubLogin);
+    if (staleResult.githubId) {
+      await invalidateUserMetricsCache(staleResult.githubId);
+    }
+
+    sendSSEEvent(githubLogin, "commit", {
+      repo: payload.repository?.full_name,
+      timestamp: new Date().toISOString(),
+    });
     revalidatePath(`/u/${githubLogin}`);
     revalidatePath("/dashboard");
   }
 
-  return NextResponse.json({
-    received: true,
-    userMatched: Boolean(staleResult),
-    accountType: staleResult?.accountType ?? null,
-    githubLogin,
-    repository: payload.repository?.full_name ?? null,
-    after: payload.after ?? null,
-    commitCount: payload.commits?.length ?? 0,
-  });
+  return NextResponse.json({ received: true });
 }

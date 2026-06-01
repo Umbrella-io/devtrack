@@ -12,10 +12,10 @@ interface PRBreakdown {
 }
 
 const SLICES: { key: keyof PRBreakdown; label: string; color: string }[] = [
-  { key: "open",   label: "Open",   color: "#6366f1" },
-  { key: "merged", label: "Merged", color: "#34d399" },
-  { key: "closed", label: "Closed", color: "#fb923c" },
-  { key: "draft",  label: "Draft",  color: "#94a3b8" },
+  { key: "open",   label: "Open",   color: "var(--accent)" },
+  { key: "merged", label: "Merged", color: "var(--success)" },
+  { key: "closed", label: "Closed", color: "var(--warning)" },
+  { key: "draft",  label: "Draft",  color: "var(--muted-foreground)" },
 ];
 
 export default function PRBreakdownChart() {
@@ -54,16 +54,16 @@ export default function PRBreakdownChart() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading PR breakdown</span>
           <div
             aria-hidden="true"
-            className="mb-4 h-5 w-40 rounded bg-[var(--card-muted)] animate-pulse"
+            className="mb-4 h-5 w-40 rounded skeleton-shimmer"
           />
           <div
             aria-hidden="true"
-            className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse"
+            className="h-[200px] rounded skeleton-shimmer"
           />
         </div>
       </div>
@@ -72,7 +72,7 @@ export default function PRBreakdownChart() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Breakdown</h2>
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
@@ -88,15 +88,15 @@ export default function PRBreakdownChart() {
     );
   }
 
-  const total = breakdown ? SLICES.reduce((sum, s) => sum + breakdown[s.key], 0) : 0;
+  const total = breakdown ? SLICES.reduce((sum, s) => sum + (breakdown[s.key] ?? 0), 0) : 0;
   const chartData = breakdown
-    ? SLICES.map((s) => ({ name: s.label, value: breakdown[s.key], color: s.color })).filter(
+    ? SLICES.map((s) => ({ name: s.label, value: breakdown[s.key] ?? 0, color: s.color })).filter(
         (d) => d.value > 0
       )
     : [];
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Breakdown</h2>
       {total === 0 ? (
         <p className="flex h-[200px] items-center justify-center text-sm text-[var(--muted-foreground)]">
@@ -119,18 +119,18 @@ export default function PRBreakdownChart() {
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip
+               <Tooltip
   contentStyle={{
-    backgroundColor: getCSSVariable('--card'),
+    backgroundColor: getCSSVariable('--tooltip'),
     border: `1px solid ${getCSSVariable('--border')}`,
     borderRadius: "10px",
-    color: getCSSVariable('--foreground'),
+    color: getCSSVariable('--tooltip-foreground'),
   }}
   itemStyle={{
-    color: getCSSVariable('--foreground'),
+    color: getCSSVariable('--tooltip-foreground'),
   }}
   labelStyle={{
-    color: getCSSVariable('--foreground'),
+    color: getCSSVariable('--tooltip-foreground'),
   }}
 />
             </PieChart>

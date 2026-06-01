@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 
@@ -26,9 +27,17 @@ export default function WeeklySummaryCard() {
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const maxCommits = summary && summary.commits ? Math.max(summary.commits.current, summary.commits.previous, 1) : 1;
-  const maxPRs = summary && summary.prs && summary.prs.thisWeek && summary.prs.lastWeek ? Math.max(summary.prs.thisWeek.merged, summary.prs.lastWeek.merged, 1) : 1;
-  const maxActiveDays = summary && summary.activeDays ? Math.max(summary.activeDays.thisWeek, summary.activeDays.lastWeek, 1) : 1;
+  const maxCommits = summary?.commits
+    ? Math.max(summary.commits.current, summary.commits.previous, 1)
+    : 1;
+
+  const maxPRs = summary?.prs
+    ? Math.max(summary.prs.thisWeek.merged, summary.prs.lastWeek.merged, 1)
+    : 1;
+
+  const maxActiveDays = summary?.activeDays
+    ? Math.max(summary.activeDays.thisWeek, summary.activeDays.lastWeek, 1)
+    : 1;
 
   const fetchSummary = useCallback(() => {
     setLoading(true);
@@ -72,7 +81,7 @@ export default function WeeklySummaryCard() {
           }
           suppressHydrationWarning
         >
-          {isCollapsed ? ">" : "v"}
+          <ChevronDown className="h-4 w-4" />
         </button>
       </div>
 
@@ -133,9 +142,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.commits.previous / (summary.commits.current + summary.commits.previous || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
@@ -149,9 +155,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.commits.current / (summary.commits.current + summary.commits.previous || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
               </div>
             </div>
@@ -177,9 +180,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.prs.lastWeek.merged / (summary.prs.thisWeek.merged + summary.prs.lastWeek.merged || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
@@ -193,9 +193,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.prs.thisWeek.merged / (summary.prs.thisWeek.merged + summary.prs.lastWeek.merged || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
               </div>
             </div>
@@ -221,9 +218,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.activeDays.lastWeek / (summary.activeDays.thisWeek + summary.activeDays.lastWeek || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
@@ -237,9 +231,6 @@ export default function WeeklySummaryCard() {
                       />
                     </div>
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-[var(--card-foreground)]">
-                    {((summary.activeDays.thisWeek / (summary.activeDays.thisWeek + summary.activeDays.lastWeek || 1)) * 100).toFixed(0)}%
-                  </span>
                 </div>
               </div>
             </div>

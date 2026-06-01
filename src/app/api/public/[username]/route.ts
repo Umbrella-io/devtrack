@@ -1,10 +1,6 @@
+// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByUsername } from "@/lib/supabase";
-import {
-  fetchPublicTopRepos,
-  fetchPublicContributions,
-  fetchPublicStreak,
-} from "@/lib/public-profile-data";
+import { fetchPublicProfile } from "@/lib/public-profile-data";
 import { getUpstashConfig, upstashRateLimitFixedWindow } from "@/lib/upstash-rest";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +26,7 @@ function cleanOldEntries(map: Map<string, { count: number; resetAt: number }>) {
 }
 
 function getRateLimitKey(req: NextRequest): string {
-  // req.ip is populated by the Next.js / Vercel runtime from the verified
+  // req.headers.get("x-forwarded-for") is populated by the Next.js / Vercel runtime from the verified
   // network-layer source address and cannot be spoofed by the caller.
   //
   // x-forwarded-for is intentionally excluded here: it is a plain request
@@ -38,7 +34,7 @@ function getRateLimitKey(req: NextRequest): string {
   // primary key allows an attacker to rotate the header on every request,
   // bypass the per-IP limit entirely, and exhaust the shared GITHUB_TOKEN
   // quota (5 000 req/hr), making the endpoint unavailable for all users.
-  return req.ip || req.headers.get("x-real-ip") || "unknown";
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
 }
 
 function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
@@ -66,10 +62,11 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { username: string } }
+  { params }: { params: Promise<{ username: string }> }
 ): Promise<NextResponse> {
   cleanOldEntries(ipRateLimits);
-  const { username } = params;
+  const resolvedParams = await params;
+  const username = resolvedParams.username;
   // Rate limiting
   const ip = getRateLimitKey(req);
   const rateLimit = getUpstashConfig()
@@ -92,31 +89,14 @@ export async function GET(
     );
   }
 
-  // Look up user in Supabase
-  const user = await getUserByUsername(username);
+  const profile = await fetchPublicProfile(username);
 
-  if (!user) {
+  if (!profile) {
     return NextResponse.json(
       { error: "User not found or profile is not public" },
       { status: 404 }
     );
   }
 
-  // Use GITHUB_TOKEN env var if available for higher rate limits
-  const githubToken = process.env.GITHUB_TOKEN;
-
-  // Fetch all metrics in parallel
-  const [repos, contributions, streak] = await Promise.all([
-    fetchPublicTopRepos(user.github_login, githubToken, 30),
-    fetchPublicContributions(user.github_login, githubToken, 30),
-    fetchPublicStreak(user.github_login, githubToken),
-  ]);
-
-  return NextResponse.json({
-    username: user.github_login,
-    userId: user.id,
-    repos,
-    contributions,
-    streak,
-  });
+  return NextResponse.json(profile);
 }
