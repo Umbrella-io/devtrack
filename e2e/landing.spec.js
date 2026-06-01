@@ -22,7 +22,8 @@ test("[Landing E2E] landing has dashboard link", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Dashboard" })).toBeVisible();
 });
 
-test("[Landing E2E] landing shows footer via test-id", async ({ page }) => {
+test("[Landing E2E] landing shows footer", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator('[data-testid="landing-footer"]')).toBeVisible();
+  // Check that the global footer is rendered (e.g. looking for the copyright text)
+  await expect(page.getByText(/DevTrack. Built for open-source contributors/i)).toBeVisible();
 });

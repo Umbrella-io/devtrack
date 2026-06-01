@@ -26,6 +26,8 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
+import DailyNoteWidget from "@/components/DailyNoteWidget";
+import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
 
 const SkeletonCard = () => (
   <div
@@ -76,6 +78,14 @@ const ContributionGraph = dynamic(
 const ContributionHeatmap = dynamic(
   () => import("@/components/ContributionHeatmap"),
   { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const RepoContributionDistribution = dynamic(
+  () => import("@/components/RepoContributionDistribution"),
+  {
+    ssr: false,
+    loading: () => <SkeletonCard />,
+  },
 );
 
 const PRMetrics = dynamic(() => import("@/components/PRMetrics"), {
@@ -174,6 +184,9 @@ export default async function DashboardPage() {
                 <ContributionHeatmap />
               </div>
               <LazyWidget fallback={<SkeletonCard />}>
+                <RepoContributionDistribution />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
                 <ActivityRingChart />
               </LazyWidget>
               <LazyWidget fallback={<SkeletonCard />}>
@@ -245,7 +258,10 @@ export default async function DashboardPage() {
               <LazyWidget fallback={<SkeletonCard />}>
                 <IssueMetrics />
               </LazyWidget>
-              <GoalTracker />
+              <WidgetErrorBoundary>
+                <GoalTracker />
+              </WidgetErrorBoundary>
+              <DailyNoteWidget />
               <LazyWidget fallback={<SkeletonCard />}>
                 <RecentActivity />
               </LazyWidget>

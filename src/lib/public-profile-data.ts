@@ -1,4 +1,4 @@
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { calculateStreak } from "@/lib/streak";
 import type { GitHubAchievement } from "@/lib/github-achievements";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import { fetchPinnedRepoDetails, type PinnedRepoDetails } from "@/lib/pinned-repos";
@@ -33,7 +33,6 @@ export interface StreakData {
 
 export interface PublicProfileData {
   username: string;
-  userId: string;
   bio: string | null;
   isSponsor: boolean;
   repos: TopRepo[];
@@ -145,28 +144,10 @@ export async function fetchPublicStreak(
   if (commitDays.length === 0) {
     return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
   }
-
-  let longestStreak = 1;
-  let currentRun = 1;
-  const runs: { end: string; length: number }[] = [];
-
-  for (let i = 1; i < commitDays.length; i++) {
-    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
-    if (diff === 1) {
-      currentRun++;
-      if (currentRun > longestStreak) longestStreak = currentRun;
-    } else {
-      runs.push({ end: commitDays[i - 1], length: currentRun });
-      currentRun = 1;
-    }
-  }
-  runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
-
+  const { currentStreak, longestStreak } = calculateStreak(
+    commitDays.map((day) => new Date(day))
+  );
   const lastDay = commitDays[commitDays.length - 1];
-  const today = toDateStr(new Date());
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
-  const lastRun = runs[runs.length - 1];
-  const currentStreak = lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
 
   return {
     current: currentStreak,
@@ -298,7 +279,6 @@ export async function fetchPublicProfile(
 
   return {
     username: user.github_login,
-    userId: user.id,
     bio: user.bio ?? null,
     isSponsor: user.is_sponsor ?? false,
     repos,

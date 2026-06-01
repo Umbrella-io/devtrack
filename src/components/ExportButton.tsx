@@ -706,7 +706,7 @@ export default function ExportButton() {
         type="button"
         onClick={exportCSV}
         disabled={isExportingCSV}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:border-[var(--accent)] disabled:opacity-50 sm:w-auto sm:min-w-[140px]"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-all hover:border-[var(--accent)] disabled:opacity-50 sm:w-auto sm:min-w-[140px] hover:opacity-90 active:scale-95"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -718,7 +718,7 @@ export default function ExportButton() {
         type="button"
         onClick={exportPDF}
         disabled={isExportingPDF}
-        className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90 disabled:opacity-50 sm:min-w-[140px] sm:flex-none"
+        className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 disabled:opacity-50 sm:min-w-[140px] sm:flex-none active:scale-95"
         suppressHydrationWarning
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -101,7 +101,6 @@ async function fetchRepoStats(): Promise<RepoStats> {
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
-
   if (session) {
     redirect("/dashboard");
   }

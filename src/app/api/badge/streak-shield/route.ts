@@ -4,9 +4,9 @@ import {
   checkBadgeRateLimit,
   getBadgeClientIp,
 } from "@/lib/badge-rate-limit";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 import { logError } from "@/lib/error-handler";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
+import { calculateStreak } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -82,40 +82,10 @@ async function fetchStreak(
   if (commitDays.length === 0) {
     return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0, stale: undefined };
   }
-
-  let longestStreak = 1;
-  let currentRun = 1;
-  const runs: { start: string; end: string; length: number }[] = [];
-  let runStart = commitDays[0];
-
-  for (let i = 1; i < commitDays.length; i++) {
-    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
-    if (diff === 1) {
-      currentRun++;
-      if (currentRun > longestStreak) longestStreak = currentRun;
-    } else {
-      runs.push({
-        start: runStart,
-        end: commitDays[i - 1],
-        length: currentRun,
-      });
-      runStart = commitDays[i];
-      currentRun = 1;
-    }
-  }
-  runs.push({
-    start: runStart,
-    end: commitDays[commitDays.length - 1],
-    length: currentRun,
-  });
-
+  const { currentStreak, longestStreak } = calculateStreak(
+    commitDays.map((day) => new Date(day))
+  );
   const lastDay = commitDays[commitDays.length - 1];
-  const today = toDateStr(new Date());
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
-
-  const lastRun = runs[runs.length - 1];
-  const currentStreak =
-    lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
 
   return {
     current: currentStreak,

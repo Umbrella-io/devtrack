@@ -1,3 +1,5 @@
+import { calculateStreak } from "@/lib/streak";
+
 export interface WrappedCommit {
   date: string;
   repo: string;
@@ -79,25 +81,10 @@ export function calculateLongestStreak(contributionsByDate: Record<string, numbe
       .map(([date]) => date)
   );
   const dates = Array.from(activeDates).sort();
-  let longest = 0;
-  let current = 0;
-  let previous: Date | null = null;
-
-  for (const date of dates) {
-    const currentDate = new Date(`${date}T00:00:00Z`);
-    const dayDiff =
-      previous === null
-        ? 1
-        : Math.round(
-            (currentDate.getTime() - previous.getTime()) / 86400000
-          );
-
-    current = dayDiff === 1 ? current + 1 : 1;
-    longest = Math.max(longest, current);
-    previous = currentDate;
-  }
-
-  return longest;
+  const { longestStreak } = calculateStreak(
+    dates.map((day) => new Date(`${day}T00:00:00Z`))
+  );
+  return longestStreak;
 }
 
 export function getMostProductiveMonth(contributionsByDate: Record<string, number>) {

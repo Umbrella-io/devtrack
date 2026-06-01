@@ -30,7 +30,7 @@ interface FreezeData {
   freezeDate?: string | null;
 }
 
-export default function StreakTracker() {
+export function useStreakTracker() {
   const { selectedAccount } = useAccount();
   const [data, setData] = useState<StreakData | null>(null);
   const [contributionData, setContributionData] = useState<ContributionData | null>(null);
@@ -113,7 +113,7 @@ export default function StreakTracker() {
     }
   }, [selectedAccount]);
 
-  const fetchFreeze = () => {
+  const fetchFreeze = useCallback(() => {
     setFreezeLoading(true);
     fetch("/api/streak/freeze")
       .then((r) => r.json())
@@ -123,12 +123,12 @@ export default function StreakTracker() {
         setFreeze(null);
       })
       .finally(() => setFreezeLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
     fetchStreak();
     fetchFreeze();
-  }, [fetchStreak]);
+  }, [fetchStreak, fetchFreeze]);
 
   useEffect(() => {
     const handleSync = () => {
@@ -139,11 +139,12 @@ export default function StreakTracker() {
   }, [fetchStreak]);
 
   useEffect(() => {
-    const stored = localStorage.getItem(
+    if (typeof window === "undefined" || !window.localStorage) return;
+    const stored = window.localStorage.getItem(
       "devtrack:dismissed-milestones"
     );
 
-    const storedLastCelebrated = localStorage.getItem(
+    const storedLastCelebrated = window.localStorage.getItem(
       "devtrack:last-celebrated-milestone"
     );
 
@@ -161,6 +162,7 @@ export default function StreakTracker() {
       );
     }
   }, []);
+
   useEffect(() => {
     if (!lastUpdated) return;
     const interval = setInterval(() => {
@@ -235,6 +237,163 @@ export default function StreakTracker() {
       setCancelling(false);
     }
   }
+
+  const currentMilestone = 
+    [...STREAK_MILESTONES]
+      .reverse()
+      .find(
+        (m) =>
+          data?.current &&
+          data.current >= m &&
+          m > lastCelebratedMilestone
+      );
+  const shouldShowBanner = 
+    currentMilestone &&
+    !dismissedMilestones.includes(currentMilestone);
+
+  const handleDismissBanner = () => {
+    if (!currentMilestone) return;
+
+    const updated = [
+      ...dismissedMilestones,
+      currentMilestone,
+    ];
+
+    setDismissedMilestones(updated);
+
+    setLastCelebratedMilestone(currentMilestone);
+
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem(
+        "devtrack:last-celebrated-milestone",
+        String(currentMilestone)
+      );
+
+      window.localStorage.setItem(
+        "devtrack:dismissed-milestones",
+        JSON.stringify(updated)
+      );
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!data) return;
+
+    const textToCopy = [
+      "🔥 DevTrack Stats",
+      `Current streak: ${data.current} days`,
+      `Longest streak: ${data.longest} days`,
+      `Active days: ${data.totalActiveDays}`,
+    ].join("\n");
+
+    if (typeof navigator === "undefined" || !navigator.clipboard) {
+      toast.error("Clipboard is not supported in this browser.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+
+      setCopied(true);
+
+      toast.success("Streak stats copied to clipboard!");
+
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy streak stats:", err);
+      toast.error("Failed to copy streak stats.");
+    }
+  };
+
+  return {
+    selectedAccount,
+    data,
+    setData,
+    contributionData,
+    setContributionData,
+    freezeDates,
+    setFreezeDates,
+    loading,
+    setLoading,
+    dismissedMilestones,
+    setDismissedMilestones,
+    lastCelebratedMilestone,
+    setLastCelebratedMilestone,
+    lastUpdated,
+    minutesAgo,
+    copied,
+    setCopied,
+    error,
+    setError,
+    calendarMonth,
+    setCalendarMonth,
+    freeze,
+    setFreeze,
+    freezeLoading,
+    setFreezeLoading,
+    cancelling,
+    setCancelling,
+    confirmCancel,
+    setConfirmCancel,
+    isDownloading,
+    setIsDownloading,
+    containerRef,
+    animatedCurrent,
+    animatedLongest,
+    animatedActiveDays,
+    handleDownload,
+    fetchStreak,
+    fetchFreeze,
+    handleApplyFreeze,
+    handleCancelFreeze,
+    currentMilestone,
+    shouldShowBanner,
+    handleDismissBanner,
+    handleCopy,
+  };
+}
+
+export default function StreakTracker() {
+  const {
+    selectedAccount,
+    data,
+    setData,
+    contributionData,
+    setContributionData,
+    freezeDates,
+    setFreezeDates,
+    loading,
+    dismissedMilestones,
+    lastCelebratedMilestone,
+    lastUpdated,
+    minutesAgo,
+    copied,
+    setCopied,
+    error,
+    setError,
+    calendarMonth,
+    setCalendarMonth,
+    freeze,
+    setFreeze,
+    freezeLoading,
+    setFreezeLoading,
+    cancelling,
+    confirmCancel,
+    setConfirmCancel,
+    isDownloading,
+    containerRef,
+    animatedCurrent,
+    animatedLongest,
+    animatedActiveDays,
+    handleDownload,
+    fetchStreak,
+    handleApplyFreeze,
+    handleCancelFreeze,
+    currentMilestone,
+    shouldShowBanner,
+    handleDismissBanner,
+    handleCopy,
+  } = useStreakTracker();
 
   if (loading) {
     return (
@@ -355,69 +514,9 @@ export default function StreakTracker() {
     ]
     : [];
 
-  const handleCopy = async () => {
-    if (!data) return;
 
-    const textToCopy = [
-      "🔥 DevTrack Stats",
-      `Current streak: ${data.current} days`,
-      `Longest streak: ${data.longest} days`,
-      `Active days: ${data.totalActiveDays}`,
-    ].join("\n");
 
-    if (!navigator.clipboard) {
-      toast.error("Clipboard is not supported in this browser.");
-      return;
-    }
 
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-
-      setCopied(true);
-
-      toast.success("Streak stats copied to clipboard!");
-
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy streak stats:", err);
-      toast.error("Failed to copy streak stats.");
-    }
-  };
-
-  const currentMilestone =
-    [...STREAK_MILESTONES]
-      .reverse()
-      .find(
-        (m) =>
-          data?.current &&
-          data.current >= m &&
-          m > lastCelebratedMilestone
-      );
-  const shouldShowBanner =
-    currentMilestone &&
-    !dismissedMilestones.includes(currentMilestone);
-  const handleDismissBanner = () => {
-    if (!currentMilestone) return;
-
-    const updated = [
-      ...dismissedMilestones,
-      currentMilestone,
-    ];
-
-    setDismissedMilestones(updated);
-
-    setLastCelebratedMilestone(currentMilestone);
-
-    localStorage.setItem(
-      "devtrack:last-celebrated-milestone",
-      String(currentMilestone)
-    );
-
-    localStorage.setItem(
-      "devtrack:dismissed-milestones",
-      JSON.stringify(updated)
-    );
-  };
 
   return (
     <>
@@ -870,7 +969,7 @@ interface WeekdayInsight {
   avgCommits: number;
 }
 
-function calculateActiveDayInsights(data: Record<string, number> | undefined | null): {
+export function calculateActiveDayInsights(data: Record<string, number> | undefined | null): {
   insights: WeekdayInsight[];
   peakDay: WeekdayInsight | null;
   isValid: boolean;
@@ -933,7 +1032,7 @@ interface MonthlyTrendResult {
   colorClass: string;
 }
 
-function calculateMonthlyTrend(contrib: ContributionData | undefined | null): MonthlyTrendResult {
+export function calculateMonthlyTrend(contrib: ContributionData | undefined | null): MonthlyTrendResult {
   if (!contrib || !contrib.data) {
     return { isValid: false, thisMonth: 0, lastMonth: 0, text: "", colorClass: "" };
   }
