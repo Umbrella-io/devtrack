@@ -45,7 +45,6 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  // Minimal lookup — avoids duplicating 3 GitHub API calls that the page already makes
   const user = await getUserByUsername(username);
   const profileUrl = getProfileUrl(username);
 
@@ -56,24 +55,49 @@ export async function generateMetadata({
     };
   }
 
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
+
+  // Build dynamic OG image URL
+  const ogImageUrl = new URL(`${baseUrl}/api/og/user`);
+ogImageUrl.searchParams.set("username", username);
+ogImageUrl.searchParams.set("name", username);
+ogImageUrl.searchParams.set("avatar", `https://avatars.githubusercontent.com/${username}`);
+ogImageUrl.searchParams.set("topLang", "Code");
+ogImageUrl.searchParams.set("streak", "0");
+ogImageUrl.searchParams.set("commits", "0");
+
+  const title = `${username}'s DevTrack Profile`;
+  const description = `GitHub stats and coding activity for ${username}. View commits, streaks, and top repositories.`;
+
   return {
-    title: `${username}'s DevTrack Profile`,
-    description: `GitHub stats and coding activity for ${username}. View commits, streaks, and top repositories.`,
+    title,
+    description,
     openGraph: {
-      title: `${username}'s DevTrack Profile`,
-      description: `GitHub stats and coding activity for ${username}`,
+      title,
+      description,
       url: profileUrl,
       siteName: "DevTrack",
       type: "profile",
+      images: [
+        {
+          url: ogImageUrl.toString(),
+          width: 1200,
+          height: 630,
+          alt: `${username}'s DevTrack profile`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${username}'s DevTrack Profile`,
-      description: `GitHub stats and coding activity for ${username}`,
+      title,
+      description,
+      images: [ogImageUrl.toString()],
     },
   };
 }
-
 export default async function PublicProfilePage({
   params,
 }: {
