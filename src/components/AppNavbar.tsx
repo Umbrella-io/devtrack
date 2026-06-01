@@ -55,6 +55,7 @@ export default function AppNavbar() {
     if (isAuthenticated) {
       return [
         { href: "/dashboard", label: "Overview" },
+        { href: "/dashboard/career-intelligence", label: "Resume" },
         { href: "/dashboard#streaks", label: "Activity" },
         { href: "/dashboard#pull-requests", label: "Analytics" },
         { href: "/dashboard#goals", label: "Goals" },
