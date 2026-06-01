@@ -13,12 +13,14 @@ const syne = Syne({
   weight: ["700", "800"],
   display: "swap",
 });
+
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
   weight: ["400", "500", "600"],
   display: "swap",
 });
+
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
@@ -27,7 +29,11 @@ const jetbrains = JetBrains_Mono({
 });
 
 async function fetchRepoStats(): Promise<RepoStats> {
-  const GH_HEADERS = { Accept: "application/vnd.github.v3+json" };
+  const token = process.env.GITHUB_TOKEN;
+  const GH_HEADERS: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   const OPTS = (ttl: number) => ({ next: { revalidate: ttl }, headers: GH_HEADERS });
 
   try {
@@ -53,19 +59,23 @@ async function fetchRepoStats(): Promise<RepoStats> {
       : [];
 
     if (mappedContributors.length > 0 && supabaseAdmin) {
-      const logins = mappedContributors.map((c) => c.login);
-      const { data: sponsors } = await supabaseAdmin
-        .from("users")
-        .select("github_login")
-        .in("github_login", logins)
-        .eq("is_sponsor", true);
+      try {
+        const logins = mappedContributors.map((c) => c.login);
+        const { data: sponsors } = await supabaseAdmin
+          .from("users")
+          .select("github_login")
+          .in("github_login", logins)
+          .eq("is_sponsor", true);
 
-      if (sponsors && sponsors.length > 0) {
-        const sponsorSet = new Set(sponsors.map((s: { github_login: string }) => s.github_login));
-        mappedContributors = mappedContributors.map((c) => ({
-          ...c,
-          isSponsor: sponsorSet.has(c.login),
-        }));
+        if (sponsors && sponsors.length > 0) {
+          const sponsorSet = new Set(sponsors.map((s: { github_login: string }) => s.github_login));
+          mappedContributors = mappedContributors.map((c) => ({
+            ...c,
+            isSponsor: sponsorSet.has(c.login),
+          }));
+        }
+      } catch {
+        // Supabase not configured locally — skip sponsor enrichment, show contributors as-is
       }
     }
 
@@ -91,7 +101,6 @@ async function fetchRepoStats(): Promise<RepoStats> {
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
-
   if (session) {
     redirect("/dashboard");
   }

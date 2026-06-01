@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 
 interface Insight {
   id: string;
@@ -38,7 +39,7 @@ function SkeletonCard() {
       role="status"
       aria-busy="true"
       aria-live="polite"
-      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm animate-pulse"
+      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm animate-pulse transition-all duration-300 hover:shadow-md hover:-translate-y-1"
     >
       <span className="sr-only">Loading AI Mentor insights</span>
       <div className="flex items-center justify-between mb-4">
@@ -106,7 +107,7 @@ export function AIMentorWidget() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <p className="text-sm text-[var(--muted-foreground)]">{error}</p>
       </div>
     );
@@ -123,7 +124,7 @@ export function AIMentorWidget() {
     : "";
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-[var(--card-foreground)] flex items-center gap-2">
@@ -171,9 +172,12 @@ export function AIMentorWidget() {
               <p className="text-xs font-semibold text-purple-400 mb-1.5 uppercase tracking-wide">
                 Weekly summary · AI
               </p>
-              <p className="text-sm text-[var(--card-foreground)] leading-relaxed">
-                {data.aiSummary}
-              </p>
+              <p 
+                className="text-sm text-[var(--card-foreground)] leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: mounted && typeof window !== "undefined" ? DOMPurify.sanitize(data.aiSummary) : ""
+                }}
+              />
             </div>
           )}
 

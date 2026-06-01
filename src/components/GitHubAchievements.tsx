@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { GitHubAchievement } from "@/lib/github-achievements";
 
 interface GitHubAchievementsProps {
@@ -12,7 +13,7 @@ export default function GitHubAchievements({
   error = null,
 }: GitHubAchievementsProps) {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
         GitHub Achievements
       </h2>
@@ -29,7 +30,7 @@ export default function GitHubAchievements({
             <div
               key={item}
               aria-hidden="true"
-              className="h-28 rounded-lg bg-[var(--card-muted)] animate-pulse"
+              className="h-28 rounded-lg skeleton-shimmer"
             />
           ))}
         </div>
@@ -52,10 +53,11 @@ export default function GitHubAchievements({
               title={achievement.description}
               className="group rounded-lg border border-[var(--border)] bg-[var(--control)] p-3 text-center transition-colors hover:border-[var(--accent)]"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={achievement.imageUrl}
                 alt={`${achievement.title} GitHub achievement badge`}
+                width={56}
+                height={56}
                 className="mx-auto h-14 w-14 object-contain"
                 loading="lazy"
               />
