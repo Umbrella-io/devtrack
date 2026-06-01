@@ -1,4 +1,5 @@
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { getStreakLookbackStart } from "@/lib/streak";
 import type { GitHubAchievement } from "@/lib/github-achievements";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import { fetchPinnedRepoDetails, type PinnedRepoDetails } from "@/lib/pinned-repos";
@@ -121,9 +122,7 @@ export async function fetchPublicStreak(
   username: string,
   token?: string
 ): Promise<StreakData> {
-  const since = new Date();
-  since.setDate(since.getDate() - 90);
-  const sinceStr = since.toISOString().slice(0, 10);
+  const sinceStr = getStreakLookbackStart().toISOString().slice(0, 10);
 
   const res = await ghFetch(
     `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,

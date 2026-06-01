@@ -17,6 +17,7 @@ import {
   upstashRateLimitFixedWindow,
   upstashTryAcquireLock,
 } from "@/lib/upstash-rest";
+import { getStreakLookbackStart } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -265,7 +266,7 @@ async function buildLeaderboard(): Promise<LeaderboardPayload> {
 
   const now = new Date();
   const monthStart = toDateStr(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)));
-  const streakStart = toDateStr(new Date(Date.now() - 90 * 86400000));
+  const streakStart = toDateStr(getStreakLookbackStart());
 
   const safeUsers = (users ?? []) as PublicUser[];
 
