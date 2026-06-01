@@ -11,7 +11,7 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { calculateStreak } from "@/lib/streak";
 import { dispatchToAllWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
@@ -129,45 +129,10 @@ function calculateStreakFromDates(
     };
   }
 
-  let longestStreak = 1;
-  let currentRun = 1;
-  const runs: { start: string; end: string; length: number }[] = [];
-  let runStart = commitDays[0];
-
-  // Walk the sorted date list and split into consecutive runs.
-  // dateDiffDays returns 1 for adjacent calendar days — any gap > 1 breaks the streak.
-  for (let i = 1; i < commitDays.length; i++) {
-    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
-    if (diff === 1) {
-      // Consecutive day — extend the current run.
-      currentRun++;
-      if (currentRun > longestStreak) {
-        longestStreak = currentRun;
-      }
-    } else {
-      // Gap detected — close the current run and start a new one.
-      runs.push({ start: runStart, end: commitDays[i - 1], length: currentRun });
-      runStart = commitDays[i];
-      currentRun = 1;
-    }
-  }
-  // Push the final run.
-  runs.push({
-    start: runStart,
-    end: commitDays[commitDays.length - 1],
-    length: currentRun,
-  });
-
+  const { currentStreak, longestStreak } = calculateStreak(
+    commitDays.map((day) => new Date(day))
+  );
   const lastDay = commitDays[commitDays.length - 1];
-  const today = toDateStr(new Date());
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
-
-  // Current streak is alive if the last active day is today OR yesterday.
-  // Allowing yesterday prevents the streak from resetting at midnight before
-  // the user has had a chance to make their first commit of the new day.
-  const lastRun = runs[runs.length - 1];
-  const currentStreak =
-    lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
 
   return {
     current: currentStreak,

@@ -1,3 +1,5 @@
+import { calculateStreak } from "@/lib/streak";
+
 export type PersonaKey =
   | "night_owl"
   | "early_bird"
@@ -91,10 +93,6 @@ function sumTimeBlocks(blocks: TimeBlocks): number {
   return blocks.morning + blocks.afternoon + blocks.evening + blocks.night;
 }
 
-function toDateKey(isoDate: string): string {
-  return isoDate.slice(0, 10);
-}
-
 function getUtcWeekStart(date: Date): Date {
   const result = new Date(date);
   const dayOfWeek = result.getUTCDay();
@@ -119,33 +117,9 @@ export function calculateStreaks(commitCountsByDate: Record<string, number>) {
       activeDaysThisWeek: 0,
     };
   }
-
-  let longestStreak = 1;
-  let currentRun = 1;
-  const runs: { end: string; length: number }[] = [];
-
-  for (let i = 1; i < commitDays.length; i += 1) {
-    const previousDate = new Date(commitDays[i - 1]).getTime();
-    const currentDate = new Date(commitDays[i]).getTime();
-    const diffDays = (currentDate - previousDate) / 86400000;
-
-    if (diffDays === 1) {
-      currentRun += 1;
-      longestStreak = Math.max(longestStreak, currentRun);
-      continue;
-    }
-
-    runs.push({ end: commitDays[i - 1], length: currentRun });
-    currentRun = 1;
-  }
-
-  runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
-
-  const today = toDateKey(new Date().toISOString());
-  const yesterday = toDateKey(new Date(Date.now() - 86400000).toISOString());
-  const latestRun = runs[runs.length - 1];
-  const currentStreak =
-    latestRun.end === today || latestRun.end === yesterday ? latestRun.length : 0;
+  const { currentStreak, longestStreak } = calculateStreak(
+    commitDays.map((day) => new Date(day))
+  );
 
   const currentWeekStart = getUtcWeekStart(new Date());
   const previousWeekStart = new Date(currentWeekStart.getTime() - 7 * 86400000);
@@ -409,6 +383,3 @@ export function mergeSignals(a: DeveloperSignals, b: DeveloperSignals): Develope
     deletions: a.deletions + b.deletions,
   };
 }
-
-
-

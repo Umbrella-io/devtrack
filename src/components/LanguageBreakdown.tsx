@@ -83,7 +83,7 @@ export default function LanguageBreakdown() {
   }
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="text-lg font-semibold text-[var(--card-foreground)] mb-4">
         Language Breakdown
       </h2>
@@ -98,11 +98,11 @@ export default function LanguageBreakdown() {
           <span className="sr-only">Loading language breakdown</span>
           <div
             aria-hidden="true"
-            className="h-6 rounded-full bg-[var(--card-muted)] animate-pulse"
+            className="h-6 rounded-full skeleton-shimmer"
           />
           <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-5 rounded bg-[var(--card-muted)] animate-pulse" />
+              <div key={i} className="h-5 rounded skeleton-shimmer" />
             ))}
           </div>
         </div>

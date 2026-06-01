@@ -53,9 +53,10 @@ ${entries}
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { username: string } }
+  { params }: { params: Promise<{ username: string }> }
 ) {
-  const { username } = params;
+  const resolvedParams = await params;
+  const username = resolvedParams.username;
 
   // Check if user has a public profile
   const { data: user } = await supabaseAdmin
