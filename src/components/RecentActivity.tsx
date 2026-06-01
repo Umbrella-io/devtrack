@@ -170,7 +170,7 @@ export default function RecentActivity() {
   }, [fetchActivity]);
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
@@ -184,7 +184,7 @@ export default function RecentActivity() {
           type="button"
           onClick={fetchActivity}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-all hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-60 hover:opacity-90 active:scale-95"
         >
           {loading ? (
             <svg className="animate-spin h-3 w-3 text-[var(--muted-foreground)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -198,7 +198,7 @@ export default function RecentActivity() {
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
-              className="h-16 rounded-lg bg-[var(--card-muted)] animate-pulse"
+              className="h-16 rounded-lg skeleton-shimmer"
             />
           ))}
         </div>
@@ -218,9 +218,9 @@ export default function RecentActivity() {
           No recent GitHub activity yet.
         </p>
       ) : (
-        <ul className="max-h-[320px] space-y-3 overflow-y-auto border-l border-[var(--border)] pl-4 pr-1">
+        <ul className="max-h-[320px] space-y-3 overflow-y-auto border-l border-[var(--border)] pl-4 pr-1 stagger-children">
           {items.map((item) => (
-            <li key={item.id} className="relative">
+            <li key={item.id} className="relative animate-fade-in-up">
               <span
                 aria-hidden="true"
                 className="absolute -left-[21px] top-6 h-2.5 w-2.5 rounded-full border border-[var(--border)] bg-[var(--card)]"
@@ -229,7 +229,7 @@ export default function RecentActivity() {
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 transition-colors hover:border-[var(--accent)]"
+                className="block rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 transition-all duration-200 hover:border-[var(--accent)] hover:-translate-y-0.5 hover:shadow-md"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--card)] px-2 py-0.5 text-xs font-medium text-[var(--muted-foreground)]">

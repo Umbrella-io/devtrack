@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
-import { cacheGet, cacheSet } from "@/lib/metrics-cache";
+import { cacheGet, cacheSet, cacheDelete } from "@/lib/metrics-cache";
 import {
   pruneExpiredLeaderboardCache,
   type LeaderboardCacheEntry,
@@ -94,6 +94,25 @@ export function setMemoryCachedLeaderboard(payload: LeaderboardPayload): void {
     payload,
     expiresAt: Date.now() + CACHE_REFRESH_SECONDS * 1000,
   };
+}
+
+/**
+ * Evicts every layer of the leaderboard cache so the next request
+ * fetches fresh eligibility data from the database.
+ *
+ * Must be called whenever a user changes settings that affect leaderboard
+ * eligibility (is_public or leaderboard_opt_in) so that the updated
+ * preference is reflected immediately rather than waiting up to one hour
+ * for the cache to expire naturally.
+ */
+export async function clearLeaderboardCache(): Promise<void> {
+  // 1. Drop the module-level in-process cache.
+  _memoryCache = null;
+
+  // 2. Drop the shared key from the metrics memory map and from Redis/Upstash
+  //    so that other serverless instances also see a cache miss on their next
+  //    leaderboard request.
+  await cacheDelete(LEADERBOARD_CACHE_KEY);
 }
 
 async function mapWithConcurrency<T, R>(

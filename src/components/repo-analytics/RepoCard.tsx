@@ -31,7 +31,7 @@ export default function RepoCard({
 
   return (
     <article
-      className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm backdrop-blur-xl animate-slide-up"
+      className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm backdrop-blur-xl animate-slide-up transition-all duration-300 hover:shadow-md hover:-translate-y-1"
     >
       {/* Border Glow */}
       <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-[var(--border)]" />

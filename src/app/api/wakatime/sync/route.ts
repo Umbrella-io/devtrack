@@ -5,9 +5,20 @@ import { decryptToken } from "@/lib/crypto";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  // To secure the cron job, check the authorization header
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV !== "development") {
+  const cronSecret = process.env.CRON_SECRET;
+
+  // Fail closed when CRON_SECRET is not configured.  Leaving it undefined
+  // causes `Bearer ${undefined}` → "Bearer undefined" to become the expected
+  // credential, which an attacker can trivially supply.
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: "CRON_SECRET is not configured" },
+      { status: 500 }
+    );
+  }
+
+  if (authHeader !== `Bearer ${cronSecret}` && process.env.NODE_ENV !== "development") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

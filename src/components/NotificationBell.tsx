@@ -141,7 +141,7 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={handleOpen}
-        className="relative rounded-lg p-2 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-colors"
+        className="relative rounded-lg p-2 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-all hover:opacity-90 active:scale-95"
         aria-label="Notifications"
         title="Notifications"
         suppressHydrationWarning
