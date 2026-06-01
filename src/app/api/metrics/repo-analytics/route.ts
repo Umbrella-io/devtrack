@@ -4,11 +4,14 @@ import { authOptions } from "@/lib/auth";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
 import { computeHealthScore } from "@/lib/repo-health";
 import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
+import { isSafeUrl } from "@/lib/ssrf-protection";
 
 export const dynamic = "force-dynamic";
 const GITHUB_API = "https://api.github.com";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
+
+const REPO_REGEX = /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/;
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -19,12 +22,27 @@ export async function GET(req: NextRequest) {
   const repoParam = req.nextUrl.searchParams.get("repo");
   if (!repoParam) return Response.json({ error: "Missing repo parameter" }, { status: 400 });
 
+  if (!REPO_REGEX.test(repoParam)) {
+    return Response.json({ error: "Invalid repo format. Expected owner/repo-name" }, { status: 400 });
+  }
+
+  const repoUrl = `${GITHUB_API}/repos/${repoParam}`;
+  let urlSafe = false;
+  try {
+    urlSafe = await isSafeUrl(repoUrl);
+  } catch {
+    urlSafe = false;
+  }
+  if (!urlSafe) {
+    return Response.json({ error: "Invalid repository URL" }, { status: 400 });
+  }
+
   const bypass = isMetricsCacheBypassed(req);
   const key = metricsCacheKey(session.githubId ?? session.githubLogin, `repo-analytics-${repoParam}` as any, { days: 30 });
 
   try {
     const data = await withMetricsCache({ bypass, key, ttlSeconds: 60 * 60 }, async () => {
-      const repoRes = await fetch(`${GITHUB_API}/repos/${repoParam}`, {
+      const repoRes = await fetch(repoUrl, {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });
