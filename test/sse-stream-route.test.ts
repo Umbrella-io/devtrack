@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+// @vitest-environment node
+
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { activeStreamConnections } from "@/lib/sse";
 
@@ -31,6 +33,14 @@ function makeAbortableRequest(): { req: NextRequest; abort: () => void } {
   const req = new NextRequest("http://localhost/api/stream");
   Object.defineProperty(req, 'signal', { value: controller.signal });
   return { req, abort: () => controller.abort() };
+}
+
+function makePreAbortedRequest(): NextRequest {
+  const controller = new AbortController();
+  controller.abort();
+  return new NextRequest("http://localhost/api/stream", {
+    signal: controller.signal,
+  });
 }
 
 function setupSupabase(
@@ -69,6 +79,10 @@ function setupSupabase(
 // ─── tests ───────────────────────────────────────────────────────────────────
 
 describe("GET /api/stream — SSE stream route", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     activeStreamConnections.clear();
@@ -213,6 +227,39 @@ describe("GET /api/stream — SSE stream route", () => {
 
     // Should drop back to 2, not 0
     expect(activeStreamConnections.get("user-1")).toBe(2);
+  });
+
+  it("releases the connection slot when the request is already aborted", async () => {
+    const { GET } = await import("@/app/api/stream/route");
+
+    await GET(makePreAbortedRequest());
+
+    expect(activeStreamConnections.has("user-1")).toBe(false);
+  });
+
+  it("closes stale streams and releases their slot after the max duration", async () => {
+    vi.useFakeTimers();
+    const { GET } = await import("@/app/api/stream/route");
+
+    await GET(makeRequest());
+    expect(activeStreamConnections.get("user-1")).toBe(1);
+
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+
+    expect(activeStreamConnections.has("user-1")).toBe(false);
+  });
+
+  it("releases the connection slot when the stream reader is canceled", async () => {
+    const { GET } = await import("@/app/api/stream/route");
+
+    const res = await GET(makeRequest());
+    const reader = res.body?.getReader();
+
+    expect(activeStreamConnections.get("user-1")).toBe(1);
+
+    await reader?.cancel();
+
+    expect(activeStreamConnections.has("user-1")).toBe(false);
   });
 
   // ── response headers ──────────────────────────────────────────────────
