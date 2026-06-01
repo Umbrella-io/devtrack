@@ -145,7 +145,7 @@ export default function RepoCard({
             Repo
           </a>
 
-          <button
+          <button aria-label="Perform action"
             type="button"
             onClick={() => onViewAnalytics(repo)}
             className="flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm font-medium text-[var(--card-foreground)] transition hover:bg-[color:color-mix(in_srgb,var(--card)_80%,var(--accent)_20%)]"

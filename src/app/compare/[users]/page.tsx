@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import { Scale, Trophy } from "lucide-react";
-import Image from "next/image";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 import {
   fetchPublicProfile,
@@ -17,10 +16,9 @@ interface ComparePageProps {
 
 type Winner = "left" | "right" | "tie";
 
-async function parseUsers(params: Promise<{ users: string }>): Promise<[string, string] | null> {
+function parseUsers(users: string): [string, string] | null {
   let decoded: string;
   try {
-    const { users } = await params;
     decoded = decodeURIComponent(users);
   } catch {
     return null;
@@ -54,8 +52,8 @@ function repoCommitTotal(repos: TopRepo[]): number {
 
 export async function generateMetadata({
   params,
-}: { params: Promise<{ users: string }> }): Promise<Metadata> {
-  const parsed = await parseUsers(params);
+}: ComparePageProps): Promise<Metadata> {
+  const parsed = parseUsers(params.users);
   if (!parsed) {
     return {
       title: "Compare Public Profiles",
@@ -72,9 +70,8 @@ export async function generateMetadata({
 
 export default async function PublicProfileComparePage({
   params,
-}: { params: Promise<{ users: string }> }) {
-  const { users } = await params;
-  const parsed = await parseUsers(params);
+}: ComparePageProps) {
+  const parsed = parseUsers(params.users);
 
   if (!parsed) {
     return <CompareUnavailable title="Invalid compare URL" />;
@@ -227,11 +224,10 @@ function ProfileHeader({
           align === "right" ? "md:flex-row-reverse" : ""
         }`}
       >
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={`https://avatars.githubusercontent.com/${profile.username}`}
-          alt={`${profile.username} avatar`}
-          width={56}
-          height={56}
+          alt=""
           className="h-14 w-14 rounded-full border border-[var(--border)]"
         />
         <div className="min-w-0">

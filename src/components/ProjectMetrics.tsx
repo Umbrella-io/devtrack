@@ -151,7 +151,7 @@ export default function ProjectMetrics() {
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
             Project Tracking
           </h2>
-          <button
+          <button aria-label="Perform action"
             type="button"
             onClick={() => setShowForm(true)}
             className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90"
@@ -240,14 +240,14 @@ export default function ProjectMetrics() {
                   <p className="text-sm text-[var(--destructive)]">{connectionError}</p>
                 )}
                 <div className="flex gap-2">
-                  <button
+                  <button aria-label="Perform action"
                     type="submit"
                     disabled={connecting}
                     className="flex-1 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90 disabled:opacity-50"
                   >
                     {connecting ? "Connecting..." : "Connect"}
                   </button>
-                  <button
+                  <button aria-label="Perform action"
                     type="button"
                     onClick={() => setShowForm(false)}
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--control)]"
@@ -270,7 +270,7 @@ export default function ProjectMetrics() {
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
             Project Tracking
           </h2>
-          <button
+          <button aria-label="Perform action"
             type="button"
             onClick={() => setShowForm(true)}
             className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90"
@@ -280,7 +280,7 @@ export default function ProjectMetrics() {
         </div>
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
-          <button
+          <button aria-label="Perform action"
             type="button"
             onClick={fetchData}
 
@@ -362,14 +362,14 @@ export default function ProjectMetrics() {
                   <p className="text-sm text-[var(--destructive)]">{connectionError}</p>
                 )}
                 <div className="flex gap-2">
-                  <button
+                  <button aria-label="Perform action"
                     type="submit"
                     disabled={connecting}
                     className="flex-1 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90 disabled:opacity-50"
                   >
                     {connecting ? "Connecting..." : "Connect"}
                   </button>
-                  <button
+                  <button aria-label="Perform action"
                     type="button"
                     onClick={() => setShowForm(false)}
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--control)]"
@@ -401,7 +401,7 @@ export default function ProjectMetrics() {
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           Project Tracking
         </h2>
-        <button
+        <button aria-label="Perform action"
           type="button"
           onClick={handleDisconnect}
           className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]"

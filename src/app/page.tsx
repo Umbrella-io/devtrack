@@ -13,14 +13,12 @@ const syne = Syne({
   weight: ["700", "800"],
   display: "swap",
 });
-
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
   weight: ["400", "500", "600"],
   display: "swap",
 });
-
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
@@ -29,11 +27,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 async function fetchRepoStats(): Promise<RepoStats> {
-  const token = process.env.GITHUB_TOKEN;
-  const GH_HEADERS: Record<string, string> = {
-    Accept: "application/vnd.github.v3+json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+  const GH_HEADERS = { Accept: "application/vnd.github.v3+json" };
   const OPTS = (ttl: number) => ({ next: { revalidate: ttl }, headers: GH_HEADERS });
 
   try {
@@ -74,8 +68,8 @@ async function fetchRepoStats(): Promise<RepoStats> {
             isSponsor: sponsorSet.has(c.login),
           }));
         }
-      } catch {
-        // Supabase not configured locally — skip sponsor enrichment, show contributors as-is
+      } catch (err) {
+        console.warn("Could not fetch sponsors from Supabase, skipping sponsor badges.", err);
       }
     }
 
@@ -101,6 +95,7 @@ async function fetchRepoStats(): Promise<RepoStats> {
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
+
   if (session) {
     redirect("/dashboard");
   }
