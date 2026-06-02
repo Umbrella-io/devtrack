@@ -6,6 +6,7 @@ import {
   getAllAccounts,
 } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
+import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -83,6 +84,7 @@ async function fetchCommitTimestampsForAccount(
         );
 
         if (!response.ok) {
+          if (response.status === 401) throw new GitHubAuthError();
           if ((response.status === 403 || response.status === 429) && timestamps.length > 0) {
             break;
           }

@@ -185,6 +185,26 @@ export default function PRReviewTrendChart() {
   ))}
 </div>
         </div>
+      ) : githubAuthInvalid ? (
+        <div className="flex h-[360px] items-center justify-center">
+          <div className="max-w-sm rounded-lg border border-[var(--border)] bg-[var(--background)] p-6 text-center space-y-3">
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Your GitHub connection is no longer valid. Reconnect your GitHub
+              account to continue syncing data.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                void signOut({ redirect: false }).then(() => {
+                  window.location.href = "/api/auth/signin/github?callbackUrl=/dashboard";
+                });
+              }}
+              className="inline-flex items-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+            >
+              Reconnect GitHub
+            </button>
+          </div>
+        </div>
       ) : error ? (
         <div className="flex h-[360px] items-center justify-center">
           <div className="max-w-sm rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-5 text-center">
