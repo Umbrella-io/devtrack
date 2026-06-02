@@ -66,10 +66,11 @@ export async function GET(req: NextRequest) {
 
       const raw = await searchRes.json();
       const repoNames = Array.from(new Set<string>(raw.items.map((i: any) => i.repository.full_name)));
+      const topRepoNames = repoNames.slice(0, 20);
       const langTotals: Record<string, number> = {};
 
       await Promise.all(
-        repoNames.map(async (repoName) => {
+        topRepoNames.map(async (repoName) => {
           try {
               const repoCacheKey = metricsCacheKey(
                 userId,
