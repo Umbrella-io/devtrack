@@ -33,7 +33,7 @@ export class GitHubApiError extends Error {
  * and offer a reconnect action.
  */
 export function githubAuthErrorResponse(): Response {
-  return Response.json({ error: "github_auth_invalid" }, { status: 401 });
+  return Response.json({ error: "token_expired" }, { status: 401 });
 }
 
 function extractRateLimitInfo(headers: Headers): {
