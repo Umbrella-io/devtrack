@@ -144,6 +144,9 @@ export async function GET(req: NextRequest) {
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
+  }
 
   const accountId = req.nextUrl.searchParams.get("accountId");
   const timeZone = getRequestedTimeZone(req);
