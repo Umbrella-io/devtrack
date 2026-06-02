@@ -20,6 +20,14 @@ interface Goal {
   created_at: string;
 }
 
+interface LastPeriodSummary {
+  period_start: string;
+  period_end: string;
+  target: number;
+  achieved_value: number;
+  completed: boolean;
+}
+
 type Recurrence = "none" | "weekly" | "monthly";
 
 const VALID_RECURRENCES = ["none", "weekly", "monthly"] as const;
@@ -76,6 +84,24 @@ export async function GET() {
         : new Date(0);
 
       if (storedPeriodStart < periodStart) {
+        // Archive the expiring period before zeroing current.
+        // Uses upsert with ignoreDuplicates so concurrent resets are idempotent.
+        const periodEnd = new Date(periodStart.getTime() - 1);
+        await supabaseAdmin
+          .from("goal_history")
+          .upsert(
+            {
+              goal_id: goal.id,
+              user_id: goal.user_id,
+              period_start: storedPeriodStart.toISOString(),
+              period_end: periodEnd.toISOString(),
+              target: goal.target,
+              achieved_value: goal.current,
+              completed: goal.current >= goal.target,
+            },
+            { onConflict: "goal_id,period_start", ignoreDuplicates: true }
+          );
+
         const { data: updated } = await supabaseAdmin
           .from("goals")
           .update({ current: 0, period_start: periodStart.toISOString() })
@@ -98,7 +124,40 @@ export async function GET() {
     })
   );
 
-  return Response.json({ goals: processedGoals });
+  // Fetch the most recent archived period for each recurring goal so the UI
+  // can display last-period progress without a separate request.
+  const recurringIds = (processedGoals as Goal[])
+    .filter((g) => g.recurrence !== "none")
+    .map((g) => g.id);
+
+  const lastPeriodByGoal = new Map<string, LastPeriodSummary>();
+
+  if (recurringIds.length > 0) {
+    const { data: history } = await supabaseAdmin
+      .from("goal_history")
+      .select("goal_id, period_start, period_end, target, achieved_value, completed")
+      .in("goal_id", recurringIds)
+      .order("period_start", { ascending: false });
+
+    for (const row of history ?? []) {
+      if (!lastPeriodByGoal.has(row.goal_id)) {
+        lastPeriodByGoal.set(row.goal_id, {
+          period_start: row.period_start,
+          period_end: row.period_end,
+          target: row.target,
+          achieved_value: row.achieved_value,
+          completed: row.completed,
+        });
+      }
+    }
+  }
+
+  const goalsWithHistory = (processedGoals as Goal[]).map((g) => ({
+    ...g,
+    last_period: lastPeriodByGoal.get(g.id) ?? null,
+  }));
+
+  return Response.json({ goals: goalsWithHistory });
 }
 
 export async function POST(req: Request) {

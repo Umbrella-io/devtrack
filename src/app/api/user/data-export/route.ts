@@ -197,9 +197,17 @@ export async function GET(req: NextRequest) {
 
   const { data: goals } = await supabaseAdmin
     .from("goals")
-    .select("id, user_id, title, description, status, created_at, updated_at")
+    .select("id, user_id, title, target, current, unit, recurrence, deadline, period_start, created_at")
     .eq("user_id", user.id);
   sections.goals = goals || [];
+
+  const { data: goalHistory } = await supabaseAdmin
+    .from("goal_history")
+    .select("id, goal_id, user_id, period_start, period_end, target, achieved_value, completed, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1000);
+  sections.goalHistory = goalHistory || [];
 
   const { data: snapshots } = await supabaseAdmin
     .from("metric_snapshots")
@@ -258,6 +266,14 @@ export async function GET(req: NextRequest) {
     .order("date", { ascending: false })
     .limit(365);
   sections.localCodingSessions = localCodingSessions || [];
+
+  const { data: dailyFocusRecords } = await supabaseAdmin
+    .from("daily_focus")
+    .select("id, user_id, focus_date, goal_text, created_at, updated_at")
+    .eq("user_id", user.id)
+    .order("focus_date", { ascending: false })
+    .limit(365);
+  sections.dailyFocus = dailyFocusRecords || [];
 
   // --- Redact any sensitive fields that slipped through the column selects --
   const redactedSections = redactSensitiveFields(sections) as Record<string, unknown>;
@@ -334,7 +350,9 @@ export async function DELETE(req: NextRequest) {
     "jira_credentials",
     "webhook_configs",
     "user_github_accounts",
+    "goal_history",
     "goals",
+    "daily_focus",
     "metric_snapshots",
   ];
 

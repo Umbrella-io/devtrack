@@ -6,6 +6,14 @@ import ConfirmModal from "@/components/ConfirmModal"; // 🎯 Imported the nativ
 
 type Recurrence = "none" | "weekly" | "monthly";
 
+interface LastPeriod {
+  period_start: string;
+  period_end: string;
+  target: number;
+  achieved_value: number;
+  completed: boolean;
+}
+
 interface Goal {
   id: string;
   title: string;
@@ -16,6 +24,7 @@ interface Goal {
   deadline: string | null;
   period_start: string;
   last_synced_at: string | null;
+  last_period?: LastPeriod | null;
 }
 
 const RECURRENCE_LABELS: Record<Recurrence, string> = {
@@ -446,6 +455,13 @@ export default function GoalTracker() {
                         {completionLabel}
                       </span>
                     ) : null}
+                    {goal.recurrence !== "none" && goal.last_period && (
+                      <span className="text-xs text-[var(--muted-foreground)]">
+                        {goal.last_period.completed
+                          ? `✓ ${goal.last_period.achieved_value} / ${goal.last_period.target} last period`
+                          : `✗ ${goal.last_period.achieved_value} / ${goal.last_period.target} last period`}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
