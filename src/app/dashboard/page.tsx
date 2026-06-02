@@ -168,7 +168,7 @@ export default async function DashboardPage() {
             <DiscussionsWidget />
           </div>
           <div className="mt-6">
-            <PinnedRepos />
+            <PinnedReposWidget />
           </div>
 
           <div className="mt-6">

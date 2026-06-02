@@ -101,38 +101,7 @@ export default function WrappedExperience() {
 
     return () => controller.abort();
   }, [selectedYear, reloadKey]);
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!slides.length) return;
 
-      switch (event.key) {
-        case "ArrowLeft":
-          setSlide((value) => Math.max(0, value - 1));
-          break;
-
-        case "ArrowRight":
-          setSlide((value) => Math.min(slides.length - 1, value + 1));
-          break;
-
-        case "Home":
-          setSlide(0);
-          break;
-
-        case "End":
-          setSlide(slides.length - 1);
-          break;
-
-        default:
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [slides.length]);
   const slides = useMemo(() => {
     if (!stats) return [];
 
@@ -201,6 +170,39 @@ export default function WrappedExperience() {
       },
     ];
   }, [stats]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!slides.length) return;
+
+      switch (event.key) {
+        case "ArrowLeft":
+          setSlide((value) => Math.max(0, value - 1));
+          break;
+
+        case "ArrowRight":
+          setSlide((value) => Math.min(slides.length - 1, value + 1));
+          break;
+
+        case "Home":
+          setSlide(0);
+          break;
+
+        case "End":
+          setSlide(slides.length - 1);
+          break;
+
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [slides.length]);
 
   const shareUrl = origin
     ? `${origin}/wrapped?year=${selectedYear}`

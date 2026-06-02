@@ -327,7 +327,7 @@ describe("Webhooks Module", () => {
         eq: mockEq,
         single: mockSingle,
         insert: mockInsert,
-      });
+      } as any);
 
       (global.fetch as any).mockResolvedValue({
         ok: true,
@@ -372,7 +372,7 @@ describe("Webhooks Module", () => {
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: null, error: new Error("Not found") }),
         insert: vi.fn(),
-      });
+      } as any);
 
       const result = await dispatchWebhook("nonexistent", "goal.completed", {});
       expect(result.success).toBe(false);
@@ -435,7 +435,7 @@ describe("Webhooks Module", () => {
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: mockWebhookConfig, error: null }),
         insert: mockInsert,
-      });
+      } as any);
 
       await dispatchWebhook("webhook_123", "goal.completed", {});
 
@@ -538,7 +538,7 @@ describe("Webhooks Module", () => {
           error: null,
         }),
         insert: mockInsert,
-      });
+      } as any);
 
       (global.fetch as any).mockResolvedValue({ ok: true, status: 200 });
     });
@@ -568,7 +568,7 @@ describe("Webhooks Module", () => {
           error: null,
         }),
         insert: vi.fn(),
-      });
+      } as any);
 
       await dispatchToAllWebhooks("user_123", "goal.completed", { goalId: "456" });
 
@@ -585,7 +585,7 @@ describe("Webhooks Module", () => {
           data: null,
           error: null,
         }),
-      });
+      } as any);
 
       // Should not throw
       await expect(
@@ -672,7 +672,7 @@ describe("Webhooks Module", () => {
           error: null,
         }),
         insert: vi.fn(),
-      });
+      } as any);
 
       await dispatchToAllWebhooks("user_123", "goal.completed", {});
 
@@ -700,7 +700,7 @@ describe("Webhooks Module", () => {
           error: null,
         }),
         insert: vi.fn(),
-      });
+      } as any);
 
       (global.fetch as any).mockResolvedValue({ ok: true, status: 200 });
 
