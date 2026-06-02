@@ -122,23 +122,33 @@ async function fetchFirstReviewTimestamp(
   ]);
 }
 
+const FIRST_REVIEW_SAMPLE_SIZE = 10;
+const CONCURRENCY_BATCH = 5;
+
 async function getAverageFirstReviewHours(
   token: string,
   prs: PullRequestSearchItem[]
 ): Promise<number | null> {
-  const reviewedPrs = await Promise.all(
-    prs.slice(0, 30).map(async (pr) => {
-      const firstReviewAt = await fetchFirstReviewTimestamp(token, pr);
-      if (!firstReviewAt) return null;
+  const sample = prs.slice(0, FIRST_REVIEW_SAMPLE_SIZE);
+  const results: (number | null)[] = [];
 
-      const openedAt = new Date(pr.created_at).getTime();
-      if (Number.isNaN(openedAt) || firstReviewAt < openedAt) return null;
+  for (let i = 0; i < sample.length; i += CONCURRENCY_BATCH) {
+    const batch = sample.slice(i, i + CONCURRENCY_BATCH);
+    const batchResults = await Promise.all(
+      batch.map(async (pr) => {
+        const firstReviewAt = await fetchFirstReviewTimestamp(token, pr);
+        if (!firstReviewAt) return null;
 
-      return (firstReviewAt - openedAt) / 3600000;
-    })
-  );
-  
-  const validDurations = reviewedPrs.filter((value): value is number => typeof value === "number");
+        const openedAt = new Date(pr.created_at).getTime();
+        if (Number.isNaN(openedAt) || firstReviewAt < openedAt) return null;
+
+        return (firstReviewAt - openedAt) / 3600000;
+      })
+    );
+    results.push(...batchResults);
+  }
+
+  const validDurations = results.filter((value): value is number => typeof value === "number");
   if (validDurations.length === 0) return null;
 
   const average = validDurations.reduce((sum, value) => sum + value, 0) / validDurations.length;

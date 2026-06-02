@@ -319,6 +319,10 @@ export async function DELETE(req: NextRequest) {
 
   // Tables with a direct user_id foreign key, ordered to respect any
   // potential FK constraints (children before parents).
+  // ai_insights is included explicitly here even though ON DELETE CASCADE on
+  // the foreign key would remove those rows when the users row is deleted.
+  // The explicit delete is a defense-in-depth measure that works regardless
+  // of whether the FK migration has been applied to a given environment.
   const tablesToDelete = [
     "notifications",
     "ai_insights",

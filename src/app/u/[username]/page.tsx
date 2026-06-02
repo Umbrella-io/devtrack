@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import BadgeSection from "@/components/BadgeSection";
@@ -45,7 +46,6 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  // Minimal lookup — avoids duplicating 3 GitHub API calls that the page already makes
   const user = await getUserByUsername(username);
   const profileUrl = getProfileUrl(username);
 
@@ -56,24 +56,49 @@ export async function generateMetadata({
     };
   }
 
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
+
+  // Build dynamic OG image URL
+  const ogImageUrl = new URL(`${baseUrl}/api/og/user`);
+ogImageUrl.searchParams.set("username", username);
+ogImageUrl.searchParams.set("name", username);
+ogImageUrl.searchParams.set("avatar", `https://avatars.githubusercontent.com/${username}`);
+ogImageUrl.searchParams.set("topLang", "Code");
+ogImageUrl.searchParams.set("streak", "0");
+ogImageUrl.searchParams.set("commits", "0");
+
+  const title = `${username}'s DevTrack Profile`;
+  const description = `GitHub stats and coding activity for ${username}. View commits, streaks, and top repositories.`;
+
   return {
-    title: `${username}'s DevTrack Profile`,
-    description: `GitHub stats and coding activity for ${username}. View commits, streaks, and top repositories.`,
+    title,
+    description,
     openGraph: {
-      title: `${username}'s DevTrack Profile`,
-      description: `GitHub stats and coding activity for ${username}`,
+      title,
+      description,
       url: profileUrl,
       siteName: "DevTrack",
       type: "profile",
+      images: [
+        {
+          url: ogImageUrl.toString(),
+          width: 1200,
+          height: 630,
+          alt: `${username}'s DevTrack profile`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${username}'s DevTrack Profile`,
-      description: `GitHub stats and coding activity for ${username}`,
+      title,
+      description,
+      images: [ogImageUrl.toString()],
     },
   };
 }
-
 export default async function PublicProfilePage({
   params,
 }: {
@@ -98,20 +123,20 @@ export default async function PublicProfilePage({
           </p>
           <p className="text-sm text-[var(--muted-foreground)] mb-6">
             If this is your profile, go to{" "}
-            <a
+            <Link
               href="/dashboard/settings"
               className="text-[var(--accent)] underline hover:opacity-80"
             >
               Settings
-            </a>{" "}
+            </Link>{" "}
             and enable <strong>Public Profile</strong>.
           </p>
-          <a
+          <Link
             href="/"
             className="primary-button inline-block rounded-lg px-6 py-2"
           >
             Back to Home
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -124,6 +149,7 @@ export default async function PublicProfilePage({
 
   const avatarUrl = `https://avatars.githubusercontent.com/${profile.username}`;
   const topRepo = profile.repos[0]?.name ?? "";
+  const gistsUrl = `https://gist.github.com/${profile.username}`;
   const showCompareButton =
     loggedInUsername !== null &&
     loggedInUsername.toLowerCase() !== profile.username.toLowerCase();
@@ -148,21 +174,33 @@ export default async function PublicProfilePage({
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
           </p>
+          {profile.publicGists > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <a
+                href={gistsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+              >
+                {profile.publicGists} Gists
+              </a>
+            </div>
+          )}
           {compareHref && (
-            <a
+            <Link
               href={compareHref}
               className="primary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
             >
               Compare with me
-            </a>
+            </Link>
           )}
           {!loggedInUsername && (
-            <a
+            <Link
               href={signInToCompareHref}
               className="secondary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
             >
               Log in to compare
-            </a>
+            </Link>
           )}
         </div>
         {/* Download stats card button — client component */}

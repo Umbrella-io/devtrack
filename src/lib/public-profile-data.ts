@@ -35,6 +35,7 @@ export interface PublicProfileData {
   username: string;
   bio: string | null;
   isSponsor: boolean;
+  publicGists: number;
   repos: TopRepo[];
   contributions: ContributionData;
   streak: StreakData;
@@ -51,6 +52,18 @@ async function ghFetch(url: string, token?: string): Promise<Response> {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
   return fetch(url, { headers, cache: "no-store" });
+}
+
+export async function fetchPublicGists(
+  username: string,
+  token?: string
+): Promise<number> {
+  const res = await ghFetch(`${GITHUB_API}/users/${username}`, token);
+
+  if (!res.ok) return 0;
+
+  const data = (await res.json()) as { public_gists?: number };
+  return data.public_gists ?? 0;
 }
 
 export async function fetchPublicTopRepos(
@@ -250,6 +263,7 @@ export async function fetchPublicProfile(
 
   const githubToken = process.env.GITHUB_TOKEN;
   const [
+    publicGists,
     repos,
     contributions,
     streak,
@@ -258,6 +272,7 @@ export async function fetchPublicProfile(
     achievementsCache,
     spotlight,
   ] = await Promise.all([
+    fetchPublicGists(user.github_login, githubToken),
     fetchPublicTopRepos(user.github_login, githubToken, 30),
     fetchPublicContributions(user.github_login, githubToken, 30),
     fetchPublicStreak(user.github_login, githubToken),
@@ -281,6 +296,7 @@ export async function fetchPublicProfile(
     username: user.github_login,
     bio: user.bio ?? null,
     isSponsor: user.is_sponsor ?? false,
+    publicGists,
     repos,
     contributions,
     streak,
