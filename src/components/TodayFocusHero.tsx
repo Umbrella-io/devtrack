@@ -65,7 +65,7 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
       setGoal(storedGoal);
       setInputValue(storedGoal);
       setIsEditing(storedGoal.length === 0);
-    } catch {
+    } catch (e) {
       setGoal("");
       setInputValue("");
       setIsEditing(true);
@@ -80,7 +80,7 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
 
     try {
       window.localStorage.setItem(todayKey, trimmedGoal);
-    } catch {}
+    } catch (e) {}
 
     setGoal(trimmedGoal);
     setInputValue(trimmedGoal);
@@ -92,7 +92,7 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
 
     try {
       window.localStorage.removeItem(todayKey);
-    } catch {}
+    } catch (e) {}
 
     setGoal("");
     setInputValue("");

@@ -151,7 +151,7 @@ export function useStreakTracker() {
     if (stored) {
       try {
         setDismissedMilestones(JSON.parse(stored));
-      } catch {
+      } catch (e) {
         // ignore invalid localStorage data
       }
     }

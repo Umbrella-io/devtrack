@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   let body: { sessions?: SessionData[] };
   try {
     body = await req.json();
-  } catch {
+  } catch (e) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

@@ -23,7 +23,7 @@ async function parseUsers(params: Promise<{ users: string }>): Promise<[string, 
   try {
     const { users } = await params;
     decoded = decodeURIComponent(users);
-  } catch {
+  } catch (e) {
     return null;
   }
 

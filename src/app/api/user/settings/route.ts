@@ -214,7 +214,7 @@ export async function PATCH(req: NextRequest) {
   let body: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key?: string; discord_webhook_url?: string | null; timezone?: string; bio?: string; webhook_url?: string | null };
   try {
     body = await req.json();
-  } catch {
+  } catch (e) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
@@ -322,7 +322,7 @@ export async function PATCH(req: NextRequest) {
     try {
       Intl.DateTimeFormat(undefined, { timeZone: timezone });
       updates.timezone = timezone;
-    } catch {
+    } catch (e) {
       return NextResponse.json({ error: "Invalid timezone" }, { status: 400 });
     }
   }

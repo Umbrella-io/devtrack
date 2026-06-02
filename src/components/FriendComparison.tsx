@@ -159,7 +159,7 @@ export default function FriendComparison() {
           })
         );
       }
-    } catch {
+    } catch (e) {
       setError("An error occurred");
     } finally {
       setLoading(false);

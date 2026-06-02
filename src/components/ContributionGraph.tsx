@@ -146,6 +146,23 @@ export default function ContributionGraph() {
   const [customError, setCustomError] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
+  // Fetch my data
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("devtrack:contribution-range");
+        if (stored === "7" || stored === "30" || stored === "90" || stored === "365") {
+          setDays(Number(stored));
+        } else {
+          localStorage.setItem("devtrack:contribution-range", "30");
+          setDays(30);
+        }
+      } catch (e) {
+        setDays(30);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
 
@@ -166,7 +183,7 @@ export default function ContributionGraph() {
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem("devtrack:contribution-range", String(newDays));
-      } catch { }
+      } catch (e) {}
     }
   };
 

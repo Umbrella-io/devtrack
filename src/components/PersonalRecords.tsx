@@ -158,7 +158,7 @@ export default function PersonalRecords() {
       setStreak(streakData);
       setContributions(contribData);
       setRepos(reposData.repos ?? []);
-    } catch {
+    } catch (e) {
       setError("We couldn't load your personal records right now. Please try again in a moment.");
     } finally {
       setLoading(false);

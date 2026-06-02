@@ -122,7 +122,7 @@ export default function ContributionHeatmap({
         } else {
           localStorage.setItem("devtrack:heatmap-range", String(days));
         }
-      } catch {
+      } catch (e) {
         setSelectedDays(days);
       }
     }
@@ -156,7 +156,7 @@ export default function ContributionHeatmap({
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem("devtrack:heatmap-range", String(newDays));
-      } catch {}
+      } catch (e) {}
     }
   };
 

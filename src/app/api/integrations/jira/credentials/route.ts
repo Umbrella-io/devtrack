@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
   let body: JiraCredentialsInput;
   try {
     body = await req.json();
-  } catch {
+  } catch (e) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

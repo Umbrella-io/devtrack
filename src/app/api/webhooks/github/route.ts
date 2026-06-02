@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
   let payload: GitHubPushPayload;
   try {
     payload = JSON.parse(body) as GitHubPushPayload;
-  } catch {
+  } catch (e) {
     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
 

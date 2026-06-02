@@ -1,5 +1,6 @@
 import React from "react";
 import "@testing-library/jest-dom";
+// @ts-ignore
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import DashboardHeader from "../../src/components/DashboardHeader";

@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
         userId: session.githubId ?? session.githubLogin ?? "primary",
       });
       return Response.json(formatDiscussionsMetrics(result));
-    } catch {
+    } catch (e) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -185,7 +185,7 @@ export async function GET(req: NextRequest) {
       userId: accountId === session.githubId ? session.githubId : accountId,
     });
     return Response.json(formatDiscussionsMetrics(result));
-  } catch {
+  } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }
