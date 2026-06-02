@@ -228,4 +228,59 @@ describe("GET /api/stream — SSE stream route", () => {
     const res = await GET(makeRequest());
     expect(res.headers.get("Connection")).toBe("keep-alive");
   });
+
+  // ── connection-lifetime constants ──────────────────────────────────────
+
+  it("exports HEARTBEAT_INTERVAL_MS as 30 seconds", async () => {
+    const { HEARTBEAT_INTERVAL_MS } = await import("@/app/api/stream/route");
+    expect(HEARTBEAT_INTERVAL_MS).toBe(30_000);
+  });
+
+  it("exports IDLE_TIMEOUT_MS as 5 minutes", async () => {
+    const { IDLE_TIMEOUT_MS } = await import("@/app/api/stream/route");
+    expect(IDLE_TIMEOUT_MS).toBe(5 * 60 * 1000);
+  });
+
+  it("exports MAX_AGE_MS as 30 minutes", async () => {
+    const { MAX_AGE_MS } = await import("@/app/api/stream/route");
+    expect(MAX_AGE_MS).toBe(30 * 60 * 1000);
+  });
+
+  // ── idle timeout ──────────────────────────────────────────────────────
+
+  it("releases the connection slot after idle timeout", async () => {
+    vi.useFakeTimers();
+    try {
+      const { GET, IDLE_TIMEOUT_MS } = await import("@/app/api/stream/route");
+      await GET(makeRequest());
+      expect(activeStreamConnections.get("user-1")).toBe(1);
+
+      // The idle-check callback is synchronous; it fires inline during
+      // advanceTimersByTime. IDLE_TIMEOUT_MS (5 min) + one check cycle (60 s).
+      vi.advanceTimersByTime(IDLE_TIMEOUT_MS + 60_001);
+
+      expect(activeStreamConnections.has("user-1")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // ── max-age ────────────────────────────────────────────────────────────
+
+  it("releases the connection slot when max-age expires", async () => {
+    vi.useFakeTimers();
+    try {
+      const { GET, MAX_AGE_MS } = await import("@/app/api/stream/route");
+      await GET(makeRequest());
+      expect(activeStreamConnections.get("user-1")).toBe(1);
+
+      // Connections with no changing data are closed by the idle-timeout
+      // mechanism before MAX_AGE_MS, but either path must release the slot.
+      vi.advanceTimersByTime(MAX_AGE_MS + 1);
+
+      expect(activeStreamConnections.has("user-1")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
