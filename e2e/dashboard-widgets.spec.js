@@ -6,8 +6,6 @@ test.beforeEach(async ({ page }) => {
     process.env.NEXTAUTH_SECRET ||
     "test-nextauth-secret-for-playwright-tests";
 
-  // Create a valid NextAuth JWT and set it as the session cookie so
-  // dashboard pages render as an authenticated user in Playwright.
   const token = await encode({
     secret: authSecret,
     token: {
@@ -31,6 +29,19 @@ test.beforeEach(async ({ page }) => {
       secure: false,
     },
   ]);
+
+  await page.route("**/api/auth/session**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: { name: "Playwright User", email: "playwright@example.com" },
+        githubLogin: "playwright-user",
+        githubId: "12345",
+        accessToken: "test-token",
+        expires: "2099-01-01T00:00:00.000Z",
+      }),
+    });
+  });
 
   await page.route("**/api/ai-insights**", async (route) => {
     await route.fulfill({
@@ -57,10 +68,7 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/notifications**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({
-        notifications: [],
-        unreadCount: 0,
-      }),
+      body: JSON.stringify({ notifications: [], unreadCount: 0 }),
     });
   });
 
@@ -88,7 +96,14 @@ test.beforeEach(async ({ page }) => {
 
   const now = new Date().toISOString();
 
-  await page.route("**/api/goals", async (route) => {
+  await page.route("**/api/goals/sync**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, last_synced_at: now }),
+    });
+  });
+
+  await page.route("**/api/goals**", async (route) => {
     if (route.request().method() === "POST") {
       await route.fulfill({
         contentType: "application/json",
@@ -97,7 +112,6 @@ test.beforeEach(async ({ page }) => {
       });
       return;
     }
-
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -113,48 +127,6 @@ test.beforeEach(async ({ page }) => {
             last_synced_at: now,
           },
         ],
-      }),
-    });
-  });
-
- await page.route("**/api/goals/sync**", async (route) => {
-  await route.fulfill({
-    contentType: "application/json",
-    body: JSON.stringify({
-      ok: true,
-      last_synced_at: new Date().toISOString(),
-    }),
-  });
-});
-
-  await page.route("**/api/ai-insights**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        data: {
-          insights: [
-            {
-              id: "insight-1",
-              type: "productivity",
-              title: "High Consistency",
-              description: "You have coded 5 days this week!",
-              severity: "positive",
-            },
-          ],
-          trend: { direction: "up", percentage: 15 },
-          aiSummary: "Great job shipping features this week. Keep up the high standard!",
-          generatedAt: "2026-05-18T12:00:00.000Z",
-        },
-      }),
-    });
-  });
-
-  await page.route("**/api/notifications**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        notifications: [],
-        unreadCount: 0,
       }),
     });
   });
@@ -180,20 +152,19 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/discussions**",
     "**/api/metrics/pr-review-trend**",
     "**/api/metrics/inactive-repos**",
-    "**/api/notifications**",
     "**/api/local-coding/stats**",
     "**/api/metrics/coding-time**",
     "**/api/metrics/coding-activity-insights**",
   ];
 
-for (const pattern of metricRoutes) {
-  await page.route(pattern, async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify(mockMetricResponse(route.request().url())),
+  for (const pattern of metricRoutes) {
+    await page.route(pattern, async (route) => {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(mockMetricResponse(route.request().url())),
+      });
     });
-  });
-}
+  }
 
   await page.route("**/api/stream**", async (route) => {
     await route.fulfill({
@@ -202,15 +173,13 @@ for (const pattern of metricRoutes) {
       body: "data: {}\n\n",
     });
   });
-
-
 });
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
   await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "Goals", exact: true })).toBeVisible({ timeout: 10000 });
   await expect(page.getByText("Make 10 commits")).toBeVisible({ timeout: 10000 });
 });
 
@@ -224,7 +193,10 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
 
   await page.goto("/dashboard", { waitUntil: "load" });
   await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
-  await page.getByRole("button", { name: "Show 90-day range" }).click();
+  await page
+    .locator("#contribution-activity")
+    .getByRole("button", { name: "Show 90-day range" })
+    .click();
 
   await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
 });
@@ -242,7 +214,7 @@ test("goal form posts a new goal", async ({ page }) => {
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
   await page.getByLabel("Unit").selectOption("prs");
-  await page.getByRole("button", { name: "Add goal" }).click();
+  await page.getByRole("button", { name: "Create goal" }).click();
 
   await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);
   expect(goalPosts[0]).toMatchObject({

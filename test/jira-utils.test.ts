@@ -22,6 +22,16 @@ describe("categorizeStatus", () => {
     const issue = { statusCategory: "unknown" } as JiraIssue;
     expect(categorizeStatus(issue)).toBe("To Do");
   });
+
+  it('is case-sensitive for statusCategory (returns "To Do" for "DONE" or "Done")', () => {
+    expect(categorizeStatus({ statusCategory: "DONE" } as JiraIssue)).toBe("To Do");
+    expect(categorizeStatus({ statusCategory: "Done" } as JiraIssue)).toBe("To Do");
+  });
+
+  it('returns "To Do" for statusCategory with trailing/leading spaces', () => {
+    expect(categorizeStatus({ statusCategory: "done " } as JiraIssue)).toBe("To Do");
+    expect(categorizeStatus({ statusCategory: " done" } as JiraIssue)).toBe("To Do");
+  });
 });
 
 describe("calculateMetrics", () => {
@@ -99,5 +109,29 @@ describe("calculateMetrics", () => {
     expect(result.toDo).toBe(1);
     expect(result.inProgress).toBe(1);
     expect(result.done).toBe(1);
+  });
+
+  it("calculates avgTimeToClose correctly for exact same resolved and created time", () => {
+    const issues: JiraIssue[] = [
+      { key: "PROJ-1", summary: "", status: "", statusCategory: "done", created: "2026-01-01T12:00:00.000Z", updated: "2026-01-01T12:00:00.000Z", resolved: "2026-01-01T12:00:00.000Z", assignee: null, priority: "" },
+    ];
+    const result = calculateMetrics(issues);
+    expect(result.avgTimeToClose).toBe(0);
+  });
+
+  it("handles negative time differences (resolved before created)", () => {
+    const issues: JiraIssue[] = [
+      { key: "PROJ-1", summary: "", status: "", statusCategory: "done", created: "2026-01-02T12:00:00.000Z", updated: "2026-01-02T12:00:00.000Z", resolved: "2026-01-01T12:00:00.000Z", assignee: null, priority: "" },
+    ];
+    const result = calculateMetrics(issues);
+    expect(result.avgTimeToClose).toBe(-24);
+  });
+
+  it("handles invalid date strings by producing NaN in calculations", () => {
+    const issues: JiraIssue[] = [
+      { key: "PROJ-1", summary: "", status: "", statusCategory: "done", created: "not-a-date", updated: "not-a-date", resolved: "2026-01-01", assignee: null, priority: "" },
+    ];
+    const result = calculateMetrics(issues);
+    expect(result.avgTimeToClose).toBeNaN();
   });
 });
