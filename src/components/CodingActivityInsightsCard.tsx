@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { RefreshCw, Loader2 } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -11,6 +12,7 @@ import {
   YAxis,
   type TooltipProps,
 } from "recharts";
+import { Skeleton } from "@/components/Skeleton";
 import { useAccount } from "@/components/AccountContext";
 import {
   formatHourRange,
@@ -73,7 +75,7 @@ function TrendBadge({
 function HourTooltip({
   active,
   payload,
-}: TooltipProps<number, string>) {
+}: any) {
   if (!active || !payload || payload.length === 0) {
     return null;
   }
@@ -248,9 +250,18 @@ export default function CodingActivityInsightsCard() {
         <button
           type="button"
           onClick={fetchInsights}
-          className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)]"
+          disabled={loading}
+          aria-label="Refresh coding activity insights"
+          className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Refresh
+          {loading ? (
+            <>
+              <RefreshCw aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
+              Refreshing
+            </>
+          ) : (
+            "Refresh"
+          )}
         </button>
       </div>
 
@@ -262,14 +273,10 @@ export default function CodingActivityInsightsCard() {
           className="space-y-4"
         >
           <span className="sr-only">Loading coding activity insights</span>
-          <div className="h-[260px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
+          <Skeleton className="h-[260px] w-full rounded-lg" />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                aria-hidden="true"
-                className="h-16 rounded-lg bg-[var(--card-muted)] animate-pulse"
-              />
+              <Skeleton key={item} className="h-16 w-full rounded-lg" />
             ))}
           </div>
         </div>

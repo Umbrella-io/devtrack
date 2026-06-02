@@ -12,6 +12,7 @@ out/
 # Environment files — NEVER commit these
 .env
 .env.local
+.env.local*
 .env.production
 .env.*.local
 
@@ -37,3 +38,17 @@ Thumbs.db
 desktop.ini
 
 test-results/
+
+.vercel
+.env*
+
+# PWA artifacts
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+public/fallback-*.js
+public/worker-*.js
+public/swe-worker-*.js
+worker/
+

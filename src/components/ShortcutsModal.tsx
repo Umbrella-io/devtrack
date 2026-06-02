@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ShortcutsModalProps {
   isOpen: boolean;
@@ -13,58 +13,79 @@ interface ShortcutItem {
 }
 
 const SHORTCUTS: ShortcutItem[] = [
-  { key: "T", action: "Toggle theme" },
+  { key: "Alt + T", action: "Toggle theme" },
   { key: "B", action: "Toggle chart" },
   { key: "R", action: "Reload data" },
+  { key: "G + D", action: "Go to Dashboard" },
+  { key: "G + P", action: "Go to Goals" },
+  { key: "Esc", action: "Close modal/dialog" },
   { key: "?", action: "Show shortcuts" },
 ];
-
 export default function ShortcutsModal({
   isOpen,
   onClose,
 }: ShortcutsModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && typeof navigator !== "undefined") {
+      setIsMac(/Mac|iPod|iPhone|iPad/.test(navigator.userAgent));
+    }
+  }, []);
+
+   useEffect(() => {
     if (!isOpen) return;
 
-    closeBtnRef.current?.focus();
+     closeBtnRef.current?.focus();
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+       if (
+        modalRef.current &&
+        !modalRef.current.contains(e.target as Node)
+       ) {
+         onClose();
+       }
+    };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
+       if (e.key === "Escape") {
+         onClose();
+         return;
+     }
 
-      if (e.key === "Tab") {
+     if (e.key === "Tab") {
         if (!modalRef.current) return;
 
-        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+         const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
 
-        if (focusableElements.length === 0) return;
+     if (focusableElements.length === 0) return;
 
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
+       const firstElement = focusableElements[0];
+         const lastElement = focusableElements[focusableElements.length - 1];
 
         if (e.shiftKey && document.activeElement === firstElement) {
-          lastElement.focus();
-          e.preventDefault();
+         lastElement.focus();
+         e.preventDefault();
         } else if (!e.shiftKey && document.activeElement === lastElement) {
           firstElement.focus();
-          e.preventDefault();
-        }
-      }
-    };
+           e.preventDefault();
+         }
+       }
+     };
 
-    document.addEventListener("keydown", handleKeyDown);
+     document.addEventListener("keydown", handleKeyDown);
+     document.addEventListener("mousedown", handleClickOutside);
+     document.addEventListener("touchstart", handleClickOutside);
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+       document.removeEventListener("keydown", handleKeyDown);
+       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [isOpen, onClose]);
-
+   }, [isOpen, onClose]);
   if (!isOpen) return null;
 
   return (
@@ -85,7 +106,7 @@ export default function ShortcutsModal({
           ref={closeBtnRef}
           type="button"
           onClick={onClose}
-          className="rounded-lg p-1 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          className="rounded-lg p-1 text-[var(--muted-foreground)] transition-all hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:opacity-90 active:scale-95"
           aria-label="Close shortcuts"
         >
           x
@@ -102,7 +123,7 @@ export default function ShortcutsModal({
               {item.action}
             </span>
             <kbd className="min-w-[28px] rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-center text-xs font-semibold text-[var(--card-foreground)] shadow-sm">
-              {item.key}
+              {item.key === "T" ? (isMac ? "Option + T" : "Alt + T") : item.key}
             </kbd>
           </div>
         ))}
@@ -112,7 +133,7 @@ export default function ShortcutsModal({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg bg-[var(--control)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          className="rounded-lg bg-[var(--control)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)] transition-all hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:opacity-90 active:scale-95"
         >
           Got it
         </button>

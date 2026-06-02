@@ -1,25 +1,28 @@
+import CustomCursor from "@/components/CustomCursor";
 import type { Metadata, Viewport } from "next";
 import { Inter, Syne, JetBrains_Mono } from "next/font/google";
+import AppNavbar from "@/components/AppNavbar";
 import Footer from "@/components/Footer";
+import DeferredVercelMetrics from "@/components/DeferredVercelMetrics";
 import Providers from "./providers";
-import PWARegister from "@/components/pwa-register";
+import OfflineBanner from "@/components/OfflineBanner";
 import "./globals.css";
 import { Toaster } from "sonner";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 const syne = Syne({
   subsets: ["latin"],
   variable: "--font-syne",
   weight: ["700", "800"],
   display: "swap",
+  preload: false,
 });
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
   weight: ["400", "500", "600", "700"],
-  display: "swap",
+  display: "optional",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -49,7 +52,7 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -57,6 +60,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="mobile-web-app-capable" content="yes" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -78,21 +82,24 @@ export default function RootLayout({
       </head>
 
       <body
-        className={`${inter.className} ${syne.variable} ${jetbrains.variable} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
+        className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
-        <PWARegister />
+        <CustomCursor />
+        <OfflineBanner />
 
         <div className="flex min-h-screen flex-col">
           <div className="flex-1">
-            <Providers>{children}</Providers>
+            <Providers>
+              <AppNavbar />
+              {children}
+            </Providers>
           </div>
 
           <Footer />
 
           <Toaster richColors position="top-right" />
         </div>
-        <Analytics />
-        <SpeedInsights />
+        <DeferredVercelMetrics />
       </body>
     </html>
   );

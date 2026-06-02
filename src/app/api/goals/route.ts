@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { dispatchToAllWebhooks } from "@/lib/webhooks";
+import { stripHtml } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,7 @@ interface Goal {
   current: number;
   unit: string;
   recurrence: string;
+  deadline: string | null;
   period_start: string | null;
   created_at: string;
 }
@@ -26,7 +29,7 @@ const MIN_TARGET = 1;
 const MAX_TARGET = 10_000;
 
 // Hard cap to prevent storage exhaustion and catastrophic Promise.all execution
-const MAX_GOALS_PER_USER = 20;
+const MAX_GOALS_PER_USER = 5;
 
 function getPeriodStart(recurrence: Recurrence): string {
   const now = new Date();
@@ -108,7 +111,7 @@ export async function POST(req: Request) {
 
 try {
   body = await req.json();
-} catch {
+} catch (e) {
   return Response.json({ error: "Invalid JSON" }, { status: 400 });
 }
 
@@ -117,12 +120,16 @@ try {
     return Response.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { title, target, unit, recurrence } = body as Record<string, unknown>;
+  const { title, target, unit, recurrence, deadline } = body as Record<string, unknown>;
 
   if (typeof title !== "string" || title.trim().length === 0) {
     return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
   }
-  if (title.length > MAX_TITLE_LEN) {
+  const sanitizedTitle = stripHtml(title);
+  if (sanitizedTitle.length === 0) {
+    return Response.json({ error: "title must not be empty" }, { status: 400 });
+  }
+  if (sanitizedTitle.length > MAX_TITLE_LEN) {
     return Response.json({ error: `title must be ${MAX_TITLE_LEN} characters or fewer` }, { status: 400 });
   }
   if (
@@ -141,6 +148,15 @@ try {
   const safeRecurrence: Recurrence = VALID_RECURRENCES.includes(recurrence as Recurrence)
     ? (recurrence as Recurrence)
     : "none";
+
+  let safeDeadline: string | null = null;
+  if (typeof deadline === "string") {
+    const d = new Date(deadline);
+    if (!isNaN(d.getTime())) {
+      d.setUTCHours(23, 59, 59, 999);
+      safeDeadline = d.toISOString();
+    }
+  }
 
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
@@ -166,17 +182,26 @@ try {
     .from("goals")
     .insert({
       user_id: user.id,
-      title: title.trim(),
+      title: sanitizedTitle,
       target,
       unit: safeUnit,
       recurrence: safeRecurrence,
       period_start: getPeriodStart(safeRecurrence),
+      deadline: safeDeadline,
       current: 0,
     })
     .select()
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  dispatchToAllWebhooks(user.id, "goal.created", {
+    goalId: goal.id,
+    title: goal.title,
+    target: goal.target,
+    unit: goal.unit,
+    recurrence: goal.recurrence,
+  }).catch(() => {});
 
   return Response.json({ goal }, { status: 201 });
 }

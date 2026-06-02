@@ -1,143 +1,220 @@
 # Contributing to DevTrack
 
-Thanks for your interest in contributing! This guide will get you from zero to a merged PR.
+Thank you for your interest in contributing to DevTrack! Whether you are a GSSoC (GirlScript Summer of Code) participant or a general open-source contributor, we are thrilled to have you.
 
-> ⭐ If DevTrack has been useful to you, consider [starring the repo](https://github.com/Priyanshu-byte-coder/devtrack) — it helps the project grow and reach more developers.
-
----
-
-## Table of Contents
-
-- [Code of Conduct](#code-of-conduct)
-- [How to Find an Issue](#how-to-find-an-issue)
-- [Setting Up Locally](#setting-up-locally)
-- [Making Changes](#making-changes)
-- [Submitting a PR](#submitting-a-pr)
-- [Review Process](#review-process)
-- [Issue Labels](#issue-labels)
+Please note that this project is released with a [Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project, you agree to abide by its terms.
 
 ---
 
-## Code of Conduct
+## ⚡ Quick Start (Setup in < 10 Steps)
 
-This project follows the [Contributor Covenant](./CODE_OF_CONDUCT.md). Be respectful.
+1. **Fork the Repo:** Click the "Fork" button at the top-right of the [DevTrack repository](https://github.com/Priyanshu-byte-coder/devtrack).
+2. **Clone Your Fork:**
+   ```bash
+   git clone https://github.com/<your-username>/devtrack.git
+   cd devtrack
+   ```
+3. **Configure Upstream Remote:**
+   ```bash
+   git remote add upstream https://github.com/Priyanshu-byte-coder/devtrack.git
+   ```
+4. **Install pnpm (Package Manager):** We use `pnpm` for this project. If you don't have it installed:
+   ```bash
+   npm install -g pnpm
+   ```
+5. **Install Dependencies:**
+   ```bash
+   pnpm install
+   ```
+6. **Set Up Environment:** Copy the template file:
+   ```bash
+   cp .env.example .env.local
+   ```
+7. **Configure Keys:** Open `.env.local` in your editor and add your development keys (see [Environment Variables Guide](#3-environment-variables-guide) below).
+8. **Start the Dev Server:**
+   ```bash
+   pnpm dev
+   ```
+9. **Open the App:** Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## How to Find an Issue
+## 📋 Table of Contents
 
-1. Go to [Issues](../../issues)
-2. Filter by label:
-   - `good-first-issue` — no prior codebase knowledge needed, well-scoped
-   - `medium` — requires reading some existing code
-   - `advanced` — architectural changes, requires discussion first
-3. Comment "I'd like to work on this" to get assigned
-4. **Do not open a PR for an unassigned issue**
-
-First-time contributors: start with `good-first-issue` only.
+1. [Prerequisites](#1-prerequisites)
+2. [Local Development Setup](#2-local-development-setup)
+3. [Environment Variables Guide](#3-environment-variables-guide)
+4. [Code Style & Standards](#4-code-style--standards)
+5. [Branch Naming Conventions](#5-branch-naming-conventions)
+6. [Commit Guidelines](#6-commit-guidelines)
+7. [Issue Labels & GSSoC Levels](#7-issue-labels--gssoc-levels)
+8. [Pull Request (PR) Checklist](#8-pull-request-pr-checklist)
+9. [Self-Hosting & Deployment](#9-self-hosting--deployment)
 
 ---
 
-## Setting Up Locally
+## 1. Prerequisites
 
-Full step-by-step guide: **[DEVELOPMENT.md](./DEVELOPMENT.md)**
+Before setting up DevTrack locally, make sure you have configured the following:
 
-Short version:
+- **Node.js**: Version `20` or higher is required.
+- **pnpm**: Version `9` or higher is required.
+- **GitHub OAuth App**:
+  1. Go to your GitHub profile → **Settings** → **Developer Settings** → **OAuth Apps** → **New OAuth App**.
+  2. Set **Application Name** to `DevTrack Dev`.
+  3. Set **Homepage URL** to `http://localhost:3000`.
+  4. Set **Authorization callback URL** to `http://localhost:3000/api/auth/callback/github`.
+  5. Register the application, then copy the **Client ID** and generate a new **Client Secret**.
 
-```bash
-git clone https://github.com/Priyanshu-byte-coder/devtrack.git
-cd devtrack
-npm install
-cp .env.example .env.local
-# fill in .env.local — see DEVELOPMENT.md for exact values
-npm run dev
+---
+
+## 2. Local Development Setup
+
+To get a fully functional copy running with authentication and metrics:
+
+1. **Database Setup (Supabase)**:
+   - Create a free project on [Supabase](https://supabase.com).
+   - Retrieve your project API URL, anon key, and service role key from **Project Settings** → **API**.
+2. **Environment Variables**:
+   - Ensure you have copied `.env.example` to `.env.local` and filled in all required fields.
+3. **Run Dev Commands**:
+   - Install all project dependencies:
+     ```bash
+     pnpm install
+     ```
+   - Run the Next.js development server:
+     ```bash
+     pnpm dev
+     ```
+
+---
+
+## 3. Environment Variables Guide
+
+DevTrack relies on a set of environment variables to connect to external APIs and database services. Copy `.env.example` to `.env.local` and populate these values:
+
+| Variable | Required? | Description |
+| :--- | :---: | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | **Yes** | Your Supabase project URL (e.g., `https://your-ref.supabase.co`). |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Yes** | Your Supabase public anonymous API key. |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Server-side Supabase secret key (never expose this client-side). |
+| `NEXTAUTH_URL` | **Yes** | The base URL where your app is running locally (e.g., `http://localhost:3000`). |
+| `NEXTAUTH_SECRET` | **Yes** | Used to sign NextAuth tokens. Generate with: `openssl rand -base64 32`. |
+| `GITHUB_ID` | **Yes** | The Client ID from your registered GitHub OAuth Application. |
+| `GITHUB_SECRET` | **Yes** | The Client Secret from your registered GitHub OAuth Application. |
+| `ENCRYPTION_KEY` | **Yes** | A 32-byte hex key used to encrypt OAuth tokens. Generate with: `openssl rand -hex 32`. |
+| `GITHUB_WEBHOOK_SECRET` | No | Secret key to verify incoming GitHub webhooks. Generate with: `openssl rand -hex 32`. |
+| `GITHUB_TOKEN` | No | Fine-grained or classic PAT to bypass rate limits when fetching repository metrics. |
+| `UPSTASH_REDIS_REST_URL` | No | Upstash Redis URL for API rate limiting/caching. |
+| `UPSTASH_REDIS_REST_TOKEN` | No | Upstash Redis REST Token. |
+| `GROQ_API_KEY` | No | Groq API Key to enable Llama-3 AI insights in the mentor widget. |
+
+---
+
+## 4. Code Style & Standards
+
+To ensure code readability and maintainability, please adhere to our styling rules:
+
+* **Linting & Formatting**: We use ESLint and Prettier. Check your code using:
+  ```bash
+  pnpm run lint
+  ```
+* **TypeScript strict mode**: Write clean, strongly typed code. Run type checking before committing:
+  ```bash
+  pnpm run type-check
+  ```
+* **Clean Code**:
+  - Remove all unused imports and variables.
+  - Delete any debugging statements like `console.log` or temporary comments.
+  - Ensure proper semantic HTML and accessibility (a11y) standards.
+
+---
+
+## 5. Branch Naming Conventions
+
+Always create a new branch for your task. Never push directly to `main`. Use the following format:
+
+`prefix/short-descriptive-name`
+
+### Prefix Types:
+* `feat/` — A new user feature (e.g., `feat/add-achievements-tab`)
+* `fix/` — A bug fix (e.g., `fix/oauth-token-expiry`)
+* `docs/` — Documentation changes only (e.g., `docs/update-installation-guide`)
+* `test/` — Adding or updating tests (e.g., `test/visual-regression-setup`)
+* `refactor/` — Code refactoring with no behavior changes (e.g., `refactor/api-routes`)
+
+---
+
+## 6. Commit Guidelines
+
+We enforce **Conventional Commits** to keep our git history clean and understandable.
+
+### Format
+```text
+<type>(<optional-scope>): <short, imperative description>
 ```
 
-Stuck? Check [Common errors](./DEVELOPMENT.md#common-errors) in `DEVELOPMENT.md` first.
+### Types
+* `feat`: New feature
+* `fix`: Bug fix
+* `docs`: Documentation updates
+* `style`: Code style/formatting changes (spaces, semicolons, etc.)
+* `refactor`: Refactoring code structure
+* `test`: Adding or correcting tests
+* `chore`: Maintenance tasks, dependencies, lockfile updates
+
+### Examples
+- `feat(auth): integrate github oauth authentication`
+- `fix(dashboard): resolve chart container responsive scaling`
+- `docs(contributing): document environment variable configuration`
 
 ---
 
-## Project Structure
+## 7. Issue Labels & GSSoC Levels
 
-Key files:
+For contributors joining through GirlScript Summer of Code (GSSoC), we map issues using levels to indicate complexity and points:
 
-| Path | Purpose |
-|------|---------|
-| `src/app/api/metrics/contributions/` | Commit activity from GitHub API |
-| `src/app/api/metrics/prs/` | PR analytics from GitHub API |
-| `src/app/api/metrics/streak/` | Commit streak calculation |
-| `src/app/api/metrics/repos/` | Top repositories by commits |
-| `src/app/api/goals/` | Weekly goals CRUD via Supabase |
-| `src/lib/auth.ts` | NextAuth config, GitHub OAuth, Supabase user upsert |
-| `src/lib/supabase.ts` | Supabase admin client (server-side only) |
-| `src/components/` | Dashboard UI components |
-| `supabase/schema.sql` | DB schema — run once in Supabase SQL Editor |
+| Label | Level / Difficulty | Points |
+| :--- | :--- | :---: |
+| `gssoc:level1` | **Beginner** — Simple styling, documentation fixes, minor bugs | **20** |
+| `gssoc:level2` | **Intermediate** — Feature additions, routing changes, basic tests | **35** |
+| `gssoc:level3` | **Advanced** — Complex logic, API integrations, deep layout refactoring | **55** |
 
-See [DEVELOPMENT.md](./DEVELOPMENT.md) for architecture walkthrough and how to add new widgets.
+### Guidelines:
+* **One Issue at a Time**: You can only be assigned to one issue at a time.
+* **Auto-unassignment**: If there is no progress or communication on an assigned issue within **3 days**, it will be unassigned and given to another contributor.
+* **Link Issue to PR**: Ensure your pull request description explicitly links to your assigned issue (e.g. `Closes #45`).
 
 ---
 
-## Making Changes
+## 8. Pull Request (PR) Checklist
 
-### Branch naming
+Before submitting your PR, make sure you have verified the following:
 
-```
-feat/issue-42-add-dark-mode
-fix/issue-17-pr-count-off-by-one
-docs/update-setup-guide
-```
-
-### Commit style (Conventional Commits)
-
-```
-feat: add dark mode toggle to dashboard
-fix: correct PR merge rate calculation
-docs: add Supabase setup troubleshooting
-```
-
-### Code style
-
-- TypeScript strict mode — no `any` types
-- ESLint + Prettier — run `npm run lint` before pushing
-- Components: one file per component, named exports
-- API routes: use `getServerSession(authOptions)` for auth checks, never trust client input
+- [ ] **Lockfile Consistency**: Only use `pnpm` and do not commit `package-lock.json` changes. Ensure `pnpm-lock.yaml` is clean.
+- [ ] **Tests Pass**: Run unit tests and ensure they pass:
+  ```bash
+  pnpm run test
+  ```
+- [ ] **Application Builds**: Verify that the production build compiles successfully:
+  ```bash
+  pnpm run build
+  ```
+- [ ] **No Console Errors**: Check for console warnings/errors in developer tools.
+- [ ] **Visual Validation**: If your changes involve UI edits, include mobile and desktop screenshots or a short demo GIF in the PR description.
+- [ ] **Clean History**: Ensure commits are cleanly written and follow conventional formats.
 
 ---
 
-## Submitting a PR
+## 9. Self-Hosting & Deployment
 
-1. Push your branch to your fork
-2. Open a PR against `main`
-3. Fill out the PR template completely
-4. Link the issue: `Closes #42`
-5. Ensure CI passes (lint + type check)
-
-PRs without a linked issue will not be reviewed.
+For guides on self-hosting DevTrack or deploying it manually, please check the [Self-Hosting Documentation](./docs/self-hosting.md).
 
 ---
 
-## Review Process
+Thank you for helping make DevTrack better! Happy coding! 🚀
 
-- First response within **48 hours**
-- Address all review comments before requesting re-review
-- After approval, maintainer merges (contributors do not self-merge)
 
----
-
-## Issue Labels
-
-| Label | Meaning |
-|-------|---------|
-| `good-first-issue` | Beginner friendly, scoped, documented |
-| `medium` | Requires some context, moderate complexity |
-| `advanced` | Architectural, discuss in issue before coding |
-| `bug` | Something broken |
-| `enhancement` | New feature or improvement |
-| `docs` | Documentation only |
-| `~1h` `~2h` `~4h` `~8h` | Estimated effort |
-
----
-
-## Questions?
-
-Open a [GitHub Discussion](../../discussions) — don't open an issue for questions.
+### GSSoC Git Commit & Branching Conventions
+- Prefix commits with chore:, feat:, or fix:.
+- Keep PRs small and focused on existing files.

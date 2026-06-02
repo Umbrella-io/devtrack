@@ -1,6 +1,7 @@
 "use client";
 
-import { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
+// import { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
 
 export type HeatmapTheme = "default" | "colour-blind-friendly";
 
@@ -17,6 +18,12 @@ export interface HeatmapThemeConfig {
 }
 
 const STORAGE_KEY = "heatmap-theme";
+const getThemeFromCookie = (): HeatmapTheme | null => {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^| )theme=([^;]+)'));
+  return match ? (match[2] as HeatmapTheme) : null;
+};
+
 
 const themeConfigs: Record<HeatmapTheme, HeatmapThemeConfig> = {
   default: {
@@ -138,7 +145,7 @@ export function useHeatmapTheme() {
     if (typeof window !== "undefined") {
       try {
         window.localStorage.setItem(STORAGE_KEY, t);
-      } catch {}
+      } catch (e) {}
       window.dispatchEvent(new CustomEvent("heatmap-theme-changed", { detail: t }));
     }
 
@@ -168,7 +175,10 @@ export function useHeatmapTheme() {
     };
   }, []);
 
-  const themeConfig = useMemo(() => getHeatmapThemeConfig(theme), [theme]);
+  const themeConfig = useMemo(() => {
+    const activeTheme = mounted ? theme : "default";
+    return getHeatmapThemeConfig(activeTheme);
+  }, [theme, mounted]);
 
   const getHeatmapStyle = useCallback(
     (count: number) => getHeatmapCellStyle(count, themeConfig),

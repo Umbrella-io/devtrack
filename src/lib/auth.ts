@@ -1,10 +1,11 @@
 import { type NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
+import { syncGitHubAchievementsForUser } from "./github-achievements";
 import { supabaseAdmin } from "./supabase";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 const SESSION_UPDATE_AGE = 24 * 60 * 60;
-const useSecureCookies = process.env.NODE_ENV === "production";
+const isPlaywrightServer = process.env.PLAYWRIGHT_SERVER_MODE === "start";
 
 const GITHUB_API = "https://api.github.com";
 // Re-validate the stored GitHub token at most once every 24 hours per session.
@@ -13,6 +14,11 @@ const GITHUB_API = "https://api.github.com";
 const TOKEN_VALIDATION_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export const authOptions: NextAuthOptions = {
+  // Playwright runs on plain HTTP (127.0.0.1) and relies on the default
+  // `next-auth.session-token` cookie name. If NextAuth infers HTTPS via
+  // forwarded headers, it may switch to secure cookie prefixes and the E2E
+  // session cookie won't be read. Force non-secure cookies in this mode.
+  ...(isPlaywrightServer ? { useSecureCookies: false } : {}),
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_ID ?? "",
@@ -23,8 +29,11 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-  signIn: "/auth/signin",
-},
+    signIn: "/auth/signin",
+  },
+  // Use NextAuth's default cookie behavior (secure cookies on HTTPS deployments),
+  // which keeps Playwright E2E (http://127.0.0.1) aligned with the default
+  // `next-auth.session-token` cookie name.
   session: {
     strategy: "jwt",
     maxAge: SESSION_MAX_AGE,
@@ -36,15 +45,76 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === "github" && profile) {
-        const p = profile as { id: number; login: string };
-        await supabaseAdmin.from("users").upsert(
-          {
-            github_id: String(p.id),
-            github_login: p.login,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "github_id" }
-        );
+        const p = profile as { id: number; login: string; email?: string };
+
+        // Guard: supabaseAdmin is null when Supabase env vars are missing or
+        // contain placeholder values (see src/lib/supabase.ts). Calling .from()
+        // on null throws a TypeError which NextAuth silently converts to
+        // return false → error=github redirect. Skip the upsert gracefully
+        // so authentication can still succeed with degraded functionality.
+        if (!supabaseAdmin) {
+          console.warn(
+            "signIn: supabaseAdmin is not configured; skipping DB upsert. " +
+            "Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local."
+          );
+          return true;
+        }
+
+        try {
+          let { data: user, error: upsertError } = await supabaseAdmin
+            .from("users")
+            .upsert(
+              {
+                github_id: String(p.id),
+                github_login: p.login,
+                email: p.email || null,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "github_id" }
+            )
+            .select("id")
+            .single();
+
+          // If the email column does not exist yet (migration pending),
+          // PostgREST returns a 42703 error. Fallback to upsert without email.
+          if (upsertError && (upsertError as { code?: string }).code === "42703") {
+            const fallback = await supabaseAdmin
+              .from("users")
+              .upsert(
+                {
+                  github_id: String(p.id),
+                  github_login: p.login,
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: "github_id" }
+              )
+              .select("id")
+              .single();
+            user = fallback.data;
+            upsertError = fallback.error;
+          }
+
+          if (upsertError) {
+            console.error("[auth] Supabase upsert error:", upsertError);
+          }
+
+          if (user?.id && account.access_token) {
+            try {
+              await syncGitHubAchievementsForUser({
+                userId: user.id,
+                githubLogin: p.login,
+                token: account.access_token,
+                force: true,
+              });
+            } catch (error) {
+              console.error("[auth] GitHub achievements sync failed:", error);
+            }
+          }
+        } catch (error) {
+          // Database failures must not block sign-in — the user is authenticated
+          // by GitHub; local sync is best-effort.
+          console.error("[auth] signIn callback error (non-fatal):", error);
+        }
       }
       return true;
     },
@@ -90,7 +160,7 @@ export const authOptions: NextAuthOptions = {
           }
           // Non-401 non-ok responses (rate limit, server error) are intentionally
           // left without updating accessTokenValidatedAt so the next request retries.
-        } catch {
+        } catch (e) {
           // Network failures during validation are not treated as revocation.
           // The check will be retried on the next request.
         }

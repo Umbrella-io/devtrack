@@ -1,143 +1,316 @@
+﻿import LazyWidget from "@/components/LazyWidget";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
-import ActivityRingChart from "@/components/ActivityRingChart";
-import ContributionGraph from "@/components/ContributionGraph";
-import ContributionHeatmap from "@/components/ContributionHeatmap";
-import PRMetrics from "@/components/PRMetrics";
 import CommunityMetrics from "@/components/CommunityMetrics";
-import PRBreakdownChart from "@/components/PRBreakdownChart";
 import GoalTracker from "@/components/GoalTracker";
+import TodayFocusHero from "@/components/TodayFocusHero";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
-import PinnedRepos from "@/components/PinnedRepos";
+import PinnedReposWidget from "@/components/PinnedReposWidget";
 import InactiveRepositoriesCard from "@/components/InactiveRepositoriesCard";
 import LanguageBreakdown from "@/components/LanguageBreakdown";
-import CommitTimeChart from "@/components/CommitTimeChart";
-import CodingActivityInsightsCard from "@/components/CodingActivityInsightsCard";
-import PRReviewTrendChart from "@/components/PRReviewTrendChart";
 import CIAnalytics from "@/components/CIAnalytics";
 import IssueMetrics from "@/components/IssueMetrics";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
-import FriendComparison from "@/components/FriendComparison";
+import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
+import dynamic from "next/dynamic";
 import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import { AIMentorWidget } from "@/components/AIMentorWidget";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import PersonalRecords from "@/components/PersonalRecords";
 import LocalCodingTime from "@/components/LocalCodingTime";
-import CodingTimeCard from "@/components/CodingTimeCard";
+import CodingTimeWidget from "@/components/CodingTimeWidget";
 import RecentActivity from "@/components/RecentActivity";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import DashboardSSEProvider from "@/components/DashboardSSEProvider";
+import DailyNoteWidget from "@/components/DailyNoteWidget";
+import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
+
+const SkeletonCard = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-live="polite"
+    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+  >
+    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-4 animate-pulse" />
+    <div className="h-40 bg-[var(--card-muted)] rounded animate-pulse" />
+  </div>
+);
+
+const ContributionGraphSkeleton = () => (
+  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <h2 className="text-lg font-semibold text-[var(--foreground)]">Your Commits</h2>
+    <div className="mt-3 h-40 rounded bg-[var(--card-muted)] animate-pulse" />
+  </div>
+);
+
+const PRMetricsSkeleton = () => (
+  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <h2 className="text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
+    <div className="mt-3 h-40 rounded bg-[var(--card-muted)] animate-pulse" />
+  </div>
+);
+
+const CodingActivityInsightsCard = dynamic(
+  () => import("@/components/CodingActivityInsightsCard"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const FriendComparison = dynamic(
+  () => import("@/components/FriendComparison"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const ActivityRingChart = dynamic(
+  () => import("@/components/ActivityRingChart"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const ContributionGraph = dynamic(
+  () => import("@/components/ContributionGraph"),
+  { ssr: false, loading: () => <ContributionGraphSkeleton /> },
+);
+
+const ContributionHeatmap = dynamic(
+  () => import("@/components/ContributionHeatmap"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const RepoContributionDistribution = dynamic(
+  () => import("@/components/RepoContributionDistribution"),
+  {
+    ssr: false,
+    loading: () => <SkeletonCard />,
+  },
+);
+
+const PRMetrics = dynamic(() => import("@/components/PRMetrics"), {
+  ssr: false,
+  loading: () => <PRMetricsSkeleton />,
+});
+
+const PRBreakdownChart = dynamic(
+  () => import("@/components/PRBreakdownChart"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const CommitTimeChart = dynamic(
+  () => import("@/components/CommitTimeChart"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const PRReviewTrendChart = dynamic(
+  () => import("@/components/PRReviewTrendChart"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
+const ProductiveHoursWidget = dynamic(
+  () => import("@/components/ProductiveHoursWidget"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/");
-  // If the JWT callback detected that the GitHub token has been revoked,
-  // redirect to the landing page so the user must re-authenticate.
-  if (session.error === "TokenRevoked") redirect("/");
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
-      <DashboardHeader />
-      <div className="mb-6 flex justify-end items-center gap-2">
-        <Link
-          href="/dashboard/settings"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
-        >
-          Settings
-        </Link>
-        <ExportButton />
-      </div>
-      <StreakAtRiskBanner />
+    <DashboardSSEProvider>
+      <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
+        <DashboardHeader />
 
-      <div className="mb-6">
-        <WeeklySummaryCard />
-      </div>
-
-      <div className="mb-6">
-        <AIMentorWidget />
-      </div>
-
-      <div className="mb-6">
-        <PersonalRecords />
-      </div>
-
-      {/* Row 1: Contribution graph + Streak + Local Coding Time */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <ContributionGraph />
-          <div className="mt-6">
-            <ContributionHeatmap />
+        {/* Quick actions */}
+        <div className="mt-8 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Left side actions */}
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <Link
+              href="/wrapped"
+              className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl border border-[var(--accent)] bg-[var(--accent)]/10 px-5 py-2.5 text-sm font-semibold text-[var(--accent)] shadow-sm shadow-[var(--accent)]/20 transition-all hover:bg-[var(--accent)]/20 hover:scale-[1.02]"
+            >
+              Year in Code
+            </Link>
+            <Link
+              href="/dashboard/settings"
+              className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium transition-all hover:bg-white/10 hover:scale-[1.02]"
+            >
+              Settings
+            </Link>
           </div>
-          <div className="mt-6">
-            <FriendComparison />
+          {/* Right side exports */}
+          <div className="w-full sm:w-auto">
+            <ExportButton />
           </div>
         </div>
+        <div className="space-y-4">
+          <StreakAtRiskBanner />
+        </div>
 
-        <div>
-          <StreakTracker />
-          <LocalCodingTime />
-          <div className="mt-6">
-            <CodingTimeCard />
+        {/* Hero Section */}
+        <section className="mt-8">
+          <TodayFocusHero userName={session.user?.name ?? null} />
+        </section>
+
+        {/* 1. OVERVIEW SECTION */}
+        <section className="mt-14 space-y-6">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+            <div className="h-8 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_15px_var(--accent)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
           </div>
-        </div>
-      </div>
+          <div className="grid grid-cols-1 gap-6 w-full">
+            <WeeklySummaryCard />
+          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <PersonalRecords />
+            </div>
+            <div className="flex flex-col gap-6 w-full h-full">
+              <AIMentorWidget />
+            </div>
+          </div>
+        </section>
 
-      {/* Row 2: PR metrics, community metrics, PR breakdown & Time Chart */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <PRMetrics />
-        <CommunityMetrics />
-        <PRBreakdownChart />
-        <CommitTimeChart />
-      </div>
-      {/* Row 2b: Activity Ring Chart */}
-      <div className="mt-6">
-        <ActivityRingChart />
-      </div>
+        {/* CAREER INTELLIGENCE BANNER */}
+        <section className="mt-14">
+          <div className="relative overflow-hidden rounded-xl border border-[var(--border)] bg-gradient-to-r from-violet-950/20 via-indigo-950/10 to-transparent p-6 shadow-lg flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="space-y-2 max-w-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold text-violet-400 tracking-wider px-2 py-0.5 rounded bg-violet-500/10 border border-violet-500/20">
+                  New Feature
+                </span>
+                <span className="text-xs text-[var(--muted-foreground)]">AI Resume Generator</span>
+              </div>
+              <h3 className="text-lg font-bold text-[var(--foreground)]">Generate an ATS-Friendly CV Backed by Your Real Code</h3>
+              <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
+                Analyze your GitHub contributions, merged PRs, and lines of code changed to automatically generate professional bullet points for your target roles.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/career-intelligence"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/20 hover:scale-[1.03] transition-all whitespace-nowrap"
+            >
+              Build Resume
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
 
-      <div className="mt-6">
-        <CodingActivityInsightsCard />
-      </div>
+        {/* 2. ACTIVITY & CODING TIME */}
+        <section id="streaks" className="mt-14 space-y-6 scroll-mt-28">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+            <div className="h-8 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Activity & Coding</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
+            <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
+              <div className="w-full overflow-x-auto pb-2">
+                <ContributionGraph />
+              </div>
+              <div className="w-full overflow-x-auto pb-2">
+                <ContributionHeatmap />
+              </div>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <RepoContributionDistribution />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <ActivityRingChart />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <CodingActivityInsightsCard />
+              </LazyWidget>
+            </div>
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <StreakTracker />
+              <LocalCodingTime />
+              <CodingTimeWidget />
+              <LazyWidget fallback={<SkeletonCard />}>
+                <CommitTimeChart />
+              </LazyWidget>
+              <ProductiveHoursWidget />
+            </div>
+          </div>
+        </section>
 
-      <div className="mt-6">
-        <PRReviewTrendChart />
-      </div>
+        {/* 3. ANALYTICS & REPOSITORIES */}
+        <section id="pull-requests" className="mt-14 space-y-6 scroll-mt-28">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+            <div className="h-8 w-1.5 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Analytics & Repositories</h2>
+          </div>
 
-      {/* Row 3: Issue metrics + CI analytics */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <IssueMetrics />
-        </div>
-        <CIAnalytics />
-      </div>
-      {/* Row 3b: Discussion activity */}
-      <div className="mt-6">
-        <DiscussionsWidget />
-      </div>
+          {/* Repo Analytics Explorer spans full width */}
+          <div className="w-full overflow-hidden">
+            <LazyWidget fallback={<SkeletonCard />}>
+              <RepoAnalyticsExplorer />
+            </LazyWidget>
+          </div>
 
-      {/* Row 4: Pinned repositories */}
-      <div className="mt-6">
-        <PinnedRepos />
-      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <PRMetrics />
+              <LazyWidget fallback={<SkeletonCard />}>
+                <PRBreakdownChart />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <PRReviewTrendChart />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <DiscussionsWidget />
+              </LazyWidget>
+            </div>
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <CommunityMetrics />
+              <LazyWidget fallback={<SkeletonCard />}>
+                <PinnedReposWidget />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <TopRepos />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <InactiveRepositoriesCard />
+              </LazyWidget>
+            </div>
+          </div>
+        </section>
 
-      {/* Row 5: Inactive repository reminder */}
-      <div className="mt-6">
-        <InactiveRepositoriesCard />
-      </div>
+        {/* 4. GOALS & INSIGHTS */}
+        <section id="goals" className="mt-14 space-y-6 scroll-mt-28 mb-12">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+            <div className="h-8 w-1.5 rounded-full bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Goals & Insights</h2>
+          </div>
 
-      {/* Row 6: Top repos + Language breakdown + Goal tracker */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <TopRepos />
-        <LanguageBreakdown />
-        <GoalTracker />
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
+            <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
+              <LazyWidget fallback={<SkeletonCard />}>
+                <IssueMetrics />
+              </LazyWidget>
+              <WidgetErrorBoundary>
+                <GoalTracker />
+              </WidgetErrorBoundary>
+              <DailyNoteWidget />
+              <LazyWidget fallback={<SkeletonCard />}>
+                <RecentActivity />
+              </LazyWidget>
+            </div>
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <LazyWidget fallback={<SkeletonCard />}>
+                <CIAnalytics />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <LanguageBreakdown />
+              </LazyWidget>
+              <LazyWidget fallback={<SkeletonCard />}>
+                <FriendComparison />
+              </LazyWidget>
+            </div>
+          </div>
+        </section>
       </div>
-
-      {/* Row 7: Recent GitHub activity */}
-      <div className="mt-6">
-        <RecentActivity />
-      </div>
-    </div>
+    </DashboardSSEProvider>
   );
 }
