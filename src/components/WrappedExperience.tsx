@@ -344,7 +344,7 @@ export default function WrappedExperience() {
                     <a
                       href={twitterUrl}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       className="inline-flex h-10 items-center justify-center rounded-md bg-white px-3 text-sm font-black text-slate-950 transition hover:bg-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
                     >
                       Share on X
@@ -352,7 +352,7 @@ export default function WrappedExperience() {
                     <a
                       href={linkedInUrl}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       className="inline-flex h-10 items-center justify-center rounded-md border border-white/20 px-3 text-sm font-bold text-white transition hover:border-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
                     >
                       LinkedIn
