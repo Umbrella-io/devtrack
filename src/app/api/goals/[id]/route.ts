@@ -21,17 +21,24 @@ export async function PATCH(
   }
 
   const user = await resolveAppUser(session.githubId, session.githubLogin);
+<<<<<<< feat/dashboard-widget-layout-v4
   if (!user) {
     return Response.json({ error: "User not found" }, { status: 404 });
   }
 
   let body: any;
+=======
+  if (!user) return Response.json({ error: "User not found" }, { status: 404 });
+
+  let body: unknown;
+>>>>>>> main
   try {
     body = await req.json();
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+<<<<<<< feat/dashboard-widget-layout-v4
   const { title, target, unit, recurrence, current } = body;
 
   const { data: existingGoal } = await supabaseAdmin
@@ -54,10 +61,20 @@ export async function PATCH(
       },
       { status: 422 }
     );
+=======
+  if (typeof body !== "object" || body === null) {
+    return Response.json({ error: "Invalid request body" }, { status: 400 });
+>>>>>>> main
   }
 
   const updates: Record<string, unknown> = {};
 
+<<<<<<< feat/dashboard-widget-layout-v4
+=======
+  const { title, target, unit, recurrence, current } =
+    body as Record<string, unknown>;
+
+>>>>>>> main
   if (title !== undefined) {
     if (typeof title !== "string" || !title.trim()) {
       return Response.json({ error: "Invalid title" }, { status: 400 });
@@ -101,12 +118,47 @@ export async function PATCH(
     updates.current = current;
   }
 
+  const { data: existingGoal } = await supabaseAdmin
+    .from("goals")
+    .select("*")
+    .eq("id", params.id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!existingGoal) {
+    return Response.json({ error: "Goal not found" }, { status: 404 });
+  }
+
   if (Object.keys(updates).length === 0) {
     return Response.json({ goal: existingGoal });
+<<<<<<< feat/dashboard-widget-layout-v4
   }
 
   const wasCompleted =
     existingGoal.current >= existingGoal.target;
+=======
+  }
+
+  // Block manual progress edits for activity-derived goal types.
+  // These goals are synced from GitHub and setting current directly would
+  // allow goal completion without any corresponding real activity.
+  if (current !== undefined && ACTIVITY_DERIVED_UNITS.has(existingGoal.unit)) {
+    return Response.json(
+      {
+        error:
+          "Progress for activity-derived goals is updated automatically via GitHub sync.",
+      },
+      { status: 422 }
+    );
+  }
+
+  if (typeof current === "number" && current > existingGoal.target) {
+    return Response.json(
+      { error: "current cannot exceed target" },
+      { status: 400 }
+    );
+  }
+>>>>>>> main
 
   const { data: updatedGoal, error } = await supabaseAdmin
     .from("goals")

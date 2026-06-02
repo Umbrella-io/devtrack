@@ -108,7 +108,10 @@ export default function WrappedExperience() {
     return () => controller.abort();
   }, [selectedYear, reloadKey]);
 
+<<<<<<< feat/dashboard-widget-layout-v4
   /* ✅ FIX: slides MUST be defined BEFORE useEffect */
+=======
+>>>>>>> main
   const slides = useMemo(() => {
     if (!stats) return [];
 
@@ -174,11 +177,15 @@ export default function WrappedExperience() {
     ];
   }, [stats]);
 
+<<<<<<< feat/dashboard-widget-layout-v4
   /* ✅ FIXED keyboard handler */
+=======
+>>>>>>> main
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!slides.length) return;
 
+<<<<<<< feat/dashboard-widget-layout-v4
       if (event.key === "ArrowLeft") {
         setSlide((v) => Math.max(0, v - 1));
       } else if (event.key === "ArrowRight") {
@@ -187,14 +194,43 @@ export default function WrappedExperience() {
         setSlide(0);
       } else if (event.key === "End") {
         setSlide(slides.length - 1);
+=======
+      switch (event.key) {
+        case "ArrowLeft":
+          setSlide((value) => Math.max(0, value - 1));
+          break;
+
+        case "ArrowRight":
+          setSlide((value) => Math.min(slides.length - 1, value + 1));
+          break;
+
+        case "Home":
+          setSlide(0);
+          break;
+
+        case "End":
+          setSlide(slides.length - 1);
+          break;
+
+        default:
+          break;
+>>>>>>> main
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
+<<<<<<< feat/dashboard-widget-layout-v4
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [slides.length]);
 
   const currentSlide = slides[slide];
+=======
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [slides.length]);
+>>>>>>> main
 
   const shareUrl = origin
     ? `${origin}/wrapped?year=${selectedYear}`

@@ -11,12 +11,6 @@ importers:
       '@ducanh2912/next-pwa':
         specifier: ^10.2.9
         version: 10.2.9(@types/babel__core@7.20.5)(next@14.2.35(@babel/core@7.29.7)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(webpack@5.107.2(postcss@8.5.15))
-      '@emnapi/core':
-        specifier: ^1.10.0
-        version: 1.10.0
-      '@emnapi/runtime':
-        specifier: ^1.10.0
-        version: 1.10.0
       '@supabase/ssr':
         specifier: ^0.10.3
         version: 0.10.3(@supabase/supabase-js@2.106.2)
