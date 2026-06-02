@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from "next/image";
 import Link from 'next/link';
+import { FeatureShowcaseSection } from './FeatureShowcase';
 
 /* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
@@ -918,6 +919,7 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <HeatmapSection />
       <StatsSection />
       <FeaturesSection />
+      <FeatureShowcaseSection />
       <ContributeSection stats={repoStats} />
       <SetupSection />
     </div>
