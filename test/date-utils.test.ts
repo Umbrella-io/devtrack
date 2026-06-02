@@ -7,6 +7,10 @@ describe('exports', () => {
     expect(typeof dateUtils.dateDiffDays).toBe('function');
   });
 
+  it('exports dateDiff as a backward-compatible alias', () => {
+    expect(dateUtils.dateDiff).toBe(dateUtils.dateDiffDays);
+  });
+
   it('exports toDateStr by name', () => {
     expect(typeof dateUtils.toDateStr).toBe('function');
   });
