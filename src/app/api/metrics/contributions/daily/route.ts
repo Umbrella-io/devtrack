@@ -2,6 +2,7 @@
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { GITHUB_API } from "@/lib/github";
+import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -21,6 +22,9 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
   }
 
   const date = req.nextUrl.searchParams.get("date");
@@ -54,7 +58,10 @@ export async function GET(req: NextRequest) {
           }
         );
 
-        if (!searchRes.ok) throw new Error("GitHub API error");
+        if (!searchRes.ok) {
+          if (searchRes.status === 401) throw new GitHubAuthError();
+          throw new Error("GitHub API error");
+        }
 
         const data = (await searchRes.json()) as {
           items: Array<{
@@ -81,6 +88,7 @@ export async function GET(req: NextRequest) {
 
     return Response.json(result);
   } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

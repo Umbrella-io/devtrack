@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { signOut } from "next-auth/react";
 import type { InactiveRepo } from "@/types/inactive-repos";
 
 const THRESHOLDS = [30, 60, 90] as const;
@@ -39,10 +40,12 @@ export default function InactiveRepositoriesCard() {
   const [repos, setRepos] = useState<InactiveRepo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [githubAuthInvalid, setGithubAuthInvalid] = useState(false);
 
   const fetchInactiveRepos = useCallback(() => {
     setLoading(true);
     setError(null);
+    setGithubAuthInvalid(false);
 
     const accountParam =
       selectedAccount !== null
@@ -50,14 +53,19 @@ export default function InactiveRepositoriesCard() {
         : "";
 
     fetch(`/api/metrics/inactive-repos?days=${thresholdDays}${accountParam}`)
-      .then((response) => {
+      .then(async (response) => {
+        const payload = await response.json();
+        if (payload?.error === "token_expired") {
+          setGithubAuthInvalid(true);
+          return null;
+        }
         if (!response.ok) {
           throw new Error("API error");
         }
-
-        return response.json();
+        return payload as { repos?: InactiveRepo[] };
       })
-      .then((payload: { repos?: InactiveRepo[] }) => {
+      .then((payload) => {
+        if (!payload) return;
         setRepos(payload.repos ?? []);
       })
       .catch(() => {
@@ -120,6 +128,24 @@ export default function InactiveRepositoriesCard() {
                 className="h-20 rounded-lg skeleton-shimmer"
               />
             ))}
+          </div>
+        ) : githubAuthInvalid ? (
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-6 text-center space-y-3">
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Your GitHub connection is no longer valid. Reconnect your GitHub
+              account to continue syncing data.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                void signOut({ redirect: false }).then(() => {
+                  window.location.href = "/api/auth/signin/github?callbackUrl=/dashboard";
+                });
+              }}
+              className="inline-flex items-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+            >
+              Reconnect GitHub
+            </button>
           </div>
         ) : error ? (
           <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">

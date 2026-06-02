@@ -164,6 +164,7 @@ export async function GET(req: NextRequest) {
 
       return Response.json(data);
     } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -247,6 +248,7 @@ export async function GET(req: NextRequest) {
 
     return Response.json(data);
   } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

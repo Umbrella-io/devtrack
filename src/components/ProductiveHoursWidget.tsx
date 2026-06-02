@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
+import { signOut } from "next-auth/react";
 
 const DEFAULT_DAYS = 90;
 
@@ -61,6 +62,7 @@ export default function ProductiveHoursWidget() {
   const [totalCommits, setTotal]    = useState(0);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
+  const [githubAuthInvalid, setGithubAuthInvalid] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
 
@@ -182,6 +184,7 @@ export default function ProductiveHoursWidget() {
     let active = true;
     setLoading(true);
     setError(null);
+    setGithubAuthInvalid(false);
 
     const tz     = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const params = new URLSearchParams({
@@ -191,12 +194,17 @@ export default function ProductiveHoursWidget() {
     });
 
     fetch(`/api/metrics/productive-hours?${params.toString()}`)
-      .then((res) => {
+      .then(async (res) => {
+        const data = await res.json();
+        if (data?.error === "token_expired") {
+          if (active) setGithubAuthInvalid(true);
+          return null;
+        }
         if (!res.ok) throw new Error("API error");
-        return res.json();
+        return data as ProductiveHoursResponse;
       })
-      .then((data: ProductiveHoursResponse) => {
-        if (!active) return;
+      .then((data: ProductiveHoursResponse | null) => {
+        if (!active || !data) return;
         setGrid(data.grid ?? []);
         setPeak(data.peak ?? null);
         setTotal(data.total ?? 0);
@@ -413,6 +421,24 @@ export default function ProductiveHoursWidget() {
 
       {loading ? (
         <div className="h-[140px] animate-pulse rounded-lg bg-[var(--card-muted)]" />
+      ) : githubAuthInvalid ? (
+        <div className="flex h-[140px] flex-col items-center justify-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--background)] p-6 text-center">
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Your GitHub connection is no longer valid. Reconnect your GitHub
+            account to continue syncing data.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              void signOut({ redirect: false }).then(() => {
+                window.location.href = "/api/auth/signin/github?callbackUrl=/dashboard";
+              });
+            }}
+            className="inline-flex items-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+          >
+            Reconnect GitHub
+          </button>
+        </div>
       ) : error ? (
         <div className="flex h-[140px] items-center rounded-lg border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-4">
           <p className="text-sm text-[var(--destructive)]">

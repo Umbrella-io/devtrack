@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
+import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
 import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
 
@@ -11,6 +12,9 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
   }
 
   const bypass = isMetricsCacheBypassed(req);
@@ -24,7 +28,10 @@ export async function GET(req: NextRequest) {
         cache: "no-store",
       });
       
-      if (!reposRes.ok) throw new Error("API error fetching repos");
+      if (!reposRes.ok) {
+        if (reposRes.status === 401) throw new GitHubAuthError();
+        throw new Error("API error fetching repos");
+      }
       const repos = await reposRes.json();
 
       // 2. Fetch last 30 days of commits across all repos for the user
@@ -37,8 +44,10 @@ export async function GET(req: NextRequest) {
         cache: "no-store",
       });
 
+      if (!searchRes.ok && searchRes.status === 401) throw new GitHubAuthError();
+
       const repoCommits: Record<string, any[]> = {};
-      
+
       if (searchRes.ok) {
         const searchData = await searchRes.json();
         const items = searchData.items || [];
@@ -97,6 +106,7 @@ export async function GET(req: NextRequest) {
     });
     return Response.json(data);
   } catch (error) {
+    if (error instanceof GitHubAuthError) return githubAuthErrorResponse();
     console.error(error);
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }

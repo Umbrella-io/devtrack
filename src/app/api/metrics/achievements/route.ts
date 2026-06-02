@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
+import { githubAuthErrorResponse } from "@/lib/github-fetch";
 import { isMetricsCacheBypassed } from "@/lib/metrics-cache";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
@@ -12,6 +13,9 @@ export async function GET(req: NextRequest) {
 
   if (!session?.accessToken || !session.githubId || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
   }
 
   const user = await resolveAppUser(session.githubId, session.githubLogin);
