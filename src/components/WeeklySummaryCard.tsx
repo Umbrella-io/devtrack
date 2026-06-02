@@ -3,6 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { signOut } from "next-auth/react";
 
 interface WeeklySummaryData {
   commits: {
@@ -25,6 +26,7 @@ export default function WeeklySummaryCard() {
   const [summary, setSummary] = useState<WeeklySummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [githubAuthInvalid, setGithubAuthInvalid] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const maxCommits = summary?.commits
@@ -42,17 +44,26 @@ export default function WeeklySummaryCard() {
   const fetchSummary = useCallback(() => {
     setLoading(true);
     setError(null);
+    setGithubAuthInvalid(false);
 
     const url = selectedAccount !== null
       ? `/api/metrics/weekly-summary?accountId=${encodeURIComponent(selectedAccount)}`
       : "/api/metrics/weekly-summary";
 
     fetch(url)
-      .then((r) => {
+      .then(async (r) => {
+        const data = await r.json();
+        if (data?.error === "token_expired") {
+          setGithubAuthInvalid(true);
+          return null;
+        }
         if (!r.ok) throw new Error("API error");
-        return r.json();
+        return data as WeeklySummaryData;
       })
-      .then((data: WeeklySummaryData) => setSummary(data))
+      .then((data) => {
+        if (!data) return;
+        setSummary(data);
+      })
       .catch(() =>
         setError(
           "We couldn't load your weekly summary right now. Please try again in a moment."
