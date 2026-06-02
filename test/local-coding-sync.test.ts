@@ -1,4 +1,4 @@
-mport { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/local-coding/sync/route";
 import { NextRequest } from "next/server";
 import { createHash } from "crypto";
