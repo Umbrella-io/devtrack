@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { dateDiffDays } from "../src/lib/dateUtils";
+import {
+  dateDiffDays as barrelDiffDays,
+  dateDiff,
+} from "@/lib/date-utils";
 
 describe("dateUtils dateDiffDays", () => {
   it("returns 0 for same day", () => {
@@ -48,5 +52,39 @@ describe("dateUtils dateDiffDays", () => {
     const diff = dateDiffDays("2024-06-15T10:00:00Z", "2024-06-15T23:59:59Z");
     expect(diff).toBeGreaterThan(0);
     expect(diff).toBeLessThan(1);
+  });
+});
+
+describe("date-utils barrel export", () => {
+  it("exports dateDiffDays", () => {
+    expect(typeof barrelDiffDays).toBe("function");
+  });
+
+  it("exports dateDiff alias", () => {
+    expect(typeof dateDiff).toBe("function");
+  });
+
+  it("dateDiff and dateDiffDays produce identical results", () => {
+    expect(dateDiff("2024-01-01", "2024-01-06")).toBe(
+      barrelDiffDays("2024-01-01", "2024-01-06")
+    );
+  });
+
+  it("barrel dateDiffDays computes correct day difference", () => {
+    expect(barrelDiffDays("2024-06-01", "2024-06-06")).toBe(5);
+  });
+
+  it("barrel dateDiff computes correct day difference", () => {
+    expect(dateDiff("2024-06-01", "2024-06-06")).toBe(5);
+  });
+
+  it("barrel export returns 0 for same date", () => {
+    expect(barrelDiffDays("2024-03-10", "2024-03-10")).toBe(0);
+    expect(dateDiff("2024-03-10", "2024-03-10")).toBe(0);
+  });
+
+  it("barrel export returns negative for reversed dates", () => {
+    expect(barrelDiffDays("2024-06-06", "2024-06-01")).toBe(-5);
+    expect(dateDiff("2024-06-06", "2024-06-01")).toBe(-5);
   });
 });
