@@ -16,6 +16,7 @@ import {
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
+import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
 
 export const dynamic = "force-dynamic";
 
@@ -144,6 +145,9 @@ async function fetchContributionsForAccount(
         );
 
         if (!searchRes.ok) {
+          // 401: token revoked or invalid — surface as auth error immediately
+          if (searchRes.status === 401) throw new GitHubAuthError();
+
           // If we're being rate limited or hit a secondary rate limit/permission error,
           // return partial results collected so far instead of failing the whole request.
           if (searchRes.status === 429 || searchRes.status === 403) {
@@ -323,6 +327,9 @@ export async function GET(req: NextRequest) {
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
+  }
 
   const fromParam = req.nextUrl.searchParams.get("from");
   const toParam = req.nextUrl.searchParams.get("to");
@@ -368,6 +375,7 @@ export async function GET(req: NextRequest) {
       );
       return Response.json(result);
     } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -395,6 +403,7 @@ export async function GET(req: NextRequest) {
 
       return Response.json(merged);
     } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -482,6 +491,7 @@ export async function GET(req: NextRequest) {
 
       return Response.json(merged);
     } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -514,6 +524,7 @@ export async function GET(req: NextRequest) {
     );
     return Response.json(result);
   } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

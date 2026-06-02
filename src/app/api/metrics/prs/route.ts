@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
+import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -164,7 +165,10 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
     }
   );
 
-  if (!searchRes.ok) throw new Error("GitHub API error");
+  if (!searchRes.ok) {
+    if (searchRes.status === 401) throw new GitHubAuthError();
+    throw new Error("GitHub API error");
+  }
 
   const data = (await searchRes.json()) as {
     total_count: number;
@@ -440,7 +444,10 @@ async function fetchReviewMetrics(token: string): Promise<ReviewMetrics> {
     cache: "no-store",
   });
 
-  if (!res.ok) throw new Error("GitHub GraphQL error");
+  if (!res.ok) {
+    if (res.status === 401) throw new GitHubAuthError();
+    throw new Error("GitHub GraphQL error");
+  }
 
   const json = await res.json();
   const nodes = json?.data?.viewer?.contributionsCollection?.pullRequestReviewContributions?.nodes ?? [];
@@ -476,6 +483,9 @@ export async function GET(req: NextRequest) {
   if (!session?.accessToken) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
+  }
 
   const gitlabToken = typeof session.gitlabToken === "string" ? session.gitlabToken : undefined;
   const accountId = req.nextUrl.searchParams.get("accountId");
@@ -499,9 +509,8 @@ export async function GET(req: NextRequest) {
       ]);
       
       return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
-    } catch {
-      // Catches errors from fetchCachedPRMetrics (GitHub Search API failures).
-      // Returns 502 so the client knows the data is unavailable, not just empty.
+    } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -594,7 +603,8 @@ export async function GET(req: NextRequest) {
       ]);
       
       return Response.json({ ...formatPRMetricsResponse(combinedMetrics, gitlab), reviews });
-    } catch {
+    } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "Failed to compile combined profile metrics" }, { status: 502 });
     }
   }
@@ -618,6 +628,7 @@ export async function GET(req: NextRequest) {
     
     return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
   } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

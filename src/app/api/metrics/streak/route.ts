@@ -2,7 +2,8 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
-import { GITHUB_API } from "@/lib/github";
+import { GITHUB_API, GitHubAuthError } from "@/lib/github";
+import { githubAuthErrorResponse } from "@/lib/github-fetch";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -75,6 +76,7 @@ async function fetchActiveDates(
         // Both are thrown here so the outer GET handler returns HTTP 502 to the client,
         // which shows an error state rather than a misleading 0-day streak.
         if (!searchRes.ok) {
+          if (searchRes.status === 401) throw new GitHubAuthError();
           throw new Error("GitHub API error");
         }
 
@@ -241,6 +243,9 @@ export async function GET(req: NextRequest) {
   if (!session?.accessToken || !session.githubLogin || !session.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
+  }
 
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
@@ -304,9 +309,8 @@ export async function GET(req: NextRequest) {
       }
 
       return Response.json(streakData);
-    } catch {
-      // fetchActiveDates throws on GitHub API errors (rate limit, network failure).
-      // Return 502 so the client shows an error state rather than a false 0-day streak.
+    } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -398,7 +402,8 @@ export async function GET(req: NextRequest) {
     }
 
     return Response.json(streakData);
-  } catch {
+  } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

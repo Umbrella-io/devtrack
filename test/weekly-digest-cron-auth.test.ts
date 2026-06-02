@@ -149,18 +149,19 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
       { github_login: "alice", email: "alice@example.com" },
       { github_login: "bob", email: "bob@example.com" },
     ]);
-    mocks.resendFetch.mockResolvedValue({ ok: true });
+    mocks.resendFetch.mockResolvedValue({ ok: true, status: 200, text: async () => "" });
 
     const res = await GET(makeRequest("Bearer s3cr3t"));
 
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.sentCount).toBe(2);
+    expect(body.failedCount).toBe(0);
     // One POST to Resend for each user
     expect(mocks.resendFetch).toHaveBeenCalledTimes(2);
   });
 
-  it("counts sent emails even when RESEND_API_KEY is absent (no network call made)", async () => {
+  it("skips email send and does not count as sent when RESEND_API_KEY is absent", async () => {
     vi.stubEnv("CRON_SECRET", "s3cr3t");
     vi.stubEnv("RESEND_API_KEY", "");
     stubUsers([{ github_login: "charlie", email: "charlie@example.com" }]);
@@ -169,9 +170,8 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    // sentCount still increments so the response reflects how many users were
-    // eligible, but no external call is made
-    expect(body.sentCount).toBe(1);
+    expect(body.sentCount).toBe(0);
+    expect(body.failedCount).toBe(0);
     expect(mocks.resendFetch).not.toHaveBeenCalled();
   });
 
@@ -220,7 +220,7 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
     vi.stubEnv("CRON_SECRET", "s3cr3t");
     vi.stubEnv("RESEND_API_KEY", "resend-key");
     stubUsers([{ github_login: "devtracker", email: "devtracker@example.com" }]);
-    mocks.resendFetch.mockResolvedValue({ ok: true });
+    mocks.resendFetch.mockResolvedValue({ ok: true, status: 200, text: async () => "" });
 
     await GET(makeRequest("Bearer s3cr3t"));
 
@@ -231,5 +231,148 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
 
     expect(body.to).toBe("devtracker@example.com");
     expect(body.html).toContain("devtracker");
+  });
+});
+
+// ─── Delivery accounting (#1688) ─────────────────────────────────────────────
+
+describe("GET /api/cron/weekly-digest — delivery accounting (#1688)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    vi.stubEnv("CRON_SECRET", "s3cr3t");
+    vi.stubEnv("RESEND_API_KEY", "resend-key");
+  });
+
+  // ── successful delivery ───────────────────────────────────────────────────
+
+  it("increments sentCount and leaves failedCount at 0 on successful delivery", async () => {
+    stubUsers([{ github_login: "alice", email: "alice@example.com" }]);
+    mocks.resendFetch.mockResolvedValue({ ok: true, status: 200, text: async () => "" });
+
+    const res = await GET(makeRequest("Bearer s3cr3t"));
+    const body = await res.json();
+
+    expect(body.sentCount).toBe(1);
+    expect(body.failedCount).toBe(0);
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+  });
+
+  // ── Resend error responses ────────────────────────────────────────────────
+
+  it("increments failedCount on Resend 422 (validation error) — not sentCount", async () => {
+    stubUsers([{ github_login: "alice", email: "alice@example.com" }]);
+    mocks.resendFetch.mockResolvedValue({
+      ok: false,
+      status: 422,
+      text: async () => '{"name":"validation_error","message":"Invalid to field"}',
+    });
+
+    const res = await GET(makeRequest("Bearer s3cr3t"));
+    const body = await res.json();
+
+    expect(body.sentCount).toBe(0);
+    expect(body.failedCount).toBe(1);
+    expect(res.status).toBe(200);
+  });
+
+  it("increments failedCount on Resend 429 (rate limited) — not sentCount", async () => {
+    stubUsers([{ github_login: "alice", email: "alice@example.com" }]);
+    mocks.resendFetch.mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: async () => '{"message":"Too many requests"}',
+    });
+
+    const res = await GET(makeRequest("Bearer s3cr3t"));
+    const body = await res.json();
+
+    expect(body.sentCount).toBe(0);
+    expect(body.failedCount).toBe(1);
+    expect(res.status).toBe(200);
+  });
+
+  it("increments failedCount on Resend 500 (server error) — not sentCount", async () => {
+    stubUsers([{ github_login: "alice", email: "alice@example.com" }]);
+    mocks.resendFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: async () => "Internal Server Error",
+    });
+
+    const res = await GET(makeRequest("Bearer s3cr3t"));
+    const body = await res.json();
+
+    expect(body.sentCount).toBe(0);
+    expect(body.failedCount).toBe(1);
+    expect(res.status).toBe(200);
+  });
+
+  // ── network exception ─────────────────────────────────────────────────────
+
+  it("increments failedCount on network exception — does not throw or return 500", async () => {
+    stubUsers([{ github_login: "alice", email: "alice@example.com" }]);
+    mocks.resendFetch.mockRejectedValue(new TypeError("Failed to fetch"));
+
+    const res = await GET(makeRequest("Bearer s3cr3t"));
+    const body = await res.json();
+
+    expect(body.sentCount).toBe(0);
+    expect(body.failedCount).toBe(1);
+    expect(res.status).toBe(200);
+  });
+
+  // ── mixed batch ───────────────────────────────────────────────────────────
+
+  it("tracks sentCount and failedCount accurately across a mixed batch", async () => {
+    stubUsers([
+      { github_login: "alice", email: "alice@example.com" },
+      { github_login: "bob",   email: "bob@example.com" },
+      { github_login: "carol", email: "carol@example.com" },
+    ]);
+    mocks.resendFetch
+      .mockResolvedValueOnce({ ok: true,  status: 200, text: async () => "" })
+      .mockResolvedValueOnce({ ok: false, status: 500, text: async () => "" })
+      .mockResolvedValueOnce({ ok: true,  status: 200, text: async () => "" });
+
+    const res = await GET(makeRequest("Bearer s3cr3t"));
+    const body = await res.json();
+
+    expect(body.sentCount).toBe(2);
+    expect(body.failedCount).toBe(1);
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+  });
+
+  it("continues processing remaining users after one send failure", async () => {
+    stubUsers([
+      { github_login: "alice", email: "alice@example.com" },
+      { github_login: "bob",   email: "bob@example.com" },
+    ]);
+    mocks.resendFetch
+      .mockRejectedValueOnce(new TypeError("network error"))
+      .mockResolvedValueOnce({ ok: true, status: 200, text: async () => "" });
+
+    const res = await GET(makeRequest("Bearer s3cr3t"));
+    const body = await res.json();
+
+    expect(mocks.resendFetch).toHaveBeenCalledTimes(2);
+    expect(body.sentCount).toBe(1);
+    expect(body.failedCount).toBe(1);
+  });
+
+  // ── response shape ────────────────────────────────────────────────────────
+
+  it("always includes failedCount in the response", async () => {
+    stubUsers([{ github_login: "alice", email: "alice@example.com" }]);
+    mocks.resendFetch.mockResolvedValue({ ok: true, status: 200, text: async () => "" });
+
+    const res = await GET(makeRequest("Bearer s3cr3t"));
+    const body = await res.json();
+
+    expect(body).toHaveProperty("failedCount");
+    expect(body).toHaveProperty("sentCount");
+    expect(body).toHaveProperty("success");
   });
 });

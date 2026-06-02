@@ -5,9 +5,9 @@
  * repeat the same ~10-line pattern.
  */
 
-import { GITHUB_API } from "@/lib/github";
+import { GITHUB_API, GitHubAuthError } from "@/lib/github";
 
-export { GITHUB_API };
+export { GITHUB_API, GitHubAuthError };
 
 export class GitHubRateLimitError extends Error {
   constructor(
@@ -24,6 +24,16 @@ export class GitHubApiError extends Error {
     super(`GitHub API error: ${status}`);
     this.name = "GitHubApiError";
   }
+}
+
+/**
+ * Returns a structured JSON response for GitHub credential failures.
+ * All metrics routes should use this instead of a generic 502 when GitHub
+ * returns 401, so the frontend can distinguish auth failures from other errors
+ * and offer a reconnect action.
+ */
+export function githubAuthErrorResponse(): Response {
+  return Response.json({ error: "github_auth_invalid" }, { status: 401 });
 }
 
 function extractRateLimitInfo(headers: Headers): {
@@ -54,7 +64,12 @@ function isSecondaryRateLimitBody(body: unknown): boolean {
 
 async function buildGitHubError(
   res: Response,
-): Promise<GitHubRateLimitError | GitHubApiError> {
+): Promise<GitHubAuthError | GitHubRateLimitError | GitHubApiError> {
+  // 401: invalid or revoked credential — surface as auth error, not generic API error
+  if (res.status === 401) {
+    return new GitHubAuthError();
+  }
+
   const { resetAt, retryAfter, remaining } = extractRateLimitInfo(res.headers);
 
   // 429: always a rate limit

@@ -2,7 +2,8 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
-import { GITHUB_API, fetchUserEvents } from "@/lib/github";
+import { GITHUB_API, GitHubAuthError, fetchUserEvents } from "@/lib/github";
+import { githubAuthErrorResponse } from "@/lib/github-fetch";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -47,6 +48,7 @@ async function fetchPublicEvents(
   );
 
   if (!response.ok) {
+    if (response.status === 401) throw new GitHubAuthError();
     throw new Error("GitHub API error");
   }
 
@@ -81,6 +83,9 @@ export async function GET(req: NextRequest) {
 
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
   }
 
   const accessToken: string = session.accessToken;
@@ -209,6 +214,7 @@ export async function GET(req: NextRequest) {
 
     return Response.json(result);
   } catch (error) {
+    if (error instanceof GitHubAuthError) return githubAuthErrorResponse();
     if (error instanceof Error) {
       if (error.message === "Unauthorized") {
         return Response.json({ error: "Unauthorized" }, { status: 401 });

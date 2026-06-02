@@ -1,6 +1,13 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 import { createMemoryFixedWindowRateLimiter, getClientIp } from "@/lib/rate-limit";
+import {
+  SAFE_METHODS,
+  buildAllowedOrigins,
+  getRequestOrigin,
+  isCsrfExemptPath,
+  isOriginAllowed,
+} from "@/lib/security/csrf";
 
 export const runtime = "nodejs";
 
@@ -200,6 +207,52 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── CSRF protection ──────────────────────────────────────────────────────────
+  // Applies to all state-changing API requests from authenticated browser
+  // sessions. Requests that carry their own authentication mechanism (bearer
+  // tokens, HMAC signatures) are exempted.
+  if (
+    token &&
+    pathname.startsWith("/api/") &&
+    !SAFE_METHODS.has(req.method) &&
+    !isCsrfExemptPath(pathname)
+  ) {
+    // API clients authenticate via Authorization: Bearer — they are not
+    // susceptible to CSRF and must not be blocked.
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      const allowedOrigins = buildAllowedOrigins();
+
+      if (allowedOrigins.size > 0) {
+        const requestOrigin = getRequestOrigin(req.headers);
+
+        if (!requestOrigin || !isOriginAllowed(requestOrigin, allowedOrigins)) {
+          return NextResponse.json(
+            { error: "Forbidden: cross-origin request blocked" },
+            { status: 403 }
+          );
+        }
+      } else {
+        // NEXTAUTH_URL and ALLOWED_ORIGINS are both unset. The application is
+        // not fully configured; skip enforcement rather than block all traffic,
+        // but surface a warning so operators can detect the misconfiguration.
+        console.warn(
+          "[csrf] NEXTAUTH_URL and ALLOWED_ORIGINS are both unset; " +
+          "CSRF origin validation is disabled. Set at least NEXTAUTH_URL."
+        );
+      }
+    }
+  }
+  // ── end CSRF protection ──────────────────────────────────────────────────────
+
+  // Rate limiting is scoped to metrics and contact endpoints only.
+  const isRateLimitTarget =
+    pathname.startsWith("/api/metrics/") || pathname.startsWith("/api/contact");
+
+  if (!isRateLimitTarget) {
+    return NextResponse.next();
+  }
+
   const githubId = typeof token?.githubId === "string" ? token.githubId : null;
   const identifier = githubId ? `user:${githubId}` : `ip:${getIp(req)}`;
 
@@ -255,7 +308,6 @@ export const config = {
     "/dashboard/:path*",
     "/settings",
     "/settings/:path*",
-    "/api/metrics/:path*",
-    "/api/contact",
+    "/api/:path*",
   ],
 };

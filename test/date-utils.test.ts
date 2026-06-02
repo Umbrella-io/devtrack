@@ -1,26 +1,19 @@
 import { describe, it, expect } from 'vitest';
+import { toDateStr, dateDiffDays } from '../src/lib/dateUtils';
 
 describe('toDateStr', () => {
-  function toDateStr(d: Date): string {
-    return d.toISOString().slice(0, 10);
-  }
-
   it('formats date as YYYY-MM-DD', () => {
-    const d = new Date('2026-05-24T12:00:00Z');
+    const d = new Date(2026, 4, 24, 12, 0, 0); // 2026-05-24 local noon
     expect(toDateStr(d)).toBe('2026-05-24');
   });
 
   it('pads single-digit month and day', () => {
-    const d = new Date('2026-01-05T12:00:00Z');
+    const d = new Date(2026, 0, 5, 12, 0, 0); // 2026-01-05 local noon
     expect(toDateStr(d)).toBe('2026-01-05');
   });
 });
 
 describe('dateDiffDays', () => {
-  function dateDiffDays(a: string, b: string): number {
-    return (new Date(b).getTime() - new Date(a).getTime()) / 86400000;
-  }
-
   it('returns positive difference when b is after a', () => {
     expect(dateDiffDays('2026-05-01', '2026-05-10')).toBe(9);
   });

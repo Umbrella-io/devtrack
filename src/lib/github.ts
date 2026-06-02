@@ -1,6 +1,19 @@
 export const GITHUB_API = "https://api.github.com";
 
 /**
+ * Thrown when GitHub returns HTTP 401 — the stored OAuth token has been
+ * revoked or is otherwise invalid. Callers should surface a reauthentication
+ * prompt rather than a generic API error.
+ */
+export class GitHubAuthError extends Error {
+  readonly status = 401;
+  constructor() {
+    super("GitHub authentication failed: token is invalid or has been revoked");
+    this.name = "GitHubAuthError";
+  }
+}
+
+/**
  * Fetch wrapper with AbortController-based timeout for GitHub API calls.
  * Prevents hanging requests under slow/stalled network conditions.
  */
@@ -26,7 +39,10 @@ export async function fetchUserEvents(token: string): Promise<GitHubEvent[]> {
       Accept: "application/vnd.github+json",
     },
   });
-  if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+  if (!res.ok) {
+    if (res.status === 401) throw new GitHubAuthError();
+    throw new Error(`GitHub API error: ${res.status}`);
+  }
   return res.json();
 }
 
@@ -54,7 +70,10 @@ export async function fetchUserRepos(
       }
     );
 
-    if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+    if (!res.ok) {
+      if (res.status === 401) throw new GitHubAuthError();
+      throw new Error(`GitHub API error: ${res.status}`);
+    }
 
     const pageRepos = (await res.json()) as GitHubRepo[];
     repos.push(...pageRepos);
@@ -140,7 +159,10 @@ export async function fetchIssuesMetrics(
     `https://api.github.com/search/issues?q=type:issue+author:@me+created:>=${since30d.toISOString().slice(0, 10)}&per_page=100`,
     { headers, cache: "no-store" }
   );
-  if (!searchRes.ok) throw new Error(`GitHub API error: ${searchRes.status}`);
+  if (!searchRes.ok) {
+    if (searchRes.status === 401) throw new GitHubAuthError();
+    throw new Error(`GitHub API error: ${searchRes.status}`);
+  }
 
   const searchData = (await searchRes.json()) as { items: GitHubIssueItem[] };
   const items = searchData.items;

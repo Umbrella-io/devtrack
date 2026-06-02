@@ -18,7 +18,7 @@ describe("toDateStr", () => {
   });
 
   it("should handle end-of-year boundary", () => {
-    const newYear = new Date("2023-12-31T23:59:59Z");
+    const newYear = new Date(2023, 11, 31, 23, 59, 59); // local Dec 31
     expect(toDateStr(newYear)).toBe("2023-12-31");
   });
 

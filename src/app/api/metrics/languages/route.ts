@@ -1,6 +1,8 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
+import { GitHubAuthError } from "@/lib/github";
+import { githubAuthErrorResponse } from "@/lib/github-fetch";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache, METRICS_CACHE_TTL_SECONDS} from "@/lib/metrics-cache";
 import { getAccountToken } from "@/lib/github-accounts";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -12,6 +14,7 @@ const GITHUB_API = "https://api.github.com";
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken || !session.githubLogin) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.error === "TokenRevoked") return githubAuthErrorResponse();
 
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
@@ -62,7 +65,10 @@ export async function GET(req: NextRequest) {
         `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${since.toISOString().slice(0, 10)}&per_page=100&sort=author-date&order=desc`,
         { headers, cache: "no-store" }
       );
-      if (!searchRes.ok) throw new Error("API Error");
+      if (!searchRes.ok) {
+        if (searchRes.status === 401) throw new GitHubAuthError();
+        throw new Error("API Error");
+      }
 
       const raw = await searchRes.json();
       const repoNames = Array.from(new Set<string>(raw.items.map((i: any) => i.repository.full_name)));
@@ -112,6 +118,7 @@ export async function GET(req: NextRequest) {
     });
     return Response.json(data);
   } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

@@ -37,10 +37,11 @@ export async function GET(request: Request) {
     // 3. For each user, send the email
     // Minimal template logic to prevent timeouts and keep implementation clean
     let sentCount = 0;
-    
+    let failedCount = 0;
+
     for (const user of users) {
       if (!user.email) continue;
-      
+
       const htmlBody = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Your Weekly DevTrack Digest</h2>
@@ -55,24 +56,42 @@ export async function GET(request: Request) {
       `;
 
       if (process.env.RESEND_API_KEY) {
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: "DevTrack <digest@devtrack.com>",
-            to: user.email,
-            subject: "Your Weekly DevTrack Digest",
-            html: htmlBody,
-          }),
-        });
+        try {
+          const sendRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+            },
+            body: JSON.stringify({
+              from: "DevTrack <digest@devtrack.com>",
+              to: user.email,
+              subject: "Your Weekly DevTrack Digest",
+              html: htmlBody,
+            }),
+          });
+
+          if (sendRes.ok) {
+            sentCount++;
+          } else {
+            failedCount++;
+            const errorText = await sendRes.text().catch(() => "");
+            console.error(
+              `Digest send failed for ${user.github_login}: HTTP ${sendRes.status}`,
+              errorText,
+            );
+          }
+        } catch (err) {
+          failedCount++;
+          console.error(
+            `Digest send failed for ${user.github_login}: network error`,
+            err,
+          );
+        }
       }
-      sentCount++;
     }
 
-    return NextResponse.json({ success: true, sentCount });
+    return NextResponse.json({ success: true, sentCount, failedCount });
   } catch (err) {
     console.error("Cron weekly-digest failed:", err);
     return NextResponse.json({ error: "Failed to process digests" }, { status: 500 });
