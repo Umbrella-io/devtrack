@@ -36,6 +36,19 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
+      - name: Generate .env.production for Edge Runtime
+        run: |
+          cat > .env.production << 'EOF'
+          NEXTAUTH_SECRET=${{ env.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL=${{ env.NEXTAUTH_URL }}
+          NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}
+          GITHUB_ID=${{ env.GITHUB_ID }}
+          GITHUB_SECRET=${{ env.GITHUB_SECRET }}
+          NEXT_PUBLIC_SUPABASE_URL=${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY=${{ env.SUPABASE_SERVICE_ROLE_KEY }}
+          EOF
+
       - name: Build Next.js app
         run: npm run build
 
