@@ -63,6 +63,40 @@ function extractImports(src) {
 
   return imports;
 }
+function loadConfigWithExtends(configPath) {
+  const config = JSON.parse(
+    fs.readFileSync(configPath, "utf8")
+  );
+
+  if (!config.extends) {
+    return config;
+  }
+
+  const parentPath = path.resolve(
+    path.dirname(configPath),
+    config.extends
+  );
+
+  if (!fs.existsSync(parentPath)) {
+    return config;
+  }
+
+  const parentConfig =
+    loadConfigWithExtends(parentPath);
+
+  return {
+    ...parentConfig,
+    ...config,
+    compilerOptions: {
+      ...(parentConfig.compilerOptions || {}),
+      ...(config.compilerOptions || {}),
+      paths: {
+        ...(parentConfig.compilerOptions?.paths || {}),
+        ...(config.compilerOptions?.paths || {}),
+      },
+    },
+  };
+}
 function loadInternalAliases(rootDir) {
   const aliases = ["@/", "~/", "src/"];
 
@@ -74,9 +108,8 @@ function loadInternalAliases(rootDir) {
     if (!fs.existsSync(configPath)) continue;
 
     try {
-      const config = JSON.parse(
-        fs.readFileSync(configPath, "utf8")
-      );
+      const config =
+        loadConfigWithExtends(configPath);
 
       const paths = config.compilerOptions?.paths || {};
 
