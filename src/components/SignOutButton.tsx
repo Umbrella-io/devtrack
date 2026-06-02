@@ -24,6 +24,7 @@ export default function SignOutButton() {
                 <button
                     type="button"
                     onClick={handleSignOut}
+                    aria-label="Confirm sign out"
                     disabled={signingOut}
                     className="inline-flex h-10 items-center rounded-full bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-70"
                 >
@@ -35,6 +36,7 @@ export default function SignOutButton() {
                     onClick={() => setConfirming(false)}
                     disabled={signingOut}
                     className="inline-flex h-10 items-center rounded-full border px-4 text-sm font-semibold hover:bg-gray-100"
+                    aria-label="Cancel sign out"
                 >
                     Cancel
                 </button>
@@ -48,11 +50,13 @@ export default function SignOutButton() {
             disabled={signingOut}
             suppressHydrationWarning
             onClick={() => setConfirming(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--destructive)]/50 bg-[var(--destructive)]/80 px-4 text-sm font-semibold text-[var(--destructive-foreground)] transition-colors hover:bg-[var(--destructive)] disabled:cursor-not-allowed disabled:opacity-70"
+            aria-label="Sign out"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--destructive)]/50 bg-[var(--destructive)]/80 px-4 text-sm font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--destructive)] disabled:cursor-not-allowed disabled:opacity-70"
         >
             {signingOut && (
                 <svg
-                    className="h-4 w-4 animate-spin text-[var(--destructive-foreground)]"
+                    aria-hidden="true"
+                    className="h-4 w-4 animate-spin text-[var(--foreground)]"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -69,8 +73,8 @@ export default function SignOutButton() {
                     <path
                         className="opacity-75"
                         fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 
-                        5.291A7.962 7.962 0 014 12H0c0 
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2
+                        5.291A7.962 7.962 0 014 12H0c0
                         3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                 </svg>

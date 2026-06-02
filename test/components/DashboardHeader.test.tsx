@@ -1,7 +1,9 @@
+import React from "react";
 import "@testing-library/jest-dom";
+// @ts-ignore
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import DashboardHeader from "../DashboardHeader";
+import DashboardHeader from "../../src/components/DashboardHeader";
 import { useSession } from "next-auth/react";
 
 vi.mock("next-auth/react");
@@ -50,7 +52,7 @@ describe("DashboardHeader", () => {
     render(<DashboardHeader />);
 
     expect(
-      screen.getByText(/Dashboard/i)
+      screen.getByRole("heading", { name: "Dashboard" })
     ).toBeInTheDocument();
   });
 

@@ -23,7 +23,6 @@ function validateProjectKey(key: string): boolean {
   const projectKeyRegex = /^[A-Z][A-Z0-9]{0,9}$/;
   return projectKeyRegex.test(key);
 }
-
 async function testJiraConnection(
   domain: string,
   email: string,
@@ -75,7 +74,7 @@ export async function POST(req: NextRequest) {
   let body: JiraCredentialsInput;
   try {
     body = await req.json();
-  } catch {
+  } catch (e) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
@@ -101,7 +100,6 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-
   const valid = await testJiraConnection(jiraDomain, email, apiToken);
   if (!valid) {
     return Response.json(

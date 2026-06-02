@@ -111,3 +111,7 @@ Can provide coding activity metrics.
 2. API fetches GitHub activity
 3. Metrics are processed and stored in Supabase
 4. Dashboard components fetch and render analytics
+
+
+### Database Connection Pooling Guide
+- Configure pg pool size limits in development to prevent memory spikes.

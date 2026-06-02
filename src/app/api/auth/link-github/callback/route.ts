@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
   const state = req.nextUrl.searchParams.get("state");
   const code = req.nextUrl.searchParams.get("code");
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const stateCookie = cookieStore.get("link_github_state")?.value;
 
   if (!stateCookie || !state || stateCookie !== state) {

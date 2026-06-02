@@ -213,3 +213,8 @@ For guides on self-hosting DevTrack or deploying it manually, please check the [
 ---
 
 Thank you for helping make DevTrack better! Happy coding! 🚀
+
+
+### GSSoC Git Commit & Branching Conventions
+- Prefix commits with chore:, feat:, or fix:.
+- Keep PRs small and focused on existing files.

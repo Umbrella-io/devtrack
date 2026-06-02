@@ -59,7 +59,7 @@ async function fetchFormattedActivityWithFallback(
 ): Promise<ActivityItem[]> {
   try {
     return await fetchFormattedActivity(token);
-  } catch {
+  } catch (e) {
     if (!githubLogin) {
       throw new Error("GitHub API error");
     }
