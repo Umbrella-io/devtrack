@@ -1,3 +1,4 @@
+```yml id="u5qyt2"
 name: E2E
 
 on:
@@ -14,10 +15,11 @@ jobs:
   playwright:
     name: Playwright smoke tests
     runs-on: ubuntu-latest
+
     env:
       NEXTAUTH_SECRET: test-nextauth-secret-for-playwright-tests
-      NEXTAUTH_URL: http://127.0.0.1:3002
-      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3002
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
       GITHUB_ID: playwright-github-id
       GITHUB_SECRET: playwright-github-secret
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
@@ -25,16 +27,21 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
       PLAYWRIGHT_SERVER_MODE: start
       CI: true
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: pnpm
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Install app dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build Next.js app
         run: |
@@ -49,13 +56,15 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
           PLAYWRIGHT_SERVER_MODE=start
           EOF
-          npm run build
+
+          pnpm build
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        run: npx playwright test
+        run: pnpm exec playwright test
+
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()
@@ -63,3 +72,4 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+```
