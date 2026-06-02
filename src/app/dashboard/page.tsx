@@ -1,4 +1,5 @@
 ﻿import LazyWidget from "@/components/LazyWidget";
+import PinnedRepos from "@/components/PinnedRepos";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
 import GoalTracker from "@/components/GoalTracker";

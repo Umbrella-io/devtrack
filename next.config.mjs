@@ -1,17 +1,28 @@
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   typescript: {
-  ignoreBuildErrors: true,
-},
+    ignoreBuildErrors: true,
+  },
+
   output: "standalone",
+
   images: {
     remotePatterns: [
       {
         protocol: "https",
         hostname: "avatars.githubusercontent.com",
       },
+      {
+        protocol: "https",
+        hostname: "github.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
+      },
     ],
   },
+
   async headers() {
     return [
       {

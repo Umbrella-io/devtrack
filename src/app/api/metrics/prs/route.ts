@@ -487,25 +487,26 @@ export async function GET(req: NextRequest) {
   };
 
   if (!accountId) {
-    try {
-      const result = await fetchCachedPRMetrics(session.accessToken, {
-        bypass,
-        userId: session.githubId ?? session.githubLogin ?? "primary",
-      });
-      
-      const [gitlab, reviews] = await Promise.all([
-        getGitLabMetrics(gitlabToken, gitlabCacheContext),
-        fetchReviewMetrics(session.accessToken).catch(() => null),
-      ]);
-      
-      return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
-    } catch (e) {
-      // Catches errors from fetchCachedPRMetrics (GitHub Search API failures).
-      // Returns 502 so the client knows the data is unavailable, not just empty.
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
-    }
+  try {
+    const result = await fetchCachedPRMetrics(session.accessToken, {
+      bypass,
+      userId: session.githubId ?? session.githubLogin ?? "primary",
+    });
+
+    const [gitlab, reviews] = await Promise.all([
+      getGitLabMetrics(gitlabToken, gitlabCacheContext),
+      fetchReviewMetrics(session.accessToken).catch(() => null),
+    ]);
+
+    return Response.json({
+      ...formatPRMetricsResponse(result, gitlab),
+      reviews,
+    });
+  } catch (e) {
+    console.error("PR metrics fetch failed:", e);
+    return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
+}
 
   if (!session.githubId || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

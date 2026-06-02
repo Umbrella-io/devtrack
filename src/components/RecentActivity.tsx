@@ -180,11 +180,11 @@ export default function RecentActivity() {
             Your latest GitHub events
           </p>
         </div>
-        <button aria-label="Fetch recent activity"
-          type="button"
-          onClick={fetchActivity}
-          disabled={loading}
-          aria-label="Refresh recent activity"
+        <button
+  type="button"
+  onClick={fetchActivity}
+  disabled={loading}
+  aria-label="Refresh recent activity"
           className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-all hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-60 hover:opacity-90 active:scale-95"
         >
           {loading ? (
