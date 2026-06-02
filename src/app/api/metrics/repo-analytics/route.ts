@@ -4,13 +4,13 @@ import { authOptions } from "@/lib/auth";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
 import { computeHealthScore } from "@/lib/repo-health";
 import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
+import { isSafeUrl } from "@/lib/ssrf-protection";
 import { parseRepoParam } from "@/lib/repo-analytics-utils";
 
 export const dynamic = "force-dynamic";
 const GITHUB_API = "https://api.github.com";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
-
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -23,7 +23,6 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Missing repo parameter" }, { status: 400 });
   }
 
-  // Validate and parse before touching the cache or calling fetch().
   const parsed = parseRepoParam(rawRepo);
   if (!parsed) {
     return Response.json(
@@ -33,14 +32,19 @@ export async function GET(req: NextRequest) {
   }
 
   const { owner, repo } = parsed;
-
-  // Build the safe path used in all GitHub API URLs.
-  // encodeURIComponent is applied to each segment independently so that
-  // neither segment can introduce an extra slash or other special character
-  // into the constructed URL.
   const safeRepoPath = `${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
 
-  // Cache key uses the validated, normalised form — never the raw input.
+  const repoUrl = `${GITHUB_API}/repos/${safeRepoPath}`;
+  let urlSafe = false;
+  try {
+    urlSafe = await isSafeUrl(repoUrl);
+  } catch {
+    urlSafe = false;
+  }
+  if (!urlSafe) {
+    return Response.json({ error: "Invalid repository URL" }, { status: 400 });
+  }
+
   const bypass = isMetricsCacheBypassed(req);
   const key = metricsCacheKey(
     session.githubId ?? session.githubLogin,
@@ -50,7 +54,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const data = await withMetricsCache({ bypass, key, ttlSeconds: 60 * 60 }, async () => {
-      const repoRes = await fetch(`${GITHUB_API}/repos/${safeRepoPath}`, {
+      const repoRes = await fetch(repoUrl, {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });

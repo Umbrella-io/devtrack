@@ -21,16 +21,15 @@ vi.mock("@/lib/supabase", () => ({
 
 function makeRequest(): NextRequest {
   const controller = new AbortController();
-  return new NextRequest("http://localhost/api/stream", {
-    signal: controller.signal,
-  });
+  const req = new NextRequest("http://localhost/api/stream");
+  Object.defineProperty(req, 'signal', { value: controller.signal });
+  return req;
 }
 
 function makeAbortableRequest(): { req: NextRequest; abort: () => void } {
   const controller = new AbortController();
-  const req = new NextRequest("http://localhost/api/stream", {
-    signal: controller.signal,
-  });
+  const req = new NextRequest("http://localhost/api/stream");
+  Object.defineProperty(req, 'signal', { value: controller.signal });
   return { req, abort: () => controller.abort() };
 }
 

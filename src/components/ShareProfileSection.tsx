@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import CopyLinkButton from "@/components/CopyLinkButton";
+import { toPng } from "html-to-image";
+import ProfileShareCard from "./ProfileShareCard";
 
 interface ShareProfileSectionProps {
   username: string;
@@ -16,6 +18,8 @@ export default function ShareProfileSection({
   profileUrl,
 }: ShareProfileSectionProps) {
   const [canUseNativeShare, setCanUseNativeShare] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     setCanUseNativeShare(
@@ -46,9 +50,25 @@ export default function ShareProfileSection({
       }
     }
   };
+  
+  const downloadCard = async () => {
+    if (!cardRef.current) return;
+  
+    try {
+      const dataUrl = await toPng(cardRef.current);
+  
+      const link = document.createElement("a");
+      link.download = `${username}-devtrack-card.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch {
+      toast.error("Failed to download card");
+    }
+  };
 
-  return (
-    <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm md:p-5 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+return (
+  <>
+    <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm md:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)]">
@@ -59,44 +79,80 @@ export default function ShareProfileSection({
           </p>
         </div>
 
+        <button
+          type="button"
+          onClick={() => setShowPreview(true)}
+          className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium"
+        >
+          Generate Share Card
+        </button>
+
         <div className="flex flex-wrap gap-2">
           {canUseNativeShare ? (
             <button
               type="button"
               onClick={handleNativeShare}
-              aria-label={`Share ${username}'s profile using the device share sheet`}
-              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 active:scale-95"
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)]"
             >
-              <span aria-hidden="true">📲</span>
+              <span>📲</span>
               <span>Share</span>
             </button>
           ) : null}
-
+        
           <a
             href={xShareUrl}
             target="_blank"
             rel="noreferrer noopener"
-            aria-label={`Share ${username}'s profile on X`}
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium"
           >
-            <span aria-hidden="true">𝕏</span>
+            <span>𝕏</span>
             <span>X</span>
           </a>
-
+        
           <a
             href={linkedInShareUrl}
             target="_blank"
             rel="noreferrer noopener"
-            aria-label={`Share ${username}'s profile on LinkedIn`}
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium"
           >
-            <span aria-hidden="true">in</span>
+            <span>in</span>
             <span>LinkedIn</span>
           </a>
-
+        
           <CopyLinkButton url={profileUrl} />
         </div>
       </div>
     </section>
-  );
+
+    {showPreview && (
+      <div className="mt-4 rounded-xl border p-4">
+        <div ref={cardRef}>
+          <ProfileShareCard
+            username={username}
+            streak={streak}
+            profileUrl={profileUrl}
+          />
+        </div>
+
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={downloadCard}
+            className="rounded-lg border px-3 py-2"
+          >
+            Download PNG
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowPreview(false)}
+            className="rounded-lg border px-3 py-2"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    )}
+  </>
+);
 }

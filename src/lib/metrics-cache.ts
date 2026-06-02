@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 
 export const METRICS_CACHE_TTL_SECONDS = {
   contributions: 5 * 60,
+  "productive-hours": 5 * 60,
   discussions: 10 * 60,
   repos: 10 * 60,
   "inactive-repos": 10 * 60,

@@ -138,14 +138,15 @@ describe("User Settings API Endpoints", () => {
       expect(await res.json()).toEqual({
         id: "user-uuid-123",
         github_login: "test-user",
-        bio: "",
         is_public: true,
         leaderboard_opt_in: true,
         weekly_digest_opt_in: false,
         pinned_repos: ["repo-1"],
         has_wakatime_key: true,
         discord_webhook_url: null,
+        webhook_url: null,
         timezone: "UTC",
+        bio: "",
       });
     });
   });
@@ -223,16 +224,17 @@ describe("User Settings API Endpoints", () => {
       expect(await res.json()).toEqual({
         id: "user-uuid-123",
         github_login: "test-user",
-        bio: "",
         is_public: true,
         leaderboard_opt_in: true,
         weekly_digest_opt_in: false,
         pinned_repos: ["repo-1"],
         has_wakatime_key: true,
         discord_webhook_url: null,
+        webhook_url: null,
         timezone: "UTC",
+        bio: "",
       });
-
+      
       // Verify that no database updates were triggered (mockUpdate not called because updates is empty)
       expect(mockUpdate).not.toHaveBeenCalled();
     });
@@ -250,16 +252,17 @@ describe("User Settings API Endpoints", () => {
       expect(await res.json()).toEqual({
         id: "user-uuid-123",
         github_login: "test-user",
-        bio: "",
         is_public: false,
         leaderboard_opt_in: true,
         weekly_digest_opt_in: false,
         pinned_repos: ["repo-2", "repo-3"],
         has_wakatime_key: true,
         discord_webhook_url: null,
+        webhook_url: null,
         timezone: "UTC",
+        bio: "",
       });
-
+      
       // Verify update database query was called with the updates object
       expect(mockUpdate).toHaveBeenCalledWith({
         is_public: false,

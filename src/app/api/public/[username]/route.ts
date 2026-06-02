@@ -2,80 +2,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchPublicProfile } from "@/lib/public-profile-data";
 import { getUpstashConfig, upstashRateLimitFixedWindow } from "@/lib/upstash-rest";
+import { createMemoryFixedWindowRateLimiter, getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-/**
- * In-memory rate limiter for IP addresses.
- * Maps IP -> { count: number, resetAt: number }
- * This resets on server restart. For production, use Redis.
- */
-const ipRateLimits = new Map<
-  string,
-  { count: number; resetAt: number }
->();
-
 const RATE_LIMIT_REQUESTS = 30;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-
-function cleanOldEntries(map: Map<string, { count: number; resetAt: number }>) {
-  const now = Date.now();
-  for (const [key, val] of map.entries()) {
-    if (val.resetAt <= now) map.delete(key);
-  }
-}
-
-function getRateLimitKey(req: NextRequest): string {
-  // req.headers.get("x-forwarded-for") is populated by the Next.js / Vercel runtime from the verified
-  // network-layer source address and cannot be spoofed by the caller.
-  //
-  // x-forwarded-for is intentionally excluded here: it is a plain request
-  // header that any client can set to an arbitrary value. Trusting it as the
-  // primary key allows an attacker to rotate the header on every request,
-  // bypass the per-IP limit entirely, and exhaust the shared GITHUB_TOKEN
-  // quota (5 000 req/hr), making the endpoint unavailable for all users.
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-}
-
-function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
-  const now = Date.now();
-  for (const [key, record] of ipRateLimits) {
-    if (now > record.resetAt) ipRateLimits.delete(key);
-  }
-  const record = ipRateLimits.get(ip);
-
-  if (!record || now > record.resetAt) {
-    // New window or expired
-    ipRateLimits.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return { allowed: true };
-  }
-
-  if (record.count < RATE_LIMIT_REQUESTS) {
-    record.count++;
-    return { allowed: true };
-  }
-
-  // Rate limit exceeded
-  const retryAfter = Math.ceil((record.resetAt - now) / 1000);
-  return { allowed: false, retryAfter };
-}
+const MEMORY_MAX_ENTRIES = Number(process.env.MEMORY_RATE_LIMIT_MAX_ENTRIES ?? 10_000);
+const memoryLimiter = createMemoryFixedWindowRateLimiter({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  pruneIntervalMs: 5 * 60 * 1000,
+  maxEntries: Number.isFinite(MEMORY_MAX_ENTRIES) ? MEMORY_MAX_ENTRIES : 10_000,
+});
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ): Promise<NextResponse> {
-  cleanOldEntries(ipRateLimits);
-  const resolvedParams = await params;
-  const username = resolvedParams.username;
+  const { username } = await params;
   // Rate limiting
-  const ip = getRateLimitKey(req);
+  const ip = getClientIp(req);
   const rateLimit = getUpstashConfig()
     ? await upstashRateLimitFixedWindow({
         key: `public-profile-rate-limit:${ip}`,
         limit: RATE_LIMIT_REQUESTS,
         windowSeconds: Math.ceil(RATE_LIMIT_WINDOW_MS / 1000),
       })
-    : checkRateLimit(ip);
+    : (() => {
+        const local = memoryLimiter.check(
+          `public-profile-rate-limit:${ip}`,
+          RATE_LIMIT_REQUESTS
+        );
+        return local.allowed
+          ? { allowed: true }
+          : {
+              allowed: false,
+              retryAfter: Math.max(
+                local.reset - Math.floor(Date.now() / 1000),
+                1
+              ),
+            };
+      })();
 
   if (!rateLimit.allowed) {
     return NextResponse.json(

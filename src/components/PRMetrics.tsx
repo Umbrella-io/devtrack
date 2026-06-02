@@ -157,7 +157,7 @@ export default function PRMetrics() {
     }`;
 
     return stat.href ? (
-      <a key={stat.label} href={stat.href} target="_blank" rel="noreferrer" className={className} title={stat.title}>
+      <a key={stat.label} href={stat.href} target="_blank" rel="noopener noreferrer" className={className} title={stat.title}>
         {content}
       </a>
     ) : (

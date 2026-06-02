@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import BadgeSection from "@/components/BadgeSection";
@@ -10,6 +11,80 @@ import ShareProfileSection from "@/components/ShareProfileSection";
 import ThemeToggle from "@/components/ThemeToggle";
 import SponsorBadge from "@/components/SponsorBadge";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
+import { fetchPinnedRepoDetails } from "@/lib/pinned-repos";
+import { Moon, Sun } from "lucide-react"; // 🎯 UI vectors for server visibility
+
+import {
+  fetchPublicTopRepos,
+  fetchPublicContributions,
+  fetchPublicStreak,
+  type PublicProfileData,
+} from "@/lib/public-profile-data";
+
+// Extend tracking structures to forward gamification flags seamlessly downstream
+interface ExtendedPublicProfileData extends PublicProfileData {
+  isNightOwl: boolean;
+  isEarlyBird: boolean;
+}
+
+async function fetchPublicProfile(
+  username: string,
+  options: { includeAchievements?: boolean } = {}
+): Promise<ExtendedPublicProfileData | null> {
+  const user = await getUserByUsername(username);
+
+  if (!user) return null;
+
+  const canonicalUsername = user.github_login.toLowerCase();
+
+  if (username !== canonicalUsername) {
+    redirect(`/u/${canonicalUsername}`);
+  }
+
+  const githubToken = process.env.GITHUB_TOKEN || "";
+
+  const [repos, contributions, streak, achievementsCache, spotlight] = await Promise.all([
+    fetchPublicTopRepos(user.github_login, githubToken, 30),
+    fetchPublicContributions(user.github_login, githubToken, 30),
+    fetchPublicStreak(user.github_login, githubToken),
+    options.includeAchievements
+      ? syncGitHubAchievementsForUser({
+          userId: user.id,
+          githubLogin: user.github_login,
+          token: githubToken,
+          })
+      : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
+    fetchPinnedRepoDetails(user.github_login, user.pinned_repos || [], githubToken),
+  ]);
+
+  // Server-side parsing layout to compute hourly metrics cleanly from available repo data arrays
+  let nightOwlCount = 0;
+  let earlyBirdCount = 0;
+
+  const combinedRepos = repos || [];
+  combinedRepos.forEach((repo: any) => {
+    if (repo.last_commit_date || repo.updatedAt) {
+      const targetDate = repo.last_commit_date || repo.updatedAt;
+      const commitHour = new Date(targetDate).getHours();
+      
+      if (commitHour >= 0 && commitHour <= 4) nightOwlCount++;
+      if (commitHour >= 5 && commitHour <= 8) earlyBirdCount++;
+    }
+  });
+
+  return {
+    username: user.github_login,
+    userId: user.id,
+    isSponsor: user.is_sponsor ?? false,
+    repos,
+    contributions,
+    streak,
+    achievements: achievementsCache.achievements,
+    achievementsError: achievementsCache.error,
+    spotlightRepos: spotlight,
+    isNightOwl: nightOwlCount >= 1,
+    isEarlyBird: earlyBirdCount >= 1,
+  };
 import CopyLinkButton from "@/components/CopyLinkButton";
 import { authOptions } from "@/lib/auth";
 import { fetchPublicProfile } from "@/lib/public-profile-data";
@@ -44,8 +119,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
+  const { username } = params;
   const { username } = await params;
-  // Minimal lookup — avoids duplicating 3 GitHub API calls that the page already makes
   const user = await getUserByUsername(username);
   const profileUrl = getProfileUrl(username);
 
@@ -56,24 +131,49 @@ export async function generateMetadata({
     };
   }
 
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
+
+  // Build dynamic OG image URL
+  const ogImageUrl = new URL(`${baseUrl}/api/og/user`);
+ogImageUrl.searchParams.set("username", username);
+ogImageUrl.searchParams.set("name", username);
+ogImageUrl.searchParams.set("avatar", `https://avatars.githubusercontent.com/${username}`);
+ogImageUrl.searchParams.set("topLang", "Code");
+ogImageUrl.searchParams.set("streak", "0");
+ogImageUrl.searchParams.set("commits", "0");
+
+  const title = `${username}'s DevTrack Profile`;
+  const description = `GitHub stats and coding activity for ${username}. View commits, streaks, and top repositories.`;
+
   return {
-    title: `${username}'s DevTrack Profile`,
-    description: `GitHub stats and coding activity for ${username}. View commits, streaks, and top repositories.`,
+    title,
+    description,
     openGraph: {
-      title: `${username}'s DevTrack Profile`,
-      description: `GitHub stats and coding activity for ${username}`,
+      title,
+      description,
       url: profileUrl,
       siteName: "DevTrack",
       type: "profile",
+      images: [
+        {
+          url: ogImageUrl.toString(),
+          width: 1200,
+          height: 630,
+          alt: `${username}'s DevTrack profile`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${username}'s DevTrack Profile`,
-      description: `GitHub stats and coding activity for ${username}`,
+      title,
+      description,
+      images: [ogImageUrl.toString()],
     },
   };
 }
-
 export default async function PublicProfilePage({
   params,
 }: {
@@ -98,20 +198,20 @@ export default async function PublicProfilePage({
           </p>
           <p className="text-sm text-[var(--muted-foreground)] mb-6">
             If this is your profile, go to{" "}
-            <a
+            <Link
               href="/dashboard/settings"
               className="text-[var(--accent)] underline hover:opacity-80"
             >
               Settings
-            </a>{" "}
+            </Link>{" "}
             and enable <strong>Public Profile</strong>.
           </p>
-          <a
+          <Link
             href="/"
             className="primary-button inline-block rounded-lg px-6 py-2"
           >
             Back to Home
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -124,6 +224,7 @@ export default async function PublicProfilePage({
 
   const avatarUrl = `https://avatars.githubusercontent.com/${profile.username}`;
   const topRepo = profile.repos[0]?.name ?? "";
+  const gistsUrl = `https://gist.github.com/${profile.username}`;
   const showCompareButton =
     loggedInUsername !== null &&
     loggedInUsername.toLowerCase() !== profile.username.toLowerCase();
@@ -139,32 +240,65 @@ export default async function PublicProfilePage({
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] flex items-center gap-2">
-              @{profile.username}&apos;s Profile
+            <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] flex flex-wrap items-center gap-2">
+              <span>@{profile.username}&apos;s Profile</span>
               {profile.isSponsor && <SponsorBadge />}
+              
+              {/* 🎯 Render Server-Calculated Time Distribution Badges Safely on Public Profile View */}
+              {profile.isNightOwl && (
+                <span 
+                  title="Night Owl Milestone Badge" 
+                  className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 px-2.5 py-0.5 text-xs font-bold text-indigo-400"
+                >
+                  <Moon className="h-3 w-3" />
+                  <span>Night Owl</span>
+                </span>
+              )}
+              {profile.isEarlyBird && (
+                <span 
+                  title="Early Bird Milestone Badge" 
+                  className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-xs font-bold text-amber-400"
+                >
+                  <Sun className="h-3 w-3" />
+                  <span>Early Bird</span>
+                </span>
+              )}
             </h1>
             <CopyLinkButton url={profileUrl} />
           </div>
           <p className="mt-2 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
           </p>
+          {profile.publicGists > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <a
+                href={gistsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+              >
+                {profile.publicGists} Gists
+              </a>
+            </div>
+          )}
           {compareHref && (
-            <a
+            <Link
               href={compareHref}
               className="primary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
             >
               Compare with me
-            </a>
+            </Link>
           )}
           {!loggedInUsername && (
-            <a
+            <Link
               href={signInToCompareHref}
               className="secondary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
             >
               Log in to compare
-            </a>
+            </Link>
           )}
         </div>
+        <div className="flex items-center gap-3">
         {/* Download stats card button — client component */}
         <div className="flex flex-wrap items-center gap-3">
           <ThemeToggle />
@@ -198,11 +332,14 @@ export default async function PublicProfilePage({
       </div>
 
       {/* Custom Spotlight Repositories */}
-      {profile.spotlightRepos && profile.spotlightRepos.length > 0 && (
+      {profile.spotlightRepos?.length ? (
         <div className="mt-6">
-          <PinnedReposWidget initialRepos={profile.spotlightRepos} isPublic={true} />
+          <PinnedReposWidget
+            initialRepos={profile.spotlightRepos}
+            isPublic={true}
+          />
         </div>
-      )}
+      ) : null}
 
       {/* Row 2: Top repos */}
       <div className="mt-6">
@@ -225,10 +362,6 @@ export default async function PublicProfilePage({
   );
 }
 
-/**
- * Public variant of ContributionGraph component.
- * Displays data passed as props instead of fetching it.
- */
 function PublicContributionGraph({
   data: contributionData,
 }: {
@@ -261,7 +394,6 @@ function PublicContributionGraph({
         </p>
       ) : (
         <div className="space-y-2">
-          {/* Simple text-based activity display for public profiles */}
           <div className="text-sm text-[var(--muted-foreground)]">
             {data.length} active days
           </div>
@@ -288,10 +420,6 @@ function PublicContributionGraph({
   );
 }
 
-/**
- * Public variant of StreakTracker component.
- * Displays data passed as props.
- */
 function PublicStreakTracker({ streak }: { streak: any }) {
   const stats = [
     {
@@ -362,10 +490,6 @@ function PublicStreakTracker({ streak }: { streak: any }) {
   );
 }
 
-/**
- * Public variant of TopRepos component.
- * Displays data passed as props.
- */
 function PublicTopRepos({
   repos,
 }: {

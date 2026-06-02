@@ -1,6 +1,7 @@
 // @ts-nocheck
 "use client";
 
+import ThemePresetPicker from "@/components/ThemePresetPicker";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
@@ -147,6 +148,7 @@ function SettingsPageContent() {
   const [isDirty, setIsDirty] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
+
 
   // Spotlight Repos States
   const [userRepos, setUserRepos] = useState<string[]>([]);
@@ -620,7 +622,7 @@ function SettingsPageContent() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <Link href="/dashboard">
             <button aria-label="Back to Dashboard" className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--accent)] md:bg-[var(--accent)] md:text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 md:h-auto md:w-auto md:rounded-lg md:px-4 md:py-2">
-              <span className="text-lg items-center transition-transform duration-200 group-hover:-translate-x-1.5">
+              <span aria-hidden="true" className="text-lg items-center transition-transform duration-200 group-hover:-translate-x-1.5">
                 ←
               </span>
               <span className="ml-2 hidden text-sm font-medium md:inline">
@@ -640,11 +642,10 @@ function SettingsPageContent() {
 
         {statusMessage && (
           <div
-            className={`mb-6 rounded-xl border p-4 text-sm ${
-              statusMessage.kind === "success"
-                ? "border-[var(--success)]/30 bg-[var(--success)]/10 text-[var(--success)]"
-                : "border-[var(--error)]/30 bg-[var(--error)]/10 text-[var(--error)]"
-            }`}
+            className={`mb-6 rounded-xl border p-4 text-sm ${statusMessage.kind === "success"
+              ? "border-[var(--success)]/30 bg-[var(--success)]/10 text-[var(--success)]"
+              : "border-[var(--error)]/30 bg-[var(--error)]/10 text-[var(--error)]"
+              }`}
           >
             {statusMessage.message}
           </div>
@@ -740,13 +741,12 @@ function SettingsPageContent() {
                 {bioDraft.length === 0 && "Shown on your public /u/ page."}
               </p>
               <p
-                className={`text-xs font-medium tabular-nums transition-colors ${
-                  bioDraft.length >= BIO_MAX
-                    ? "text-[var(--destructive)]"
-                    : bioDraft.length >= Math.floor(BIO_MAX * 0.9)
+                className={`text-xs font-medium tabular-nums transition-colors ${bioDraft.length >= BIO_MAX
+                  ? "text-[var(--destructive)]"
+                  : bioDraft.length >= Math.floor(BIO_MAX * 0.9)
                     ? "text-yellow-500"
                     : "text-[var(--muted-foreground)]"
-                }`}
+                  }`}
               >
                 {bioDraft.length} / {BIO_MAX}
               </p>
@@ -812,11 +812,10 @@ function SettingsPageContent() {
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <span
-                className={`text-xs ${
-                  bioDraft.length > 500
-                    ? "text-[var(--error)]"
-                    : "text-[var(--muted-foreground)]"
-                }`}
+                className={`text-xs ${bioDraft.length > 500
+                  ? "text-[var(--error)]"
+                  : "text-[var(--muted-foreground)]"
+                  }`}
               >
                 {bioDraft.length}/500 characters
               </span>
@@ -904,6 +903,18 @@ function SettingsPageContent() {
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+            Application Theme
+          </h2>
+
+          <p className="mt-1 text-sm text-[var(--muted-foreground)] mb-6">
+            Choose a theme for the DevTrack interface.
+          </p>
+
+          <ThemePresetPicker />
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
@@ -944,6 +955,7 @@ function SettingsPageContent() {
               Turning this on also enables your public profile so leaderboard
               rows can link to your DevTrack stats.
             </p>
+
           </div>
         </div>
 
@@ -1068,10 +1080,10 @@ function SettingsPageContent() {
                       !(settings.pinned_repos || []).includes(repoName) &&
                       repoName.toLowerCase().includes(repoSearchQuery.toLowerCase())
                   ).length === 0 && (
-                    <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
-                      No repositories available to pin.
-                    </div>
-                  )}
+                      <div className="text-center py-4 text-xs text-[var(--muted-foreground)]">
+                        No repositories available to pin.
+                      </div>
+                    )}
                 </div>
               )}
             </div>
@@ -1100,16 +1112,14 @@ function SettingsPageContent() {
                   className="sr-only"
                 />
                 <div
-                  className={`block h-6 w-10 rounded-full transition-colors ${
-                    settings.weekly_digest_opt_in
-                      ? "bg-[var(--accent)]"
-                      : "bg-[var(--control)]"
-                  }`}
+                  className={`block h-6 w-10 rounded-full transition-colors ${settings.weekly_digest_opt_in
+                    ? "bg-[var(--accent)]"
+                    : "bg-[var(--control)]"
+                    }`}
                 />
                 <div
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
-                    settings.weekly_digest_opt_in ? "translate-x-4" : ""
-                  }`}
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${settings.weekly_digest_opt_in ? "translate-x-4" : ""
+                    }`}
                 />
               </div>
             </label>
@@ -1196,12 +1206,13 @@ function SettingsPageContent() {
               </p>
             </div>
 
-            <a
+            <Link
               href="/api/auth/link-github"
+              prefetch={false}
               className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
             >
               Add GitHub Account
-            </a>
+            </Link>
           </div>
 
           {removeError && (
