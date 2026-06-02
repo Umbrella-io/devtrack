@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { createMemoryFixedWindowRateLimiter, getClientIp } from "@/lib/rate-limit";
 
 const WINDOW_MS = 60 * 1000;
 const BADGE_LIMIT = 20;

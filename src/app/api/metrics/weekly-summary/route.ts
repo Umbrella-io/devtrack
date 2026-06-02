@@ -284,7 +284,7 @@ export async function GET(req: NextRequest) {
       };
     });
     return Response.json(data);
-  } catch {
+  } catch (e) {
     // Catches errors thrown by the PR Search call or fetchActiveDates (rate limit, network).
     // Returns 502 so the client shows an error state rather than stale/empty summary data.
     return Response.json({ error: "GitHub API error" }, { status: 502 });

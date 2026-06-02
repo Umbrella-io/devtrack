@@ -19,7 +19,7 @@ import {
 } from "@/lib/leaderboard";
 import { cacheSet } from "@/lib/metrics-cache";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const RATE_LIMIT_REQUESTS = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
     await cacheSet(LEADERBOARD_CACHE_KEY, payload, CACHE_STALE_SECONDS);
     setMemoryCachedLeaderboard(payload);
     return NextResponse.json(payload);
-  } catch {
+  } catch (e) {
     const cached = await cacheGet<LeaderboardPayload>(LEADERBOARD_CACHE_KEY);
     if (cached) {
       return NextResponse.json(cached, {

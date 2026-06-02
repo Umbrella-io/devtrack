@@ -406,7 +406,7 @@ async function getGitLabMetrics(token: string | undefined, cacheContext: { bypas
   if (!token) return null;
   try {
     return await fetchCachedGitLabMRMetrics(token, cacheContext);
-  } catch {
+  } catch (e) {
     return null;
   }
 }
@@ -499,6 +499,9 @@ export async function GET(req: NextRequest) {
       ]);
       
       return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
+    } catch (e) {
+      // Catches errors from fetchCachedPRMetrics (GitHub Search API failures).
+      // Returns 502 so the client knows the data is unavailable, not just empty.
     } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
@@ -615,7 +618,7 @@ export async function GET(req: NextRequest) {
     ]);
     
     return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
-  } catch {
+  } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

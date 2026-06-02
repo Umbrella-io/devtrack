@@ -51,7 +51,7 @@ export async function GET(req: Request) {
       if (localHour === 24) localHour = 0;
       
       isSunday = weekdayPart === "Sun";
-    } catch {
+    } catch (e) {
       localHour = now.getUTCHours();
       isSunday = now.getUTCDay() === 0;
     }
@@ -79,7 +79,7 @@ export async function GET(req: Request) {
         const dFmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
         const [{value: mo},,{value: da},,{value: ye}] = dFmt.formatToParts(now);
         todayStr = `${ye}-${mo}-${da}`;
-      } catch {
+      } catch (e) {
         todayStr = toDateStr(now);
       }
 

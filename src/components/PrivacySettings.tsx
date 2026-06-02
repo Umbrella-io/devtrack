@@ -33,7 +33,7 @@ export default function PrivacySettings() {
       URL.revokeObjectURL(url);
 
       setMessage({ kind: "success", text: "Data exported successfully" });
-    } catch {
+    } catch (e) {
       setMessage({ kind: "error", text: "Failed to export data" });
     } finally {
       setDownloading(false);

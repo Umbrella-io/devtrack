@@ -18,7 +18,7 @@ export function sendSSEEvent(
       controller.enqueue(
         `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
       );
-    } catch {
+    } catch (e) {
       sseConnections.delete(userId);
     }
   }

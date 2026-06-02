@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
             for (const [lang, bytes] of Object.entries(langs)) {
               langTotals[lang] = (langTotals[lang] ?? 0) + (bytes as number);
             }
-          } catch { }
+          } catch (e) { }
         })
       );
 
@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
       return { languages };
     });
     return Response.json(data);
-  } catch {
+  } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }
