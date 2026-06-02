@@ -16,6 +16,8 @@ import SignOutButton from "@/components/SignOutButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
+import { Moon, Sun } from "lucide-react";
+import { toast } from "sonner";
 
 type DashboardSyncContextValue = {
   lastSynced: Date | null;
