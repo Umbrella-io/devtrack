@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { signOut } from "next-auth/react";
 
 interface DiscussionData {
   discussionsStarted: number;
@@ -12,16 +13,26 @@ export default function DiscussionsWidget() {
   const [data, setData] = useState<DiscussionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [githubAuthInvalid, setGithubAuthInvalid] = useState(false);
 
   const fetchData = useCallback(() => {
     setLoading(true);
     setError(null);
+    setGithubAuthInvalid(false);
     fetch("/api/metrics/discussions")
-      .then((r) => {
+      .then(async (r) => {
+        const body = await r.json();
+        if (body?.error === "token_expired") {
+          setGithubAuthInvalid(true);
+          return null;
+        }
         if (!r.ok) throw new Error("API error");
-        return r.json();
+        return body as DiscussionData;
       })
-      .then((d: DiscussionData) => setData(d))
+      .then((d) => {
+        if (!d) return;
+        setData(d);
+      })
       .catch(() =>
         setError("We couldn't load your discussion metrics right now.")
       )
@@ -66,6 +77,24 @@ export default function DiscussionsWidget() {
               className="h-20 rounded-lg skeleton-shimmer"
             />
           ))}
+        </div>
+      ) : githubAuthInvalid ? (
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-6 text-center space-y-3">
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Your GitHub connection is no longer valid. Reconnect your GitHub
+            account to continue syncing data.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              void signOut({ redirect: false }).then(() => {
+                window.location.href = "/api/auth/signin/github?callbackUrl=/dashboard";
+              });
+            }}
+            className="inline-flex items-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+          >
+            Reconnect GitHub
+          </button>
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">

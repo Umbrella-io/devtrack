@@ -1,4 +1,5 @@
 import { GITHUB_API } from "@/lib/github";
+import { GitHubAuthError } from "@/lib/github-fetch";
 
 interface TopRepo { name: string; commits: number; }
 interface WorkflowRun { conclusion: string | null; created_at: string; name: string | null; updated_at: string; }
@@ -16,7 +17,10 @@ export function mergeCIAnalytics(a: CIAnalyticsResponse, b: CIAnalyticsResponse)
 
 export async function fetchCIAnalyticsForAccount(token: string, githubLogin: string): Promise<CIAnalyticsResponse> {
   const searchRes = await fetch(`${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${toIsoDate(30)}&per_page=100&sort=author-date&order=desc`, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }, cache: "no-store" });
-  if (!searchRes.ok) throw new Error("API error");
+  if (!searchRes.ok) {
+    if (searchRes.status === 401) throw new GitHubAuthError();
+    throw new Error("API error");
+  }
   const data = await searchRes.json();
   
   const repoMap = new Map<string, number>();

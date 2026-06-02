@@ -96,6 +96,9 @@ export async function GET(req: NextRequest) {
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
+  }
 
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
@@ -285,8 +288,7 @@ export async function GET(req: NextRequest) {
     });
     return Response.json(data);
   } catch (e) {
-    // Catches errors thrown by the PR Search call or fetchActiveDates (rate limit, network).
-    // Returns 502 so the client shows an error state rather than stale/empty summary data.
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

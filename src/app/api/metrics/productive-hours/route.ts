@@ -336,7 +336,8 @@ export async function GET(req: NextRequest) {
       repoParam
     );
     return Response.json(result);
-  } catch {
+  } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }
