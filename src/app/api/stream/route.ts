@@ -17,6 +17,22 @@ const MAX_CONNECTIONS_PER_USER = 4;
 // while being 7.5x cheaper per connection than the previous 2 s interval.
 const POLL_INTERVAL_MS = 15_000;
 
+// Keepalive comment sent to prevent proxies from closing the connection on
+// their idle timeout. Also provides an early signal if the client is gone
+// (enqueue throws when the controller is already closed).
+export const HEARTBEAT_INTERVAL_MS = 30_000;
+
+// Close connections where no real data has been delivered for this long.
+// This recycles slots occupied by zombie connections (tabs closed via network
+// interruption, proxies that dropped the TCP stream without notifying the
+// server, etc.). The browser EventSource reconnects within seconds.
+export const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+// Hard ceiling on how long a single stream connection may remain open,
+// regardless of activity. Forces a clean reconnect and prevents state from
+// accumulating in very long-lived connections.
+export const MAX_AGE_MS = 30 * 60 * 1000; // 30 minutes
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.githubId || !session.githubLogin) {
@@ -51,11 +67,47 @@ export async function GET(req: NextRequest) {
 
   let lastCheckedSyncedAt: string | null = null;
   let lastCheckedUnreadCount: number | null = null;
-
+  let lastDataSentAt = Date.now();
   let isClosed = false;
 
   const stream = new ReadableStream({
     start(controller) {
+      // Declare handles up-front so closeStream can clear them regardless of
+      // which close path fires first (abort, idle, max-age).
+      let pollInterval: ReturnType<typeof setInterval>;
+      let heartbeatInterval: ReturnType<typeof setInterval>;
+      let idleCheckInterval: ReturnType<typeof setInterval>;
+      let maxAgeTimer: ReturnType<typeof setTimeout>;
+
+      // Guard: ensures the connection slot is decremented exactly once even if
+      // multiple close paths race (e.g. abort fires while idle timeout fires).
+      let cleanedUp = false;
+      function releaseSlot() {
+        if (cleanedUp) return;
+        cleanedUp = true;
+        const remaining = activeStreamConnections.get(userId) ?? 1;
+        if (remaining <= 1) {
+          activeStreamConnections.delete(userId);
+        } else {
+          activeStreamConnections.set(userId, remaining - 1);
+        }
+      }
+
+      function closeStream() {
+        if (isClosed) return;
+        isClosed = true;
+        clearInterval(pollInterval);
+        clearInterval(heartbeatInterval);
+        clearInterval(idleCheckInterval);
+        clearTimeout(maxAgeTimer);
+        try {
+          controller.close();
+        } catch (_) {
+          // already closed
+        }
+        releaseSlot();
+      }
+
       const checkData = async () => {
         if (isClosed) return;
         try {
@@ -94,36 +146,45 @@ export async function GET(req: NextRequest) {
 
           if (hasChanges && !isClosed) {
             controller.enqueue(`data: ${JSON.stringify(payload)}\n\n`);
+            lastDataSentAt = Date.now();
           }
         } catch (error) {
           console.error("SSE Polling Error:", error);
         }
       };
 
-      // Register the interval and abort handler synchronously so they are
-      // guaranteed to be in place before any async work begins. This prevents
-      // a race where abort() fires before the listener is attached.
-      const interval = setInterval(() => {
+      // Register all timers and the abort listener synchronously so they are
+      // in place before any async work begins. This prevents a race where
+      // abort() fires before the listener is attached.
+      pollInterval = setInterval(() => {
         if (!isClosed) checkData();
       }, POLL_INTERVAL_MS);
 
-      req.signal.addEventListener("abort", () => {
-        isClosed = true;
-        clearInterval(interval);
+      // Keepalive comment — invisible to message handlers, keeps the TCP
+      // stream alive through intermediate proxies.
+      heartbeatInterval = setInterval(() => {
+        if (isClosed) return;
         try {
-          controller.close();
-        } catch (e) {
-          // ignore already closed
+          controller.enqueue(": heartbeat\n\n");
+        } catch (_) {
+          // If enqueue throws the controller is already closed; clean up.
+          closeStream();
         }
+      }, HEARTBEAT_INTERVAL_MS);
 
-        // Decrement the connection counter so the slot becomes available again.
-        const remaining = activeStreamConnections.get(userId) ?? 1;
-        if (remaining <= 1) {
-          activeStreamConnections.delete(userId);
-        } else {
-          activeStreamConnections.set(userId, remaining - 1);
+      // Idle timeout — close connections that have sent no real data for
+      // IDLE_TIMEOUT_MS. Frees slots held by zombie connections.
+      idleCheckInterval = setInterval(() => {
+        if (isClosed) return;
+        if (Date.now() - lastDataSentAt > IDLE_TIMEOUT_MS) {
+          closeStream();
         }
-      });
+      }, 60_000);
+
+      // Max-age ceiling — forcibly recycle the connection after MAX_AGE_MS.
+      maxAgeTimer = setTimeout(closeStream, MAX_AGE_MS);
+
+      req.signal.addEventListener("abort", closeStream);
 
       // Kick off the first poll immediately (non-blocking).
       checkData();
