@@ -7,6 +7,7 @@ import {
 import { calculateStreakFromDates } from "@/lib/streak";
 import { logError } from "@/lib/error-handler";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
+import { calculateStreak } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 

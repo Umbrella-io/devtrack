@@ -19,6 +19,7 @@ async function fetchActiveDates(
   githubLogin: string,
   token: string,
   cacheContext: { bypass: boolean; userId: string }
+  , timeZone = "UTC"
 ): Promise<Set<string>> {
   // Cache key is scoped per user + githubLogin so multi-account "combined" view
   // stores each account's dates separately and merges them in the GET handler.
@@ -80,10 +81,24 @@ async function fetchActiveDates(
           items: Array<{ commit: { author: { date: string } } }>;
         };
 
-        // Extract just the date part ("YYYY-MM-DD") from each commit timestamp.
-        // Using a Set deduplicates — multiple commits on the same day count as one active day.
+        // Extract the date part ("YYYY-MM-DD") from each commit timestamp
+        // but bucket the commit into the user's local timezone so streaks are
+        // calculated relative to the user's day boundaries rather than UTC.
         for (const item of data.items) {
-          activeDates.add(item.commit.author.date.slice(0, 10));
+          const commitDate = new Date(item.commit.author.date);
+          // Format the commit into a YYYY-MM-DD in the user's timezone.
+          const parts = new Intl.DateTimeFormat("en", {
+            timeZone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).formatToParts(commitDate);
+          const year = parts.find((p) => p.type === "year")?.value;
+          const month = parts.find((p) => p.type === "month")?.value;
+          const day = parts.find((p) => p.type === "day")?.value;
+          if (year && month && day) {
+            activeDates.add(`${year}-${month}-${day}`);
+          }
         }
 
         // Stop paginating when GitHub returns fewer than 100 items (last page)
@@ -99,6 +114,27 @@ async function fetchActiveDates(
   return new Set(dates);
 }
 
+
+async function checkAndRecordMilestone(
+  userId: string,
+  currentStreak: number
+): Promise<void> {
+  if (currentStreak < 7 || currentStreak % 7 !== 0) return;
+
+  const { error } = await supabaseAdmin
+    .from("streak_milestones")
+    .upsert(
+      { user_id: userId, streak_count: currentStreak },
+      { onConflict: "user_id,streak_count" }
+    );
+
+  if (!error) {
+    dispatchToAllWebhooks(userId, "streak.milestone", {
+      streakCount: currentStreak,
+      achievedAt: new Date().toISOString(),
+    }).catch(() => {});
+  }
+}
 
 export async function GET(req: NextRequest) {
   // Session contains the GitHub OAuth token issued at sign-in.
@@ -144,17 +180,33 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Resolve the user's timezone (stored on the Supabase users row). Default to UTC.
+  let timeZone = "UTC";
+  if (appUserId) {
+    const { data: userRow } = await supabaseAdmin
+      .from("users")
+      .select("timezone")
+      .eq("id", appUserId)
+      .single();
+    if (userRow?.timezone) timeZone = userRow.timezone;
+  }
+
   // No accountId = use the primary signed-in GitHub account.
   if (!accountId) {
     try {
       const activeDates = await fetchActiveDates(
         session.githubLogin,
         session.accessToken,
-        { bypass, userId: session.githubId }
+        { bypass, userId: session.githubId },
+        timeZone
       );
-      return Response.json(
-        calculateStreakFromDates(activeDates, freezeDates)
-      );
+      const streakData = calculateStreakFromDates(activeDates, freezeDates, timeZone);
+
+      if (appUserId && streakData.current > 0) {
+        checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
+      }
+
+      return Response.json(streakData);
     } catch {
       // fetchActiveDates throws on GitHub API errors (rate limit, network failure).
       // Return 502 so the client shows an error state rather than a false 0-day streak.
@@ -184,7 +236,7 @@ export async function GET(req: NextRequest) {
         fetchActiveDates(account.githubLogin, account.token, {
           bypass,
           userId: account.githubId,
-        })
+        }, timeZone)
       )
     );
 
@@ -197,7 +249,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return Response.json(calculateStreakFromDates(unifiedDates, freezeDates));
+    const streakData = calculateStreakFromDates(unifiedDates, freezeDates, timeZone);
+
+    if (streakData.current > 0) {
+      checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
+    }
+
+    return Response.json(streakData);
   }
 
   // Single specific account — resolve its token and login from Supabase.
@@ -227,11 +285,22 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const activeDates = await fetchActiveDates(resolvedLogin, resolvedToken, {
-      bypass,
-      userId: accountId,
-    });
-    return Response.json(calculateStreakFromDates(activeDates, freezeDates));
+    const activeDates = await fetchActiveDates(
+      resolvedLogin,
+      resolvedToken,
+      {
+        bypass,
+        userId: accountId,
+      },
+      timeZone
+    );
+    const streakData = calculateStreakFromDates(activeDates, freezeDates, timeZone);
+
+    if (accountId === session.githubId && streakData.current > 0) {
+      checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
+    }
+
+    return Response.json(streakData);
   } catch {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
