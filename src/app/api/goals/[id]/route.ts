@@ -81,15 +81,13 @@ export async function PATCH(
     updates.recurrence = recurrence;
   }
 
-  if (current !== undefined) {
-    if (typeof current !== "number" || current < 0) {
-      return Response.json(
-        { error: "Invalid current value" },
-        { status: 400 }
-      );
-    }
-    updates.current = current;
+  if (current === undefined || typeof current !== "number" || !Number.isInteger(current) || current < 0) {
+    return Response.json(
+      { error: "current must be a non-negative integer" },
+      { status: 400 }
+    );
   }
+  updates.current = current;
 
   const { data: existingGoal } = await supabaseAdmin
     .from("goals")
