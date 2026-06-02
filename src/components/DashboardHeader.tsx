@@ -175,12 +175,12 @@ export default function DashboardHeader() {
         <div>
           <div className="flex flex-col gap-1">
             {/* Dynamic Personalized Friendly Greeting Badge Element Overlay */}
-            <div className="inline-flex items-center gap-1.5 self-start rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)] transition-all duration-300">
+            <div className="inline-flex items-center gap-1.5 self-start rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)] transition-all duration-300 max-w-full">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--accent)]"></span>
               </span>
-              <span>
+              <span className="truncate min-w-0">
                 {greeting}, {displayName}!
               </span>
             </div>
