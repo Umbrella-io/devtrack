@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { toDateStr, dateDiffDays } from '../src/lib/dateUtils';
+import * as dateUtils from '../src/lib/dateUtils';
+
+describe('exports', () => {
+  it('exports dateDiffDays by name — rename regression for #1879', () => {
+    expect(typeof dateUtils.dateDiffDays).toBe('function');
+  });
+
+  it('exports toDateStr by name', () => {
+    expect(typeof dateUtils.toDateStr).toBe('function');
+  });
+});
 
 describe('toDateStr', () => {
   it('formats date as YYYY-MM-DD', () => {

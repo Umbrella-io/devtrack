@@ -110,6 +110,47 @@ describe("githubFetch", () => {
     expect(result).toEqual(mockData);
   });
 
+  // ── 401 — token revoked / invalid ────────────────────────────────────────────
+
+  it("should throw GitHubAuthError on 401 (revoked token)", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      headers: { get: () => null },
+    });
+
+    await expect(
+      githubFetch("https://api.github.com/test", "revoked-token")
+    ).rejects.toThrow(GitHubAuthError);
+  });
+
+  it("should not classify 401 as a rate-limit error", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      headers: { get: () => null },
+    });
+
+    await expect(
+      githubFetch("https://api.github.com/test", "revoked-token")
+    ).rejects.not.toThrow(GitHubRateLimitError);
+  });
+
+  it("GitHubAuthError from 401 should have status 401", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      headers: { get: () => null },
+    });
+
+    try {
+      await githubFetch("https://api.github.com/test", "expired-token");
+    } catch (err) {
+      expect(err).toBeInstanceOf(GitHubAuthError);
+      expect((err as GitHubAuthError).status).toBe(401);
+    }
+  });
+
   // ── 429 ─────────────────────────────────────────────────────────────────────
 
   it("should throw GitHubRateLimitError on 429", async () => {
@@ -403,6 +444,20 @@ describe("githubGraphQL", () => {
 
     const result = await githubGraphQL("{ viewer { login } }", "test-token");
     expect(result).toEqual(mockData);
+  });
+
+  // ── 401 — token revoked / invalid ────────────────────────────────────────────
+
+  it("should throw GitHubAuthError on 401", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      headers: { get: () => null },
+    });
+
+    await expect(
+      githubGraphQL("{ viewer { login } }", "revoked-token")
+    ).rejects.toThrow(GitHubAuthError);
   });
 
   // ── 429 ─────────────────────────────────────────────────────────────────────

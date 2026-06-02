@@ -17,18 +17,31 @@ export default function IssueMetrics() {
   const [metrics, setMetrics] = useState<IssueData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [githubAuthInvalid, setGithubAuthInvalid] = useState(false);
 
   const fetchMetrics = useCallback(() => {
     setLoading(true);
     setError(null);
+    setGithubAuthInvalid(false);
 
     const url = selectedAccount !== null
       ? `/api/metrics/issues?accountId=${encodeURIComponent(selectedAccount)}`
       : "/api/metrics/issues";
 
     fetch(url)
-      .then((r) => r.json())
-      .then((data: IssueData) => setMetrics(data))
+      .then(async (r) => {
+        const data = await r.json();
+        if (data?.error === "github_auth_invalid") {
+          setGithubAuthInvalid(true);
+          return null;
+        }
+        if (!r.ok) throw new Error("API error");
+        return data as IssueData;
+      })
+      .then((data) => {
+        if (!data) return;
+        setMetrics(data);
+      })
       .catch(() =>
         setError(
           "We couldn't load your Issues analytics right now. Please try again in a moment."
@@ -81,6 +94,18 @@ export default function IssueMetrics() {
               className="h-20 rounded-lg skeleton-shimmer"
             />
           ))}
+        </div>
+      ) : githubAuthInvalid ? (
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-6 text-center space-y-3">
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Your GitHub connection is no longer valid. Reconnect your GitHub account to continue syncing data.
+          </p>
+          <a
+            href="/api/auth/signin?callbackUrl=/dashboard"
+            className="inline-block rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--background)] hover:opacity-90 transition-opacity"
+          >
+            Reconnect GitHub
+          </a>
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
