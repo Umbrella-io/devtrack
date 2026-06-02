@@ -253,6 +253,7 @@ export async function middleware(req: NextRequest) {
   },
   { status: 429, headers }
 );
+}
 
   const response = NextResponse.next();
 
