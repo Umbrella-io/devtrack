@@ -11,7 +11,7 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { calculateStreakFromDates } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -99,85 +99,6 @@ async function fetchActiveDates(
   return new Set(dates);
 }
 
-function calculateStreakFromDates(
-  activeDates: Set<string>,
-  freezeDates: Set<string>
-): {
-  current: number;
-  longest: number;
-  lastCommitDate: string | null;
-  totalActiveDays: number;
-  freezeDates: string[];
-} {
-  // Merge commit dates with streak freeze dates before calculating.
-  // A freeze date counts as an "active" day so it doesn't break the streak,
-  // even though no commits were made on that day.
-  const combinedDates = new Set<string>([
-    ...Array.from(activeDates),
-    ...Array.from(freezeDates),
-  ]);
-  const commitDays = Array.from(combinedDates).sort(); // ascending "YYYY-MM-DD"
-
-  if (commitDays.length === 0) {
-    return {
-      current: 0,
-      longest: 0,
-      lastCommitDate: null,
-      totalActiveDays: 0,
-      freezeDates: Array.from(freezeDates),
-    };
-  }
-
-  let longestStreak = 1;
-  let currentRun = 1;
-  const runs: { start: string; end: string; length: number }[] = [];
-  let runStart = commitDays[0];
-
-  // Walk the sorted date list and split into consecutive runs.
-  // dateDiffDays returns 1 for adjacent calendar days — any gap > 1 breaks the streak.
-  for (let i = 1; i < commitDays.length; i++) {
-    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
-    if (diff === 1) {
-      // Consecutive day — extend the current run.
-      currentRun++;
-      if (currentRun > longestStreak) {
-        longestStreak = currentRun;
-      }
-    } else {
-      // Gap detected — close the current run and start a new one.
-      runs.push({ start: runStart, end: commitDays[i - 1], length: currentRun });
-      runStart = commitDays[i];
-      currentRun = 1;
-    }
-  }
-  // Push the final run.
-  runs.push({
-    start: runStart,
-    end: commitDays[commitDays.length - 1],
-    length: currentRun,
-  });
-
-  const lastDay = commitDays[commitDays.length - 1];
-  const today = toDateStr(new Date());
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
-
-  // Current streak is alive if the last active day is today OR yesterday.
-  // Allowing yesterday prevents the streak from resetting at midnight before
-  // the user has had a chance to make their first commit of the new day.
-  const lastRun = runs[runs.length - 1];
-  const currentStreak =
-    lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
-
-  return {
-    current: currentStreak,
-    longest: longestStreak,
-    lastCommitDate: lastDay,
-    // totalActiveDays counts only days with real commits or freezes in the 90-day window,
-    // not the full streak length — useful for the "active days" stat on the dashboard.
-    totalActiveDays: commitDays.length,
-    freezeDates: Array.from(freezeDates),
-  };
-}
 
 export async function GET(req: NextRequest) {
   // Session contains the GitHub OAuth token issued at sign-in.

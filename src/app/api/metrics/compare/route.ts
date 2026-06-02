@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { calculateCurrentStreak } from "@/lib/streak";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
 import {
@@ -116,28 +116,8 @@ try {
         commits30d++;
       }
     }
-    const commitDays = Object.keys(daySet).sort();
-    
-    if (commitDays.length > 0) {
-      let currentRun = 1;
-      let runs: { end: string; length: number }[] = [];
-      let runStart = commitDays[0];
-      for (let i = 1; i < commitDays.length; i++) {
-        if (dateDiffDays(commitDays[i - 1], commitDays[i]) === 1) {
-          currentRun++;
-        } else {
-          runs.push({ end: commitDays[i - 1], length: currentRun });
-          runStart = commitDays[i];
-          currentRun = 1;
-        }
-      }
-      runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
-      
-      const today = toDateStr(new Date());
-      const yesterday = toDateStr(new Date(Date.now() - 86400000));
-      const lastRun = runs[runs.length - 1];
-      streak = (lastRun.end === today || lastRun.end === yesterday) ? lastRun.length : 0;
-    }
+
+    streak = calculateCurrentStreak(Object.keys(daySet));
   }
 
   // 3. Top Language from repos
