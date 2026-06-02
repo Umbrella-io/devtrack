@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   GitHubRateLimitError,
   GitHubApiError,
+  GitHubAuthError,
   githubFetch,
   githubGraphQL,
 } from "@/lib/github-fetch";
@@ -66,6 +67,26 @@ describe("GitHubApiError", () => {
 
   it("should be instance of Error", () => {
     const error = new GitHubApiError(404);
+    expect(error).toBeInstanceOf(Error);
+  });
+});
+
+// ─── GitHubAuthError ─────────────────────────────────────────────────────────
+
+describe("GitHubAuthError", () => {
+  it("should have correct name and message", () => {
+    const error = new GitHubAuthError();
+    expect(error.name).toBe("GitHubAuthError");
+    expect(error.message).toContain("GitHub authentication failed");
+  });
+
+  it("should have status 401", () => {
+    const error = new GitHubAuthError();
+    expect(error.status).toBe(401);
+  });
+
+  it("should be instance of Error", () => {
+    const error = new GitHubAuthError();
     expect(error).toBeInstanceOf(Error);
   });
 });

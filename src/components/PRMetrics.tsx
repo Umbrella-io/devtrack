@@ -50,6 +50,7 @@ export default function PRMetrics() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [githubAuthInvalid, setGithubAuthInvalid] = useState(false);
   const [activeTab, setActiveTab] = useState<"authored" | "reviews">("authored");
   const [prFilter, setPrFilter] = useState<"all" | "merged" | "open">("all");
   const [staleThresholdDays, setStaleThresholdDays] = useState(14);
@@ -57,6 +58,7 @@ export default function PRMetrics() {
   const fetchMetrics = useCallback(() => {
     setLoading(true);
     setError(null);
+    setGithubAuthInvalid(false);
 
     const url =
       selectedAccount !== null
@@ -64,11 +66,17 @@ export default function PRMetrics() {
         : "/api/metrics/prs";
 
     fetch(url)
-      .then((r) => {
+      .then(async (r) => {
+        const data = await r.json();
+        if (data?.error === "github_auth_invalid") {
+          setGithubAuthInvalid(true);
+          return null;
+        }
         if (!r.ok) throw new Error("API error");
-        return r.json();
+        return data as PRData;
       })
-      .then((data: PRData) => {
+      .then((data) => {
+        if (!data) return;
         setMetrics(data);
         setLastUpdated(new Date());
         setMinutesAgo(0);
@@ -212,6 +220,18 @@ export default function PRMetrics() {
               <div key={i} className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse" />
             ))}
           </div>
+        </div>
+      ) : githubAuthInvalid ? (
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-6 text-center space-y-3">
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Your GitHub connection is no longer valid. Reconnect your GitHub account to continue syncing data.
+          </p>
+          <a
+            href="/api/auth/signin?callbackUrl=/dashboard"
+            className="inline-block rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--background)] hover:opacity-90 transition-opacity"
+          >
+            Reconnect GitHub
+          </a>
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">

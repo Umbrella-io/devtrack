@@ -33,6 +33,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       const response = await originalFetch(...args);
       if (response.status === 401) {
         const cloned = response.clone();
+
+        // Check if this is a token_expired response from a metrics route.
+        // These mean the GitHub OAuth token was revoked — the NextAuth session
+        // itself is still valid, so we dispatch an event for the reconnect
+        // banner rather than signing out.
+        let body: Record<string, unknown> | null = null;
+        try {
+          body = await response.clone().json();
+        } catch {
+          // Non-JSON 401 — fall through to session check.
+        }
+        if (body?.error === "token_expired") {
+          window.dispatchEvent(new CustomEvent("github-token-expired"));
+          return cloned;
+        }
+
         const sessionStillActive = await hasActiveSession(originalFetch);
 
         if (!sessionStillActive) {

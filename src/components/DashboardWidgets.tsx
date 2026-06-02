@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-
+import GitHubTokenExpiredBanner from "@/components/GitHubTokenExpiredBanner";
 import ContributionGraph from "@/components/ContributionGraph";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
@@ -25,6 +25,8 @@ import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
 export default function DashboardWidgets() {
   return (
     <>
+      <GitHubTokenExpiredBanner />
+
       <WidgetErrorBoundary>
         <DashboardHeader />
       </WidgetErrorBoundary>

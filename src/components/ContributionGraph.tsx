@@ -125,6 +125,7 @@ export default function ContributionGraph() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [githubAuthInvalid, setGithubAuthInvalid] = useState(false);
   const [commits, setCommits] = useState<CommitItem[]>([]);
   const [usesTouchTooltip, setUsesTouchTooltip] = useState(false);
   const [repo, setRepo] = useState<string>("all");
@@ -234,14 +235,23 @@ export default function ContributionGraph() {
         // No cache: show standard loading
         setLoading(true);
         setError(null);
+        setGithubAuthInvalid(false);
         setCommits([]);
       }
 
       // 2. Perform background sync / standard fetch
       try {
         const r = await fetch(url);
+        const body = await r.json().catch(() => null);
+        if (body?.error === "github_auth_invalid") {
+          if (active) {
+            setGithubAuthInvalid(true);
+            setLoading(false);
+          }
+          return;
+        }
         if (!r.ok) throw new Error("API error");
-        const res: ContributionResponse = await r.json();
+        const res: ContributionResponse = body;
         
         if (!active) return;
 
@@ -620,6 +630,18 @@ export default function ContributionGraph() {
             aria-hidden="true"
             className="h-[220px] rounded border border-[var(--border)] bg-[var(--background)] animate-pulse"
           />
+        </div>
+      ) : githubAuthInvalid ? (
+        <div className="flex h-[220px] flex-col items-center justify-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--background)] px-4 text-center">
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Your GitHub connection is no longer valid. Reconnect your GitHub account to continue syncing data.
+          </p>
+          <a
+            href="/api/auth/signin?callbackUrl=/dashboard"
+            className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--background)] hover:opacity-90 transition-opacity"
+          >
+            Reconnect GitHub
+          </a>
         </div>
       ) : error ? (
         <div className="flex h-[220px] items-center rounded-lg border border-[var(--border)] bg-[var(--background)] px-4">
