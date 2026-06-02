@@ -58,12 +58,17 @@ export async function GET() {
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
   // Added .limit() to bound the database payload and the subsequent Promise.all loop
-  const { data: goals } = await supabaseAdmin
+  const { data: goals, error } = await supabaseAdmin
     .from("goals")
     .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(MAX_GOALS_PER_USER);
+
+  if (error) {
+    console.error("Failed to fetch goals:", error);
+    return Response.json({ error: "Failed to fetch goals" }, { status: 500 });
+  }
 
   // Reset progress if we're in a new period
   const processedGoals = await Promise.all(
