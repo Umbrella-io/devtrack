@@ -1,7 +1,5 @@
 import { Metadata } from "next";
-import Link from "next/link";
 import { Scale, Trophy } from "lucide-react";
-import Image from "next/image";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 import {
   fetchPublicProfile,
@@ -18,12 +16,11 @@ interface ComparePageProps {
 
 type Winner = "left" | "right" | "tie";
 
-async function parseUsers(params: Promise<{ users: string }>): Promise<[string, string] | null> {
+function parseUsers(users: string): [string, string] | null {
   let decoded: string;
   try {
-    const { users } = await params;
     decoded = decodeURIComponent(users);
-  } catch (e) {
+  } catch {
     return null;
   }
 
@@ -46,7 +43,7 @@ function compareNumbers(left: number, right: number): Winner {
 }
 
 function topLanguage(languages: PublicLanguage[]): string {
-  return languages[0]?.name ?? "No public data";
+  return languages[0]?.language ?? "No public data";
 }
 
 function repoCommitTotal(repos: TopRepo[]): number {
@@ -55,8 +52,8 @@ function repoCommitTotal(repos: TopRepo[]): number {
 
 export async function generateMetadata({
   params,
-}: { params: Promise<{ users: string }> }): Promise<Metadata> {
-  const parsed = await parseUsers(params);
+}: ComparePageProps): Promise<Metadata> {
+  const parsed = parseUsers(params.users);
   if (!parsed) {
     return {
       title: "Compare Public Profiles",
@@ -73,9 +70,8 @@ export async function generateMetadata({
 
 export default async function PublicProfileComparePage({
   params,
-}: { params: Promise<{ users: string }> }) {
-  const { users } = await params;
-  const parsed = await parseUsers(params);
+}: ComparePageProps) {
+  const parsed = parseUsers(params.users);
 
   if (!parsed) {
     return <CompareUnavailable title="Invalid compare URL" />;
@@ -111,12 +107,12 @@ export default async function PublicProfileComparePage({
               Shareable comparison built only from publicly visible DevTrack stats.
             </p>
           </div>
-          <Link
+          <a
             href={`/u/${encodeURIComponent(rightProfile.username)}`}
             className="secondary-button inline-flex rounded-lg px-4 py-2 text-sm font-medium"
           >
             View profile
-          </Link>
+          </a>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
@@ -202,9 +198,9 @@ function CompareUnavailable({
       <div className="surface-card max-w-md rounded-2xl p-8 text-center">
         <h1 className="mb-2 text-3xl font-bold">{title}</h1>
         <p className="mb-6 text-sm text-[var(--muted-foreground)]">{message}</p>
-        <Link href="/" className="primary-button inline-block rounded-lg px-6 py-2">
+        <a href="/" className="primary-button inline-block rounded-lg px-6 py-2">
           Back to Home
-        </Link>
+        </a>
       </div>
     </div>
   );
@@ -228,20 +224,19 @@ function ProfileHeader({
           align === "right" ? "md:flex-row-reverse" : ""
         }`}
       >
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={`https://avatars.githubusercontent.com/${profile.username}`}
-          alt={`${profile.username} avatar`}
-          width={56}
-          height={56}
+          alt=""
           className="h-14 w-14 rounded-full border border-[var(--border)]"
         />
         <div className="min-w-0">
-          <Link
+          <a
             href={`/u/${encodeURIComponent(profile.username)}`}
             className="truncate text-xl font-bold text-[var(--card-foreground)] hover:text-[var(--accent)]"
           >
             @{profile.username}
-          </Link>
+          </a>
           <p className="text-sm text-[var(--muted-foreground)]">
             {profile.streak.current} day streak - {profile.contributions.total} commits
           </p>
@@ -346,10 +341,10 @@ function LanguageCard({
       ) : (
         <ul className="space-y-3">
           {languages.map((language) => (
-            <li key={language.name}>
+            <li key={language.language}>
               <div className="mb-1 flex items-center justify-between text-sm">
                 <span className="font-medium text-[var(--card-foreground)]">
-                  {language.name}
+                  {language.language}
                 </span>
                 <span className="text-[var(--muted-foreground)]">
                   {language.count} repo{language.count !== 1 ? "s" : ""}

@@ -1,6 +1,5 @@
-import { calculateStreak } from "@/lib/streak";
-import type { GitHubAchievement } from "@/lib/github-achievements";
-import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { type GitHubAchievement, syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import { fetchPinnedRepoDetails, type PinnedRepoDetails } from "@/lib/pinned-repos";
 import { getUserByUsername } from "@/lib/supabase";
 
@@ -10,12 +9,6 @@ export interface TopRepo {
   name: string;
   commits: number;
   url: string;
-}
-
-export interface PublicLanguage {
-  name: string;
-  count: number;
-  percentage: number;
 }
 
 export interface ContributionData {
@@ -31,11 +24,15 @@ export interface StreakData {
   totalActiveDays: number;
 }
 
+export interface PublicLanguage {
+  language: string;
+  count: number;
+}
+
 export interface PublicProfileData {
   username: string;
-  bio: string | null;
+  userId: string;
   isSponsor: boolean;
-  publicGists: number;
   repos: TopRepo[];
   contributions: ContributionData;
   streak: StreakData;
@@ -46,24 +43,57 @@ export interface PublicProfileData {
   spotlightRepos?: PinnedRepoDetails[];
 }
 
+/**
+ * Fetch a full public profile for a given username.
+ * Returns null if user not found or profile is private.
+ */
+export async function fetchPublicProfile(
+  username: string,
+  options: { includeAchievements?: boolean } = {}
+): Promise<PublicProfileData | null> {
+  const user = await getUserByUsername(username);
+  if (!user) return null;
+
+  const githubToken = process.env.GITHUB_TOKEN || "";
+
+  const [repos, contributions, streak, achievementsCache, spotlight, topLanguages, pullRequests] =
+    await Promise.all([
+      fetchPublicTopRepos(user.github_login, githubToken, 30),
+      fetchPublicContributions(user.github_login, githubToken, 30),
+      fetchPublicStreak(user.github_login, githubToken),
+      options.includeAchievements
+        ? syncGitHubAchievementsForUser({
+            userId: user.id,
+            githubLogin: user.github_login,
+            token: githubToken,
+          })
+        : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
+      fetchPinnedRepoDetails(user.github_login, user.pinned_repos || [], githubToken),
+      fetchPublicTopLanguages(user.github_login, githubToken),
+      fetchPublicPRCount(user.github_login, githubToken),
+    ]);
+
+  return {
+    username: user.github_login,
+    userId: user.id,
+    isSponsor: user.is_sponsor ?? false,
+    repos,
+    contributions,
+    streak,
+    topLanguages,
+    pullRequests,
+    achievements: achievementsCache.achievements,
+    achievementsError: achievementsCache.error,
+    spotlightRepos: spotlight,
+  };
+}
+
 async function ghFetch(url: string, token?: string): Promise<Response> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
   };
   if (token) headers.Authorization = `Bearer ${token}`;
   return fetch(url, { headers, cache: "no-store" });
-}
-
-export async function fetchPublicGists(
-  username: string,
-  token?: string
-): Promise<number> {
-  const res = await ghFetch(`${GITHUB_API}/users/${username}`, token);
-
-  if (!res.ok) return 0;
-
-  const data = (await res.json()) as { public_gists?: number };
-  return data.public_gists ?? 0;
 }
 
 export async function fetchPublicTopRepos(
@@ -157,10 +187,28 @@ export async function fetchPublicStreak(
   if (commitDays.length === 0) {
     return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
   }
-  const { currentStreak, longestStreak } = calculateStreak(
-    commitDays.map((day) => new Date(day))
-  );
+
+  let longestStreak = 1;
+  let currentRun = 1;
+  const runs: { end: string; length: number }[] = [];
+
+  for (let i = 1; i < commitDays.length; i++) {
+    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
+    if (diff === 1) {
+      currentRun++;
+      if (currentRun > longestStreak) longestStreak = currentRun;
+    } else {
+      runs.push({ end: commitDays[i - 1], length: currentRun });
+      currentRun = 1;
+    }
+  }
+  runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
+
   const lastDay = commitDays[commitDays.length - 1];
+  const today = toDateStr(new Date());
+  const yesterday = toDateStr(new Date(Date.now() - 86400000));
+  const lastRun = runs[runs.length - 1];
+  const currentStreak = lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
 
   return {
     current: currentStreak,
@@ -168,6 +216,48 @@ export async function fetchPublicStreak(
     lastCommitDate: lastDay,
     totalActiveDays: commitDays.length,
   };
+}
+
+/**
+ * Returns top languages across the user's repos as a ranked list.
+ */
+export async function fetchPublicTopLanguages(
+  username: string,
+  token?: string
+): Promise<PublicLanguage[]> {
+  const res = await ghFetch(
+    `${GITHUB_API}/users/${username}/repos?sort=updated&per_page=50`,
+    token
+  );
+  if (!res.ok) return [];
+  const repos = (await res.json()) as Array<{ language: string | null }>;
+  const counts: Record<string, number> = {};
+  for (const r of repos) {
+    if (r.language) counts[r.language] = (counts[r.language] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .map(([language, count]) => ({ language, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
+/**
+ * Returns open+merged PR count for the user in the last 30 days.
+ */
+export async function fetchPublicPRCount(
+  username: string,
+  token?: string
+): Promise<number> {
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
+  const sinceStr = since.toISOString().slice(0, 10);
+  const res = await ghFetch(
+    `${GITHUB_API}/search/issues?q=author:${username}+type:pr+created:>=${sinceStr}&per_page=1`,
+    token
+  );
+  if (!res.ok) return 0;
+  const data = (await res.json()) as { total_count: number };
+  return data.total_count ?? 0;
 }
 
 /**
@@ -204,106 +294,4 @@ export async function fetchTopLanguage(
   }
   
   return topLang;
-}
-
-export async function fetchPublicTopLanguages(
-  username: string,
-  token?: string
-): Promise<PublicLanguage[]> {
-  const res = await ghFetch(
-    `${GITHUB_API}/users/${username}/repos?sort=updated&per_page=30`,
-    token
-  );
-
-  if (!res.ok) return [];
-
-  const repos = (await res.json()) as Array<{ language: string | null }>;
-  const counts: Record<string, number> = {};
-
-  for (const repo of repos) {
-    if (repo.language) {
-      counts[repo.language] = (counts[repo.language] ?? 0) + 1;
-    }
-  }
-
-  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
-  if (total === 0) return [];
-
-  return Object.entries(counts)
-    .map(([name, count]) => ({
-      name,
-      count,
-      percentage: Math.round((count / total) * 1000) / 10,
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
-}
-
-export async function fetchPublicPullRequests(
-  username: string,
-  token?: string
-): Promise<number> {
-  const res = await ghFetch(
-    `${GITHUB_API}/search/issues?q=type:pr+author:${username}&per_page=1`,
-    token
-  );
-
-  if (!res.ok) return 0;
-
-  const data = (await res.json()) as { total_count?: number };
-  return data.total_count ?? 0;
-}
-
-export async function fetchPublicProfile(
-  username: string,
-  options: { includeAchievements?: boolean } = {}
-): Promise<PublicProfileData | null> {
-  const user = await getUserByUsername(username);
-  if (!user) return null;
-
-  const githubToken = process.env.GITHUB_TOKEN;
-  const [
-    publicGists,
-    repos,
-    contributions,
-    streak,
-    topLanguages,
-    pullRequests,
-    achievementsCache,
-    spotlight,
-  ] = await Promise.all([
-    fetchPublicGists(user.github_login, githubToken),
-    fetchPublicTopRepos(user.github_login, githubToken, 30),
-    fetchPublicContributions(user.github_login, githubToken, 30),
-    fetchPublicStreak(user.github_login, githubToken),
-    fetchPublicTopLanguages(user.github_login, githubToken),
-    fetchPublicPullRequests(user.github_login, githubToken),
-    options.includeAchievements
-      ? syncGitHubAchievementsForUser({
-          userId: user.id,
-          githubLogin: user.github_login,
-          token: githubToken,
-        })
-      : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
-    fetchPinnedRepoDetails(
-      user.github_login,
-      user.pinned_repos || [],
-      githubToken || ""
-    ),
-  ]);
-
-  return {
-    username: user.github_login,
-    bio: user.bio ?? null,
-    isSponsor: user.is_sponsor ?? false,
-    publicGists,
-    repos,
-    contributions,
-    streak,
-    topLanguages,
-    pullRequests,
-    achievements: achievementsCache.achievements,
-    achievementsError: achievementsCache.error,
-    spotlightRepos: spotlight,
-  };
 }

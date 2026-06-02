@@ -279,7 +279,7 @@ export default function WrappedExperience() {
             <div className="max-w-xl rounded-lg border border-rose-300/30 bg-rose-500/10 p-6 text-center">
               <h2 className="text-xl font-bold">Wrapped is taking a breather</h2>
               <p className="mt-2 text-sm text-rose-100">{error}</p>
-              <button
+              <button aria-label="Perform action"
                 type="button"
                 onClick={() => setReloadKey((value) => value + 1)}
                 className="mt-5 rounded-md bg-rose-100 px-4 py-2 text-sm font-bold text-rose-950"
@@ -337,7 +337,7 @@ export default function WrappedExperience() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <button
+                      <button aria-label="Perform action"
                         type="button"
                         onClick={() => setSlide((value) => Math.max(0, value - 1))}
                         disabled={slide === 0}
@@ -345,7 +345,7 @@ export default function WrappedExperience() {
                       >
                         Previous
                       </button>
-                      <button
+                      <button aria-label="Perform action"
                         type="button"
                         onClick={() =>
                           setSlide((value) => Math.min(slides.length - 1, value + 1))
@@ -414,7 +414,7 @@ export default function WrappedExperience() {
               className="flex flex-wrap justify-center gap-2 pb-6"
             >
               {slides.map((item, index) => (
-                <button
+                <button aria-label="Perform action"
                   key={item.metric}
                   type="button"
                   onClick={() => setSlide(index)}

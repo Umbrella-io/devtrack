@@ -1,11 +1,9 @@
 "use client";
 
-import React, { ErrorInfo, ReactNode } from "react";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import React, { Component, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
-  fallbackMessage?: string;
 }
 
 interface State {
@@ -15,34 +13,44 @@ interface State {
 class WidgetErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+
+    this.state = {
+      hasError: false,
+    };
   }
 
   static getDerivedStateFromError(_: Error): State {
-    return { hasError: true };
+    return {
+      hasError: true,
+    };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("WidgetErrorBoundary caught an error:", error, errorInfo);
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Widget crashed:", error, errorInfo);
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false });
+    this.setState({
+      hasError: false,
+    });
   };
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-full w-full flex-col items-center justify-center rounded-xl border border-[var(--destructive)]/30 bg-[var(--destructive)]/5 p-6 text-center">
-          <AlertTriangle className="h-8 w-8 text-[var(--destructive)] mb-3" />
-          <p className="text-sm font-medium text-[var(--destructive)] mb-4">
-            {this.props.fallbackMessage || "Unable to load widget"}
+        <div className="rounded-xl border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-center">
+          <h2 className="mb-2 text-lg font-semibold">
+            Something went wrong
+          </h2>
+
+          <p className="mb-4 text-sm text-[var(--muted-foreground)]">
+            This widget failed to load.
           </p>
+
           <button
             onClick={this.handleRetry}
-            className="flex items-center gap-2 rounded-lg bg-[var(--destructive)] px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-[var(--accent-foreground)] transition hover:opacity-80"
           >
-            <RefreshCw className="h-3 w-3" />
             Retry
           </button>
         </div>
@@ -54,3 +62,4 @@ class WidgetErrorBoundary extends React.Component<Props, State> {
 }
 
 export default WidgetErrorBoundary;
+

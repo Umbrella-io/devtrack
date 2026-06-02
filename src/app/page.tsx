@@ -13,14 +13,12 @@ const syne = Syne({
   weight: ["700", "800"],
   display: "swap",
 });
-
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
   weight: ["400", "500", "600"],
   display: "swap",
 });
-
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
@@ -74,7 +72,7 @@ async function fetchRepoStats(): Promise<RepoStats> {
             isSponsor: sponsorSet.has(c.login),
           }));
         }
-      } catch (e) {
+      } catch {
         // Supabase not configured locally — skip sponsor enrichment, show contributors as-is
       }
     }
@@ -87,7 +85,7 @@ async function fetchRepoStats(): Promise<RepoStats> {
       goodFirstIssues: Array.isArray(gfiIssues) ? gfiIssues.length : 0,
       contributors: mappedContributors,
     };
-  } catch (e) {
+  } catch {
     return {
       stars: 0,
       forks: 0,
@@ -101,6 +99,7 @@ async function fetchRepoStats(): Promise<RepoStats> {
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
+
   if (session) {
     redirect("/dashboard");
   }

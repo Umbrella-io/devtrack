@@ -119,9 +119,12 @@ export async function GET(request: Request) {
     .limit(1)
     .maybeSingle();
 
-  if (cached) {
-    return NextResponse.json({ data: cached.content, cached: true });
-  }
+ if (cached && typeof cached === "object" && "content" in cached) {
+  return NextResponse.json({
+    data: (cached as { content: unknown }).content,
+    cached: true,
+  });
+}
 
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
   const cookie = request.headers.get("cookie") ?? "";

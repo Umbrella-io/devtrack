@@ -252,7 +252,7 @@ export default function FriendComparison() {
                 className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-[var(--border)] bg-[var(--card)] shadow-lg"
               >
                 {suggestions.map((u, idx) => (
-                  <button
+                  <button aria-label="Perform action"
                     key={u.username}
                     type="button"
                     role="option"
@@ -287,7 +287,7 @@ export default function FriendComparison() {
             )}
           </div>
 
-          <button
+          <button aria-label="Perform action"
             type="submit"
             disabled={loading || !trimmedFriendUsername}
             className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-all disabled:opacity-50 hover:opacity-90 active:scale-95"
@@ -300,7 +300,7 @@ export default function FriendComparison() {
       {error && (
         <div className="p-4 mb-4 rounded-md border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)] text-sm flex justify-between items-center">
           <span>{error}</span>
-          <button onClick={() => setError("")} className="hover:underline">
+          <button aria-label="Perform action" onClick={() => setError("")} className="hover:underline">
             Dismiss
           </button>
         </div>
@@ -384,7 +384,7 @@ export default function FriendComparison() {
             >
               View Commit Activity
             </a>
-            <button
+            <button aria-label="Perform action"
               onClick={clearComparison}
               className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-all hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)] hover:opacity-90 active:scale-95"
             >

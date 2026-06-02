@@ -175,6 +175,173 @@ const RepoItem = memo(({
 });
 RepoItem.displayName = "RepoItem";
 
+interface RepoItemProps {
+  repo: Repo;
+  idx: number;
+  isPinned: boolean;
+  barWidth: number;
+  shortName: string;
+  health: RepoHealthScore | undefined;
+  healthLoading: boolean;
+  onSelectActivity: (name: string) => void;
+  onSelectHealth: (name: string) => void;
+  onTogglePin: (name: string) => void;
+}
+
+const RepoItem = memo(({
+  repo,
+  idx,
+  isPinned,
+  barWidth,
+  shortName,
+  health,
+  healthLoading,
+  onSelectActivity,
+  onSelectHealth,
+  onTogglePin,
+}: RepoItemProps) => {
+  const badgeTitle = health
+    ? `Commits: ${health.signals.commitFrequency} | PR Merge Rate: ${Math.round(
+        health.signals.prMergeRate * 100
+      )}% | Avg PR Time: ${Math.round(
+        health.signals.avgPrOpenTimeHours
+      )}h | Open Issues: ${health.signals.openIssuesCount} | Last Commit: ${health.signals.daysSinceLastCommit} days ago`
+    : undefined;
+
+  const badgeClass =
+    health?.grade === "green"
+      ? "bg-[var(--success)]/15 text-[var(--success)] border border-[var(--success)]/25"
+      : health?.grade === "yellow"
+        ? "bg-[var(--warning)]/15 text-[var(--warning)] border border-[var(--warning)]/25"
+        : "bg-[var(--destructive)]/15 text-[var(--destructive)] border border-[var(--destructive)]/25";
+
+  const visibleLanguages = repo.languages ? getVisibleLanguages(repo.languages) : [];
+
+  return (
+    <li>
+      <div className="flex items-center justify-between text-sm mb-1">
+        <div className="flex items-center gap-2 max-w-[60%] sm:max-w-[70%]">
+          <button
+            type="button"
+            onClick={() => onSelectActivity(repo.name)}
+            className="truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] text-left font-medium"
+            title={repo.description || `View activity for ${repo.name}`}
+          >
+            <span className="mr-1 text-[var(--muted-foreground)] font-normal">#{idx + 1}</span>
+            {shortName}
+            {isPinned && (
+              <span className="ml-2 inline-flex items-center rounded-md bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--accent)_20%,transparent)] align-middle">
+                Pinned
+              </span>
+            )}
+          </button>
+          <a
+            href={repo.url || `https://github.com/${repo.name}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors shrink-0"
+            title="Open in GitHub"
+            aria-label={`Open ${repo.name} in GitHub`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          </a>
+        </div>
+        <span className="shrink-0 flex items-center gap-2">
+          {healthLoading ? (
+            <div className="h-5 w-9 rounded bg-[var(--card-muted)] animate-pulse" />
+          ) : health ? (
+            <button
+              type="button"
+              onClick={() => onSelectHealth(repo.name)}
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold cursor-pointer ${badgeClass}`}
+              title={badgeTitle}
+              aria-label={`View health breakdown for ${shortName}`}
+            >
+              {health.score}
+            </button>
+          ) : (
+            <span
+              className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-2 py-0.5 text-xs font-semibold text-[var(--muted-foreground)]"
+              title="Not enough data to calculate health score"
+            >
+              --
+            </span>
+          )}
+          <span className="text-[var(--muted-foreground)]">
+            {repo.commits} commit{repo.commits !== 1 ? "s" : ""}
+          </span>
+          <button
+            type="button"
+            onClick={() => onTogglePin(repo.name)}
+            className="ml-1 p-1 hover:bg-[var(--card-muted)] rounded-md transition-colors"
+            title={
+              isPinned
+                ? `Unpin ${shortName} repository`
+                : `Pin ${shortName} repository`
+            }
+            aria-label={isPinned ? `Unpin ${repo.name}` : `Pin ${repo.name}`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill={isPinned ? "currentColor" : "none"}
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={isPinned ? "text-[var(--accent)]" : "text-[var(--muted-foreground)]"}
+            >
+              <path d="M12 17v5" />
+              <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+            </svg>
+          </button>
+        </span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-[var(--control)]">
+        <div
+          className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
+          style={{ width: `${barWidth}%` }}
+        />
+      </div>
+      <div className="mt-2 min-h-6">
+        {visibleLanguages.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 text-[11px] text-[var(--muted-foreground)]">
+            {visibleLanguages.map((language) => (
+              <span
+                key={language.name}
+                className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--control)] px-2 py-0.5"
+                title={`${language.name}: ${language.percentage}%`}
+              >
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: getLanguageColor(language.name) }}
+                />
+                <span className="text-[var(--card-foreground)]">{language.name}</span>
+                <span>{language.percentage}%</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.repo.name === nextProps.repo.name &&
+    prevProps.repo.commits === nextProps.repo.commits &&
+    prevProps.idx === nextProps.idx &&
+    prevProps.isPinned === nextProps.isPinned &&
+    prevProps.barWidth === nextProps.barWidth &&
+    prevProps.shortName === nextProps.shortName &&
+    prevProps.healthLoading === nextProps.healthLoading &&
+    prevProps.health?.score === nextProps.health?.score &&
+    prevProps.health?.grade === nextProps.health?.grade
+  );
+});
+RepoItem.displayName = "RepoItem";
+
 interface RepoLanguage {
   name: string;
   bytes: number;

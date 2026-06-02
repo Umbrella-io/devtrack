@@ -3,7 +3,7 @@
 import { signIn } from "next-auth/react";
 import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+
 
 const A = "#818cf8";
 const ERR = "#f87171";
@@ -143,31 +143,6 @@ function SignInContent() {
           alignItems: "center",
         }}
       >
-
-         {/* BACK TO HOME */}
-      <div
-        style={{
-    width: "100%",
-    display: "flex",
-    justifyContent: "flex-start",
-    alignItems:"center",
-    marginBottom: 20,
-  }}
-      >
-        <Link
-          href="/"
-          style={{
-            fontFamily: MONO,
-    color: "#e8e8e8",
-    textDecoration: "none",
-  fontSize:12 }}
-        >
-           ← Back to home
-        </Link>
-      </div>
-
-
-        
         <div style={{ marginBottom: 36 }}>
           <span
             style={{
@@ -211,10 +186,8 @@ function SignInContent() {
 
         {error && <AuthErrorBanner error={error} />}
 
-        <button
-          type="button"
+        <button aria-label="Perform action"
           onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
-          aria-label="Sign in with GitHub"
           className="primary-button relative w-full inline-flex items-center justify-center gap-3 rounded-xl py-3 font-semibold"
         >
           Sign in with GitHub
