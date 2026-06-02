@@ -31,7 +31,7 @@ export default function IssueMetrics() {
     fetch(url)
       .then(async (r) => {
         const data = await r.json();
-        if (data?.error === "github_auth_invalid") {
+        if (data?.error === "token_expired") {
           setGithubAuthInvalid(true);
           return null;
         }

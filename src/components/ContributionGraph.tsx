@@ -243,7 +243,7 @@ export default function ContributionGraph() {
       try {
         const r = await fetch(url);
         const body = await r.json().catch(() => null);
-        if (body?.error === "github_auth_invalid") {
+        if (body?.error === "token_expired") {
           if (active) {
             setGithubAuthInvalid(true);
             setLoading(false);

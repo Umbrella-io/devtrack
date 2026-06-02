@@ -96,10 +96,10 @@ describe("githubAuthErrorResponse", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns github_auth_invalid error key", async () => {
+  it("returns token_expired error key", async () => {
     const res = githubAuthErrorResponse();
     const body = await res.json();
-    expect(body).toEqual({ error: "github_auth_invalid" });
+    expect(body).toEqual({ error: "token_expired" });
   });
 });
 
@@ -178,7 +178,7 @@ describe("githubGraphQL — 401", () => {
 // ─── /api/metrics/repos — session.error check ───────────────────────────────
 
 describe("GET /api/metrics/repos — TokenRevoked session", () => {
-  it("returns github_auth_invalid when session.error is TokenRevoked", async () => {
+  it("returns token_expired when session.error is TokenRevoked", async () => {
     mocks.getServerSession.mockResolvedValue({
       accessToken: "some-token",
       githubLogin: "alice",
@@ -192,14 +192,14 @@ describe("GET /api/metrics/repos — TokenRevoked session", () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toBe("github_auth_invalid");
+    expect(body.error).toBe("token_expired");
   });
 });
 
 // ─── /api/metrics/repos — GitHub 401 from API ────────────────────────────────
 
 describe("GET /api/metrics/repos — GitHub API 401", () => {
-  it("returns github_auth_invalid when GitHub Search API returns 401", async () => {
+  it("returns token_expired when GitHub Search API returns 401", async () => {
     mocks.getServerSession.mockResolvedValue({
       accessToken: "revoked-token",
       githubLogin: "alice",
@@ -219,7 +219,7 @@ describe("GET /api/metrics/repos — GitHub API 401", () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toBe("github_auth_invalid");
+    expect(body.error).toBe("token_expired");
   });
 
   it("returns 502 for non-auth GitHub failures (rate limit 403)", async () => {
@@ -242,14 +242,14 @@ describe("GET /api/metrics/repos — GitHub API 401", () => {
 
     expect(res.status).toBe(502);
     const body = await res.json();
-    expect(body.error).not.toBe("github_auth_invalid");
+    expect(body.error).not.toBe("token_expired");
   });
 });
 
 // ─── /api/metrics/streak — session.error check ───────────────────────────────
 
 describe("GET /api/metrics/streak — TokenRevoked session", () => {
-  it("returns github_auth_invalid when session.error is TokenRevoked", async () => {
+  it("returns token_expired when session.error is TokenRevoked", async () => {
     mocks.getServerSession.mockResolvedValue({
       accessToken: "some-token",
       githubLogin: "alice",
@@ -268,14 +268,14 @@ describe("GET /api/metrics/streak — TokenRevoked session", () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toBe("github_auth_invalid");
+    expect(body.error).toBe("token_expired");
   });
 });
 
 // ─── /api/metrics/issues — session.error check ───────────────────────────────
 
 describe("GET /api/metrics/issues — TokenRevoked session", () => {
-  it("returns github_auth_invalid when session.error is TokenRevoked", async () => {
+  it("returns token_expired when session.error is TokenRevoked", async () => {
     mocks.getServerSession.mockResolvedValue({
       accessToken: "some-token",
       githubLogin: "alice",
@@ -289,10 +289,10 @@ describe("GET /api/metrics/issues — TokenRevoked session", () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toBe("github_auth_invalid");
+    expect(body.error).toBe("token_expired");
   });
 
-  it("returns github_auth_invalid when GitHub Search API returns 401", async () => {
+  it("returns token_expired when GitHub Search API returns 401", async () => {
     mocks.getServerSession.mockResolvedValue({
       accessToken: "revoked-token",
       githubLogin: "alice",
@@ -312,6 +312,6 @@ describe("GET /api/metrics/issues — TokenRevoked session", () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toBe("github_auth_invalid");
+    expect(body.error).toBe("token_expired");
   });
 });
