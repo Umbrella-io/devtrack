@@ -228,24 +228,20 @@ export async function middleware(req: NextRequest) {
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
+  if ((isProtectedRoute || isAdminRoute) && !token) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   if (isProtectedRoute) {
-    if (!token) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      url.search = "";
-      return NextResponse.redirect(url);
-    }
     return NextResponse.next();
   }
 
   if (isAdminRoute) {
-    if (!token) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      url.search = "";
-      return NextResponse.redirect(url);
-    }
-    if (token.role !== "admin") {
+    // Check if token explicitly has the admin role
+    if (!token?.role || token.role !== "admin") {
       return new NextResponse("Forbidden: Admin access required", { status: 403 });
     }
     return NextResponse.next();
