@@ -287,3 +287,7 @@ Built by the DevTrack community · [devtrack-delta.vercel.app](https://devtrack-
 Star this repo if DevTrack is useful to you.
 
 </div>
+
+
+## Caching Guidelines (Issue #1942)
+To optimize UI rendering and caching behavior in DevTrack, leverage client cache (Zustand/Query) and Next.js ISR revalidation policies.
