@@ -104,7 +104,7 @@ export default function ActivityRingChart() {
 
       <div className="flex-1 flex items-center justify-center min-h-[300px]">
         {loading ? (
-          <div className="h-48 w-48 animate-pulse rounded-full bg-[var(--card-muted)]" />
+          <div className="h-[300px] w-[300px] animate-pulse rounded-full bg-[var(--card-muted)]" />
         ) : error ? (
           <p className="text-sm text-[var(--destructive)]">{error}</p>
         ) : data.every((d) => d.commits === 0) ? (

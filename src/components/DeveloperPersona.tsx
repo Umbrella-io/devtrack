@@ -217,7 +217,7 @@ export default function DeveloperPersona() {
                 <div
                   key={item}
                   aria-hidden="true"
-                  className="h-20 rounded-xl border border-[var(--border)] bg-[var(--card-muted)] animate-pulse"
+                  className="h-28 rounded-xl border border-[var(--border)] bg-[var(--card-muted)] animate-pulse"
                 />
               ))}
             </div>

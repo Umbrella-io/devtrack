@@ -260,6 +260,10 @@ export default function PRMetrics() {
             ))}
           </div>
           <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
+          <div
+            className="h-[220px] rounded-lg bg-[var(--card-muted)] animate-pulse"
+            aria-hidden="true"
+          />
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] p-4 text-sm text-[var(--destructive)]">

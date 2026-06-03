@@ -175,7 +175,15 @@ export default function PRReviewTrendChart() {
               />
             ))}
           </div>
-          <div className="h-[280px] animate-pulse rounded-lg bg-[var(--card-muted)]" />
+          <div className="h-[300px] animate-pulse rounded-lg bg-[var(--card-muted)]" />
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-4">
+  {[1,2,3,4,5,6,7,8].map((i) => (
+    <div
+      key={i}
+      className="h-14 rounded-md bg-[var(--card-muted)] animate-pulse"
+    />
+  ))}
+</div>
         </div>
       ) : error ? (
         <div className="flex h-[360px] items-center justify-center">

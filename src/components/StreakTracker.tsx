@@ -230,7 +230,7 @@ export default function StreakTracker() {
 
   if (loading) {
     return (
-      <div className="bg-[var(--card)] rounded-xl p-6">
+      <div className="bg-[var(--card)] rounded-xl p-6 min-h-[700px]">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading streak tracker</span>
           <div
