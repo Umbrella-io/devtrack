@@ -100,3 +100,7 @@ DevTrack includes a `render.yaml` Blueprint for easy deployment on Render's free
   Ensure your `NEXTAUTH_URL` exactly matches your deployment URL (including `https://` and no trailing slash). 
 - **Database Fetch Errors**: 
   Make sure you ran the `supabase/schema.sql` file in your Supabase SQL editor. Without the `users` and `goals` tables, the dashboard will fail to load.
+
+
+## Production Docker variables (Issue #1957)
+Configure NODE_ENV=production, DATABASE_URL, and NEXTAUTH_SECRET to host production builds in docker containers securely.
