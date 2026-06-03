@@ -326,12 +326,17 @@ export async function buildLeaderboard(
   };
 }
 
-/**
- * Returns cached leaderboard data or builds fresh data.
- * Used by both the server component (direct call) and the API route (thin wrapper).
- * Does NOT include thundering-herd protection — that belongs in the API route
- * where multiple serverless instances may race.
- */
+export async function refreshLeaderboardCache(
+  filters: LeaderboardFilters = {}
+): Promise<LeaderboardPayload> {
+  const payload = await buildLeaderboard(filters);
+  const period = filters.period ?? DEFAULT_PERIOD;
+  const cacheKey = getLeaderboardCacheKey(period);
+  await cacheSet(cacheKey, payload, CACHE_STALE_SECONDS);
+  setMemoryCachedLeaderboard(payload, period);
+  return payload;
+}
+
 export async function getLeaderboardData(
   bypass = false,
   filters: LeaderboardFilters = {}
@@ -356,7 +361,6 @@ export async function getLeaderboardData(
     return payload;
   } catch (err) {
     console.error("[Leaderboard] Build failed:", err);
-    // Return stale data rather than null when the fresh build fails.
     const stale = await cacheGet<LeaderboardPayload>(getLeaderboardCacheKey(period));
     return stale ?? null;
   }
