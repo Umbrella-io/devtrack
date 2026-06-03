@@ -161,11 +161,17 @@ export async function GET(req: NextRequest) {
   const accessToken: string = session.accessToken;
   const githubLogin: string = session.githubLogin;
   const accountId = req.nextUrl.searchParams.get("accountId");
+  const limitParam = req.nextUrl.searchParams.get("limit");
+  const offsetParam = req.nextUrl.searchParams.get("offset");
+
+  const limit = limitParam ? parseInt(limitParam, 10) : 10;
+  const offset = offsetParam ? parseInt(offsetParam, 10) : 0;
+
   const bypass = isMetricsCacheBypassed(req);
   const cacheKey = metricsCacheKey(
     session.githubId ?? githubLogin,
     "activity",
-    { accountId: accountId || undefined }
+    { accountId: accountId || undefined, limit, offset }
   );
 
   try {
@@ -181,7 +187,7 @@ export async function GET(req: NextRequest) {
             accessToken,
             githubLogin
           );
-          return { items: items.slice(0, 20) };
+          return { items: items.slice(offset, offset + limit) };
         }
 
         if (!session.githubId) {
@@ -235,7 +241,7 @@ export async function GET(req: NextRequest) {
                 new Date(b.createdAt).getTime() -
                 new Date(a.createdAt).getTime()
             )
-            .slice(0, 15);
+            .slice(offset, offset + limit);
 
           if (merged.length === 0 && results.length > 0) {
             const allFailed = results.every(
@@ -254,7 +260,7 @@ export async function GET(req: NextRequest) {
             accessToken,
             githubLogin
           );
-          return { items: items.slice(0, 15) };
+          return { items: items.slice(offset, offset + limit) };
         }
 
         const token = await getAccountToken(userRow.id, accountId);
@@ -278,7 +284,7 @@ export async function GET(req: NextRequest) {
           token,
           accountRow.github_login
         );
-        return { items: items.slice(0, 15) };
+        return { items: items.slice(offset, offset + limit) };
       }
     );
 
