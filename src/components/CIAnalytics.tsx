@@ -188,7 +188,6 @@ export default function CIAnalytics() {
         </div>
       ) : data ? (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 stagger-children">
             {stats.map((stat) => (
               <div
@@ -205,8 +204,6 @@ export default function CIAnalytics() {
             ))}
           </div>
       
-          <div className="rounded-lg bg-[var(--control)] p-4">
-
           <div className="rounded-lg bg-[var(--control)] p-4 stat-cell">
             <p className="text-sm font-medium text-[var(--card-foreground)]">
               Flakiest workflow
