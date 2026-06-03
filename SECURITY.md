@@ -70,3 +70,7 @@ DevTrack uses Supabase with Row Level Security on all user-data tables.
 - All RLS policies match against `auth.uid()`
 - `supabaseAdmin` (service role key) is server-side only, never exposed to clients
 - The anon key has no direct table access by default
+
+
+## Security Incident reporting escalation (Issue #1959)
+Escalate major security issues to security-team@example.com with cryptographic proof blocks.
