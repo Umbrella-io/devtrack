@@ -48,7 +48,7 @@ export default function LocalCodingTime() {
           const json = await res.json();
           setData(json);
         }
-      } catch {
+      } catch (e) {
         setData(null);
       } finally {
         setLoading(false);
@@ -93,7 +93,7 @@ export default function LocalCodingTime() {
 
   if (!data || !data.hasData) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
             Local Coding Time
@@ -136,7 +136,7 @@ export default function LocalCodingTime() {
   const maxSeconds = Math.max(...data.dailyData.map((d) => d.totalSeconds), 1);
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           Local Coding Time
@@ -152,8 +152,8 @@ export default function LocalCodingTime() {
         </select>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="text-center">
+      <div className="grid grid-cols-3 gap-4 mb-6 stagger-children">
+        <div className="text-center stat-cell rounded-lg p-2 animate-fade-in-up">
           <div className="text-2xl font-bold text-[var(--card-foreground)]">
             {formatDuration(data.totals.totalSeconds)}
           </div>
@@ -161,7 +161,7 @@ export default function LocalCodingTime() {
             Total time
           </div>
         </div>
-        <div className="text-center">
+        <div className="text-center stat-cell rounded-lg p-2 animate-fade-in-up">
           <div className="text-2xl font-bold text-[var(--card-foreground)]">
             {data.totals.totalDays}
           </div>
@@ -169,7 +169,7 @@ export default function LocalCodingTime() {
             Active days
           </div>
         </div>
-        <div className="text-center">
+        <div className="text-center stat-cell rounded-lg p-2 animate-fade-in-up">
           <div className="text-2xl font-bold text-[var(--card-foreground)]">
             {formatDuration(data.totals.avgSecondsPerDay)}
           </div>
@@ -189,7 +189,7 @@ export default function LocalCodingTime() {
               </span>
               <div className="flex-1 h-4 bg-[var(--control)] rounded overflow-hidden">
                 <div
-                  className="h-full bg-[var(--accent)] rounded"
+                  className="h-full bg-[var(--accent)] rounded progress-fill"
                   style={{ width: `${pct}%` }}
                 />
               </div>

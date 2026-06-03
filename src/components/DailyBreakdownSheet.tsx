@@ -45,7 +45,25 @@ export default function DailyBreakdownSheet({
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
+const sheetRef = useRef<HTMLDivElement>(null);
+useEffect(() => {
+  if (!isOpen) return;
+  const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+    if (
+      sheetRef.current &&
+      !sheetRef.current.contains(e.target as Node)
+    ) {
+      onClose();
+    }
+  };
 
+  document.addEventListener("mousedown", handleClickOutside);
+  document.addEventListener("touchstart", handleClickOutside);
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+    document.removeEventListener("touchstart", handleClickOutside);
+  };
+}, [isOpen, onClose]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCloseRef.current();
@@ -72,12 +90,13 @@ export default function DailyBreakdownSheet({
         onClick={onClose}
         aria-hidden="true"
       />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Daily breakdown for ${formattedDate}`}
-        className="fixed right-0 top-0 z-50 flex h-full w-80 flex-col border-l border-[var(--border)] bg-[var(--card)] shadow-xl"
-      >
+     <div
+  ref={sheetRef}
+  role="dialog"
+  aria-modal="true"
+  aria-label={`Daily breakdown for ${formattedDate}`}
+  className="fixed right-0 top-0 z-50 flex h-full w-80 flex-col border-l border-[var(--border)] bg-[var(--card)] shadow-xl"
+>
         <div className="flex items-center justify-between border-b border-[var(--border)] p-4">
           <div>
             <h2 className="font-semibold text-[var(--card-foreground)]">

@@ -52,3 +52,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ---
 
 [0.1.0]: https://github.com/Priyanshu-byte-coder/devtrack/releases/tag/v0.1.0
+
+
+### GSSoC Semantic Versioning Policy
+- Bumps follow minor or patch levels strictly.
+- Major updates require prior architecture approval.

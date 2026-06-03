@@ -146,7 +146,7 @@ export async function GET(req: NextRequest) {
       );
 
       return Response.json(result);
-    } catch {
+    } catch (e) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -202,7 +202,7 @@ export async function GET(req: NextRequest) {
       );
 
       return Response.json(result);
-    } catch {
+    } catch (e) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -233,7 +233,7 @@ export async function GET(req: NextRequest) {
     );
 
     return Response.json(result);
-  } catch {
+  } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

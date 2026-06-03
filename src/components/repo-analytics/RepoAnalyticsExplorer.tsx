@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import RepoCarousel from "./RepoCarousel";
 import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
+import { toast } from "sonner";
 
 export default function RepoAnalyticsExplorer() {
   const [repos, setRepos] = useState<ExplorerRepoCardData[]>([]);
@@ -19,7 +20,11 @@ export default function RepoAnalyticsExplorer() {
         return res.json();
       })
       .then((json: { repos: ExplorerRepoCardData[] }) => setRepos(json.repos ?? []))
-      .catch(() => setError("Could not load repo analytics right now."))
+      .catch((err) => {
+        console.error("Failed to fetch repo analytics:", err);
+        setError("Could not load repo analytics right now.");
+        toast.error("Failed to load repo analytics");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -28,7 +33,7 @@ export default function RepoAnalyticsExplorer() {
   }, [fetchRepos]);
 
   return (
-    <section className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm md:p-6 fade-up">
+    <section className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm md:p-6 fade-up transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[var(--card-foreground)]">Repo Analytics</h2>

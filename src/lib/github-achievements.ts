@@ -68,7 +68,7 @@ function logGitHubAchievements(
   }
 }
 
-function decodeHtml(value: string): string {
+export function decodeHtml(value: string): string {
   return value
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, "\"")
@@ -77,11 +77,11 @@ function decodeHtml(value: string): string {
     .replace(/&gt;/g, ">");
 }
 
-function stripTags(value: string): string {
+export function stripTags(value: string): string {
   return decodeHtml(value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
 }
 
-function titleFromSlug(slug: string): string {
+export function titleFromSlug(slug: string): string {
   return slug
     .split("-")
     .filter(Boolean)
@@ -89,7 +89,7 @@ function titleFromSlug(slug: string): string {
     .join(" ");
 }
 
-function slugFromTitle(title: string): string {
+export function slugFromTitle(title: string): string {
   return title
     .trim()
     .toLowerCase()
@@ -101,7 +101,7 @@ function achievementDescription(slug: string, title: string): string {
   return ACHIEVEMENT_DESCRIPTIONS[slug] ?? `${title} achievement on GitHub.`;
 }
 
-function absoluteGitHubUrl(value: string): string {
+export function absoluteGitHubUrl(value: string): string {
   const decoded = decodeHtml(value);
   if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
     return decoded;
@@ -115,19 +115,19 @@ function absoluteGitHubUrl(value: string): string {
   return decoded;
 }
 
-function getHtmlAttribute(tag: string, attribute: string): string | null {
+export function getHtmlAttribute(tag: string, attribute: string): string | null {
   const pattern = new RegExp(`${attribute}="([^"]*)"`, "i");
   const match = tag.match(pattern);
   return match?.[1] ? decodeHtml(match[1]) : null;
 }
 
-function slugFromAchievementImage(imageUrl: string): string | null {
+export function slugFromAchievementImage(imageUrl: string): string | null {
   const fileName = imageUrl.split("/").pop()?.split("?")[0] ?? "";
   const match = fileName.match(/^(.+?)(?:-(?:default|badge|dark|light))?-[a-f0-9]{6,}\.png$/i);
   return match?.[1]?.toLowerCase() ?? null;
 }
 
-function sanitizeGitHubLogin(username: string): string {
+export function sanitizeGitHubLogin(username: string): string {
   return username.trim().replace(/^@/, "");
 }
 
@@ -211,14 +211,14 @@ function parseAchievementsFromProfileHtml(
     const href = match[1];
     const slug = decodeHtml(match[2]).toLowerCase();
     const anchorHtml = match[3];
-    const imgMatch = anchorHtml.match(/<img\b[^>]*src="([^"]+)"[^>]*>/i);
+    const imgMatch = anchorHtml.match(/<img alt="" aria-hidden="true"\b[^>]*src="([^"]+)"[^>]*>/i);
 
     if (!imgMatch) {
       continue;
     }
 
     const imageUrl = absoluteGitHubUrl(imgMatch[1]);
-    const altMatch = anchorHtml.match(/<img\b[^>]*alt="([^"]*)"[^>]*>/i);
+    const altMatch = anchorHtml.match(/<img alt="" aria-hidden="true"\b[^>]*alt="([^"]*)"[^>]*>/i);
     const ariaMatch = anchorHtml.match(/aria-label="([^"]+)"/i);
     const titleMatch = anchorHtml.match(/title="([^"]+)"/i);
     const rawTitle =
@@ -234,7 +234,7 @@ function parseAchievementsFromProfileHtml(
     });
   }
 
-  const achievementImagePattern = /<img\b[^>]*alt="Achievement:\s*([^"]+)"[^>]*>/gi;
+  const achievementImagePattern = /<img alt="" aria-hidden="true"\b[^>]*alt="Achievement:\s*([^"]+)"[^>]*>/gi;
 
   for (const match of html.matchAll(achievementImagePattern)) {
     const imageTag = match[0];

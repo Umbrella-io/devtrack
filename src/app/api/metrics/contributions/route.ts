@@ -19,11 +19,19 @@ import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
 export const dynamic = "force-dynamic";
 
+interface TimeBlocks {
+  morning: number;
+  afternoon: number;
+  evening: number;
+  night: number;
+}
+
 interface ContributionResponse {
   days: number;
   total: number;
   data: Record<string, number>;
   commits: CommitItem[];
+  timeBlocks: TimeBlocks;
   sources?: {
     github: Record<string, number>;
     gitlab?: Record<string, number>;
@@ -39,6 +47,25 @@ interface GitLabEvent {
 
 function toLocalDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function getDateInTimezone(dateString: string, timezone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(dateString));
+}
+
+function getHourInTimezone(dateString: string, timezone: string): number {
+  const hour = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "2-digit",
+    hour12: false,
+  }).format(new Date(dateString));
+
+  return Number(hour);
 }
 
 function mergeContributionDays(
@@ -61,13 +88,18 @@ async function fetchContributionsForAccount(
   githubLogin: string,
   days: number,
   cacheContext: { bypass: boolean; userId: string },
-  fromDate?: string
+  timezone: string,
+  fromDate?: string,
+  repo?: string | null
 
 ): Promise<ContributionResponse> {
+  const repoFilter = repo ? ` repo:${repo}` : "";
+
   const key = metricsCacheKey(cacheContext.userId, "contributions", {
     days,
     githubLogin,
     from: fromDate ?? undefined,
+    repo,
   });
 
   return withMetricsCache(
@@ -93,7 +125,7 @@ async function fetchContributionsForAccount(
         const searchUrl = new URL(`${GITHUB_API}/search/commits`);
         searchUrl.searchParams.set(
           "q",
-          `author:${githubLogin} author-date:>=${sinceStr}`
+          `author:${githubLogin} author-date:>=${sinceStr}${repoFilter}`
         );
         searchUrl.searchParams.set("per_page", "100");
         searchUrl.searchParams.set("page", String(page));
@@ -149,8 +181,10 @@ async function fetchContributionsForAccount(
       }
 
       const commitsByDay: Record<string, number> = {};
+      const timeBlocks: TimeBlocks = { morning: 0, afternoon: 0, evening: 0, night: 0 };
       for (const item of allItems) {
-        const date = item.commit.author.date.slice(0, 10);
+
+        const date = getDateInTimezone(item.commit.author.date, timezone);
         commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
         commitItems.push({
           sha: item.sha,
@@ -159,9 +193,15 @@ async function fetchContributionsForAccount(
           repo: item.repository?.full_name ?? "unknown",
           url: item.html_url,
         });
+
+        const hour = getHourInTimezone(item.commit.author.date, timezone);
+        if (hour >= 6 && hour < 12) timeBlocks.morning++;
+        else if (hour >= 12 && hour < 18) timeBlocks.afternoon++;
+        else if (hour >= 18 && hour < 22) timeBlocks.evening++;
+        else timeBlocks.night++;
       }
 
-      return { days, total: totalCount, data: commitsByDay, commits: commitItems };
+      return { days, total: totalCount, data: commitsByDay, commits: commitItems, timeBlocks };
     }
   );
 }
@@ -187,10 +227,11 @@ async function fetchGitLabContributions(
       since.setDate(since.getDate() - days);
       since.setHours(0, 0, 0, 0);
 
+      const MAX_PAGES = 10;
       let page = 1;
       const commitsByDay: Record<string, number> = {};
 
-      while (page > 0) {
+      while (page > 0 && page <= MAX_PAGES) {
         const url = new URL("https://gitlab.com/api/v4/events");
         url.searchParams.set("action", "pushed");
         url.searchParams.set("per_page", "100");
@@ -238,6 +279,7 @@ async function fetchGitLabContributions(
         total: sumContributionDays(commitsByDay),
         data: commitsByDay,
         commits: [],
+        timeBlocks: { morning: 0, afternoon: 0, evening: 0, night: 0 },
       };
     }
   );
@@ -267,6 +309,7 @@ async function mergeGitLabContributions(
     total: combinedTotal,
     data: combinedData,
     commits: result.commits,
+    timeBlocks: result.timeBlocks,
     sources: {
       github: result.data,
       gitlab: gitlabResult.data,
@@ -275,6 +318,7 @@ async function mergeGitLabContributions(
 }
 
 export async function GET(req: NextRequest) {
+  const timezone = req.nextUrl.searchParams.get("timezone") || "UTC";
   const session = await getServerSession(authOptions);
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -282,6 +326,7 @@ export async function GET(req: NextRequest) {
 
   const fromParam = req.nextUrl.searchParams.get("from");
   const toParam = req.nextUrl.searchParams.get("to");
+  const repoParam = req.nextUrl.searchParams.get("repo");
 
   let days: number;
   let fromDate: string | undefined;
@@ -297,7 +342,7 @@ export async function GET(req: NextRequest) {
     const parsedDays = daysParam ? parseInt(daysParam, 10) : NaN;
     days = isNaN(parsedDays) ? 30 : Math.max(1, Math.min(365, parsedDays));
   }
-  
+
   const accountId = req.nextUrl.searchParams.get("accountId");
   const usernameParam = req.nextUrl.searchParams.get("username");
   const username = usernameParam ? normalizeGitHubUsername(usernameParam) : null;
@@ -317,10 +362,12 @@ export async function GET(req: NextRequest) {
         username,
         days,
         { bypass, userId: session.githubId ?? session.githubLogin },
-        fromDate
+        timezone,
+        fromDate,
+        repoParam
       );
       return Response.json(result);
-    } catch {
+    } catch (e) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -332,7 +379,9 @@ export async function GET(req: NextRequest) {
         session.githubLogin,
         days,
         { bypass, userId: session.githubId ?? session.githubLogin },
-        fromDate
+        timezone,
+        fromDate,
+        repoParam
       );
 
       if (!gitlabToken) {
@@ -345,7 +394,7 @@ export async function GET(req: NextRequest) {
       });
 
       return Response.json(merged);
-    } catch {
+    } catch (e) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -376,7 +425,7 @@ export async function GET(req: NextRequest) {
           bypass,
           userId: account.githubId,
 
-        }, fromDate)
+        }, timezone, fromDate, repoParam)
       )
     );
 
@@ -387,6 +436,12 @@ export async function GET(req: NextRequest) {
       commits: [...a.commits, ...b.commits].sort(
         (c, d) => d.date.localeCompare(c.date) || d.sha.localeCompare(c.sha)
       ),
+      timeBlocks: {
+        morning: a.timeBlocks.morning + b.timeBlocks.morning,
+        afternoon: a.timeBlocks.afternoon + b.timeBlocks.afternoon,
+        evening: a.timeBlocks.evening + b.timeBlocks.evening,
+        night: a.timeBlocks.night + b.timeBlocks.night,
+      },
     }));
 
     if (!merged) {
@@ -412,6 +467,7 @@ export async function GET(req: NextRequest) {
         session.githubLogin,
         days,
         { bypass, userId: session.githubId },
+        timezone,
         fromDate
       );
 
@@ -425,7 +481,7 @@ export async function GET(req: NextRequest) {
       });
 
       return Response.json(merged);
-    } catch {
+    } catch (e) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -453,10 +509,11 @@ export async function GET(req: NextRequest) {
       accountRow.github_login,
       days,
       { bypass, userId: accountId },
+      timezone,
       fromDate
     );
     return Response.json(result);
-  } catch {
+  } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

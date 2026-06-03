@@ -245,7 +245,7 @@ export async function GET(req: NextRequest) {
       });
 
       return Response.json(formatTrendWeeks(result));
-    } catch {
+    } catch (e) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -304,7 +304,7 @@ export async function GET(req: NextRequest) {
     });
 
     return Response.json(formatTrendWeeks(result));
-  } catch {
+  } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }
