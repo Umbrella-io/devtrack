@@ -58,6 +58,29 @@ const charts: { key: ViewMode; label: string }[] = [
   { key: "area", label: "Area" },
 ];
 
+function normalizeCommitCount(count: unknown): number {
+  const numericCount = Number(count ?? 0);
+
+  if (!Number.isFinite(numericCount) || numericCount <= 0) {
+    return 0;
+  }
+
+  return numericCount;
+}
+
+function normalizeContributionData(data: Record<string, number>): DayData[] {
+  return Object.entries(data)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, commits]) => ({
+      day,
+      commits: normalizeCommitCount(commits),
+    }));
+}
+
+function getTotalCommits(data: DayData[]): number {
+  return data.reduce((total, day) => total + normalizeCommitCount(day.commits), 0);
+}
+
 function mergeContributionData(
   myData: DayData[],
   friendData: DayData[]
@@ -67,7 +90,7 @@ function mergeContributionData(
   myData.forEach(d => {
     map.set(d.day, {
       date: d.day,
-      you: d.commits,
+      you: normalizeCommitCount(d.commits),
       friend: 0,
     });
   });
@@ -77,10 +100,10 @@ function mergeContributionData(
       map.set(d.day, {
         date: d.day,
         you: 0,
-        friend: d.commits,
+        friend: normalizeCommitCount(d.commits),
       });
     } else {
-      map.get(d.day)!.friend = d.commits;
+      map.get(d.day)!.friend = normalizeCommitCount(d.commits);
     }
   });
 
@@ -100,7 +123,7 @@ function mergeContributionSources(
   const merged = { ...github };
 
   for (const [day, commits] of Object.entries(gitlab)) {
-    merged[day] = (merged[day] ?? 0) + commits;
+    merged[day] = normalizeCommitCount(merged[day]) + normalizeCommitCount(commits);
   }
 
   return merged;
@@ -249,9 +272,7 @@ export default function ContributionGraph() {
           res.sources,
           res.data ?? {}
         );
-        const sorted = Object.entries(merged)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([day, commits]) => ({ day, commits }));
+        const sorted = normalizeContributionData(merged);
 
         setData(sorted);
         setCommits(res.commits ?? []);
@@ -316,9 +337,7 @@ export default function ContributionGraph() {
         return r.json();
       })
       .then((res: { data: Record<string, number> }) => {
-        const sorted = Object.entries(res.data ?? {})
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([day, commits]) => ({ day, commits }));
+        const sorted = normalizeContributionData(res.data ?? {});
         setFriendData(sorted);
       })
       .catch(() => {
@@ -447,6 +466,9 @@ export default function ContributionGraph() {
   const displayData = compareMode ? mergedData : data;
   const hasFriendData = compareMode && friendData.length > 0 && !compareError;
   const tooltipTrigger = usesTouchTooltip ? "click" : "hover";
+  const totalCommits = compareMode
+    ? getTotalCommits(data)
+    : getTotalCommits(displayData as DayData[]);
 
   return (
     <div
@@ -463,6 +485,11 @@ export default function ContributionGraph() {
           )}
           {compareMode && compareLoading && (
             <p className="text-xs text-[var(--muted-foreground)] mt-1">Loading friend data...</p>
+          )}
+          {!compareMode && !loading && !error && (
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+              {totalCommits} commit{totalCommits === 1 ? "" : "s"}
+            </p>
           )}
         </div>
 
