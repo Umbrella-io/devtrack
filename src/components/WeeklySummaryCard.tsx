@@ -258,7 +258,7 @@ Productivity Score  : ${summary.productivityScore.current} (${scoreSign}${scoreD
               </div>
             </div>
 
-            {/* Issues Resolved */}
+            {summary.issues && (
             <div className="rounded-lg bg-[var(--control)] p-4">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm text-[var(--muted-foreground)]">Issues Resolved</span>
@@ -291,6 +291,7 @@ Productivity Score  : ${summary.productivityScore.current} (${scoreSign}${scoreD
                 </div>
               </div>
             </div>
+            )}
 
             {/* Active Days Comparison */}
             <div className="rounded-lg bg-[var(--control)] p-4">
