@@ -367,3 +367,7 @@ You hit the 30 requests/minute search API limit. Wait 1 minute. In production th
 ## Questions?
 
 Open a [GitHub Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions) — not an issue.
+
+
+## Husky hooks troubleshooting (Issue #1949)
+If git hooks block commits, run chmod +x .husky/pre-commit or bypass using HUSKY=0 env configuration.
