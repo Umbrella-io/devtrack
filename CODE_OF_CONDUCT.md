@@ -29,3 +29,7 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be repor
 ## Attribution
 
 This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org), version 2.1.
+
+
+## CoC Incident Reporting (Issue #1945)
+If you witness or experience harassment, report it immediately to gssoc-coc@example.com with details and screenshots.
