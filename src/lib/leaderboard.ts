@@ -132,7 +132,7 @@ export function setMemoryCachedLeaderboard(
  */
 export async function clearLeaderboardCache(): Promise<void> {
   // 1. Drop the module-level in-process cache.
-  _memoryCache = null;
+  _memoryCache.clear();
 
   // 2. Drop the shared key from the metrics memory map and from Redis/Upstash
   //    so that other serverless instances also see a cache miss on their next
