@@ -1,4 +1,4 @@
-import { calculateStreak } from "@/lib/streak";
+import { calculateStreakFromDates } from "@/lib/streak";
 import type { GitHubAchievement } from "@/lib/github-achievements";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import { fetchPinnedRepoDetails, type PinnedRepoDetails } from "@/lib/pinned-repos";
@@ -148,25 +148,17 @@ export async function fetchPublicStreak(
     items: Array<{ commit: { author: { date: string } } }>;
   };
 
-  const daySet: Record<string, true> = {};
+  const activeDates = new Set<string>();
   for (const item of data.items) {
-    daySet[item.commit.author.date.slice(0, 10)] = true;
+    activeDates.add(item.commit.author.date.slice(0, 10));
   }
-  const commitDays = Object.keys(daySet).sort();
 
-  if (commitDays.length === 0) {
-    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
-  }
-  const { currentStreak, longestStreak } = calculateStreak(
-    commitDays.map((day) => new Date(day))
-  );
-  const lastDay = commitDays[commitDays.length - 1];
-
+  const result = calculateStreakFromDates(activeDates);
   return {
-    current: currentStreak,
-    longest: longestStreak,
-    lastCommitDate: lastDay,
-    totalActiveDays: commitDays.length,
+    current: result.current,
+    longest: result.longest,
+    lastCommitDate: result.lastCommitDate,
+    totalActiveDays: result.totalActiveDays,
   };
 }
 

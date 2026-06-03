@@ -22,19 +22,35 @@ export async function GET(req: NextRequest) {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayDate = yesterday.toISOString().split("T")[0];
 
-    const { data: todayData } = await supabaseAdmin
+    const { data: todayData, error: todayError } = await supabaseAdmin
       .from("daily_notes")
       .select("*")
       .eq("user_id", userId)
       .eq("date", todayDate)
       .single();
 
-    const { data: yesterdayData } = await supabaseAdmin
+    if (todayError && todayError.code !== "PGRST116") {
+      console.error("Failed to fetch today's daily note:", todayError);
+      return NextResponse.json(
+        { error: "Failed to fetch daily notes" },
+        { status: 500 }
+      );
+    }
+
+    const { data: yesterdayData, error: yesterdayError } = await supabaseAdmin
       .from("daily_notes")
       .select("*")
       .eq("user_id", userId)
       .eq("date", yesterdayDate)
       .single();
+
+    if (yesterdayError && yesterdayError.code !== "PGRST116") {
+      console.error("Failed to fetch yesterday's daily note:", yesterdayError);
+      return NextResponse.json(
+        { error: "Failed to fetch daily notes" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       todayNote: todayData?.note || "",

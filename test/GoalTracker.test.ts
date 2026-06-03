@@ -13,6 +13,7 @@ const mockGoals = [
     deadline: null,
     period_start: '2026-05-30T00:00:00.000Z',
     last_synced_at: null,
+    last_period: null,
   },
   {
     id: '2',
@@ -24,6 +25,7 @@ const mockGoals = [
     deadline: null,
     period_start: '2026-05-30T00:00:00.000Z',
     last_synced_at: '2026-05-30T00:00:00.000Z',
+    last_period: null,
   }
 ];
 
@@ -264,6 +266,7 @@ describe('GoalTracker - useGoalTracker Hook', () => {
           deadline: null,
           period_start: '2026-05-30T00:00:00.000Z',
           last_synced_at: null,
+          last_period: null,
         }
       ]);
     });

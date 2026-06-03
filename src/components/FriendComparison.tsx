@@ -242,7 +242,7 @@ export default function FriendComparison() {
               aria-autocomplete="list"
               aria-expanded={suggestOpen}
               aria-controls="friend-compare-suggestions"
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+              className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus-visible:border-[var(--accent)]"
             />
 
             {suggestOpen && suggestions.length > 0 && (
