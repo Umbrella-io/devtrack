@@ -92,7 +92,8 @@ return (
             <button
               type="button"
               onClick={handleNativeShare}
-              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)]"
+              aria-label={`Share ${username}'s profile using the device share sheet`}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors hover:opacity-90"
             >
               <span>📲</span>
               <span>Share</span>
@@ -103,7 +104,8 @@ return (
             href={xShareUrl}
             target="_blank"
             rel="noreferrer noopener"
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium"
+            aria-label={`Share ${username}'s profile on X`}
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80"
           >
             <span>𝕏</span>
             <span>X</span>
@@ -113,7 +115,8 @@ return (
             href={linkedInShareUrl}
             target="_blank"
             rel="noreferrer noopener"
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium"
+            aria-label={`Share ${username}'s profile on LinkedIn`}
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80"
           >
             <span>in</span>
             <span>LinkedIn</span>

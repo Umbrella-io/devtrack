@@ -15,6 +15,7 @@
     "@ducanh2912/next-pwa": "^10.2.9",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
+    "@types/swagger-ui-react": "^5.18.0",
     "@upstash/redis": "^1.38.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
@@ -37,6 +38,7 @@
     "rehype-sanitize": "^6.0.0",
     "server-only": "^0.0.1",
     "sonner": "^2.0.7",
+    "swagger-ui-react": "^5.32.6",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {

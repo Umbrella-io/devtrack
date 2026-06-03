@@ -1,10 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Suspense } from "react";
 import EmptyState from "@/components/EmptyState";
+import LeaderboardFilters from "@/components/leaderboard/LeaderboardFilters";
 import SponsorBadge from "@/components/SponsorBadge";
-import { getLeaderboardData, type LeaderboardPayload } from "@/lib/leaderboard";
+import type { LeaderboardPayload } from "@/lib/leaderboard";
 
 type LeaderboardTab = "streak" | "commits" | "prs";
+type LeaderboardPeriod = "week" | "month" | "all";
 
 interface LeaderboardEntry {
   id: string;
@@ -21,9 +24,72 @@ interface LeaderboardEntry {
 
 const tabs: Array<{ id: LeaderboardTab; label: string; metric: string }> = [
   { id: "streak", label: "Streak", metric: "days" },
-  { id: "commits", label: "Commits", metric: "this month" },
-  { id: "prs", label: "PRs", metric: "this month" },
+  { id: "commits", label: "Commits", metric: "commits" },
+  { id: "prs", label: "PRs", metric: "pull requests" },
 ];
+
+const periods: Record<LeaderboardPeriod, string> = {
+  week: "this week",
+  month: "this month",
+  all: "all time",
+};
+
+function isLeaderboardPeriod(value: string | undefined): value is LeaderboardPeriod {
+  return value === "week" || value === "month" || value === "all";
+}
+
+function leaderboardHref(
+  tab: LeaderboardTab,
+  filters: { lang?: string; period: LeaderboardPeriod }
+): string {
+  const params = new URLSearchParams({ tab });
+
+  if (filters.lang) {
+    params.set("lang", filters.lang);
+  }
+
+  if (filters.period !== "all") {
+    params.set("period", filters.period);
+  }
+
+  return `/leaderboard?${params.toString()}`;
+}
+
+async function fetchLeaderboard(filters: {
+  lang?: string;
+  period: LeaderboardPeriod;
+}): Promise<LeaderboardPayload | null> {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
+  const params = new URLSearchParams();
+
+  if (filters.lang) {
+    params.set("lang", filters.lang);
+  }
+
+  if (filters.period !== "all") {
+    params.set("period", filters.period);
+  }
+
+  const query = params.toString();
+
+  try {
+    const res = await fetch(`${baseUrl}/api/leaderboard${query ? `?${query}` : ""}`, {
+      next: { revalidate: 3600 },
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    return (await res.json()) as LeaderboardPayload;
+  } catch (error) {
+    console.error("Failed to fetch leaderboard:", error);
+    return null;
+  }
+}
 
 function getMetricValue(entry: LeaderboardEntry, tab: LeaderboardTab): number {
   if (tab === "streak") return entry.streak;
@@ -34,22 +100,22 @@ function getMetricValue(entry: LeaderboardEntry, tab: LeaderboardTab): number {
 export default async function LeaderboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: { tab?: string; lang?: string; period?: string };
 }) {
   const resolvedSearchParams = await searchParams;
   const activeTab = tabs.some((tab) => tab.id === resolvedSearchParams.tab)
     ? (resolvedSearchParams.tab as LeaderboardTab)
     : "streak";
+  const period = isLeaderboardPeriod(resolvedSearchParams.period)
+    ? resolvedSearchParams.period
+    : "all";
+  const filters = { lang: resolvedSearchParams.lang, period };
+  const hasFilters = Boolean(filters.lang) || period !== "all";
 
-  let leaderboard: LeaderboardPayload | null = null;
-  try {
-    leaderboard = await getLeaderboardData();
-  } catch (err) {
-    console.error("[LeaderboardPage] Failed to load leaderboard data:", err);
-  }
-
+  const leaderboard = await fetchLeaderboard(filters);
   const activeMeta = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
   const rows = leaderboard?.leaders[activeTab] ?? [];
+  const metricLabel = activeTab === "streak" ? activeMeta.metric : periods[period];
 
   return (
     <main className="min-h-screen bg-[var(--background)] px-4 py-6 text-[var(--foreground)] md:px-8">
@@ -61,7 +127,7 @@ export default async function LeaderboardPage({
             </Link>
             <h1 className="mt-3 text-3xl font-bold text-[var(--foreground)] md:text-4xl">Public Leaderboard</h1>
             <p className="mt-2 max-w-2xl text-sm text-[var(--muted-foreground)] md:text-base">
-              Opted-in developers ranked by current streak, monthly commits, and monthly pull request activity.
+              Opted-in developers ranked by current streak, commits, and pull request activity.
             </p>
           </div>
           {leaderboard && (
@@ -77,7 +143,7 @@ export default async function LeaderboardPage({
             return (
               <Link
                 key={tab.id}
-                href={`/leaderboard?tab=${tab.id}`}
+                href={leaderboardHref(tab.id, filters)}
                 className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${
                   active
                     ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm"
@@ -90,6 +156,10 @@ export default async function LeaderboardPage({
           })}
         </div>
 
+        <Suspense fallback={null}>
+          <LeaderboardFilters />
+        </Suspense>
+
         <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-soft)]">
           {!leaderboard ? (
             <div className="px-4 py-12 text-center">
@@ -101,8 +171,16 @@ export default async function LeaderboardPage({
           ) : rows.length === 0 ? (
             <EmptyState
               icon="🏆"
-              title="No public profiles yet"
-              description="No public profiles yet - be the first to enable yours in Settings!"
+              title={
+                hasFilters
+                  ? "No leaderboard results for these filters"
+                  : "No public profiles yet"
+              }
+              description={
+                hasFilters
+                  ? "Try a broader language or time filter, or clear filters to view the full leaderboard."
+                  : "No public profiles yet - be the first to enable yours in Settings!"
+              }
               actionLabel="Go to Settings"
               actionHref="/dashboard/settings"
             />
@@ -127,6 +205,7 @@ export default async function LeaderboardPage({
                       alt={`${entry.username} avatar`}
                       width={40}
                       height={40}
+                      unoptimized
                       className="h-10 w-10 rounded-full border border-[var(--border)]"
                     />
                     <div className="min-w-0">
@@ -140,7 +219,7 @@ export default async function LeaderboardPage({
                   </div>
                   <div>
                     <div className="text-lg font-semibold text-[var(--card-foreground)]">{getMetricValue(entry, activeTab)}</div>
-                    <div className="text-xs text-[var(--muted-foreground)]">{activeMeta.metric}</div>
+                    <div className="text-xs text-[var(--muted-foreground)]">{metricLabel}</div>
                   </div>
                   <div className="hidden text-sm font-medium text-[var(--card-foreground)] md:block">{entry.score}</div>
                   <div>
