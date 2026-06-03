@@ -232,7 +232,7 @@ export default function PRMetrics() {
             <select
               value={staleThresholdDays}
               onChange={(event) => setStaleThresholdDays(Number(event.target.value))}
-              className="rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--foreground)] outline-none transition-colors focus:border-[var(--accent)]"
+              className="rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--foreground)] transition-colors"
             >
               {[7, 14, 30].map((days) => (
                 <option key={days} value={days}>

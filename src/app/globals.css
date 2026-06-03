@@ -115,18 +115,6 @@ body {
   background: color-mix(in srgb, var(--control) 90%, white 10%);
 }
 
-:focus-visible {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 3px;
-  border-radius: 0.375rem;
-}
-
-@media (forced-colors: active) {
-  :focus-visible {
-    outline: 3px solid Highlight;
-  }
-}
-
 /* Custom slim scrollbar for dashboard widgets */
 .scrollbar-thin {
   scrollbar-width: thin;

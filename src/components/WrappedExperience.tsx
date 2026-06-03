@@ -196,7 +196,7 @@ export default function WrappedExperience() {
               id="wrapped-year"
               value={selectedYear}
               onChange={(event) => setSelectedYear(Number(event.target.value))}
-              className="h-10 rounded-md border border-white/20 bg-slate-900 px-3 text-sm font-semibold text-white outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/30"
+              className="h-10 rounded-md border border-white/20 bg-slate-900 px-3 text-sm font-semibold text-white transition focus-visible:border-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-300/30"
             >
               {years.map((year) => (
                 <option key={year} value={year}>
@@ -206,7 +206,7 @@ export default function WrappedExperience() {
             </select>
             <Link
               href="/dashboard"
-              className="inline-flex h-10 items-center rounded-md border border-white/20 px-4 text-sm font-semibold text-slate-100 transition hover:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/40"
+              className="inline-flex h-10 items-center rounded-md border border-white/20 px-4 text-sm font-semibold text-slate-100 transition hover:border-cyan-300"
             >
               Dashboard
             </Link>
@@ -317,7 +317,7 @@ export default function WrappedExperience() {
                       href={twitterUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex h-10 items-center justify-center rounded-md bg-white px-3 text-sm font-black text-slate-950 transition hover:bg-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                      className="inline-flex h-10 items-center justify-center rounded-md bg-white px-3 text-sm font-black text-slate-950 transition hover:bg-cyan-100"
                     >
                       Share on X
                     </a>
@@ -325,7 +325,7 @@ export default function WrappedExperience() {
                       href={linkedInUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex h-10 items-center justify-center rounded-md border border-white/20 px-3 text-sm font-bold text-white transition hover:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                      className="inline-flex h-10 items-center justify-center rounded-md border border-white/20 px-3 text-sm font-bold text-white transition hover:border-cyan-300"
                     >
                       LinkedIn
                     </a>
