@@ -28,6 +28,7 @@ interface UserSettings {
   discord_webhook_url?: string;
   timezone?: string;
   pinned_repos?: string[];
+  discord_muted_until?: string | null;
 }
 
 interface LinkedAccount {
@@ -145,6 +146,8 @@ function SettingsPageContent() {
   const [timezone, setTimezone] = useState("");
   const [savingDiscord, setSavingDiscord] = useState(false);
   const [testingDiscord, setTestingDiscord] = useState(false);
+  const [discordMutedUntil, setDiscordMutedUntil] = useState<string | null>(null);
+  const [muteDuration, setMuteDuration] = useState<number>(1);
   const [isDirty, setIsDirty] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
@@ -251,6 +254,7 @@ function SettingsPageContent() {
           setBioDraft(data.bio ?? "");
           setDiscordWebhook(data.discord_webhook_url || "");
           setTimezone(data.timezone || "UTC");
+          setDiscordMutedUntil(data.discord_muted_until ?? null);
           setWebhookUrl(data.webhook_url ?? null);
         }
       } catch (error) {
@@ -499,7 +503,7 @@ function SettingsPageContent() {
       const res = await fetch("/api/user/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ discord_webhook_url: discordWebhook, timezone }),
+        body: JSON.stringify({ discord_webhook_url: discordWebhook, timezone, discord_muted_until: discordMutedUntil }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -541,6 +545,62 @@ function SettingsPageContent() {
       toast.error("Failed to send test notification");
     } finally {
       setTestingDiscord(false);
+    }
+  };
+
+  const handleMuteDiscord = async () => {
+    if (!settings) return;
+    const dayLabel = muteDuration === 1 ? "day" : "days";
+    const mutedUntil = new Date();
+    mutedUntil.setDate(mutedUntil.getDate() + muteDuration);
+    setSavingDiscord(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ discord_muted_until: mutedUntil.toISOString() }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setDiscordMutedUntil(updated.discord_muted_until);
+        setIsDirty(false);
+        toast.success("Discord notifications muted for " + muteDuration + " " + dayLabel);
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to mute notifications");
+      }
+    } catch (_err) {
+      console.error("mute error", _err);
+      toast.error("Failed to mute notifications");
+    } finally {
+      setSavingDiscord(false);
+    }
+  };
+
+  const handleUnmuteDiscord = async () => {
+    if (!settings) return;
+    setSavingDiscord(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ discord_muted_until: null }),
+      });
+      const updated = await res.json();
+      if (!res.ok) {
+        toast.error(updated.error || "Failed to unmute notifications");
+        return;
+      }
+      setSettings(updated);
+      setDiscordMutedUntil(null);
+      setIsDirty(false);
+      toast.success("Discord notifications unmuted");
+    } catch (_err) {
+      console.error("unmute error", _err);
+      toast.error("Failed to unmute notifications");
+    } finally {
+      setSavingDiscord(false);
     }
   };
 
@@ -1398,6 +1458,55 @@ function SettingsPageContent() {
             <p className="mt-2 text-xs text-[var(--muted-foreground)]">
               Leave Webhook URL blank and click Save to unlink Discord.
             </p>
+
+            {discordWebhook && (
+              <div className="border-t border-[var(--border)]/60 pt-4 mt-4">
+                <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+                  Mute Notifications
+                </h3>
+                {discordMutedUntil && new Date(discordMutedUntil).getTime() > Date.now() ? (
+                  <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4">
+                    <p className="text-sm text-[var(--card-foreground)] mb-3">
+                      Muted until{" "}
+                      <span className="font-semibold">
+                        {new Intl.DateTimeFormat("en-US", {
+                          dateStyle: "long",
+                          timeStyle: "short",
+                        }).format(new Date(discordMutedUntil))}
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleUnmuteDiscord}
+                      disabled={savingDiscord}
+                      className="px-4 py-2 rounded-lg border border-[var(--destructive-muted-border)] text-[var(--destructive)] text-sm font-medium hover:bg-[var(--destructive-muted)] transition-colors disabled:opacity-60"
+                    >
+                      {savingDiscord ? "Unmuting..." : "Unmute Now"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                    <select
+                      value={muteDuration}
+                      onChange={(e) => setMuteDuration(Number(e.target.value))}
+                      className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                    >
+                      <option value={1}>1 day</option>
+                      <option value={3}>3 days</option>
+                      <option value={7}>7 days</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleMuteDiscord}
+                      disabled={savingDiscord}
+                      className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+                    >
+                      {savingDiscord ? "Muting..." : "Mute Notifications"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

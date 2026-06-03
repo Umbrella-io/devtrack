@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 
   const { data: users, error } = await supabaseAdmin
     .from("users")
-    .select("id, github_login, discord_webhook_url, timezone, last_discord_notification_at")
+    .select("id, github_login, discord_webhook_url, timezone, last_discord_notification_at, discord_muted_until")
     .not("discord_webhook_url", "is", null);
 
   if (error || !users) {
@@ -63,6 +63,13 @@ export async function GET(req: Request) {
     if (user.last_discord_notification_at) {
       const lastNotified = new Date(user.last_discord_notification_at);
       if (now.getTime() - lastNotified.getTime() < 20 * 60 * 60 * 1000) {
+        continue;
+      }
+    }
+
+    if (user.discord_muted_until) {
+      const mutedUntil = new Date(user.discord_muted_until);
+      if (mutedUntil.getTime() > now.getTime()) {
         continue;
       }
     }
