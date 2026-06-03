@@ -1,19 +1,18 @@
 import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { getToken } from "next-auth/jwt";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { resolveAppUser } from "@/lib/resolve-user";
 
 export async function GET(req: NextRequest) {
   try {
-    const token = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    const userId = token?.githubId;
-
-    if (!userId) {
+    const session = await getServerSession(authOptions);
+    if (!session?.githubId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const user = await resolveAppUser(session.githubId, session.githubLogin);
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
     const { searchParams } = new URL(req.url);
     let date = searchParams.get("date");
@@ -25,7 +24,7 @@ export async function GET(req: NextRequest) {
     const { data } = await supabaseAdmin
       .from("daily_focus")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .eq("date", date)
       .single();
 
@@ -39,16 +38,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const token = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    const userId = token?.githubId;
-
-    if (!userId) {
+    const session = await getServerSession(authOptions);
+    if (!session?.githubId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const user = await resolveAppUser(session.githubId, session.githubLogin);
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
     const body = await req.json();
     const { goal_text, date } = body;
@@ -62,7 +58,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from("daily_focus")
       .upsert(
-        { user_id: userId, date: targetDate, goal_text: goal_text.trim() },
+        { user_id: user.id, date: targetDate, goal_text: goal_text.trim() },
         { onConflict: "user_id,date" }
       )
       .select()
@@ -80,16 +76,13 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const token = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    const userId = token?.githubId;
-
-    if (!userId) {
+    const session = await getServerSession(authOptions);
+    if (!session?.githubId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const user = await resolveAppUser(session.githubId, session.githubLogin);
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
     const { searchParams } = new URL(req.url);
     const date = searchParams.get("date");
@@ -101,7 +94,7 @@ export async function DELETE(req: NextRequest) {
     const { error } = await supabaseAdmin
       .from("daily_focus")
       .delete()
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .eq("date", date);
 
     if (error) {
