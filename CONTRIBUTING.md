@@ -213,3 +213,7 @@ For guides on self-hosting DevTrack or deploying it manually, please check the [
 ---
 
 Thank you for helping make DevTrack better! Happy coding! 🚀
+
+
+## GSSoC Branching Conventions (Issue #1944)
+Use conventional commit prefixes and branch naming schemas: feat/feature-name, fix/bug-name, docs/doc-name.
