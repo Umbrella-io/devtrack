@@ -103,8 +103,17 @@ export default function MiniPRTrendChart() {
   }, [data]);
 
   if (loading) {
-    return <div className="mt-4 h-16 w-full animate-pulse rounded bg-[var(--card-muted)]" />;
-  }
+  return (
+    <div className="mt-4 flex h-16 w-full items-center justify-between gap-4 rounded-lg border border-[var(--border)] bg-[var(--control)] p-3">
+      <div className="flex flex-col gap-1 w-24">
+        <div className="h-3 w-16 rounded bg-[var(--card-muted)] animate-pulse" />
+        <div className="h-4 w-20 rounded bg-[var(--card-muted)] animate-pulse" />
+      </div>
+
+      <div className="flex-1 h-full rounded bg-[var(--card-muted)] animate-pulse" />
+    </div>
+  );
+}
 
   if (stats.totalMerged < 5) {
     return (

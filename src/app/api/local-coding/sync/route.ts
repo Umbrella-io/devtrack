@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { createHash } from "crypto";
+import { getUpstashConfig, upstashRateLimitFixedWindow } from "@/lib/upstash-rest";
+
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +11,13 @@ const MAX_SESSIONS_PER_USER = 365;
 const ALLOWED_DAYS = [7, 30, 90];
 const DEFAULT_DAYS = 30;
 
+const RATE_LIMIT_REQUESTS = 20;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+type MemoryRateEntry = { count: number; resetAt: number };
+const memoryRateLimits = new Map<string, MemoryRateEntry>();
+
+
 function hashApiKey(key: string): string {
   return createHash("sha256").update(key).digest("hex");
 }
@@ -16,6 +25,7 @@ function hashApiKey(key: string): string {
 async function authenticateApiKey(apiKey: string): Promise<string | null> {
   const keyHash = hashApiKey(apiKey);
   const keyHashFilter = `api_key_hash.eq.${keyHash},api_key.eq.${keyHash}`;
+
 
   const { data: keyRecord } = await supabaseAdmin
     .from("local_coding_api_keys")
@@ -42,7 +52,49 @@ function validateDays(days: number): number {
   return DEFAULT_DAYS;
 }
 
+function getMemoryRateLimitKey(apiKeyHash: string): string {
+  return `local-coding-sync-rate-limit:${apiKeyHash}`;
+}
+
+function checkMemoryRateLimit(
+  key: string
+): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const record = memoryRateLimits.get(key);
+
+  if (!record || now > record.resetAt) {
+    memoryRateLimits.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true };
+  }
+
+  if (record.count < RATE_LIMIT_REQUESTS) {
+    record.count += 1;
+    return { allowed: true };
+  }
+
+  return {
+    allowed: false,
+    retryAfter: Math.ceil((record.resetAt - now) / 1000),
+  };
+}
+
+async function checkRateLimit(
+  key: string
+): Promise<{ allowed: boolean; retryAfter?: number }> {
+  const upstash = getUpstashConfig();
+  if (upstash) {
+    return upstashRateLimitFixedWindow({
+      key,
+      limit: RATE_LIMIT_REQUESTS,
+      windowSeconds: Math.ceil(RATE_LIMIT_WINDOW_MS / 1000),
+    });
+  }
+
+  return checkMemoryRateLimit(key);
+}
+
 interface SessionData {
+
   date: string;
   totalSeconds: number;
   fileCount: number;
@@ -57,13 +109,28 @@ export async function POST(req: NextRequest) {
   }
 
   const apiKey = authHeader.slice(7);
+  const apiKeyHash = hashApiKey(apiKey);
   const userId = await authenticateApiKey(apiKey);
 
   if (!userId) {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
   }
 
+  const rateLimitKey = getMemoryRateLimitKey(apiKeyHash);
+  const rateLimit = await checkRateLimit(rateLimitKey);
+
+  if (!rateLimit.allowed) {
+    return Response.json(
+      { error: "Rate limit exceeded" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfter ?? 60) },
+      }
+    );
+  }
+
   let body: { sessions?: SessionData[] };
+
   try {
     body = await req.json();
   } catch (e) {

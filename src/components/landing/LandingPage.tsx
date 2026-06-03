@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from "next/image";
 import Link from 'next/link';
+import { Activity, GitPullRequest, Goal, Share2, type LucideIcon } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
@@ -61,6 +62,33 @@ const COMMITS = [
   'fix: timezone-aware streak calculation',
   'docs: update README with setup guide',
   'feat(leaderboard): weekly ranking system',
+];
+
+const ABOUT_HIGHLIGHTS: Array<{
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+}> = [
+  {
+    icon: Activity,
+    title: 'Live GitHub Signals',
+    desc: 'Turn commits, streaks, reviews, and repository activity into a focused dashboard that updates around real developer work.',
+  },
+  {
+    icon: GitPullRequest,
+    title: 'PR Momentum',
+    desc: 'Understand merge rate, review velocity, and open work so teams can spot bottlenecks before they slow shipping down.',
+  },
+  {
+    icon: Goal,
+    title: 'Goal Tracking',
+    desc: 'Set weekly coding targets and see progress move automatically as GitHub activity lands across your repositories.',
+  },
+  {
+    icon: Share2,
+    title: 'Shareable Profile',
+    desc: 'Create a public snapshot of your coding consistency for contributors, collaborators, and portfolio visitors.',
+  },
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -501,6 +529,116 @@ function CommitTicker() {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   ABOUT SECTION
+   ═══════════════════════════════════════════════════════════ */
+function AboutHighlightCard({
+  item,
+  index,
+  visible,
+}: {
+  item: typeof ABOUT_HIGHLIGHTS[0];
+  index: number;
+  visible: boolean;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <article
+      className="lnd-about-card"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(18px)',
+        transition: `opacity 0.55s ease ${index * 80}ms, transform 0.55s ease ${index * 80}ms, border-color 0.25s ease, background 0.25s ease`,
+      }}
+    >
+      <div style={{
+        width: 42, height: 42, borderRadius: 8,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(129,140,248,0.12)',
+        border: '1px solid rgba(129,140,248,0.28)',
+        color: A, marginBottom: 18,
+      }}>
+        <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+      </div>
+      <h3 style={{
+        fontFamily: DISP, fontWeight: 700,
+        fontSize: 19, color: TEXT, margin: '0 0 10px',
+        letterSpacing: 0,
+      }}>
+        {item.title}
+      </h3>
+      <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.65, margin: 0 }}>
+        {item.desc}
+      </p>
+    </article>
+  );
+}
+
+function AboutSection() {
+  const [ref, vis] = useScrollReveal(0.12);
+
+  return (
+    <section
+      id="about"
+      ref={ref}
+      aria-labelledby="about-heading"
+      style={{
+        padding: '88px clamp(20px,4vw,48px)',
+        borderTop: '1px solid #1e293b',
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: 'clamp(28px,5vw,64px)',
+        alignItems: 'start',
+        maxWidth: 1120,
+        margin: '0 auto',
+      }}>
+        <div style={{
+          opacity: vis ? 1 : 0,
+          transform: vis ? 'translateY(0)' : 'translateY(18px)',
+          transition: 'opacity 0.6s ease, transform 0.6s ease',
+        }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
+            ABOUT DEVTRACK
+          </div>
+          <h2
+            id="about-heading"
+            style={{
+              fontFamily: DISP, fontWeight: 800,
+              fontSize: 42,
+              color: TEXT, letterSpacing: 0,
+              lineHeight: 1.05, margin: '0 0 20px',
+            }}
+          >
+            A clearer home for your developer progress.
+          </h2>
+          <p style={{ color: MUTED, fontSize: 16, lineHeight: 1.75, margin: '0 0 28px', maxWidth: 580 }}>
+            DevTrack helps developers, open-source contributors, and teams understand how their GitHub work is moving. It brings activity, pull requests, streaks, goals, and public profile insights into one calm dashboard so new users can quickly see what the platform is for.
+          </p>
+          <a href="#features" className="lnd-cta-secondary">
+            Explore features
+          </a>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 14,
+        }}>
+          {ABOUT_HIGHLIGHTS.map((item, index) => (
+            <AboutHighlightCard key={item.title} item={item} index={index} visible={vis} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    HEATMAP SECTION
    ═══════════════════════════════════════════════════════════ */
 function HeatmapSection() {
@@ -915,6 +1053,7 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <MouseSpotlight />
       <HeroSection />
       <CommitTicker />
+      <AboutSection />
       <HeatmapSection />
       <StatsSection />
       <FeaturesSection />

@@ -17,6 +17,7 @@ const FRAMEWORK_ALIASES = new Set([
   "next", "react", "react-dom",
   "server-only", "client-only",
 ]);
+const packageMetadataCache = new Map();
 
 function collectFiles(dir) {
   const out = [];
@@ -63,6 +64,40 @@ function extractImports(src) {
 
   return imports;
 }
+function loadConfigWithExtends(configPath) {
+  const config = JSON.parse(
+    fs.readFileSync(configPath, "utf8")
+  );
+
+  if (!config.extends) {
+    return config;
+  }
+
+  const parentPath = path.resolve(
+    path.dirname(configPath),
+    config.extends
+  );
+
+  if (!fs.existsSync(parentPath)) {
+    return config;
+  }
+
+  const parentConfig =
+    loadConfigWithExtends(parentPath);
+
+  return {
+    ...parentConfig,
+    ...config,
+    compilerOptions: {
+      ...(parentConfig.compilerOptions || {}),
+      ...(config.compilerOptions || {}),
+      paths: {
+        ...(parentConfig.compilerOptions?.paths || {}),
+        ...(config.compilerOptions?.paths || {}),
+      },
+    },
+  };
+}
 function loadInternalAliases(rootDir) {
   const aliases = ["@/", "~/", "src/"];
 
@@ -74,9 +109,8 @@ function loadInternalAliases(rootDir) {
     if (!fs.existsSync(configPath)) continue;
 
     try {
-      const config = JSON.parse(
-        fs.readFileSync(configPath, "utf8")
-      );
+      const config =
+        loadConfigWithExtends(configPath);
 
       const paths = config.compilerOptions?.paths || {};
 
@@ -96,14 +130,22 @@ function loadInternalAliases(rootDir) {
 }
 function isValidPackageSubpath(pkgName, mod, cwd) {
   try {
-    const pkgJsonPath = require.resolve(
-      `${pkgName}/package.json`,
-      { paths: [cwd] }
-    );
+    let pkgJson;
 
-    const pkgJson = JSON.parse(
-      fs.readFileSync(pkgJsonPath, "utf8")
-    );
+    if (packageMetadataCache.has(pkgName)) {
+      pkgJson = packageMetadataCache.get(pkgName);
+    } else {
+      const pkgJsonPath = require.resolve(
+        `${pkgName}/package.json`,
+        { paths: [cwd] }
+      );
+
+      pkgJson = JSON.parse(
+        fs.readFileSync(pkgJsonPath, "utf8")
+      );
+
+      packageMetadataCache.set(pkgName, pkgJson);
+    }
 
     const exportsField = pkgJson.exports;
 

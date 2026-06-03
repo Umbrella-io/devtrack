@@ -529,7 +529,7 @@ export default function GoalTracker() {
             placeholder="Make 10 commits"
             required
             disabled={creating}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)]"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] transition placeholder:text-[var(--muted-foreground)] focus-visible:border-[var(--accent)]"
           />
         </div>
 
@@ -546,7 +546,7 @@ export default function GoalTracker() {
               value={target}
               onChange={(e) => setTarget(Number(e.target.value))}
               disabled={creating}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] transition focus-visible:border-[var(--accent)]"
             />
           </div>
           <div className="flex-1">
@@ -558,7 +558,7 @@ export default function GoalTracker() {
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               disabled={creating}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] transition focus-visible:border-[var(--accent)]"
             >
               <option value="commits">Commits ⚡</option>
               <option value="prs">PRs ⚡</option>
@@ -582,7 +582,7 @@ export default function GoalTracker() {
               onChange={(e) => setDeadline(e.target.value)}
               disabled={creating}
               min={new Date().toISOString().split("T")[0]}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] transition focus-visible:border-[var(--accent)]"
             />
           </div>
         )}
