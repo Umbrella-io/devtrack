@@ -29,6 +29,7 @@ import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 import DailyNoteWidget from "@/components/DailyNoteWidget";
 import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
+import TokenRevokedGuard from "@/components/TokenRevokedGuard";
 
 const SkeletonCard = () => (
   <div
@@ -122,6 +123,7 @@ export default async function DashboardPage() {
     <DashboardSSEProvider>
       <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
         <DashboardHeader />
+        <TokenRevokedGuard />
 
         {/* Quick actions */}
         <div className="mt-8 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
