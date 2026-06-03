@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type NavItem = { href: string; label: string };
 
@@ -25,6 +26,17 @@ export default function AppNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    const hashIndex = href.indexOf("#");
+    if (hashIndex === -1) return;
+    const id = href.slice(hashIndex + 1);
+    const el = document.getElementById(id);
+    if (el) {
+      e.preventDefault();
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   useEffect(() => {
@@ -35,6 +47,7 @@ export default function AppNavbar() {
 
   const isAuthenticated = status === "authenticated" && Boolean(session);
   const isPublicProfileRoute = pathname.startsWith("/u/");
+  const isDashboardRoute = pathname.startsWith("/dashboard");
   const identityLabel =
     session?.githubLogin ?? session?.user?.name ?? session?.user?.email ?? "user";
 
@@ -42,6 +55,7 @@ export default function AppNavbar() {
     if (isAuthenticated) {
       return [
         { href: "/dashboard", label: "Overview" },
+        { href: "/dashboard/career-intelligence", label: "Resume" },
         { href: "/dashboard#streaks", label: "Activity" },
         { href: "/dashboard#pull-requests", label: "Analytics" },
         { href: "/dashboard#goals", label: "Goals" },
@@ -62,10 +76,10 @@ export default function AppNavbar() {
     position: "sticky",
     top: 0,
     zIndex: 50,
-    background: scrolled ? "rgba(10, 15, 30, 0.75)" : "transparent",
+    background: scrolled ? "color-mix(in srgb, var(--background) 75%, transparent)" : "transparent",
     backdropFilter: scrolled ? "blur(24px) saturate(150%)" : "none",
     WebkitBackdropFilter: scrolled ? "blur(24px) saturate(150%)" : "none",
-    borderBottom: scrolled ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid transparent",
+    borderBottom: scrolled ? "1px solid var(--border)" : "1px solid transparent",
     transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
   };
 
@@ -95,12 +109,18 @@ export default function AppNavbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative rounded-full px-4 py-1.5 text-[13px] font-medium transition-all duration-300 ${
-                  active 
-                    ? "bg-[var(--accent)]/10 text-[var(--accent)] shadow-sm" 
-                    : "text-[var(--muted-foreground)] hover:bg-white/5 hover:text-[var(--foreground)]"
-                }`}
-                style={{ fontFamily: MONO }}
+                onClick={(e) => handleAnchorClick(e, item.href)}
+                className="relative px-3 py-2 text-[12px] font-medium transition-colors duration-150"
+                style={{
+                  fontFamily: MONO,
+                  color: active ? "var(--accent)" : "var(--muted-foreground)",
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) (e.currentTarget as HTMLAnchorElement).style.color = "var(--foreground)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) (e.currentTarget as HTMLAnchorElement).style.color = "var(--muted-foreground)";
+                }}
               >
                 {item.label}
               </Link>
@@ -110,6 +130,8 @@ export default function AppNavbar() {
 
         {/* Desktop right */}
         <div className="hidden items-center gap-4 md:flex">
+          {/* Show ThemeToggle in navbar except on dashboard, where DashboardHeader provides it */}
+          {!isDashboardRoute && <ThemeToggle />}
           {isAuthenticated ? (
             <div className="flex items-center gap-4 border-l border-white/10 pl-4">
               <Link 
@@ -166,8 +188,8 @@ export default function AppNavbar() {
       {mobileOpen && (
         <div
           id="app-mobile-nav"
-          className="border-t border-white/10 md:hidden"
-          style={{ background: "rgba(10,15,30,0.98)", backdropFilter: "blur(24px)" }}
+          className="border-t border-[var(--border)] md:hidden"
+          style={{ background: "color-mix(in srgb, var(--background) 98%, transparent)", backdropFilter: "blur(24px)" }}
         >
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-5 sm:px-6">
             {navItems.map((item) => {
@@ -176,10 +198,13 @@ export default function AppNavbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`rounded-xl px-4 py-3.5 text-sm font-medium transition-colors ${
-                    active ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "text-[var(--muted-foreground)] hover:bg-white/5"
-                  }`}
-                  style={{ fontFamily: MONO }}
+                  onClick={(e) => handleAnchorClick(e, item.href)}
+                  className="rounded-lg px-4 py-3 text-sm font-medium transition-colors"
+                  style={{
+                    fontFamily: MONO,
+                    color: active ? "var(--accent)" : "var(--muted-foreground)",
+                    background: active ? "var(--accent-soft)" : "transparent",
+                  }}
                 >
                   {item.label}
                 </Link>
@@ -197,6 +222,11 @@ export default function AppNavbar() {
             )}
 
             <div className="mt-4 border-t border-white/10 pt-4">
+              {!isDashboardRoute && (
+                <div className="px-4 py-2">
+                  <ThemeToggle />
+                </div>
+              )}
               {isAuthenticated ? (
                 <div className="flex flex-col gap-3">
                   <p className="px-4 py-2 text-[12px] text-[var(--muted-foreground)]" style={{ fontFamily: MONO }}>

@@ -1,8 +1,6 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs";
-
 const isDev = process.env.NODE_ENV === "development";
 const WINDOW_SECONDS = 60;
 
@@ -20,6 +18,7 @@ const WINDOW_SECONDS = 60;
    ============================================================ */
 const AUTHENTICATED_LIMIT = isDev ? 5000 : 60;
 const ANONYMOUS_LIMIT = isDev ? 1000 : 10;
+const LOGIN_LIMIT = isDev ? 100 : 5;
 
 const memoryBuckets = new Map<string, number[]>();
 
@@ -202,29 +201,36 @@ async function checkRateLimit(identifier: string, limit: number) {
 }
 
 export async function middleware(req: NextRequest) {
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  // Protect dashboard and settings routes
   const pathname = req.nextUrl.pathname;
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  const isAuthRoute =
+  pathname.startsWith("/api/auth/signin") ||
+  pathname.startsWith("/api/auth/callback");
 
   const protectedRoutes = ["/dashboard", "/settings"];
-  const isProtectedRoute = protectedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
+
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
   );
 
-  if (isProtectedRoute) {
-    if (!token) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      url.search = "";
-      return NextResponse.redirect(url);
-    }
-
-    return NextResponse.next();
+  if (isProtectedRoute && !token) {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
-  const githubId = typeof token?.githubId === "string" ? token.githubId : null;
+  const githubId =
+    typeof token?.githubId === "string" ? token.githubId : null;
+
   const identifier = githubId ? `user:${githubId}` : `ip:${getIp(req)}`;
 
-  const limit = githubId
+ const limit = isAuthRoute
+  ? LOGIN_LIMIT
+  : githubId
     ? AUTHENTICATED_LIMIT
     : ANONYMOUS_LIMIT;
 
@@ -233,22 +239,21 @@ export async function middleware(req: NextRequest) {
   const headers = buildHeaders(result);
 
   if (!result.allowed) {
-    const isContact = req.nextUrl.pathname.startsWith("/api/contact");
-    console.warn(isContact ? "contact_rate_limit_hit" : "metrics_rate_limit_hit", {
+    console.warn("metrics_rate_limit_hit", {
       identifier,
       path: req.nextUrl.pathname,
       limit,
     });
 
-    return NextResponse.json(
-      {
-        error: isContact
-          ? "Too many submissions. Please retry shortly."
-          : "Too many metrics requests. Please retry shortly.",
-      },
-      { status: 429, headers }
-    );
-  }
+   return NextResponse.json(
+  {
+    error: isAuthRoute
+      ? "Too many login attempts. Please try again later."
+      : "Too many metrics requests. Please retry shortly."
+  },
+  { status: 429, headers }
+);
+}
 
   const response = NextResponse.next();
 
@@ -272,11 +277,10 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard",
-    "/dashboard/:path*",
-    "/settings",
-    "/settings/:path*",
-    "/api/metrics/:path*",
-    "/api/contact",
-  ],
+  "/dashboard/:path*",
+  "/settings/:path*",
+  "/api/metrics/:path*",
+  "/api/auth/signin/:path*",
+  "/api/auth/callback/:path*",
+],
 };

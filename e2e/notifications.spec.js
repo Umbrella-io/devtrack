@@ -2,8 +2,7 @@ import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
 const authSecret =
-  process.env.NEXTAUTH_SECRET ||
-  "test-nextauth-secret-for-playwright-tests";
+  process.env.NEXTAUTH_SECRET || "test-nextauth-secret-for-playwright-tests";
   
 /** Returns a properly-shaped mock response for each metric endpoint. */
 function mockMetricResponse(url) {

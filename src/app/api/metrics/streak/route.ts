@@ -11,7 +11,7 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { calculateStreakFromDates } from "@/lib/streak";
 import { dispatchToAllWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +20,7 @@ async function fetchActiveDates(
   githubLogin: string,
   token: string,
   cacheContext: { bypass: boolean; userId: string }
+  , timeZone = "UTC"
 ): Promise<Set<string>> {
   // Cache key is scoped per user + githubLogin so multi-account "combined" view
   // stores each account's dates separately and merges them in the GET handler.
@@ -81,10 +82,24 @@ async function fetchActiveDates(
           items: Array<{ commit: { author: { date: string } } }>;
         };
 
-        // Extract just the date part ("YYYY-MM-DD") from each commit timestamp.
-        // Using a Set deduplicates — multiple commits on the same day count as one active day.
+        // Extract the date part ("YYYY-MM-DD") from each commit timestamp
+        // but bucket the commit into the user's local timezone so streaks are
+        // calculated relative to the user's day boundaries rather than UTC.
         for (const item of data.items) {
-          activeDates.add(item.commit.author.date.slice(0, 10));
+          const commitDate = new Date(item.commit.author.date);
+          // Format the commit into a YYYY-MM-DD in the user's timezone.
+          const parts = new Intl.DateTimeFormat("en", {
+            timeZone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).formatToParts(commitDate);
+          const year = parts.find((p) => p.type === "year")?.value;
+          const month = parts.find((p) => p.type === "month")?.value;
+          const day = parts.find((p) => p.type === "day")?.value;
+          if (year && month && day) {
+            activeDates.add(`${year}-${month}-${day}`);
+          }
         }
 
         // Stop paginating when GitHub returns fewer than 100 items (last page)
@@ -100,85 +115,6 @@ async function fetchActiveDates(
   return new Set(dates);
 }
 
-function calculateStreakFromDates(
-  activeDates: Set<string>,
-  freezeDates: Set<string>
-): {
-  current: number;
-  longest: number;
-  lastCommitDate: string | null;
-  totalActiveDays: number;
-  freezeDates: string[];
-} {
-  // Merge commit dates with streak freeze dates before calculating.
-  // A freeze date counts as an "active" day so it doesn't break the streak,
-  // even though no commits were made on that day.
-  const combinedDates = new Set<string>([
-    ...Array.from(activeDates),
-    ...Array.from(freezeDates),
-  ]);
-  const commitDays = Array.from(combinedDates).sort(); // ascending "YYYY-MM-DD"
-
-  if (commitDays.length === 0) {
-    return {
-      current: 0,
-      longest: 0,
-      lastCommitDate: null,
-      totalActiveDays: 0,
-      freezeDates: Array.from(freezeDates),
-    };
-  }
-
-  let longestStreak = 1;
-  let currentRun = 1;
-  const runs: { start: string; end: string; length: number }[] = [];
-  let runStart = commitDays[0];
-
-  // Walk the sorted date list and split into consecutive runs.
-  // dateDiffDays returns 1 for adjacent calendar days — any gap > 1 breaks the streak.
-  for (let i = 1; i < commitDays.length; i++) {
-    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
-    if (diff === 1) {
-      // Consecutive day — extend the current run.
-      currentRun++;
-      if (currentRun > longestStreak) {
-        longestStreak = currentRun;
-      }
-    } else {
-      // Gap detected — close the current run and start a new one.
-      runs.push({ start: runStart, end: commitDays[i - 1], length: currentRun });
-      runStart = commitDays[i];
-      currentRun = 1;
-    }
-  }
-  // Push the final run.
-  runs.push({
-    start: runStart,
-    end: commitDays[commitDays.length - 1],
-    length: currentRun,
-  });
-
-  const lastDay = commitDays[commitDays.length - 1];
-  const today = toDateStr(new Date());
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
-
-  // Current streak is alive if the last active day is today OR yesterday.
-  // Allowing yesterday prevents the streak from resetting at midnight before
-  // the user has had a chance to make their first commit of the new day.
-  const lastRun = runs[runs.length - 1];
-  const currentStreak =
-    lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
-
-  return {
-    current: currentStreak,
-    longest: longestStreak,
-    lastCommitDate: lastDay,
-    // totalActiveDays counts only days with real commits or freezes in the 90-day window,
-    // not the full streak length — useful for the "active days" stat on the dashboard.
-    totalActiveDays: commitDays.length,
-    freezeDates: Array.from(freezeDates),
-  };
-}
 
 async function checkAndRecordMilestone(
   userId: string,
@@ -245,15 +181,27 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Resolve the user's timezone (stored on the Supabase users row). Default to UTC.
+  let timeZone = "UTC";
+  if (appUserId) {
+    const { data: userRow } = await supabaseAdmin
+      .from("users")
+      .select("timezone")
+      .eq("id", appUserId)
+      .single();
+    if (userRow?.timezone) timeZone = userRow.timezone;
+  }
+
   // No accountId = use the primary signed-in GitHub account.
   if (!accountId) {
     try {
       const activeDates = await fetchActiveDates(
         session.githubLogin,
         session.accessToken,
-        { bypass, userId: session.githubId }
+        { bypass, userId: session.githubId },
+        timeZone
       );
-      const streakData = calculateStreakFromDates(activeDates, freezeDates);
+      const streakData = calculateStreakFromDates(activeDates, freezeDates, timeZone);
 
       if (appUserId && streakData.current > 0) {
         checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
@@ -289,7 +237,7 @@ export async function GET(req: NextRequest) {
         fetchActiveDates(account.githubLogin, account.token, {
           bypass,
           userId: account.githubId,
-        })
+        }, timeZone)
       )
     );
 
@@ -302,7 +250,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const streakData = calculateStreakFromDates(unifiedDates, freezeDates);
+    const streakData = calculateStreakFromDates(unifiedDates, freezeDates, timeZone);
 
     if (streakData.current > 0) {
       checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
@@ -338,11 +286,16 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const activeDates = await fetchActiveDates(resolvedLogin, resolvedToken, {
-      bypass,
-      userId: accountId,
-    });
-    const streakData = calculateStreakFromDates(activeDates, freezeDates);
+    const activeDates = await fetchActiveDates(
+      resolvedLogin,
+      resolvedToken,
+      {
+        bypass,
+        userId: accountId,
+      },
+      timeZone
+    );
+    const streakData = calculateStreakFromDates(activeDates, freezeDates, timeZone);
 
     if (accountId === session.githubId && streakData.current > 0) {
       checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
