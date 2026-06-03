@@ -25,6 +25,7 @@
     "dompurify": "^3.1.6",
     "html-to-image": "^1.11.13",
     "idb-keyval": "^6.2.4",
+    "ioredis": "^5.3.2",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.475.0",
