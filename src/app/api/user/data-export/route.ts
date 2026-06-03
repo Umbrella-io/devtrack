@@ -201,6 +201,13 @@ export async function GET(req: NextRequest) {
     .eq("user_id", user.id);
   sections.goals = goals || [];
 
+  const { data: goalHistory } = await supabaseAdmin
+    .from("goal_history")
+    .select("id, goal_id, user_id, period_start, period_end, target, achieved, completed, created_at")
+    .eq("user_id", user.id)
+    .order("period_end", { ascending: false });
+  sections.goalHistory = goalHistory || [];
+
   const { data: snapshots } = await supabaseAdmin
     .from("metric_snapshots")
     .select(
@@ -334,6 +341,7 @@ export async function DELETE(req: NextRequest) {
     "jira_credentials",
     "webhook_configs",
     "user_github_accounts",
+    "goal_history",
     "goals",
     "metric_snapshots",
   ];
