@@ -172,3 +172,7 @@ For issues or feature requests related to badges:
   ![DevTrack Streak](https://devtrack.app/api/badge/streak?user=octocat)
 ](https://devtrack.app/u/octocat)
 ```
+
+
+## Badge API Rate limits (Issue #1953)
+Limits requests to 100 per 15 minutes per IP address and returns standard X-RateLimit headers.
