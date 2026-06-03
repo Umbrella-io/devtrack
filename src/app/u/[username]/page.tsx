@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import ProfileThemeWrapper from "@/components/ProfileThemeWrapper";
 import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -8,7 +9,6 @@ import BadgeSection from "@/components/BadgeSection";
 import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
 import ShareProfileSection from "@/components/ShareProfileSection";
-import ThemeToggle from "@/components/ThemeToggle";
 import SponsorBadge from "@/components/SponsorBadge";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
 import CopyLinkButton from "@/components/CopyLinkButton";
@@ -162,6 +162,7 @@ export default async function PublicProfilePage({
 
   if (!profile) {
     return (
+      <ProfileThemeWrapper>
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors flex items-center justify-center">
         <div className="surface-card max-w-md rounded-2xl p-8 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
@@ -188,6 +189,7 @@ export default async function PublicProfilePage({
           </Link>
         </div>
       </div>
+      </ProfileThemeWrapper>
     );
   }
 
@@ -210,6 +212,7 @@ export default async function PublicProfilePage({
   )}`;
 
   return (
+    <ProfileThemeWrapper>
     <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -275,7 +278,6 @@ export default async function PublicProfilePage({
         <div className="flex items-center gap-3">
         {/* Download stats card button — client component */}
         <div className="flex flex-wrap items-center gap-3">
-          <ThemeToggle />
           <StatsCard
             username={profile.username}
             avatarUrl={avatarUrl}
@@ -334,6 +336,7 @@ export default async function PublicProfilePage({
         <BadgeSection username={profile.username} />
       </div>
     </div>
+    </ProfileThemeWrapper>
   );
 }
 

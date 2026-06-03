@@ -12,7 +12,7 @@ async function fetchUserSettings(userId: string) {
   // Tier 1: All columns
   const res1 = await supabaseAdmin
     .from("users")
-    .select("id, github_login, bio, is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, weekly_digest_opt_in, discord_webhook_url, timezone, webhook_url")
+    .select("id, github_login, bio, is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, weekly_digest_opt_in, discord_webhook_url, timezone, webhook_url, discord_muted_until")
     .eq("id", userId)
     .single();
 
@@ -27,6 +27,7 @@ async function fetchUserSettings(userId: string) {
       hasDiscordSettings: true,
       hasBio: true,
       hasWebhookUrl: true,
+      hasDiscordMutedUntil: true,
       leaderboard_opt_in: (res1.data as any).leaderboard_opt_in ?? false,
       weekly_digest_opt_in: (res1.data as any).weekly_digest_opt_in ?? false,
       pinned_repos: (res1.data as any).pinned_repos || [],
@@ -35,6 +36,7 @@ async function fetchUserSettings(userId: string) {
       discord_webhook_url: (res1.data as any).discord_webhook_url || null,
       timezone: (res1.data as any).timezone || "UTC",
       webhook_url: (res1.data as any).webhook_url || null,
+      discord_muted_until: (res1.data as any).discord_muted_until || null,
     };
   }
 
@@ -49,6 +51,7 @@ async function fetchUserSettings(userId: string) {
       hasDiscordSettings: false,
       hasBio: false,
       hasWebhookUrl: false,
+      hasDiscordMutedUntil: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -57,6 +60,7 @@ async function fetchUserSettings(userId: string) {
       discord_webhook_url: null,
       timezone: "UTC",
       webhook_url: null,
+      discord_muted_until: null,
     };
   }
 
@@ -78,6 +82,7 @@ async function fetchUserSettings(userId: string) {
       hasDiscordSettings: false,
       hasBio: false,
       hasWebhookUrl: true,
+      hasDiscordMutedUntil: false,
       leaderboard_opt_in: (res2.data as any).leaderboard_opt_in ?? false,
       weekly_digest_opt_in: false,
       pinned_repos: (res2.data as any).pinned_repos || [],
@@ -86,6 +91,7 @@ async function fetchUserSettings(userId: string) {
       discord_webhook_url: null,
       timezone: "UTC",
       webhook_url: (res2.data as any).webhook_url || null,
+      discord_muted_until: null,
     };
   }
 
@@ -100,6 +106,7 @@ async function fetchUserSettings(userId: string) {
       hasDiscordSettings: false,
       hasBio: false,
       hasWebhookUrl: false,
+      hasDiscordMutedUntil: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -108,6 +115,7 @@ async function fetchUserSettings(userId: string) {
       discord_webhook_url: null,
       timezone: "UTC",
       webhook_url: null,
+      discord_muted_until: null,
     };
   }
 
@@ -128,6 +136,7 @@ async function fetchUserSettings(userId: string) {
       hasWeeklyDigestOptIn: false,
       hasDiscordSettings: false,
       hasBio: false,
+      hasDiscordMutedUntil: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -135,6 +144,7 @@ async function fetchUserSettings(userId: string) {
       wakatime_api_key_iv: null,
       discord_webhook_url: null,
       timezone: "UTC",
+      discord_muted_until: null,
     };
   }
 
@@ -147,6 +157,7 @@ async function fetchUserSettings(userId: string) {
     hasWeeklyDigestOptIn: false,
     hasDiscordSettings: false,
     hasBio: false,
+    hasDiscordMutedUntil: false,
     leaderboard_opt_in: false,
     weekly_digest_opt_in: false,
     pinned_repos: [] as string[],
@@ -154,6 +165,7 @@ async function fetchUserSettings(userId: string) {
     wakatime_api_key_iv: null,
     discord_webhook_url: null,
     timezone: "UTC",
+    discord_muted_until: null,
   };
 }
 
@@ -191,6 +203,7 @@ export async function GET(req: NextRequest) {
     discord_webhook_url: result.discord_webhook_url,
     timezone: result.timezone,
     webhook_url: result.webhook_url ?? null,
+    discord_muted_until: result.discord_muted_until ?? null,
   });
 }
 
@@ -211,14 +224,14 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  let body: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key?: string; discord_webhook_url?: string | null; timezone?: string; bio?: string; webhook_url?: string | null };
+  let body: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key?: string; discord_webhook_url?: string | null; timezone?: string; bio?: string; webhook_url?: string | null; discord_muted_until?: string | null };
   try {
     body = await req.json();
   } catch (e) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { is_public, leaderboard_opt_in, weekly_digest_opt_in, pinned_repos, wakatime_api_key, discord_webhook_url, timezone, bio, webhook_url } = body;
+  const { is_public, leaderboard_opt_in, weekly_digest_opt_in, pinned_repos, wakatime_api_key, discord_webhook_url, timezone, bio, webhook_url, discord_muted_until } = body;
 
   // Retrieve supported columns first
   const settingsResult = await fetchUserSettings(user.id);
@@ -227,8 +240,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
 
-  const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey, hasWeeklyDigestOptIn, hasDiscordSettings, hasBio, hasWebhookUrl } = settingsResult;
-  const updates: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key_encrypted?: string | null; wakatime_api_key_iv?: string | null; discord_webhook_url?: string | null; timezone?: string; bio?: string; webhook_url?: string | null } = {};
+  const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey, hasWeeklyDigestOptIn, hasDiscordSettings, hasBio, hasWebhookUrl, hasDiscordMutedUntil } = settingsResult;
+  const updates: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key_encrypted?: string | null; wakatime_api_key_iv?: string | null; discord_webhook_url?: string | null; timezone?: string; bio?: string; webhook_url?: string | null; discord_muted_until?: string | null } = {};
 
   if (is_public !== undefined && is_public !== null && typeof is_public === "boolean") {
     updates.is_public = is_public;
@@ -327,6 +340,12 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
+  if (hasDiscordMutedUntil && discord_muted_until !== undefined) {
+    if (discord_muted_until === null || typeof discord_muted_until === "string") {
+      updates.discord_muted_until = discord_muted_until;
+    }
+  }
+
   // If there are no updates (or none that are supported by the schema)
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({
@@ -341,6 +360,7 @@ export async function PATCH(req: NextRequest) {
       discord_webhook_url: settingsResult.discord_webhook_url,
       timezone: settingsResult.timezone,
       webhook_url: settingsResult.webhook_url ?? null,
+      discord_muted_until: settingsResult.discord_muted_until ?? null,
     });
   }
 
@@ -355,6 +375,7 @@ export async function PATCH(req: NextRequest) {
     selectCols.push("wakatime_api_key_iv");
   }
   if (hasDiscordSettings) selectCols.push("discord_webhook_url", "timezone");
+  if (hasDiscordMutedUntil) selectCols.push("discord_muted_until");
   if (hasWebhookUrl) selectCols.push("webhook_url");
 
   const { data: updated, error: updateError } = await supabaseAdmin
@@ -397,5 +418,6 @@ export async function PATCH(req: NextRequest) {
     discord_webhook_url: (updated as any).discord_webhook_url,
     timezone: (updated as any).timezone || "UTC",
     webhook_url: (updated as any).webhook_url ?? null,
+    discord_muted_until: (updated as any).discord_muted_until ?? null,
   });
 }

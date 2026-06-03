@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import ContributionGraph from '@/components/ContributionGraph';
 import { get, set } from 'idb-keyval';
@@ -86,6 +86,43 @@ describe('ContributionGraph - IndexedDB Caching and Background Sync', () => {
         })
       );
     });
+  });
+
+  it('renders zero commits instead of NaN for empty contribution ranges', async () => {
+    vi.mocked(get).mockResolvedValue(undefined);
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url) => {
+      if (typeof url === 'string' && url.includes('/api/metrics/contributions')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({
+            data: {
+              '2026-05-30': undefined,
+            },
+            commits: [],
+            sources: {
+              github: {
+                '2026-05-30': undefined,
+              },
+            },
+          }),
+        } as Response);
+      }
+
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ repos: [] }),
+      } as Response);
+    }));
+
+    render(React.createElement(ContributionGraph));
+
+    await waitFor(() => {
+      expect(screen.getByText('0 commits')).toBeTruthy();
+    });
+
+    expect(screen.queryByText(/NaN commits/i)).toBeNull();
   });
 
   it('hydrates locally and bypasses network fetch when cache is fresh (< 1 hour)', async () => {

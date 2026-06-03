@@ -54,8 +54,11 @@ export async function GET() {
       .limit(10);
 
     if (error) {
-      // Table may not exist in all deployments — degrade gracefully
-      return NextResponse.json({ notifications: [], unreadCount: 0 });
+      console.error("Failed to fetch notifications:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch notifications" },
+        { status: 500 }
+      );
     }
 
     const unreadCount = (data ?? []).filter((n) => !n.read).length;
@@ -92,8 +95,11 @@ export async function PATCH() {
       .eq("read", false);
 
     if (error) {
-      // Table may not exist — degrade gracefully
-      return NextResponse.json({ success: true });
+      console.error("Failed to mark notifications as read:", error);
+      return NextResponse.json(
+        { error: "Failed to update notifications" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true });

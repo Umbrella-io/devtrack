@@ -22,6 +22,14 @@ test("[Landing E2E] landing has dashboard link", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Dashboard" })).toBeVisible();
 });
 
+test("[Landing E2E] landing introduces DevTrack in an about section", async ({ page }) => {
+  await page.goto("/");
+  const about = page.locator("#about");
+  await expect(about.getByRole("heading", { name: /developer progress/i })).toBeVisible();
+  await expect(about.getByText("Live GitHub Signals")).toBeVisible();
+  await expect(about.getByRole("link", { name: "Explore features" })).toHaveAttribute("href", "#features");
+});
+
 test("[Landing E2E] landing shows footer", async ({ page }) => {
   await page.goto("/");
   // Check that the global footer is rendered (e.g. looking for the copyright text)

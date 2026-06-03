@@ -3,6 +3,12 @@ import { POST } from "@/app/api/local-coding/sync/route";
 import { NextRequest } from "next/server";
 import { createHash } from "crypto";
 
+vi.mock("@/lib/upstash-rest", () => ({
+  getUpstashConfig: () => null,
+  upstashRateLimitFixedWindow: vi.fn(),
+}));
+
+
 // Mock Supabase admin client methods
 const mockRpc = vi.fn();
 const mockSingle = vi.fn();
@@ -326,4 +332,28 @@ describe("Local Coding Sync POST API Endpoint", () => {
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Failed to sync sessions" });
   });
+
+  it("rate limits POST requests per API key (21st request -> 429)", async () => {
+    const sessions = [{ date: "2026-05-27", totalSeconds: 120 }];
+
+    const req = new NextRequest("http://localhost/api/local-coding/sync", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer test-key",
+      },
+      body: JSON.stringify({ sessions }),
+    });
+
+    // First 20 requests should pass
+    for (let i = 0; i < 20; i++) {
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+    }
+
+    // 21st should be rate limited
+    const blocked = await POST(req);
+    expect(blocked.status).toBe(429);
+    expect(await blocked.json()).toEqual({ error: "Rate limit exceeded" });
+  });
 });
+

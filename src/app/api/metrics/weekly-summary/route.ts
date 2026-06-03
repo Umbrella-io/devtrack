@@ -6,8 +6,8 @@ import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib
 import { getAccountToken } from "@/lib/github-accounts";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { calculateStreak } from "@/lib/streak";
 import { toDateStr } from "@/lib/dateUtils";
+import { calculateCurrentStreak } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +24,6 @@ function getCurrentWeekStartUtc(): Date {
   return currentWeekStart;
 }
 
-function calculateCurrentStreak(activeDates: Set<string>): number {
-  const { currentStreak } = calculateStreak(
-    Array.from(activeDates).map((day) => new Date(day))
-  );
-  return currentStreak;
-}
 
 async function fetchActiveDates(githubLogin: string, token: string): Promise<Set<string>> {
   // Look back 90 days — the maximum window the GitHub Commit Search API supports.
