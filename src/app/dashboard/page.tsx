@@ -218,7 +218,9 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
             <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
               <div className="w-full overflow-x-auto pb-2">
-                <ContributionGraph />
+                <WidgetErrorBoundary>
+                  <ContributionGraph />
+                </WidgetErrorBoundary>
               </div>
               <div className="w-full overflow-x-auto pb-2">
                 <ContributionHeatmap />

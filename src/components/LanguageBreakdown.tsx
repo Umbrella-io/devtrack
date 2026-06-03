@@ -133,14 +133,17 @@ export default function LanguageBreakdown() {
           </div>
 
           {/* Legend */}
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
             {displayLanguages.map((lang) => (
-              <div key={lang.name} className="flex items-center gap-2 text-sm">
+              <div
+                key={lang.name}
+                className="flex min-w-0 max-w-full basis-full items-center gap-2 text-sm sm:basis-[calc(50%-0.5rem)]"
+              >
                 <LanguageDot 
                   color={lang.name === "Other" ? "var(--control)" : getColor(lang.name)}
                   label={`${lang.name}: ${lang.percentage}%`}
                 />
-                <span className="truncate text-[var(--card-foreground)]">
+                <span className="min-w-0 flex-1 truncate text-[var(--card-foreground)]">
                   {lang.name}
                 </span>
                 <span className="ml-auto shrink-0 text-[var(--muted-foreground)]">
