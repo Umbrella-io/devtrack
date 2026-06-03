@@ -58,7 +58,7 @@ const RepoItem = memo(({
             type="button"
             onClick={() => onSelectActivity(repo.name)}
             className="truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] text-left font-medium"
-            title={repo.description || `View activity for ${repo.name}`}
+            title={[repo.name,repo.description ?? "No description",repo.languages?.[0] ? `Language: ${repo.languages[0].name}` : null,].filter(Boolean).join("\n")}
           >
             <span className="mr-1 text-[var(--muted-foreground)] font-normal">#{idx + 1}</span>
             {shortName}
