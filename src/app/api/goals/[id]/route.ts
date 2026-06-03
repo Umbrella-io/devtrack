@@ -23,31 +23,10 @@ export async function PATCH(
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
-  const body = await req.json().catch(() => ({}));
-  const { current } = body;
-
-  if (typeof current !== "number" || !Number.isInteger(current) || current < 0) {
-    return Response.json(
-      { error: "current must be a non-negative integer" },
-      { status: 400 }
-    );
-  }
-
-  const { data: existingGoal } = await supabaseAdmin
-    .from("goals")
-    .select("*")
-    .eq("id", params.id)
-    .eq("user_id", user.id)
-    .single();
-
-  if (!existingGoal) {
-    return Response.json({ error: "Goal not found" }, { status: 404 });
-  }
-
   let body: unknown;
   try {
     body = await req.json();
-  } catch (e) {
+  } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
@@ -58,7 +37,7 @@ export async function PATCH(
   const updates: Record<string, unknown> = {};
 
   const { title, target, unit, recurrence, current } =
-  body as Record<string, unknown>;
+    body as Record<string, unknown>;
 
   if (title !== undefined) {
     if (typeof title !== "string" || title.trim().length === 0) {
@@ -112,12 +91,25 @@ export async function PATCH(
     updates.current = current;
   }
 
+  const { data: existingGoal } = await supabaseAdmin
+    .from("goals")
+    .select("*")
+    .eq("id", params.id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!existingGoal) {
+    return Response.json({ error: "Goal not found" }, { status: 404 });
+  }
+
   if (Object.keys(updates).length === 0) {
     return Response.json({ goal: existingGoal });
+  }
+
   // Block manual progress edits for activity-derived goal types.
   // These goals are synced from GitHub and setting current directly would
   // allow goal completion without any corresponding real activity.
-  if (ACTIVITY_DERIVED_UNITS.has(existingGoal.unit)) {
+  if (current !== undefined && ACTIVITY_DERIVED_UNITS.has(existingGoal.unit)) {
     return Response.json(
       {
         error:
@@ -127,7 +119,7 @@ export async function PATCH(
     );
   }
 
-  if (current > existingGoal.target) {
+  if (typeof current === "number" && current > existingGoal.target) {
     return Response.json(
       { error: "current cannot exceed target" },
       { status: 400 }

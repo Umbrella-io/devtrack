@@ -144,47 +144,6 @@ export default async function DashboardPage() {
           <div className="w-full sm:w-auto">
             <ExportButton />
           </div>
-
-          <div className="mt-6">
-            <CodingActivityInsightsCard />
-          </div>
-
-          <div className="mt-6">
-            <PRReviewTrendChart />
-          </div>
-
-          <div
-            id="issues"
-            className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6"
-          >
-            <div className="lg:col-span-2">
-              <IssueMetrics />
-            </div>
-            <CIAnalytics />
-          </div>
-
-          {/* Row 3b: Discussion activity */}
-          <div className="mt-6">
-            <DiscussionsWidget />
-          </div>
-          <div className="mt-6">
-            <PinnedRepos />
-          </div>
-
-          <div className="mt-6">
-            <InactiveRepositoriesCard />
-          </div>
-          <div
-            id="top-repos"
-            className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6"
-          >
-            <TopRepos />
-            <LanguageBreakdown />
-            <GoalTracker />
-          </div>
-          <div id="recent-activity" className="mt-6">
-            <RecentActivity />
-          </div>
         </div>
         <div className="space-y-4">
           <StreakAtRiskBanner />

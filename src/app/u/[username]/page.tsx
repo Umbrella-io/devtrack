@@ -11,18 +11,18 @@ import ShareProfileSection from "@/components/ShareProfileSection";
 import ThemeToggle from "@/components/ThemeToggle";
 import SponsorBadge from "@/components/SponsorBadge";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
-import { fetchPinnedRepoDetails } from "@/lib/pinned-repos";
-import { Moon, Sun } from "lucide-react"; // 🎯 UI vectors for server visibility
-
+import CopyLinkButton from "@/components/CopyLinkButton";
+import { Moon, Sun } from "lucide-react";
+import { authOptions } from "@/lib/auth";
+import { getUserByGithubId, getUserByUsername } from "@/lib/supabase";
 import {
-  fetchPublicTopRepos,
-  fetchPublicContributions,
-  fetchPublicStreak,
+  fetchPublicProfile as fetchPublicProfileLib,
   type PublicProfileData,
 } from "@/lib/public-profile-data";
 
 // Extend tracking structures to forward gamification flags seamlessly downstream
 interface ExtendedPublicProfileData extends PublicProfileData {
+  userId: string;
   isNightOwl: boolean;
   isEarlyBird: boolean;
 }
@@ -41,54 +41,29 @@ async function fetchPublicProfile(
     redirect(`/u/${canonicalUsername}`);
   }
 
-  const githubToken = process.env.GITHUB_TOKEN || "";
+  const base = await fetchPublicProfileLib(username, options);
 
-  const [repos, contributions, streak, achievementsCache, spotlight] = await Promise.all([
-    fetchPublicTopRepos(user.github_login, githubToken, 30),
-    fetchPublicContributions(user.github_login, githubToken, 30),
-    fetchPublicStreak(user.github_login, githubToken),
-    options.includeAchievements
-      ? syncGitHubAchievementsForUser({
-          userId: user.id,
-          githubLogin: user.github_login,
-          token: githubToken,
-          })
-      : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
-    fetchPinnedRepoDetails(user.github_login, user.pinned_repos || [], githubToken),
-  ]);
+  if (!base) return null;
 
-  // Server-side parsing layout to compute hourly metrics cleanly from available repo data arrays
+  // Compute Night Owl / Early Bird from repos
   let nightOwlCount = 0;
   let earlyBirdCount = 0;
 
-  const combinedRepos = repos || [];
-  combinedRepos.forEach((repo: any) => {
+  (base.repos || []).forEach((repo: any) => {
     if (repo.last_commit_date || repo.updatedAt) {
-      const targetDate = repo.last_commit_date || repo.updatedAt;
-      const commitHour = new Date(targetDate).getHours();
-      
+      const commitHour = new Date(repo.last_commit_date || repo.updatedAt).getHours();
       if (commitHour >= 0 && commitHour <= 4) nightOwlCount++;
       if (commitHour >= 5 && commitHour <= 8) earlyBirdCount++;
     }
   });
 
   return {
-    username: user.github_login,
+    ...base,
     userId: user.id,
-    isSponsor: user.is_sponsor ?? false,
-    repos,
-    contributions,
-    streak,
-    achievements: achievementsCache.achievements,
-    achievementsError: achievementsCache.error,
-    spotlightRepos: spotlight,
     isNightOwl: nightOwlCount >= 1,
     isEarlyBird: earlyBirdCount >= 1,
   };
-import CopyLinkButton from "@/components/CopyLinkButton";
-import { authOptions } from "@/lib/auth";
-import { fetchPublicProfile } from "@/lib/public-profile-data";
-import { getUserByGithubId, getUserByUsername } from "@/lib/supabase";
+}
 
 async function getLoggedInGitHubUsername() {
   const session = await getServerSession(authOptions);
@@ -119,7 +94,6 @@ export async function generateMetadata({
 }: {
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
-  const { username } = params;
   const { username } = await params;
   const user = await getUserByUsername(username);
   const profileUrl = getProfileUrl(username);
@@ -310,6 +284,7 @@ export default async function PublicProfilePage({
             totalCommits={profile.contributions.total}
             topRepo={topRepo}
           />
+        </div>
         </div>
       </div>
 

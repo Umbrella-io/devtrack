@@ -499,10 +499,9 @@ export async function GET(req: NextRequest) {
       ]);
       
       return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
-    } catch (e) {
+    } catch {
       // Catches errors from fetchCachedPRMetrics (GitHub Search API failures).
       // Returns 502 so the client knows the data is unavailable, not just empty.
-    } catch {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
