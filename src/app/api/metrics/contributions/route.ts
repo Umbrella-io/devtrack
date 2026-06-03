@@ -6,6 +6,7 @@ import {
   getAllAccounts,
   mergeMetrics,
 } from "@/lib/github-accounts";
+import { orgSearchSegment } from "@/lib/github-orgs";
 import { GITHUB_API, GitHubCommitSearchItem, CommitItem } from "@/lib/github";
 import {
   isMetricsCacheBypassed,
@@ -103,16 +104,18 @@ async function fetchContributionsForAccount(
   cacheContext: { bypass: boolean; userId: string },
   timezone: string,
   fromDate?: string,
-  repo?: string | null
-
+  repo?: string | null,
+  orgLogin?: string | null,
 ): Promise<ContributionResponse> {
   const repoFilter = repo ? ` repo:${repo}` : "";
+  const orgFilter = orgSearchSegment(orgLogin);
 
   const key = metricsCacheKey(cacheContext.userId, "contributions", {
     days,
     githubLogin,
     from: fromDate ?? undefined,
     repo,
+    org: orgLogin ?? undefined,
   });
 
   return withMetricsCache(
@@ -138,7 +141,7 @@ async function fetchContributionsForAccount(
         const searchUrl = new URL(`${GITHUB_API}/search/commits`);
         searchUrl.searchParams.set(
           "q",
-          `author:${githubLogin} author-date:>=${sinceStr}${repoFilter}`
+          `author:${githubLogin} author-date:>=${sinceStr}${repoFilter}${orgFilter}`
         );
         searchUrl.searchParams.set("per_page", "100");
         searchUrl.searchParams.set("page", String(page));
@@ -427,6 +430,30 @@ export async function GET(req: NextRequest) {
 
   if (!userRow) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // org: prefix — filter contributions to a specific GitHub organization.
+  // Uses the primary account's token; no additional account lookup is needed.
+  if (accountId?.startsWith("org:")) {
+    const orgLogin = accountId.slice(4).trim();
+    if (!orgLogin) {
+      return Response.json({ error: "Invalid org identifier" }, { status: 400 });
+    }
+    try {
+      const result = await fetchContributionsForAccount(
+        session.accessToken,
+        session.githubLogin,
+        days,
+        { bypass, userId: session.githubId ?? session.githubLogin },
+        timezone,
+        fromDate,
+        repoParam,
+        orgLogin,
+      );
+      return Response.json(result);
+    } catch {
+      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    }
   }
 
   if (accountId === "combined") {
