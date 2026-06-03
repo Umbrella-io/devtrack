@@ -188,7 +188,6 @@ export default function CIAnalytics() {
         </div>
       ) : data ? (
         <div className="space-y-4">
-      
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {stats.map((stat) => (
               <div
@@ -216,7 +215,6 @@ export default function CIAnalytics() {
               {data.flakiestWorkflow ?? "No failing workflows in this window"}
             </p>
           </div>
-      
         </div>
       ) : null}
     </div>
