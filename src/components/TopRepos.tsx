@@ -456,32 +456,29 @@ export default function TopRepos() {
           </button>
         </div>
       ) : repos.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="mb-3 text-4xl">📦</div>
+      
+          <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+            No repositories found
+          </h3>
+      
+          <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
+            Push your first commit on GitHub to get started and see repository activity here.
+          </p>
+      
+          <a
+            href="https://github.com/new"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--control)]"
+          >
+            Create Repository
+          </a>
+        </div>
       ) : (
       <>
-      {repos.length > 10 && (
-  <div className="relative mb-3">
-    <input
-      type="text"
-      value={searchQuery}
-      onChange={(e) => setSearchQuery(e.target.value)}
-      placeholder="Search repositories…"
-      aria-label="Search repositories"
-      className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
-    />
 
-    {searchQuery.length > 0 && (
-      <button
-        type="button"
-        onClick={() => setSearchQuery("")}
-        aria-label="Clear search"
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
-      >
-        ✕
-      </button>
-    )}
-  </div>
-)}
         <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)] mb-2 px-0">
           <button
             type="button"
