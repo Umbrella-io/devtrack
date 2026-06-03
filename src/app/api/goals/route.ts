@@ -20,6 +20,15 @@ interface Goal {
   created_at: string;
 }
 
+interface GoalHistory {
+  goal_id: string;
+  period_start: string;
+  period_end: string;
+  target: number;
+  achieved: number;
+  completed: boolean;
+}
+
 type Recurrence = "none" | "weekly" | "monthly";
 
 const VALID_RECURRENCES = ["none", "weekly", "monthly"] as const;
@@ -45,6 +54,10 @@ function getPeriodStart(recurrence: Recurrence): string {
     return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
   }
   return new Date(0).toISOString(); // 'none' never resets
+}
+
+function getPreviousPeriodEnd(periodStart: Date): string {
+  return new Date(periodStart.getTime() - 1).toISOString();
 }
 
 export async function GET() {
@@ -81,11 +94,28 @@ export async function GET() {
         : new Date(0);
 
       if (storedPeriodStart < periodStart) {
+        const { error: historyError } = await supabaseAdmin
+          .from("goal_history")
+          .insert({
+            goal_id: goal.id,
+            user_id: goal.user_id,
+            period_start: storedPeriodStart.toISOString(),
+            period_end: getPreviousPeriodEnd(periodStart),
+            target: goal.target,
+            achieved: goal.current,
+            completed: goal.current >= goal.target,
+          });
+
+        if (historyError && historyError.code !== "23505") {
+          console.error("Failed to persist goal history before reset:", historyError);
+          return goal;
+        }
+
         const { data: updated } = await supabaseAdmin
           .from("goals")
           .update({ current: 0, period_start: periodStart.toISOString() })
           .eq("id", goal.id)
-          .lt("period_start", periodStart.toISOString())
+          .or(`period_start.lt.${periodStart.toISOString()},period_start.is.null`)
           .select()
           .single();
 
@@ -103,7 +133,33 @@ export async function GET() {
     })
   );
 
-  return Response.json({ goals: processedGoals });
+  const goalIds = processedGoals
+    .map((goal) => goal?.id)
+    .filter((id): id is string => Boolean(id));
+
+  let latestHistoryByGoal = new Map<string, GoalHistory>();
+  if (goalIds.length > 0) {
+    const { data: histories } = await supabaseAdmin
+      .from("goal_history")
+      .select("goal_id, period_start, period_end, target, achieved, completed")
+      .eq("user_id", user.id)
+      .in("goal_id", goalIds)
+      .order("period_end", { ascending: false });
+
+    latestHistoryByGoal = new Map<string, GoalHistory>();
+    for (const history of (histories ?? []) as GoalHistory[]) {
+      if (!latestHistoryByGoal.has(history.goal_id)) {
+        latestHistoryByGoal.set(history.goal_id, history);
+      }
+    }
+  }
+
+  const goalsWithHistory = processedGoals.map((goal) => ({
+    ...goal,
+    last_period: latestHistoryByGoal.get(goal.id) ?? null,
+  }));
+
+  return Response.json({ goals: goalsWithHistory });
 }
 
 export async function POST(req: Request) {

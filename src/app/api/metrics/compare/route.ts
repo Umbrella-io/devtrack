@@ -2,9 +2,9 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { toDateStr } from "@/lib/dateUtils";
+import { calculateCurrentStreak } from "@/lib/streak";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 import { supabaseAdmin } from "@/lib/supabase";
-import { calculateStreak } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -119,11 +119,7 @@ export async function GET(req: NextRequest) {
       weeklyMap[weekKey] = (weeklyMap[weekKey] ?? 0) + 1;
     }
 
-    const commitDays = Object.keys(daySet).sort();
-
-    if (commitDays.length > 0) {
-      streak = calculateStreak(commitDays.map((day) => new Date(day))).currentStreak;
-    }
+    streak = calculateCurrentStreak(Object.keys(daySet));
   }
 
   // Build ordered weekly array (last 8 weeks) for the chart
