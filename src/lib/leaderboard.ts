@@ -82,7 +82,7 @@ const DEFAULT_PERIOD: LeaderboardPeriod = "month";
 
 // Module-level in-memory cache shared between the server component and API route
 // within the same Node.js process (standalone mode).
-const _memoryCache = new Map<string, LeaderboardCacheEntry<LeaderboardPayload>>();
+let _memoryCache = new Map<string, LeaderboardCacheEntry<LeaderboardPayload>>();
 
 export function isFresh(payload: LeaderboardPayload): boolean {
   const ts = Date.parse(payload.generatedAt);
