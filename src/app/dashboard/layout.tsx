@@ -6,9 +6,26 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { ReactNode } from "react";
 
+async function hasActiveSession(fetcher: typeof window.fetch) {
+  try {
+    const response = await fetcher("/api/auth/session", { cache: "no-store" });
+    if (!response.ok) return false;
+
+    const session = await response.json();
+    return Boolean(session?.user || session?.githubId || session?.accessToken);
+  } catch {
+    return false;
+  }
+}
+
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { status } = useSession({ required: true });
   const router = useRouter();
+  const { status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      router.push("/");
+    },
+  });
 
   useEffect(() => {
     const originalFetch = window.fetch;
@@ -16,9 +33,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       const response = await originalFetch(...args);
       if (response.status === 401) {
         const cloned = response.clone();
-        toast.error("Session expired. Please sign in again.");
-        await signOut({ redirect: false });
-        router.push("/auth/signin");
+        const sessionStillActive = await hasActiveSession(originalFetch);
+
+        if (!sessionStillActive) {
+          toast.error("Session expired. Please sign in again.");
+          await signOut({ redirect: false });
+          router.push("/auth/signin");
+        }
+
         return cloned;
       }
       return response;

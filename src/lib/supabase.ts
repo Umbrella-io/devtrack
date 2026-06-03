@@ -1,8 +1,18 @@
 import 'server-only';
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-
+//import { createClient } from "@supabase/supabase-js";
+import type {
+  CollaborationRoom,
+  RoomMember,
+  RoomMessage,
+  CreateRoomPayload,
+} from "@/types/rooms";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+export const isSupabaseAdminAvailable =
+  !!supabaseUrl &&
+  !!serviceRoleKey &&
+  !supabaseUrl.includes("placeholder");
 
 export const SUPABASE_ADMIN_UNAVAILABLE_MESSAGE =
   "Supabase admin client is unavailable. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.";
@@ -21,8 +31,8 @@ function createUnavailableSupabaseAdmin(): SupabaseAdminClient {
 // Do not throw here - build-time rendering can touch this module before
 // runtime environment variables are present. Guard call sites instead.
 export const supabaseAdmin: SupabaseAdminClient =
-  supabaseUrl && serviceRoleKey && !supabaseUrl.includes("placeholder")
-    ? createClient(supabaseUrl, serviceRoleKey)
+  isSupabaseAdminAvailable
+? createClient(supabaseUrl!, serviceRoleKey!)
     : createUnavailableSupabaseAdmin();
 
 
@@ -45,6 +55,9 @@ interface User {
 export async function getUserByUsername(
   username: string
 ): Promise<User | null> {
+  if (!username || !username.trim()) {
+    return null;
+  }
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
@@ -116,9 +129,6 @@ export async function getUserByGithubId(
   }
 }
 
-/**
- * Update the is_public flag for a user.
- */
 export async function updateUserPublicFlag(
   userId: string,
   isPublic: boolean
@@ -141,4 +151,127 @@ export async function updateUserPublicFlag(
     console.error("Unexpected error updating public flag:", err);
     return null;
   }
+}
+
+// ─── Rooms helpers (Issue #459) ──────────────────────────────────
+// All functions below use supabaseAdmin (service role).
+// Never import this file in client components.
+
+export async function getRoomsForUser(username: string): Promise<CollaborationRoom[]> {
+  const { data, error } = await supabaseAdmin
+    .from("room_members")
+    .select(`
+      role,
+      collaboration_rooms (
+        id, name, description, repo_owner, repo_name, created_by, created_at, updated_at
+      )
+    `)
+    .eq("github_username", username);
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    ...row.collaboration_rooms,
+    is_owner: row.role === "owner",
+  }));
+}
+
+export async function createRoom(
+  payload: CreateRoomPayload,
+  creatorUsername: string
+): Promise<CollaborationRoom> {
+  const { data: room, error } = await supabaseAdmin
+    .from("collaboration_rooms")
+    .insert({ ...payload, created_by: creatorUsername })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  await supabaseAdmin.from("room_members").insert({
+    room_id: room.id,
+    github_username: creatorUsername,
+    role: "owner",
+  });
+
+  return room;
+}
+
+export async function getRoomById(roomId: string, username: string) {
+  const { data: membership } = await supabaseAdmin
+    .from("room_members")
+    .select("role")
+    .eq("room_id", roomId)
+    .eq("github_username", username)
+    .single();
+
+  if (!membership) return null;
+
+  const { data: room } = await supabaseAdmin
+    .from("collaboration_rooms")
+    .select("*")
+    .eq("id", roomId)
+    .single();
+
+  return room ? { ...room, is_owner: membership.role === "owner" } : null;
+}
+
+export async function getRoomMembers(roomId: string): Promise<RoomMember[]> {
+  const { data, error } = await supabaseAdmin
+    .from("room_members")
+    .select("*")
+    .eq("room_id", roomId)
+    .order("joined_at", { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function addRoomMember(roomId: string, githubUsername: string) {
+  const { error } = await supabaseAdmin.from("room_members").insert({
+    room_id: roomId,
+    github_username: githubUsername,
+    role: "member",
+  });
+  if (error) throw error;
+}
+
+export async function getRoomMessages(
+  roomId: string,
+  limit = 50,
+  before?: string
+): Promise<RoomMessage[]> {
+  let query = supabaseAdmin
+    .from("room_messages")
+    .select("*")
+    .eq("room_id", roomId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (before) query = query.lt("created_at", before);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []).reverse();
+}
+
+export async function sendRoomMessage(
+  roomId: string,
+  senderUsername: string,
+  senderAvatar: string | null,
+  content: string
+): Promise<RoomMessage> {
+  const { data, error } = await supabaseAdmin
+    .from("room_messages")
+    .insert({
+      room_id: roomId,
+      sender_username: senderUsername,
+      sender_avatar: senderAvatar,
+      content,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }

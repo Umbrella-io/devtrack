@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
-const authSecret = "playwright-placeholder-secret-that-is-long-enough";
-
+const authSecret =
+  process.env.NEXTAUTH_SECRET || "test-nextauth-secret-for-playwright-tests";
+  
 /** Returns a properly-shaped mock response for each metric endpoint. */
 function mockMetricResponse(url) {
   if (url.includes("/api/metrics/prs"))
@@ -77,7 +78,7 @@ test.beforeEach(async ({ page }) => {
     },
   ]);
 
-  await page.route("**/api/auth/session", async (route) => {
+  await page.route("**/api/auth/session**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({

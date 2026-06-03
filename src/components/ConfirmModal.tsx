@@ -50,6 +50,7 @@ export default function ConfirmModal({
       <div 
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
         onClick={onCancel}
+        aria-hidden="true"
       />
       
       {/* Modal Content */}

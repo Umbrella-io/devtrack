@@ -30,8 +30,14 @@ function getColor(name: string): string {
 
 function LanguageDot({ color, label }: { color: string; label: string }) {
   return (
-    <svg width="0.75rem" height="0.75rem" viewBox="0 0 8 8" className="shrink-0" aria-label={label}>
-      <title>{label}</title>
+    <svg
+      width="0.75rem"
+      height="0.75rem"
+      viewBox="0 0 8 8"
+      className="shrink-0"
+      role="img"
+      aria-label={label}
+    >
       <circle cx="4" cy="4" r="4" fill={color} />
     </svg>
   );
@@ -41,16 +47,26 @@ export default function LanguageBreakdown() {
   const { selectedAccount } = useAccount();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     const url = selectedAccount !== null
       ? `/api/metrics/languages?accountId=${encodeURIComponent(selectedAccount)}`
       : "/api/metrics/languages";
     fetch(url)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error("API error");
+        }
+
+        return r.json();
+      })
       .then((d: { languages: Language[] }) => setLanguages(d.languages ?? []))
-      .catch(() => {})
+      .catch(() => {
+        setError("Failed to load language statistics. Please try again later.");
+      })
       .finally(() => setLoading(false));
   }, [selectedAccount]);
 
@@ -67,7 +83,7 @@ export default function LanguageBreakdown() {
   }
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="text-lg font-semibold text-[var(--card-foreground)] mb-4">
         Language Breakdown
       </h2>
@@ -82,14 +98,18 @@ export default function LanguageBreakdown() {
           <span className="sr-only">Loading language breakdown</span>
           <div
             aria-hidden="true"
-            className="h-6 rounded-full bg-[var(--card-muted)] animate-pulse"
+            className="h-6 rounded-full skeleton-shimmer"
           />
           <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-5 rounded bg-[var(--card-muted)] animate-pulse" />
+              <div key={i} className="h-5 rounded skeleton-shimmer" />
             ))}
           </div>
         </div>
+      ) : error ? (
+        <p className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
+          {error}
+        </p>
       ) : languages.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No language data available.

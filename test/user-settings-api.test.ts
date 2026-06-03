@@ -144,7 +144,9 @@ describe("User Settings API Endpoints", () => {
         pinned_repos: ["repo-1"],
         has_wakatime_key: true,
         discord_webhook_url: null,
+        webhook_url: null,
         timezone: "UTC",
+        bio: "",
       });
     });
   });
@@ -228,9 +230,11 @@ describe("User Settings API Endpoints", () => {
         pinned_repos: ["repo-1"],
         has_wakatime_key: true,
         discord_webhook_url: null,
+        webhook_url: null,
         timezone: "UTC",
+        bio: "",
       });
-
+      
       // Verify that no database updates were triggered (mockUpdate not called because updates is empty)
       expect(mockUpdate).not.toHaveBeenCalled();
     });
@@ -254,9 +258,11 @@ describe("User Settings API Endpoints", () => {
         pinned_repos: ["repo-2", "repo-3"],
         has_wakatime_key: true,
         discord_webhook_url: null,
+        webhook_url: null,
         timezone: "UTC",
+        bio: "",
       });
-
+      
       // Verify update database query was called with the updates object
       expect(mockUpdate).toHaveBeenCalledWith({
         is_public: false,

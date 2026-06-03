@@ -12,6 +12,7 @@ out/
 # Environment files — NEVER commit these
 .env
 .env.local
+.env.local*
 .env.production
 .env.*.local
 

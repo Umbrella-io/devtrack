@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   let body: { sessions?: SessionData[] };
   try {
     body = await req.json();
-  } catch {
+  } catch (e) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
@@ -108,7 +108,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if ((existingCount || 0) + newSessions.length > MAX_SESSIONS_PER_USER) {
+  const incomingDates = [...new Set(newSessions.map((session) => session.date))];
+  const { data: existingSessionsForDates } = await supabaseAdmin
+    .from("local_coding_sessions")
+    .select("date")
+    .eq("user_id", userId)
+    .in("date", incomingDates);
+
+  const existingDateSet = new Set(
+    (existingSessionsForDates ?? []).map((session: { date: string }) => session.date)
+  );
+  const newDateCount = incomingDates.filter((date) => !existingDateSet.has(date)).length;
+
+  if ((existingCount || 0) + newDateCount > MAX_SESSIONS_PER_USER) {
     return Response.json(
       { error: `Session limit reached. Maximum ${MAX_SESSIONS_PER_USER} sessions per user.` },
       { status: 400 }
