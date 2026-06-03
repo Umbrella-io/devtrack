@@ -15,11 +15,11 @@ interface WeeklySummaryData {
     thisWeek: { opened: number; merged: number };
     lastWeek: { opened: number; merged: number };
   };
-  issues: {
+  issues?: {
     thisWeek: number;
     lastWeek: number;
   };
-  productivityScore: {
+  productivityScore?: {
     current: number;
     previous: number;
   };
@@ -81,7 +81,9 @@ export default function WeeklySummaryCard() {
   const handleDownload = () => {
     if (!summary) return;
 
-    const scoreDiff = summary.productivityScore.current - summary.productivityScore.previous;
+    const scoreDiff = summary.productivityScore
+      ? summary.productivityScore.current - summary.productivityScore.previous
+      : 0;
     const scoreSign = scoreDiff >= 0 ? "+" : "";
 
     const reportText = `
@@ -95,15 +97,12 @@ Change              : ${summary.commits.trend === "up" ? "+" : summary.commits.t
 
 PRs Opened          : ${summary.prs.thisWeek.opened}
 PRs Merged          : ${summary.prs.thisWeek.merged}
-
-Issues Resolved     : ${summary.issues.thisWeek}
-Issues Last Week    : ${summary.issues.lastWeek}
+${summary.issues ? `\nIssues Resolved     : ${summary.issues.thisWeek}\nIssues Last Week    : ${summary.issues.lastWeek}` : ""}
 
 Active Days         : ${summary.activeDays.thisWeek} / 7
 Current Streak      : ${summary.streak} days
 Top Repository      : ${summary.topRepo ?? "-"}
-
-Productivity Score  : ${summary.productivityScore.current} (${scoreSign}${scoreDiff} vs last week)
+${summary.productivityScore ? `\nProductivity Score  : ${summary.productivityScore.current} (${scoreSign}${scoreDiff} vs last week)` : ""}
 
 ========================================
     `.trim();
@@ -258,39 +257,40 @@ Productivity Score  : ${summary.productivityScore.current} (${scoreSign}${scoreD
               </div>
             </div>
 
+            {/* Issues Resolved */}
             {summary.issues && (
-            <div className="rounded-lg bg-[var(--control)] p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm text-[var(--muted-foreground)]">Issues Resolved</span>
-                <span className="text-base font-semibold text-[var(--card-foreground)]">
-                  {summary.issues.thisWeek}
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="w-16 text-xs text-[var(--muted-foreground)]">Last week</span>
-                  <div className="flex-1">
-                    <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
-                      <div
-                        className="h-full bg-[var(--muted-foreground)]"
-                        style={{ width: `${((summary.issues.lastWeek / maxIssues) * 100).toFixed(0)}%` }}
-                      />
+              <div className="rounded-lg bg-[var(--control)] p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-sm text-[var(--muted-foreground)]">Issues Resolved</span>
+                  <span className="text-base font-semibold text-[var(--card-foreground)]">
+                    {summary.issues.thisWeek}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-16 text-xs text-[var(--muted-foreground)]">Last week</span>
+                    <div className="flex-1">
+                      <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
+                        <div
+                          className="h-full bg-[var(--muted-foreground)]"
+                          style={{ width: `${((summary.issues.lastWeek / maxIssues) * 100).toFixed(0)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
+                    <div className="flex-1">
+                      <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
+                        <div
+                          className="h-full bg-[var(--success)]"
+                          style={{ width: `${((summary.issues.thisWeek / maxIssues) * 100).toFixed(0)}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
-                  <div className="flex-1">
-                    <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
-                      <div
-                        className="h-full bg-[var(--success)]"
-                        style={{ width: `${((summary.issues.thisWeek / maxIssues) * 100).toFixed(0)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
-            </div>
             )}
 
             {/* Active Days Comparison */}
