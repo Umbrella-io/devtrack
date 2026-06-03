@@ -16,6 +16,13 @@ interface Goal {
   deadline: string | null;
   period_start: string;
   last_synced_at: string | null;
+  last_period: {
+    period_start: string;
+    period_end: string;
+    target: number;
+    achieved: number;
+    completed: boolean;
+  } | null;
 }
 
 const RECURRENCE_LABELS: Record<Recurrence, string> = {
@@ -446,6 +453,17 @@ export default function GoalTracker() {
                         {completionLabel}
                       </span>
                     ) : null}
+                    {goal.last_period && (
+                      <span
+                        className={`text-xs font-medium ${
+                          goal.last_period.completed ? "text-emerald-500" : "text-[var(--muted-foreground)]"
+                        }`}
+                        title={`Previous period ended ${new Date(goal.last_period.period_end).toLocaleDateString()}`}
+                      >
+                        Last period: {goal.last_period.completed ? "✓" : "○"}{" "}
+                        {goal.last_period.achieved}/{goal.last_period.target} {goal.unit}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
