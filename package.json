@@ -9,7 +9,8 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "supabase:generate-types": "npx supabase@latest gen types typescript --local > src/types/supabase.ts"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
@@ -38,6 +39,7 @@
     "recharts": "^2.12.7",
     "rehype-sanitize": "^6.0.0",
     "server-only": "^0.0.1",
+    "sharp": "^0.34.5",
     "sonner": "^2.0.7",
     "swagger-ui-react": "^5.32.6",
     "tailwind-merge": "^3.6.0"
