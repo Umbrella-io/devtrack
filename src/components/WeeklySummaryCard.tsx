@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Download } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 
@@ -14,6 +14,14 @@ interface WeeklySummaryData {
   prs: {
     thisWeek: { opened: number; merged: number };
     lastWeek: { opened: number; merged: number };
+  };
+  issues: {
+    thisWeek: number;
+    lastWeek: number;
+  };
+  productivityScore: {
+    current: number;
+    previous: number;
   };
   activeDays: { thisWeek: number; lastWeek: number };
   streak: number;
@@ -39,13 +47,18 @@ export default function WeeklySummaryCard() {
     ? Math.max(summary.activeDays.thisWeek, summary.activeDays.lastWeek, 1)
     : 1;
 
+  const maxIssues = summary?.issues
+    ? Math.max(summary.issues.thisWeek, summary.issues.lastWeek, 1)
+    : 1;
+
   const fetchSummary = useCallback(() => {
     setLoading(true);
     setError(null);
 
-    const url = selectedAccount !== null
-      ? `/api/metrics/weekly-summary?accountId=${encodeURIComponent(selectedAccount)}`
-      : "/api/metrics/weekly-summary";
+    const url =
+      selectedAccount !== null
+        ? `/api/metrics/weekly-summary?accountId=${encodeURIComponent(selectedAccount)}`
+        : "/api/metrics/weekly-summary";
 
     fetch(url)
       .then((r) => {
@@ -65,24 +78,76 @@ export default function WeeklySummaryCard() {
     fetchSummary();
   }, [fetchSummary]);
 
+  const handleDownload = () => {
+    if (!summary) return;
+
+    const scoreDiff = summary.productivityScore.current - summary.productivityScore.previous;
+    const scoreSign = scoreDiff >= 0 ? "+" : "";
+
+    const reportText = `
+========================================
+       WEEKLY PRODUCTIVITY REPORT
+========================================
+
+Commits This Week   : ${summary.commits.current}
+Commits Last Week   : ${summary.commits.previous}
+Change              : ${summary.commits.trend === "up" ? "+" : summary.commits.trend === "down" ? "-" : ""}${Math.abs(summary.commits.delta)}
+
+PRs Opened          : ${summary.prs.thisWeek.opened}
+PRs Merged          : ${summary.prs.thisWeek.merged}
+
+Issues Resolved     : ${summary.issues.thisWeek}
+Issues Last Week    : ${summary.issues.lastWeek}
+
+Active Days         : ${summary.activeDays.thisWeek} / 7
+Current Streak      : ${summary.streak} days
+Top Repository      : ${summary.topRepo ?? "-"}
+
+Productivity Score  : ${summary.productivityScore.current} (${scoreSign}${scoreDiff} vs last week)
+
+========================================
+    `.trim();
+
+    const blob = new Blob([reportText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "weekly-summary-report.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
           This Week
         </h2>
-        <button
-          type="button"
-          onClick={() => setIsCollapsed((value) => !value)}
-          className="text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--card-foreground)]"
-          aria-expanded={!isCollapsed}
-          aria-label={
-            isCollapsed ? "Expand weekly summary" : "Collapse weekly summary"
-          }
-          suppressHydrationWarning
-        >
-          <ChevronDown className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          {summary && (
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--card-foreground)]"
+              aria-label="Download weekly report"
+              title="Download weekly report"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsCollapsed((value) => !value)}
+            className="text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--card-foreground)]"
+            aria-expanded={!isCollapsed}
+            aria-label={
+              isCollapsed ? "Expand weekly summary" : "Collapse weekly summary"
+            }
+            suppressHydrationWarning
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {!isCollapsed &&
@@ -106,21 +171,25 @@ export default function WeeklySummaryCard() {
           <div className="mt-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
             {error}
           </div>
-        ) : (summary && summary.commits && summary.prs && summary.activeDays) ? (
+        ) : summary &&
+          summary.commits &&
+          summary.prs &&
+          summary.activeDays ? (
           <div className="mt-4 space-y-4">
+
             {/* Commits Comparison */}
             <div className="rounded-lg bg-[var(--control)] p-4">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm text-[var(--muted-foreground)]">
-                  Commits
-                </span>
+                <span className="text-sm text-[var(--muted-foreground)]">Commits</span>
                 <span className="text-base font-semibold text-[var(--card-foreground)]">
                   {summary.commits.current}
                   {summary.commits.trend !== "same" && (
                     <span
                       className="ml-2 text-sm font-medium"
                       style={{
-                        color: summary.commits.trend === "up" ? "var(--success)" : "var(--destructive)",
+                        color: summary.commits.trend === "up"
+                          ? "var(--success)"
+                          : "var(--destructive)",
                       }}
                     >
                       {summary.commits.trend === "up" ? "+" : "-"}
@@ -136,9 +205,7 @@ export default function WeeklySummaryCard() {
                     <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
                       <div
                         className="h-full bg-[var(--muted-foreground)]"
-                        style={{
-                          width: `${((summary.commits.previous / maxCommits) * 100).toFixed(0)}%`,
-                        }}
+                        style={{ width: `${((summary.commits.previous / maxCommits) * 100).toFixed(0)}%` }}
                       />
                     </div>
                   </div>
@@ -149,9 +216,7 @@ export default function WeeklySummaryCard() {
                     <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
                       <div
                         className="h-full bg-[var(--success)]"
-                        style={{
-                          width: `${((summary.commits.current / maxCommits) * 100).toFixed(0)}%`,
-                        }}
+                        style={{ width: `${((summary.commits.current / maxCommits) * 100).toFixed(0)}%` }}
                       />
                     </div>
                   </div>
@@ -174,9 +239,7 @@ export default function WeeklySummaryCard() {
                     <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
                       <div
                         className="h-full bg-[var(--muted-foreground)]"
-                        style={{
-                          width: `${((summary.prs.lastWeek.merged / maxPRs) * 100).toFixed(0)}%`,
-                        }}
+                        style={{ width: `${((summary.prs.lastWeek.merged / maxPRs) * 100).toFixed(0)}%` }}
                       />
                     </div>
                   </div>
@@ -187,9 +250,41 @@ export default function WeeklySummaryCard() {
                     <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
                       <div
                         className="h-full bg-[var(--success)]"
-                        style={{
-                          width: `${((summary.prs.thisWeek.merged / maxPRs) * 100).toFixed(0)}%`,
-                        }}
+                        style={{ width: `${((summary.prs.thisWeek.merged / maxPRs) * 100).toFixed(0)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Issues Resolved */}
+            <div className="rounded-lg bg-[var(--control)] p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-sm text-[var(--muted-foreground)]">Issues Resolved</span>
+                <span className="text-base font-semibold text-[var(--card-foreground)]">
+                  {summary.issues.thisWeek}
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-16 text-xs text-[var(--muted-foreground)]">Last week</span>
+                  <div className="flex-1">
+                    <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--muted-foreground)]"
+                        style={{ width: `${((summary.issues.lastWeek / maxIssues) * 100).toFixed(0)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-16 text-xs text-[var(--muted-foreground)]">This week</span>
+                  <div className="flex-1">
+                    <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--success)]"
+                        style={{ width: `${((summary.issues.thisWeek / maxIssues) * 100).toFixed(0)}%` }}
                       />
                     </div>
                   </div>
@@ -212,9 +307,7 @@ export default function WeeklySummaryCard() {
                     <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
                       <div
                         className="h-full bg-[var(--muted-foreground)]"
-                        style={{
-                          width: `${((summary.activeDays.lastWeek / maxActiveDays) * 100).toFixed(0)}%`,
-                        }}
+                        style={{ width: `${((summary.activeDays.lastWeek / maxActiveDays) * 100).toFixed(0)}%` }}
                       />
                     </div>
                   </div>
@@ -225,15 +318,37 @@ export default function WeeklySummaryCard() {
                     <div className="h-2 rounded bg-[var(--border)] overflow-hidden">
                       <div
                         className="h-full bg-[var(--success)]"
-                        style={{
-                          width: `${((summary.activeDays.thisWeek / maxActiveDays) * 100).toFixed(0)}%`,
-                        }}
+                        style={{ width: `${((summary.activeDays.thisWeek / maxActiveDays) * 100).toFixed(0)}%` }}
                       />
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Productivity Score */}
+            {summary.productivityScore && (
+              <div className="rounded-lg bg-[var(--control)] p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-[var(--muted-foreground)]">Productivity Score</span>
+                  <span className="text-base font-semibold text-[var(--card-foreground)]">
+                    {summary.productivityScore.current}
+                    <span
+                      className="ml-2 text-sm font-medium"
+                      style={{
+                        color:
+                          summary.productivityScore.current >= summary.productivityScore.previous
+                            ? "var(--success)"
+                            : "var(--destructive)",
+                      }}
+                    >
+                      {summary.productivityScore.current >= summary.productivityScore.previous ? "+" : ""}
+                      {summary.productivityScore.current - summary.productivityScore.previous} vs last week
+                    </span>
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Streak & Top Repo */}
             <div className="space-y-3">
@@ -250,6 +365,7 @@ export default function WeeklySummaryCard() {
                 </span>
               </div>
             </div>
+
           </div>
         ) : null)}
     </div>
