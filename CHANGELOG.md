@@ -52,3 +52,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ---
 
 [0.1.0]: https://github.com/Priyanshu-byte-coder/devtrack/releases/tag/v0.1.0
+
+
+## GSSoC Semantic Versioning rules (Issue #1951)
+We strictly follow Semantic Versioning (SemVer) guidelines: Major.Minor.Patch increments for code changes.
