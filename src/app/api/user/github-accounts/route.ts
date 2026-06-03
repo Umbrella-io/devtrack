@@ -38,7 +38,7 @@ export async function GET() {
       .order("added_at", { ascending: true });
 
     if (error) {
-      console.error("Error fetching GitHub accounts:", error);
+      console.error("Failed to fetch linked GitHub accounts:", error);
       return NextResponse.json(
         { error: "Failed to fetch accounts" },
         { status: 500 }

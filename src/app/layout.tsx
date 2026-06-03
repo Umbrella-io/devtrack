@@ -9,18 +9,20 @@ import OfflineBanner from "@/components/OfflineBanner";
 import "./globals.css";
 import { Toaster } from "sonner";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 const syne = Syne({
   subsets: ["latin"],
   variable: "--font-syne",
   weight: ["700", "800"],
   display: "swap",
+  preload: false,
 });
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
   weight: ["400", "500", "600", "700"],
   display: "optional",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -58,6 +60,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="mobile-web-app-capable" content="yes" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
