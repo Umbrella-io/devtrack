@@ -150,8 +150,8 @@ export default function RecentActivity() {
     }
     setError(null);
 
-    const currentOffset = isLoadMore ? offset + 10 : 0;
     const limit = 10;
+    const currentOffset = isLoadMore ? offset + limit : 0;
 
     let queryParams = `?limit=${limit}&offset=${currentOffset}`;
     if (selectedAccount !== null) {
@@ -204,7 +204,7 @@ export default function RecentActivity() {
         <button
           type="button"
           onClick={() => fetchActivity(false)}
-          disabled={loading}
+          disabled={loading || isLoadingMore}
           aria-label="Refresh recent activity"
           className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-all hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-60 hover:opacity-90 active:scale-95"
         >
@@ -282,7 +282,7 @@ export default function RecentActivity() {
               <button
                 type="button"
                 onClick={() => fetchActivity(true)}
-                disabled={isLoadingMore}
+                disabled={isLoadingMore || loading}
                 className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-4 py-2 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-60 bg-[var(--card)] shadow-sm"
               >
                 {isLoadingMore ? (

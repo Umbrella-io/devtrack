@@ -164,14 +164,18 @@ export async function GET(req: NextRequest) {
   const limitParam = req.nextUrl.searchParams.get("limit");
   const offsetParam = req.nextUrl.searchParams.get("offset");
 
-  const limit = limitParam ? parseInt(limitParam, 10) : 10;
-  const offset = offsetParam ? parseInt(offsetParam, 10) : 0;
+  let limit = limitParam ? parseInt(limitParam, 10) : 10;
+  let offset = offsetParam ? parseInt(offsetParam, 10) : 0;
+
+  if (isNaN(limit) || limit < 1) limit = 10;
+  if (limit > 100) limit = 100;
+  if (isNaN(offset) || offset < 0) offset = 0;
 
   const bypass = isMetricsCacheBypassed(req);
   const cacheKey = metricsCacheKey(
     session.githubId ?? githubLogin,
     "activity",
-    { accountId: accountId || undefined, limit, offset }
+    { accountId: accountId || undefined }
   );
 
   try {
@@ -187,7 +191,7 @@ export async function GET(req: NextRequest) {
             accessToken,
             githubLogin
           );
-          return { items: items.slice(offset, offset + limit) };
+          return { items };
         }
 
         if (!session.githubId) {
@@ -240,8 +244,7 @@ export async function GET(req: NextRequest) {
               (a, b) =>
                 new Date(b.createdAt).getTime() -
                 new Date(a.createdAt).getTime()
-            )
-            .slice(offset, offset + limit);
+            );
 
           if (merged.length === 0 && results.length > 0) {
             const allFailed = results.every(
@@ -260,7 +263,7 @@ export async function GET(req: NextRequest) {
             accessToken,
             githubLogin
           );
-          return { items: items.slice(offset, offset + limit) };
+          return { items };
         }
 
         const token = await getAccountToken(userRow.id, accountId);
@@ -284,10 +287,11 @@ export async function GET(req: NextRequest) {
           token,
           accountRow.github_login
         );
-        return { items: items.slice(offset, offset + limit) };
+        return { items };
       }
     );
 
+    result.items = (result.items || []).slice(offset, offset + limit);
     return Response.json(result);
   } catch (error) {
     if (error instanceof Error) {
