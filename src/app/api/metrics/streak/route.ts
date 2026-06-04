@@ -11,15 +11,18 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { calculateStreakFromDates } from "@/lib/streak";
 import { dispatchToAllWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
 
+const STREAK_LOOKBACK_DAYS = 365;
+
 async function fetchActiveDates(
   githubLogin: string,
   token: string,
-  cacheContext: { bypass: boolean; userId: string }
+  cacheContext: { bypass: boolean; userId: string },
+  timeZone = "UTC"
 ): Promise<Set<string>> {
   // Cache key is scoped per user + githubLogin so multi-account "combined" view
   // stores each account's dates separately and merges them in the GET handler.
@@ -35,10 +38,10 @@ async function fetchActiveDates(
       ttlSeconds: METRICS_CACHE_TTL_SECONDS.streak,
     },
     async () => {
-      // Look back 90 days — the maximum window GitHub's Commit Search supports.
-      // Requesting beyond 90 days will silently return fewer results.
+      // Look back far enough to correctly compute long streaks.
+      // GitHub Commit Search supports date ranges up to ~1 year.
       const since = new Date();
-      since.setDate(since.getDate() - 90);
+      since.setDate(since.getDate() - STREAK_LOOKBACK_DAYS);
       const sinceStr = since.toISOString().slice(0, 10); // "YYYY-MM-DD"
 
       const activeDates = new Set<string>();
@@ -48,8 +51,8 @@ async function fetchActiveDates(
       //   • Authenticated (OAuth token / PAT): 30 requests/minute
       //   • Unauthenticated:                   10 requests/minute
       //
-      // This loop pages through up to 10 pages (1,000 commits max) to cover
-      // the full 90-day window. Each page = 1 request against the 30 req/min quota.
+      // This loop pages through up to 10 pages (1,000 commits max).
+      // Each page = 1 request against the 30 req/min quota.
       // Most users need only 1–2 pages; the cap of 10 prevents runaway API usage
       // for extremely active accounts.
       while (true) {
@@ -81,10 +84,24 @@ async function fetchActiveDates(
           items: Array<{ commit: { author: { date: string } } }>;
         };
 
-        // Extract just the date part ("YYYY-MM-DD") from each commit timestamp.
-        // Using a Set deduplicates — multiple commits on the same day count as one active day.
+        // Extract the date part ("YYYY-MM-DD") from each commit timestamp
+        // but bucket the commit into the user's local timezone so streaks are
+        // calculated relative to the user's day boundaries rather than UTC.
         for (const item of data.items) {
-          activeDates.add(item.commit.author.date.slice(0, 10));
+          const commitDate = new Date(item.commit.author.date);
+          // Format the commit into a YYYY-MM-DD in the user's timezone.
+          const parts = new Intl.DateTimeFormat("en", {
+            timeZone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).formatToParts(commitDate);
+          const year = parts.find((p) => p.type === "year")?.value;
+          const month = parts.find((p) => p.type === "month")?.value;
+          const day = parts.find((p) => p.type === "day")?.value;
+          if (year && month && day) {
+            activeDates.add(`${year}-${month}-${day}`);
+          }
         }
 
         // Stop paginating when GitHub returns fewer than 100 items (last page)
@@ -233,11 +250,11 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Fetch streak freeze dates from Supabase for the past 90 days.
+  // Fetch streak freeze dates from Supabase for the past STREAK_LOOKBACK_DAYS.
   // These are merged with commit dates so a freeze day doesn't break the streak.
   // Only fetched when the user has a Supabase row (appUserId is non-null).
   const since = new Date();
-  since.setDate(since.getDate() - 90);
+  since.setDate(since.getDate() - STREAK_LOOKBACK_DAYS);
   const sinceStr = since.toISOString().slice(0, 10);
 
   const freezeDates = new Set<string>();
@@ -255,15 +272,27 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Resolve the user's timezone (stored on the Supabase users row). Default to UTC.
+  let timeZone = "UTC";
+  if (appUserId) {
+    const { data: userRow } = await supabaseAdmin
+      .from("users")
+      .select("timezone")
+      .eq("id", appUserId)
+      .single();
+    if (userRow?.timezone) timeZone = userRow.timezone;
+  }
+
   // No accountId = use the primary signed-in GitHub account.
   if (!accountId) {
     try {
       const activeDates = await fetchActiveDates(
         session.githubLogin,
         session.accessToken,
-        { bypass, userId: session.githubId }
+        { bypass, userId: session.githubId },
+        timeZone
       );
-      const streakData = calculateStreakFromDates(activeDates, freezeDates);
+      const streakData = calculateStreakFromDates(activeDates, freezeDates, timeZone);
 
       if (appUserId && streakData.current > 0) {
         checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
@@ -299,7 +328,7 @@ export async function GET(req: NextRequest) {
         fetchActiveDates(account.githubLogin, account.token, {
           bypass,
           userId: account.githubId,
-        })
+        }, timeZone)
       )
     );
 
@@ -312,7 +341,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const streakData = calculateStreakFromDates(unifiedDates, freezeDates);
+    const streakData = calculateStreakFromDates(unifiedDates, freezeDates, timeZone);
 
     if (streakData.current > 0) {
       checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
@@ -348,11 +377,16 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const activeDates = await fetchActiveDates(resolvedLogin, resolvedToken, {
-      bypass,
-      userId: accountId,
-    });
-    const streakData = calculateStreakFromDates(activeDates, freezeDates);
+    const activeDates = await fetchActiveDates(
+      resolvedLogin,
+      resolvedToken,
+      {
+        bypass,
+        userId: accountId,
+      },
+      timeZone
+    );
+    const streakData = calculateStreakFromDates(activeDates, freezeDates, timeZone);
 
     if (accountId === session.githubId && streakData.current > 0) {
       checkAndRecordMilestone(appUserId, streakData.current).catch(() => {});
