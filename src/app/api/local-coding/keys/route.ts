@@ -22,13 +22,21 @@ export async function GET() {
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
-  const { data: keys } = await supabaseAdmin
+  const { data: keys, error } = await supabaseAdmin
     .from("local_coding_api_keys")
     .select("id, name, last_used_at, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  return Response.json({ keys: keys || [] });
+  if (error) {
+    console.error("Failed to fetch local coding API keys:", error);
+    return Response.json(
+      { error: "Failed to fetch API keys" },
+      { status: 500 }
+    );
+  }
+
+  return Response.json({ keys: keys ?? [] });
 }
 
 export async function POST(req: NextRequest) {

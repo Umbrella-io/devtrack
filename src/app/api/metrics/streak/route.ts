@@ -11,7 +11,7 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { calculateStreak } from "@/lib/streak";
+import { calculateStreakFromDates } from "@/lib/streak";
 import { dispatchToAllWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
@@ -115,102 +115,6 @@ async function fetchActiveDates(
   return new Set(dates);
 }
 
-function calculateStreakFromDates(
-  activeDates: Set<string>,
-  freezeDates: Set<string>
-  , timeZone = "UTC"
-): {
-  current: number;
-  longest: number;
-  lastCommitDate: string | null;
-  totalActiveDays: number;
-  freezeDates: string[];
-} {
-  // Merge commit dates with streak freeze dates before calculating.
-  // A freeze date counts as an "active" day so it doesn't break the streak,
-  // even though no commits were made on that day.
-  const combinedDates = new Set<string>([
-    ...Array.from(activeDates),
-    ...Array.from(freezeDates),
-  ]);
-  const commitDays = Array.from(combinedDates).sort(); // ascending "YYYY-MM-DD"
-
-  if (commitDays.length === 0) {
-    return {
-      current: 0,
-      longest: 0,
-      lastCommitDate: null,
-      totalActiveDays: 0,
-      freezeDates: Array.from(freezeDates),
-    };
-  }
-
-  // Helper: convert "YYYY-MM-DD" -> days since epoch (integer) using UTC
-  function dayKeyToDays(d: string): number {
-    const [y, m, day] = d.split("-").map((s) => Number(s));
-    return Date.UTC(y, m - 1, day) / 86400000;
-  }
-
-  // Compute runs of consecutive days (increasing by 1 day)
-  const daysNums = commitDays.map(dayKeyToDays).sort((a, b) => a - b);
-
-  let longestStreak = 1;
-  let currentRun = 1;
-  const runs: { end: string; length: number }[] = [];
-
-  for (let i = 1; i < daysNums.length; i += 1) {
-    const diff = daysNums[i] - daysNums[i - 1];
-    if (diff === 1) {
-      currentRun += 1;
-      longestStreak = Math.max(longestStreak, currentRun);
-      continue;
-    }
-    runs.push({ end: commitDays[i - 1], length: currentRun });
-    currentRun = 1;
-  }
-  runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
-
-  // Compute today/yesterday as YYYY-MM-DD in the user's timezone
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const y = parts.find((p) => p.type === "year")?.value ?? "0000";
-  const m = parts.find((p) => p.type === "month")?.value ?? "00";
-  const d = parts.find((p) => p.type === "day")?.value ?? "00";
-  const today = `${y}-${m}-${d}`;
-
-  // Yesterday computed by converting today's YYYY-MM-DD to UTC days and subtracting 1
-  const todayDays = dayKeyToDays(today);
-  const yesterdayDays = todayDays - 1;
-  const yesterdayDate = new Date(yesterdayDays * 86400000);
-  const yParts = new Intl.DateTimeFormat("en", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(yesterdayDate);
-  const yy = yParts.find((p) => p.type === "year")?.value ?? "0000";
-  const mm = yParts.find((p) => p.type === "month")?.value ?? "00";
-  const dd = yParts.find((p) => p.type === "day")?.value ?? "00";
-  const yesterday = `${yy}-${mm}-${dd}`;
-
-  const lastRun = runs[runs.length - 1];
-
-  return {
-    current:
-      lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0,
-    longest: longestStreak,
-    lastCommitDate: commitDays[commitDays.length - 1],
-    // totalActiveDays counts only days with real commits or freezes in the 90-day window,
-    // not the full streak length — useful for the "active days" stat on the dashboard.
-    totalActiveDays: commitDays.length,
-    freezeDates: Array.from(freezeDates),
-  };
-}
 
 async function checkAndRecordMilestone(
   userId: string,

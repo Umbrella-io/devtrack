@@ -459,6 +459,27 @@ export default function TopRepos() {
         <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
       ) : (
       <>
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--muted-foreground)]" aria-hidden="true" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search repositories…"
+            aria-label="Search repositories by name"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-9 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:outline-none focus:border-[var(--accent)]"
+          />
+          {searchQuery.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       {repos.length > 10 && (
   <div className="relative mb-3">
     <input
@@ -506,16 +527,6 @@ export default function TopRepos() {
             </span>
           </button>
         </div>
-        <div className="relative mb-4">
-  <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--muted-foreground)]" />
-  <input
-    type="text"
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-    placeholder="Search repositories…"
-    className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-9 py-2 text-sm focus:border-[var(--accent)] focus:outline-none"
-  />
-</div>
         <ul className="space-y-3">
           {filteredRepos.length === 0 ? (
             <p className="text-sm text-[var(--muted-foreground)] py-4 text-center">

@@ -9,7 +9,8 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "supabase:generate-types": "npx supabase@latest gen types typescript --local > src/types/supabase.ts"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
