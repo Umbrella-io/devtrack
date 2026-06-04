@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     .from("local_coding_api_keys")
     .insert({
       user_id: user.id,
-      api_key: apiKeyHash,
+      api_key: apiKey.slice(0, 8),
       api_key_hash: apiKeyHash,
       name,
     })
