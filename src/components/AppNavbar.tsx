@@ -46,7 +46,6 @@ export default function AppNavbar() {
   }, []);
 
   const isAuthenticated = status === "authenticated" && Boolean(session);
-  const isPublicProfileRoute = pathname.startsWith("/u/");
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const identityLabel =
     session?.githubLogin ?? session?.user?.name ?? session?.user?.email ?? "user";
@@ -132,7 +131,7 @@ export default function AppNavbar() {
         <div className="hidden items-center gap-4 md:flex">
           {/* Show ThemeToggle in navbar except on dashboard, where DashboardHeader provides it */}
           {!isDashboardRoute && <ThemeToggle />}
-          {isAuthenticated ? (
+          {isAuthenticated && (
             <div className="flex items-center gap-4 border-l border-white/10 pl-4">
               <Link 
                 href="/dashboard/settings"
@@ -158,16 +157,6 @@ export default function AppNavbar() {
                 </button>
               </div>
             </div>
-          ) : (
-            !isPublicProfileRoute && (
-              <Link
-                href="/api/auth/signin/github?callbackUrl=/dashboard"
-                className="rounded-full px-5 py-2 text-[13px] font-semibold text-[var(--accent-foreground)] shadow-[0_0_20px_rgba(129,140,248,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(129,140,248,0.5)]"
-                style={{ fontFamily: MONO, background: "var(--accent)" }}
-              >
-                SIGN IN →
-              </Link>
-            )
           )}
         </div>
 
@@ -227,7 +216,7 @@ export default function AppNavbar() {
                   <ThemeToggle />
                 </div>
               )}
-              {isAuthenticated ? (
+              {isAuthenticated && (
                 <div className="flex flex-col gap-3">
                   <p className="px-4 py-2 text-[12px] text-[var(--muted-foreground)]" style={{ fontFamily: MONO }}>
                     Logged in as <span className="font-semibold text-[var(--foreground)]">@{identityLabel}</span>
@@ -241,16 +230,6 @@ export default function AppNavbar() {
                     Sign out →
                   </button>
                 </div>
-              ) : (
-                !isPublicProfileRoute && (
-                  <Link
-                    href="/api/auth/signin/github?callbackUrl=/dashboard"
-                    className="block w-full rounded-xl px-4 py-3.5 text-center text-sm font-semibold text-[var(--accent-foreground)] shadow-lg"
-                    style={{ background: "var(--accent)", fontFamily: MONO }}
-                  >
-                    SIGN IN →
-                  </Link>
-                )
               )}
             </div>
           </div>
