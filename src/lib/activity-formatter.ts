@@ -224,10 +224,6 @@ export function formatActivity(event: RawEvent): ActivityItem | null {
 
   return null;
 }
-<<<<<<< HEAD
-=======
-  return null;
-}
 
 // ─── GraphQL discussion types ─────────────────────────────────────────────────
 
@@ -293,4 +289,3 @@ export function mergeActivityItems(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
->>>>>>> b1910ca0b74f052a85009cc422ec4154d4c64025
