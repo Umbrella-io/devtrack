@@ -15,6 +15,8 @@ export type RepoStats = {
   contributorCount: number;
   goodFirstIssues: number;
   contributors: Array<{ login: string; avatar_url: string; html_url: string }>;
+  totalCommits: number;
+  mergedPRs: number;
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -683,12 +685,6 @@ function HeatmapSection() {
 /* ═══════════════════════════════════════════════════════════
    STATS ROW
    ═══════════════════════════════════════════════════════════ */
-const STATS = [
-  { value: 847, label: 'COMMITS TRACKED' },
-  { value: 43,  label: 'PRS MERGED' },
-  { value: 89,  label: 'DAY BEST STREAK' },
-  { value: 67,  label: 'REVIEWS GIVEN' },
-];
 
 function StatItem({ value, label, delay }: { value: number; label: string; delay: number }) {
   const [ref, vis] = useScrollReveal(0.2);
@@ -716,14 +712,20 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
   );
 }
 
-function StatsSection() {
+function StatsSection({ stats }: { stats: RepoStats }) {
+  const items = [
+    { value: stats.totalCommits,    label: 'COMMITS IN REPO' },
+    { value: stats.mergedPRs,       label: 'PRS MERGED' },
+    { value: stats.contributorCount,label: 'CONTRIBUTORS' },
+    { value: stats.stars,           label: 'GITHUB STARS' },
+  ];
   return (
     <section id="features" style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
         gap: 24, borderTop: `1px solid ${BORDER}`,
     }}>
-      {STATS.map((s, i) => (
+      {items.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
       ))}
     </section>
@@ -1061,7 +1063,7 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <CommitTicker />
       <AboutSection />
       <HeatmapSection />
-      <StatsSection />
+      <StatsSection stats={repoStats} />
       <FeaturesSection />
       <ContributeSection stats={repoStats} />
       <SetupSection />
