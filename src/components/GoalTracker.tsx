@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { submitGoalWithRefresh } from "@/lib/goal-tracker";
 import ConfirmModal from "@/components/ConfirmModal"; // 🎯 Imported the native project confirmation layout
+import { buildPublicGoalShareUrl } from "@/lib/goals/share";
 
 type Recurrence = "none" | "weekly" | "monthly";
 
@@ -14,6 +16,7 @@ interface Goal {
   unit: string;
   recurrence: Recurrence;
   deadline: string | null;
+  is_public: boolean;
   period_start: string;
   last_synced_at: string | null;
   last_period: {
@@ -319,6 +322,71 @@ export default function GoalTracker() {
     getCompletionLabel,
   } = useGoalTracker();
 
+  const { data: session } = useSession();
+
+  const githubLogin =
+    typeof (session as { githubLogin?: unknown } | null)?.githubLogin === "string"
+      ? (session as { githubLogin: string }).githubLogin
+      : null;
+  
+  const [copiedGoalId, setCopiedGoalId] = useState<string | null>(null);
+  const [sharingGoalId, setSharingGoalId] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+
+
+  const toggleGoalSharing = async (goalId: string, nextValue: boolean) => {
+    setSharingGoalId(goalId);
+    setShareError(null);
+
+    try {
+      const response = await fetch(`/api/goals/${goalId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_public: nextValue }),
+      });
+
+      if (!response.ok) {
+        setShareError("Failed to update goal sharing. Please try again.");
+        return;
+      }
+
+      const data: { goal: Goal } = await response.json();
+
+      setGoals((currentGoals) =>
+        currentGoals.map((goal) => (goal.id === data.goal.id ? data.goal : goal))
+      );
+    } catch {
+      setShareError("Failed to update goal sharing. Please check your connection.");
+    } finally {
+      setSharingGoalId(null);
+    }
+  };
+
+  const copyGoalShareLink = async (goalId: string) => {
+  if (!githubLogin) {
+    setShareError("Unable to build share link for this account.");
+    return;
+  }
+
+  const shareUrl = buildPublicGoalShareUrl(
+    window.location.origin,
+    githubLogin,
+    goalId
+  );
+
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopiedGoalId(goalId);
+    window.setTimeout(() => {
+      setCopiedGoalId((currentGoalId) =>
+        currentGoalId === goalId ? null : currentGoalId
+      );
+    }, 2000);
+  } catch {
+    setShareError("Failed to copy share link. Please copy it manually.");
+  }
+};
+
   const activeConfirmingGoal = goals.find((g) => g.id === confirmingId);
 
   if (loading) {
@@ -392,6 +460,20 @@ export default function GoalTracker() {
           <button onClick={() => setDeleteError(null)} className="text-[var(--destructive)] hover:opacity-80 ml-2" aria-label="Dismiss error">✕</button>
         </div>
       )}
+
+      {shareError && (
+  <div className="mb-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-3 text-sm text-[var(--destructive)] flex justify-between items-center">
+    <p>{shareError}</p>
+    <button
+      type="button"
+      onClick={() => setShareError(null)}
+      className="text-[var(--destructive)] hover:opacity-80 ml-2"
+      aria-label="Dismiss sharing error"
+    >
+      ✕
+    </button>
+  </div>
+)}
 
       {goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
@@ -521,6 +603,41 @@ export default function GoalTracker() {
                     
                   />
                 </div>
+              <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--control)] p-3">
+  <div className="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <p className="text-sm font-medium text-[var(--card-foreground)]">
+        Share this goal
+      </p>
+      <p className="text-xs text-[var(--muted-foreground)]">
+        Make this goal visible on a public share page.
+      </p>
+    </div>
+
+    <label className="inline-flex items-center gap-2 text-sm text-[var(--card-foreground)]">
+      <input
+        type="checkbox"
+        checked={Boolean(goal.is_public)}
+        disabled={sharingGoalId === goal.id}
+        onChange={(event) =>
+          toggleGoalSharing(goal.id, event.currentTarget.checked)
+        }
+        aria-label={`Make "${goal.title}" public`}
+      />
+      Public
+    </label>
+  </div>
+
+  {goal.is_public && (
+    <button
+      type="button"
+      onClick={() => copyGoalShareLink(goal.id)}
+      className="secondary-button mt-3 rounded-lg px-3 py-1.5 text-sm"
+    >
+      {copiedGoalId === goal.id ? "Copied!" : "Copy share link"}
+    </button>
+  )}
+</div>
               </li>
             );
           })}
