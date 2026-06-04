@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 
 export const METRICS_CACHE_TTL_SECONDS = {
   contributions: 5 * 60,
+  "productive-hours": 5 * 60,
   discussions: 10 * 60,
   repos: 10 * 60,
   "inactive-repos": 10 * 60,
@@ -152,7 +153,7 @@ export async function cacheGet<T>(
         setMemoryCacheValue(key, redisValue, ttlSeconds);
       }
       return redisValue;
-    } catch {
+    } catch (e) {
       return null;
     }
   }
@@ -174,7 +175,7 @@ export async function cacheSet<T>(
   if (redis) {
     try {
       await redis.set(key, value, { ex: ttlSeconds });
-    } catch {
+    } catch (e) {
       // Cache failures must not break dashboard metrics.
     }
   }
@@ -202,6 +203,24 @@ export async function withMetricsCache<T>(
   return fresh;
 }
 
+/**
+ * Removes a single cache key from both the in-process memory store and Redis.
+ * Used to evict a specific entry (e.g. the shared leaderboard key) without
+ * scanning all keys the way invalidateUserMetricsCache does for per-user data.
+ */
+export async function cacheDelete(key: string): Promise<void> {
+  memoryCache.delete(key);
+
+  const redis = getRedisClient();
+  if (!redis) return;
+
+  try {
+    await redis.del(key);
+  } catch {
+    // Cache invalidation failures must not surface to callers.
+  }
+}
+
 export async function invalidateUserMetricsCache(userId: string): Promise<void> {
   const prefix = `metrics:${userId}:`;
 
@@ -223,7 +242,7 @@ export async function invalidateUserMetricsCache(userId: string): Promise<void> 
       }
       cursor = Number(nextCursor);
     } while (cursor !== 0);
-  } catch {
+  } catch (e) {
     // Invalidation failures must not break the webhook response.
   }
 }

@@ -70,7 +70,7 @@ export async function GET() {
     );
 
     return Response.json({ pinnedRepos: nodes });
-  } catch {
+  } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

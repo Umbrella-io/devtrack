@@ -1,48 +1,76 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from "react";
-
-type Theme = "light" | "dark";
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState } from "react";
+import {
+  DEFAULT_THEME,
+  getThemeDefinition,
+  isThemeId,
+  nextThemeId,
+  THEME_STORAGE_KEY,
+  type ThemeId,
+} from "@/lib/themes";
 
 interface ThemeContextType {
-  theme: Theme | undefined;
+  theme: ThemeId | undefined;
+  themeMode: "light" | "dark" | undefined;
+  themeDefinition: ReturnType<typeof getThemeDefinition> | undefined;
+  setTheme: (theme: ThemeId) => void;
   toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-const STORAGE_KEY = "theme";
 
 const useSafeLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [theme, setTheme] = useState<Theme>(() => "dark");
+  const [theme, updateTheme] = useState<ThemeId | undefined>(undefined);
 
-  useEffect(() => {
-    const storedTheme = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    if (storedTheme === "dark" || storedTheme === "light") {
-      setTheme(storedTheme);
+  useSafeLayoutEffect(() => {
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (isThemeId(storedTheme)) {
+      updateTheme(storedTheme);
       return;
     }
-    // No stored preference — keep dark as default.
+    updateTheme(DEFAULT_THEME);
   }, []);
 
   useSafeLayoutEffect(() => {
-    if (theme) {
-      document.documentElement.classList.toggle("dark", theme === "dark");
-      document.documentElement.style.colorScheme = theme;
-      localStorage.setItem(STORAGE_KEY, theme);
-    }
+    if (!theme) return;
+
+    const html = document.documentElement;
+    const definition = getThemeDefinition(theme);
+
+    html.dataset.theme = theme;
+    html.classList.toggle("dark", definition.mode === "dark");
+    html.style.colorScheme = definition.mode;
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  useEffect(() => {
+    if (!theme) return;
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
+
+  const setTheme = useCallback((nextTheme: ThemeId) => {
+    updateTheme(nextTheme);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    updateTheme((prev) => nextThemeId(prev ?? DEFAULT_THEME));
+  }, []);
+
+  const themeDefinition = theme ? getThemeDefinition(theme) : undefined;
+  const value: ThemeContextType = {
+    theme,
+    themeMode: themeDefinition?.mode,
+    themeDefinition,
+    setTheme,
+    toggleTheme,
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
