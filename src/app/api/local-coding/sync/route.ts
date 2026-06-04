@@ -135,6 +135,21 @@ export async function POST(req: NextRequest) {
     project_count: session.projectCount || 0,
   }));
 
+  const { count: latestCount } = await supabaseAdmin
+    .from("local_coding_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  
+  if ((latestCount || 0) + newDateCount > MAX_SESSIONS_PER_USER) {
+    return Response.json(
+      {
+        error: `Session limit reached. Maximum ${MAX_SESSIONS_PER_USER} sessions per user.`,
+      },
+      { status: 400 }
+    );
+  }
+
+
   const { error: upsertError } = await supabaseAdmin.rpc("batch_upsert_sessions", {
     sessions: records,
   });
