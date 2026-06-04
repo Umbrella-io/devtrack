@@ -148,10 +148,22 @@ export async function decryptTokenEdge(
       throw new Error("ENCRYPTION_KEY env var must be a 32-byte hex string");
     }
 
+    const hexRegex = /^[0-9a-fA-F]+$/;
+    if (!hexRegex.test(encrypted) || encrypted.length % 2 !== 0) {
+      throw new Error("Invalid encrypted token hex string");
+    }
+    if (!hexRegex.test(iv) || iv.length !== 24) {
+      throw new Error("Encrypted token IV must be a 12-byte hex string");
+    }
+
     const hexToBytes = (hex: string) => {
       const bytes = new Uint8Array(hex.length / 2);
       for (let i = 0; i < bytes.length; i++) {
-        bytes[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+        const val = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+        if (Number.isNaN(val)) {
+          throw new Error("Invalid hex character in hex string");
+        }
+        bytes[i] = val;
       }
       return bytes;
     };
@@ -180,7 +192,8 @@ export async function decryptTokenEdge(
 
     return new TextDecoder().decode(decryptedBuffer);
   } catch (error) {
-    console.error("Token decryption on Edge failed:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Token decryption on Edge failed:", message);
     return null;
   }
 }

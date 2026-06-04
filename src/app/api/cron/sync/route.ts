@@ -27,21 +27,35 @@ export async function POST(req: Request) {
     let githubSuccess = 0;
     let githubFailure = 0;
 
-    // 1. Sync WakaTime
-    // Fetch users with wakatime keys
-    const { data: wakaUsers, error: wakaUsersError } = await supabaseAdmin
-      .from("users")
-      .select("id, wakatime_api_key_encrypted, wakatime_api_key_iv")
-      .not("wakatime_api_key_encrypted", "is", null)
-      .not("wakatime_api_key_iv", "is", null);
+    const PAGE_SIZE = 50;
+    const CHUNK_SIZE = 5;
 
-    if (wakaUsersError) {
-      console.error("Failed to fetch users for wakatime sync:", wakaUsersError);
-    } else if (wakaUsers) {
-      const CHUNK_SIZE = 5;
+    // 1. Sync WakaTime (Paginated)
+    let wakaPage = 0;
+    let wakaHasMore = true;
+
+    while (wakaHasMore) {
+      const { data: wakaUsers, error: wakaUsersError } = await supabaseAdmin
+        .from("users")
+        .select("id, wakatime_api_key_encrypted, wakatime_api_key_iv")
+        .not("wakatime_api_key_encrypted", "is", null)
+        .not("wakatime_api_key_iv", "is", null)
+        .order("id")
+        .range(wakaPage * PAGE_SIZE, (wakaPage + 1) * PAGE_SIZE - 1);
+
+      if (wakaUsersError) {
+        console.error("Failed to fetch users for wakatime sync:", wakaUsersError.message);
+        break;
+      }
+
+      if (!wakaUsers || wakaUsers.length === 0) {
+        wakaHasMore = false;
+        break;
+      }
+
       for (let i = 0; i < wakaUsers.length; i += CHUNK_SIZE) {
         const chunk = wakaUsers.slice(i, i + CHUNK_SIZE);
-        await Promise.allSettled(chunk.map(async (user) => {
+        const results = await Promise.allSettled(chunk.map(async (user) => {
           try {
             const apiKey = await decryptTokenEdge(
               user.wakatime_api_key_encrypted!,
@@ -50,8 +64,7 @@ export async function POST(req: Request) {
 
             if (!apiKey) {
               console.error(`Decryption failed for user ${user.id}`);
-              wakaFailure++;
-              return;
+              return false;
             }
 
             const res = await fetch("https://wakatime.com/api/v1/users/current/summaries?range=Last%207%20Days", {
@@ -63,14 +76,12 @@ export async function POST(req: Request) {
 
             if (!res.ok) {
               console.error(`Wakatime API error for user ${user.id}: ${res.status}`);
-              wakaFailure++;
-              return;
+              return false;
             }
 
             const data = await res.json();
             if (!data || !data.data) {
-              wakaFailure++;
-              return;
+              return false;
             }
 
             const now = new Date().toISOString();
@@ -88,31 +99,58 @@ export async function POST(req: Request) {
               .upsert(statsToUpsert, { onConflict: "user_id, date" });
 
             if (upsertError) {
-              console.error(`Failed to upsert wakatime stats for user ${user.id}:`, upsertError);
-              wakaFailure++;
-            } else {
-              wakaSuccess++;
+              console.error(`Failed to upsert wakatime stats for user ${user.id}:`, upsertError.message);
+              return false;
             }
+
+            return true;
           } catch (e) {
-            console.error(`Error processing wakatime stats for user ${user.id}:`, e);
-            wakaFailure++;
+            const msg = e instanceof Error ? e.message : "Unknown error";
+            console.error(`Error processing wakatime stats for user ${user.id}:`, msg);
+            return false;
           }
         }));
+
+        for (const res of results) {
+          if (res.status === "fulfilled" && res.value === true) {
+            wakaSuccess++;
+          } else {
+            wakaFailure++;
+          }
+        }
+      }
+
+      if (wakaUsers.length < PAGE_SIZE) {
+        wakaHasMore = false;
+      } else {
+        wakaPage++;
       }
     }
 
-    // 2. Sync GitHub Achievements
-    const { data: ghAccounts, error: ghAccountsError } = await supabaseAdmin
-      .from("user_github_accounts")
-      .select("user_id, github_login, access_token_encrypted, access_token_iv");
+    // 2. Sync GitHub Achievements (Paginated)
+    let ghPage = 0;
+    let ghHasMore = true;
 
-    if (ghAccountsError) {
-      console.error("Failed to fetch github accounts for sync:", ghAccountsError);
-    } else if (ghAccounts) {
-      const CHUNK_SIZE = 5;
+    while (ghHasMore) {
+      const { data: ghAccounts, error: ghAccountsError } = await supabaseAdmin
+        .from("user_github_accounts")
+        .select("user_id, github_login, access_token_encrypted, access_token_iv")
+        .order("user_id")
+        .range(ghPage * PAGE_SIZE, (ghPage + 1) * PAGE_SIZE - 1);
+
+      if (ghAccountsError) {
+        console.error("Failed to fetch github accounts for sync:", ghAccountsError.message);
+        break;
+      }
+
+      if (!ghAccounts || ghAccounts.length === 0) {
+        ghHasMore = false;
+        break;
+      }
+
       for (let i = 0; i < ghAccounts.length; i += CHUNK_SIZE) {
         const chunk = ghAccounts.slice(i, i + CHUNK_SIZE);
-        await Promise.allSettled(chunk.map(async (account) => {
+        const results = await Promise.allSettled(chunk.map(async (account) => {
           try {
             const token = await decryptTokenEdge(
               account.access_token_encrypted,
@@ -121,24 +159,38 @@ export async function POST(req: Request) {
 
             if (!token) {
               console.error(`Decryption failed for github account of user ${account.user_id}`);
-              githubFailure++;
-              return;
+              return false;
             }
 
-            // Sync achievements
+            // Sync achievements (using force: false to prevent rate limit hits unless cached data is stale)
             await syncGitHubAchievementsForUser({
               userId: account.user_id,
               githubLogin: account.github_login,
               token: token,
-              force: true
+              force: false
             });
 
-            githubSuccess++;
+            return true;
           } catch (e) {
-            console.error(`Error syncing github for user ${account.user_id}:`, e);
-            githubFailure++;
+            const msg = e instanceof Error ? e.message : "Unknown error";
+            console.error(`Error syncing github for user ${account.user_id}:`, msg);
+            return false;
           }
         }));
+
+        for (const res of results) {
+          if (res.status === "fulfilled" && res.value === true) {
+            githubSuccess++;
+          } else {
+            githubFailure++;
+          }
+        }
+      }
+
+      if (ghAccounts.length < PAGE_SIZE) {
+        ghHasMore = false;
+      } else {
+        ghPage++;
       }
     }
 
