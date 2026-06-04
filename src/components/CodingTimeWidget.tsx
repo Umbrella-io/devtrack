@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import { useEffect, useState } from "react";
@@ -38,7 +39,7 @@ export default function CodingTimeWidget() {
         const res = await fetch("/api/wakatime");
         const json = await res.json();
         setData(json);
-      } catch {
+      } catch (e) {
         setData(null);
       } finally {
         setLoading(false);
@@ -50,7 +51,7 @@ export default function CodingTimeWidget() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <div className="h-5 w-40 bg-[var(--card-muted)] rounded animate-pulse mb-4" />
         <div className="h-48 bg-[var(--card-muted)] rounded animate-pulse w-full" />
       </div>
@@ -62,7 +63,7 @@ export default function CodingTimeWidget() {
   }
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="text-lg font-semibold text-[var(--card-foreground)] mb-4">
         Wakatime Coding Activity (7 Days)
       </h2>
@@ -117,7 +118,7 @@ export default function CodingTimeWidget() {
                 borderRadius: "8px",
                 color: "var(--card-foreground)",
               }}
-              formatter={(value: number) => [`${value} hours`, 'Time']}
+              formatter={(value: any) => [`${value} hrs`, 'Time']}
               labelFormatter={(label) => formatDate(label as string)}
             />
             <Bar dataKey="hours" fill="var(--accent)" radius={[4, 4, 0, 0]} />

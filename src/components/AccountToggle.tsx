@@ -37,7 +37,7 @@ export default function AccountToggle() {
             githubLogin: account.githubLogin,
           }))
         );
-      } catch {
+      } catch (e) {
         setLinkedAccounts([]);
       }
     }
