@@ -18,6 +18,7 @@ interface Goal {
   deadline: string | null;
   period_start: string | null;
   created_at: string;
+  goal_reset_version: number;
 }
 
 type Recurrence = "none" | "weekly" | "monthly";
@@ -76,21 +77,38 @@ export async function GET() {
         : new Date(0);
 
       if (storedPeriodStart < periodStart) {
-        const { data: updated } = await supabaseAdmin
+        const oldVersion = goal.goal_reset_version ?? 0;
+      
+        const { data: resetGoal, error } = await supabaseAdmin
           .from("goals")
-          .update({ current: 0, period_start: periodStart.toISOString() })
+          .update({
+            current: 0,
+            period_start: periodStart.toISOString(),
+            goal_reset_version: oldVersion + 1,
+          })
           .eq("id", goal.id)
-          .lt("period_start", periodStart.toISOString())
+          .eq("goal_reset_version", oldVersion)
           .select()
           .single();
-
-        if (updated) return updated;
-
+      
+        if (resetGoal) {
+          return resetGoal;
+        }
+      
+        if (error) {
+          console.warn("[GOAL_RESET_CONFLICT]", {
+            goalId: goal.id,
+            oldVersion,
+            error,
+          });
+        }
+      
         const { data: current } = await supabaseAdmin
           .from("goals")
           .select("*")
           .eq("id", goal.id)
           .single();
+      
         return current ?? goal;
       }
 
@@ -189,6 +207,7 @@ try {
       period_start: getPeriodStart(safeRecurrence),
       deadline: safeDeadline,
       current: 0,
+      goal_reset_version: 0,
     })
     .select()
     .single();
