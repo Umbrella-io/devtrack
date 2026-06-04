@@ -40,7 +40,7 @@ function getRequestedTimeZone(req: NextRequest): string {
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: raw }).format(new Date());
     return raw;
-  } catch {
+  } catch (e) {
     return "UTC";
   }
 }
@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
       );
 
       return Response.json(data);
-    } catch {
+    } catch (e) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -241,7 +241,7 @@ export async function GET(req: NextRequest) {
     });
 
     return Response.json(data);
-  } catch {
+  } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

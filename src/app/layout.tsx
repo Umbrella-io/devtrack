@@ -1,14 +1,29 @@
 import CustomCursor from "@/components/CustomCursor";
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Syne, JetBrains_Mono } from "next/font/google";
+import AppNavbar from "@/components/AppNavbar";
 import Footer from "@/components/Footer";
 import DeferredVercelMetrics from "@/components/DeferredVercelMetrics";
 import Providers from "./providers";
-import PWARegister from "@/components/pwa-register";
+import OfflineBanner from "@/components/OfflineBanner";
 import "./globals.css";
 import { Toaster } from "sonner";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], display: "swap" });
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
+  weight: ["700", "800"],
+  display: "swap",
+  preload: false,
+});
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  weight: ["400", "500", "600", "700"],
+  display: "optional",
+  preload: false,
+});
 
 export const metadata: Metadata = {
   title: "DevTrack — Developer Productivity Dashboard",
@@ -45,25 +60,20 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="mobile-web-app-capable" content="yes" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 try {
                   const stored = localStorage.getItem('theme');
-                  if (stored === 'dark') {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.style.colorScheme = 'dark';
-                  } else if (stored === 'light') {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.style.colorScheme = 'light';
-                  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.style.colorScheme = 'dark';
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.style.colorScheme = 'light';
-                  }
+                  const validThemes = ['classic-dark', 'modern-light-blue', 'nordic-frost', 'cyberpunk-matrix'];
+                  const theme = validThemes.includes(stored || '') ? stored : 'classic-dark';
+                  const isDark = theme !== 'modern-light-blue';
+
+                  document.documentElement.dataset.theme = theme;
+                  document.documentElement.classList.toggle('dark', isDark);
+                  document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
                 } catch (e) {}
               })();
             `,
@@ -74,12 +84,15 @@ export default async function RootLayout({
       <body
         className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
-        <CustomCursor />       
-        <PWARegister />
+        <CustomCursor />
+        <OfflineBanner />
 
         <div className="flex min-h-screen flex-col">
           <div className="flex-1">
-            <Providers>{children}</Providers>
+            <Providers>
+              <AppNavbar />
+              {children}
+            </Providers>
           </div>
 
           <Footer />

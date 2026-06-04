@@ -32,7 +32,7 @@ export default function RepoGrid({ repos }: { repos: ExplorerRepoCardData[] }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-1 md:flex-row md:items-center">
-        <input value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="Search repositories..." className="w-full rounded-xl border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm text-[var(--card-foreground)] outline-none focus:border-[var(--accent)] md:max-w-xs" />
+        <input value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="Search repositories..." className="w-full rounded-xl border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm text-[var(--card-foreground)] md:max-w-xs" />
         <div className="flex flex-1 flex-wrap gap-2">
           <select value={languageFilter} onChange={(e) => { setLanguageFilter(e.target.value); setPage(1); }} className="rounded-xl border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm text-[var(--card-foreground)]">
             {languages.map((language) => <option key={language} value={language}>{language === "all" ? "All languages" : language}</option>)}

@@ -1,6 +1,8 @@
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { calculateStreakFromDates } from "@/lib/streak";
 import type { GitHubAchievement } from "@/lib/github-achievements";
+import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import { fetchPinnedRepoDetails, type PinnedRepoDetails } from "@/lib/pinned-repos";
+import { getUserByUsername, supabaseAdmin } from "@/lib/supabase";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -8,6 +10,12 @@ export interface TopRepo {
   name: string;
   commits: number;
   url: string;
+}
+
+export interface PublicLanguage {
+  name: string;
+  count: number;
+  percentage: number;
 }
 
 export interface ContributionData {
@@ -23,16 +31,26 @@ export interface StreakData {
   totalActiveDays: number;
 }
 
+export interface WeeklyGoalProgress {
+  completed: number;
+  total: number;
+  percentage: number;
+}
+
 export interface PublicProfileData {
   username: string;
-  userId: string;
+  bio: string | null;
   isSponsor: boolean;
+  publicGists: number;
   repos: TopRepo[];
   contributions: ContributionData;
   streak: StreakData;
+  topLanguages: PublicLanguage[];
+  pullRequests: number;
   achievements: GitHubAchievement[];
   achievementsError?: string | null;
   spotlightRepos?: PinnedRepoDetails[];
+  weeklyGoalProgress: WeeklyGoalProgress | null;
 }
 
 async function ghFetch(url: string, token?: string): Promise<Response> {
@@ -41,6 +59,18 @@ async function ghFetch(url: string, token?: string): Promise<Response> {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
   return fetch(url, { headers, cache: "no-store" });
+}
+
+export async function fetchPublicGists(
+  username: string,
+  token?: string
+): Promise<number> {
+  const res = await ghFetch(`${GITHUB_API}/users/${username}`, token);
+
+  if (!res.ok) return 0;
+
+  const data = (await res.json()) as { public_gists?: number };
+  return data.public_gists ?? 0;
 }
 
 export async function fetchPublicTopRepos(
@@ -111,7 +141,7 @@ export async function fetchPublicStreak(
   token?: string
 ): Promise<StreakData> {
   const since = new Date();
-  since.setDate(since.getDate() - 90);
+  since.setDate(since.getDate() - 365);
   const sinceStr = since.toISOString().slice(0, 10);
 
   const res = await ghFetch(
@@ -125,43 +155,17 @@ export async function fetchPublicStreak(
     items: Array<{ commit: { author: { date: string } } }>;
   };
 
-  const daySet: Record<string, true> = {};
+  const activeDates = new Set<string>();
   for (const item of data.items) {
-    daySet[item.commit.author.date.slice(0, 10)] = true;
-  }
-  const commitDays = Object.keys(daySet).sort();
-
-  if (commitDays.length === 0) {
-    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
+    activeDates.add(item.commit.author.date.slice(0, 10));
   }
 
-  let longestStreak = 1;
-  let currentRun = 1;
-  const runs: { end: string; length: number }[] = [];
-
-  for (let i = 1; i < commitDays.length; i++) {
-    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
-    if (diff === 1) {
-      currentRun++;
-      if (currentRun > longestStreak) longestStreak = currentRun;
-    } else {
-      runs.push({ end: commitDays[i - 1], length: currentRun });
-      currentRun = 1;
-    }
-  }
-  runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
-
-  const lastDay = commitDays[commitDays.length - 1];
-  const today = toDateStr(new Date());
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
-  const lastRun = runs[runs.length - 1];
-  const currentStreak = lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
-
+  const result = calculateStreakFromDates(activeDates);
   return {
-    current: currentStreak,
-    longest: longestStreak,
-    lastCommitDate: lastDay,
-    totalActiveDays: commitDays.length,
+    current: result.current,
+    longest: result.longest,
+    lastCommitDate: result.lastCommitDate,
+    totalActiveDays: result.totalActiveDays,
   };
 }
 
@@ -199,4 +203,136 @@ export async function fetchTopLanguage(
   }
   
   return topLang;
+}
+
+export async function fetchPublicTopLanguages(
+  username: string,
+  token?: string
+): Promise<PublicLanguage[]> {
+  const res = await ghFetch(
+    `${GITHUB_API}/users/${username}/repos?sort=updated&per_page=30`,
+    token
+  );
+
+  if (!res.ok) return [];
+
+  const repos = (await res.json()) as Array<{ language: string | null }>;
+  const counts: Record<string, number> = {};
+
+  for (const repo of repos) {
+    if (repo.language) {
+      counts[repo.language] = (counts[repo.language] ?? 0) + 1;
+    }
+  }
+
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  if (total === 0) return [];
+
+  return Object.entries(counts)
+    .map(([name, count]) => ({
+      name,
+      count,
+      percentage: Math.round((count / total) * 1000) / 10,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
+export async function fetchPublicPullRequests(
+  username: string,
+  token?: string
+): Promise<number> {
+  const res = await ghFetch(
+    `${GITHUB_API}/search/issues?q=type:pr+author:${username}&per_page=1`,
+    token
+  );
+
+  if (!res.ok) return 0;
+
+  const data = (await res.json()) as { total_count?: number };
+  return data.total_count ?? 0;
+}
+
+async function fetchPublicWeeklyGoalProgress(
+  userId: string,
+  showOnProfile: boolean
+): Promise<WeeklyGoalProgress | null> {
+  if (!showOnProfile) return null;
+
+  try {
+    const { data: goals, error } = await supabaseAdmin
+      .from("goals")
+      .select("current, target")
+      .eq("user_id", userId)
+      .eq("recurrence", "weekly");
+
+    if (error || !goals) return null;
+
+    const total = goals.length;
+    if (total === 0) return null;
+
+    const completed = goals.filter((g) => g.current >= g.target).length;
+    const percentage = Math.round((completed / total) * 100);
+
+    return { completed, total, percentage };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchPublicProfile(
+  username: string,
+  options: { includeAchievements?: boolean } = {}
+): Promise<PublicProfileData | null> {
+  const user = await getUserByUsername(username);
+  if (!user) return null;
+
+  const githubToken = process.env.GITHUB_TOKEN;
+  const [
+    publicGists,
+    repos,
+    contributions,
+    streak,
+    topLanguages,
+    pullRequests,
+    achievementsCache,
+    spotlight,
+    weeklyGoalProgress,
+  ] = await Promise.all([
+    fetchPublicGists(user.github_login, githubToken),
+    fetchPublicTopRepos(user.github_login, githubToken, 30),
+    fetchPublicContributions(user.github_login, githubToken, 30),
+    fetchPublicStreak(user.github_login, githubToken),
+    fetchPublicTopLanguages(user.github_login, githubToken),
+    fetchPublicPullRequests(user.github_login, githubToken),
+    options.includeAchievements
+      ? syncGitHubAchievementsForUser({
+          userId: user.id,
+          githubLogin: user.github_login,
+          token: githubToken,
+        })
+      : Promise.resolve({ achievements: [], syncedAt: null, error: null }),
+    fetchPinnedRepoDetails(
+      user.github_login,
+      user.pinned_repos || [],
+      githubToken || ""
+    ),
+    fetchPublicWeeklyGoalProgress(user.id, user.show_weekly_goals ?? false),
+  ]);
+
+  return {
+    username: user.github_login,
+    bio: user.bio ?? null,
+    isSponsor: user.is_sponsor ?? false,
+    publicGists,
+    repos,
+    contributions,
+    streak,
+    topLanguages,
+    pullRequests,
+    achievements: achievementsCache.achievements,
+    achievementsError: achievementsCache.error,
+    spotlightRepos: spotlight,
+    weeklyGoalProgress,
+  };
 }

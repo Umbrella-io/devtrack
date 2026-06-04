@@ -1,7 +1,65 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
-const authSecret = "playwright-placeholder-secret-that-is-long-enough";
+const authSecret =
+  process.env.NEXTAUTH_SECRET || "test-nextauth-secret-for-playwright-tests";
+  
+/** Returns a properly-shaped mock response for each metric endpoint. */
+function mockMetricResponse(url) {
+  if (url.includes("/api/metrics/prs"))
+    return { open: 2, merged: 8, closed: 1, avgReviewHours: 6, avgFirstReviewHours: 3, mergeRate: "80%" };
+  if (url.includes("/api/metrics/pr-breakdown"))
+    return { draft: 1, merged: 8, open: 2, closed: 1 };
+  if (url.includes("/api/metrics/issues"))
+    return { opened: 4, closed: 3, currentlyOpen: 1, avgCloseTimeDays: 2, trend: 1, mostActiveRepo: "demo/repo" };
+  if (url.includes("/api/metrics/repos") || url.includes("/api/metrics/pinned-repos"))
+    return { repos: [{ name: "demo/repo", commits: 12, url: "https://github.com/demo/repo" }] };
+  if (url.includes("/api/metrics/languages"))
+    return { languages: [{ language: "TypeScript", count: 12 }] };
+  if (url.includes("/api/metrics/streak"))
+    return { current: 3, longest: 9, lastCommitDate: "2026-05-18", totalActiveDays: 12 };
+  if (url.includes("/api/metrics/weekly-summary"))
+    return {
+      commits: { current: 10, previous: 7, delta: 3, trend: "up" },
+      prs: { thisWeek: { opened: 3, merged: 2 }, lastWeek: { opened: 1, merged: 1 } },
+      issues: { thisWeek: 4, lastWeek: 3 },
+      productivityScore: { current: 85, previous: 78 },
+      activeDays: { thisWeek: 5, lastWeek: 4 },
+      streak: 3,
+      topRepo: "demo/repo",
+    };
+  if (url.includes("/api/metrics/compare"))
+    return { user: { commits: 10 }, friend: { commits: 8 } };
+  if (url.includes("/api/metrics/repo-health"))
+    return { repositories: [] };
+  if (url.includes("/api/metrics/ci"))
+    return { successRate: 95, averageDurationMinutes: 3, flakiestWorkflow: null, totalRuns: 42, reposChecked: 5 };
+  if (url.includes("/api/metrics/activity"))
+    return { data: [] };
+  if (url.includes("/api/metrics/commit-time"))
+    return { data: [] };
+  if (url.includes("/api/metrics/personal-records"))
+    return { records: [] };
+  if (url.includes("/api/metrics/discussions"))
+    return { total: 0, answered: 0 };
+  if (url.includes("/api/metrics/pr-review-trend"))
+    return { trend: [] };
+  if (url.includes("/api/metrics/inactive-repos"))
+    return { repos: [] };
+  if (url.includes("/api/metrics/coding-time") || url.includes("/api/wakatime"))
+    return { hasData: false, not_configured: true, todaysSeconds: 0, totalSeconds7Days: 0, chartData: [], topLanguage: "", topProject: "" };
+  if (url.includes("/api/metrics/coding-activity-insights"))
+    return { hourlyCounts: [], mostActiveHour: { hour: 0, count: 0, label: "" }, leastActiveHour: { hour: 0, count: 0, label: "" }, totalActivities: 0, averageDailyCommits: 0, consistencyScore: 0, productivityLevel: "Low", timezone: "UTC" };
+  if (url.includes("/api/metrics/contributions"))
+    return { data: { "2026-05-16": 3, "2026-05-17": 5, "2026-05-18": 2 } };
+  if (url.includes("/api/metrics/productive-hours"))
+    return { grid: [], peak: null, total: 0, days: 0, timezone: "UTC" };
+  if (url.includes("/api/user/pinned-repos/details"))
+    return { pinnedRepos: [] };
+  if (url.includes("/api/metrics/repo-explorer"))
+    return { repos: [] };
+  return {};
+}
 
 test.beforeEach(async ({ page }) => {
   const sessionToken = await encode({
@@ -15,7 +73,6 @@ test.beforeEach(async ({ page }) => {
       accessToken: "test-token",
     },
     maxAge: 60 * 60,
-    cookieName: "next-auth.session-token",
   });
 
   await page.context().addCookies([
@@ -31,7 +88,7 @@ test.beforeEach(async ({ page }) => {
     },
   ]);
 
-  await page.route("**/api/auth/session", async (route) => {
+  await page.route("**/api/auth/session**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -43,6 +100,72 @@ test.beforeEach(async ({ page }) => {
       }),
     });
   });
+
+  await page.route("**/api/user/settings", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ is_public: true }) });
+  });
+
+  await page.route("**/api/user/github-accounts", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ accounts: [] }) });
+  });
+
+  await page.route("**/api/goals/sync", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ updated: 1, commitCount: 4 }) });
+  });
+
+  await page.route("**/api/goals**", async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({ contentType: "application/json", status: 201, body: JSON.stringify({ ok: true }) });
+      return;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        goals: [{ id: "goal-1", title: "Make 10 commits", target: 10, current: 4, unit: "commits", recurrence: "weekly", period_start: "2026-05-18", last_synced_at: new Date().toISOString() }],
+      }),
+    });
+  });
+
+  await page.route("**/api/ai-insights**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: {
+          insights: [{ id: "insight-1", type: "productivity", title: "High Consistency", description: "You have coded 5 days this week!", severity: "positive" }],
+          trend: { direction: "up", percentage: 15 },
+          aiSummary: "Great job shipping features this week.",
+          generatedAt: "2026-05-18T12:00:00.000Z",
+        },
+      }),
+    });
+  });
+
+  const metricRoutes = [
+    "**/api/metrics/prs**", "**/api/metrics/pr-breakdown**", "**/api/metrics/issues**",
+    "**/api/metrics/repos**", "**/api/metrics/languages**", "**/api/metrics/streak**",
+    "**/api/metrics/pinned-repos**", "**/api/metrics/weekly-summary**", "**/api/metrics/compare**",
+    "**/api/metrics/repo-health**", "**/api/metrics/ci**", "**/api/streak/freeze**",
+    "**/api/metrics/activity**", "**/api/metrics/commit-time**", "**/api/metrics/personal-records**",
+    "**/api/metrics/discussions**", "**/api/metrics/pr-review-trend**", "**/api/metrics/inactive-repos**",
+    "**/api/metrics/contributions**", "**/api/metrics/coding-time**", "**/api/metrics/coding-activity-insights**",
+    "**/api/local-coding/stats**", "**/api/wakatime**",
+    "**/api/metrics/productive-hours**",
+    "**/api/user/pinned-repos/details**",
+    "**/api/metrics/repo-explorer**",
+  ];
+
+  for (const pattern of metricRoutes) {
+    await page.route(pattern, async (route) => {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(mockMetricResponse(route.request().url())),
+      });
+    });
+  }
+
+  await page.route("**/api/stream**", async (route) => {
+    await route.fulfill({ status: 200, contentType: "text/event-stream", body: "data: {}\n\n" });
+  });
 });
 
 test("notification bell opens and closes drawer", async ({ page }) => {
@@ -51,37 +174,28 @@ test("notification bell opens and closes drawer", async ({ page }) => {
       contentType: "application/json",
       body: JSON.stringify({
         notifications: [
-          {
-            id: "1",
-            type: "info",
-            message: "Test notification",
-            read: false,
-            created_at: new Date().toISOString(),
-          }
+          { id: "1", type: "info", message: "Test notification", read: false, created_at: new Date().toISOString() },
         ],
         unreadCount: 1,
       }),
     });
   });
 
-  // Mock dashboard metrics to prevent errors
-  await page.route("**/api/metrics/**", async (route) => {
-    await route.fulfill({ json: {} });
-  });
-  await page.route("**/api/goals**", async (route) => {
-    await route.fulfill({ json: { goals: [] } });
-  });
+  await page.goto("/dashboard", { waitUntil: "load" });
 
-  await page.goto("/dashboard");
-  
+  // Wait for the dashboard to fully render
+  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
+
+  // Find and click the notification bell
   const bellButton = page.getByRole("button", { name: /Notifications/ });
-  await expect(bellButton).toBeVisible();
-  
+  await expect(bellButton).toBeVisible({ timeout: 10000 });
+
   await bellButton.click();
   const drawerHeading = page.getByRole("heading", { name: "Notifications" });
-  await expect(drawerHeading).toBeVisible();
-  await expect(page.getByText("Test notification")).toBeVisible();
-  
+  await expect(drawerHeading).toBeVisible({ timeout: 5000 });
+  await expect(page.getByText("Test notification")).toBeVisible({ timeout: 5000 });
+
+  // Click again to close
   await bellButton.click();
-  await expect(drawerHeading).not.toBeVisible();
+  await expect(drawerHeading).not.toBeVisible({ timeout: 5000 });
 });

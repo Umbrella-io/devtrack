@@ -2,17 +2,28 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveAppUser } from "@/lib/resolve-user";
 import { weeklyProductivityPrompt } from "@/lib/ai-prompts";
 import {
   analyzePatterns,
   computeTrends,
   DeveloperMetrics,
 } from "@/lib/ai-mentor";
+
 const aiInsightsRateLimit = new Map<
   string,
   { count: number; resetTime: number }
 >();
+
 export const dynamic = "force-dynamic";
+
+const VALID_INSIGHT_TYPES = new Set([
+  "weekly_summary",
+  "pattern",
+  "recommendation",
+] as const);
+
+type InsightType = "weekly_summary" | "pattern" | "recommendation";
 
 interface ContributionsApiResponse {
   data?: Record<string, number>;
@@ -48,7 +59,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = session.githubId;
+  // Resolve the application user so that ai_insights rows are keyed on
+  // users.id (a stable UUID with a foreign-key constraint) rather than on
+  // session.githubId (a mutable external identifier with no FK). Using
+  // users.id ensures rows are removed via ON DELETE CASCADE when the account
+  // is deleted and prevents the orphaned-record scenario described in #1750.
+  const user = await resolveAppUser(session.githubId, session.githubLogin);
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const userId = user.id;
+
   const currentTime = Date.now();
   const WINDOW_MS = 60 * 60 * 1000;
   const MAX_REQUESTS = 5;
@@ -73,8 +95,19 @@ export async function GET(request: Request) {
     );
   }
   existing.count += 1;
+
   const { searchParams } = new URL(request.url);
-  const type = searchParams.get("type") ?? "weekly_summary";
+  const rawType = searchParams.get("type") ?? "weekly_summary";
+
+  // Validate against the DB CHECK constraint allowlist so that an unrecognised
+  // type fails with a clear 400 instead of a Supabase constraint-violation 500.
+  if (!VALID_INSIGHT_TYPES.has(rawType as InsightType)) {
+    return NextResponse.json(
+      { error: `Invalid insight type. Must be one of: ${[...VALID_INSIGHT_TYPES].join(", ")}` },
+      { status: 400 }
+    );
+  }
+  const type = rawType as InsightType;
 
   const { data: cached } = await supabaseAdmin
     .from("ai_insights")

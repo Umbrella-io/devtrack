@@ -17,6 +17,19 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
+// ─── GitHub API Rate Limiting ──────────────────────────────────────────────────
+// Unauthenticated requests: 60 req/hr (shared per IP).
+// Authenticated requests (OAuth token or PAT): 5,000 req/hr per user.
+// GitHub Search API has an extra secondary limit: ~30 req/min when authenticated.
+//
+// This route always sends the user's GitHub OAuth token in the Authorization
+// header (from NextAuth session), ensuring the 5,000 req/hr limit applies.
+// Users can also add a PAT in settings for the same higher limit.
+//
+// Rate limit errors: GitHub returns HTTP 403 (primary limit) or HTTP 429
+// (secondary/search limit). The X-RateLimit-Remaining: 0 response header
+// confirms quota exhaustion. The user sees "GitHub API error" in the dashboard.
+// ──────────────────────────────────────────────────────────────────────────────
 export const dynamic = "force-dynamic";
 
 interface TimeBlocks {
@@ -49,6 +62,25 @@ function toLocalDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function getDateInTimezone(dateString: string, timezone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(dateString));
+}
+
+function getHourInTimezone(dateString: string, timezone: string): number {
+  const hour = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "2-digit",
+    hour12: false,
+  }).format(new Date(dateString));
+
+  return Number(hour);
+}
+
 function mergeContributionDays(
   a: Record<string, number>,
   b: Record<string, number>
@@ -69,17 +101,18 @@ async function fetchContributionsForAccount(
   githubLogin: string,
   days: number,
   cacheContext: { bypass: boolean; userId: string },
+  timezone: string,
   fromDate?: string,
   repo?: string | null
 
 ): Promise<ContributionResponse> {
-const repoFilter = repo ? ` repo:${repo}` : "";
+  const repoFilter = repo ? ` repo:${repo}` : "";
 
-    const key = metricsCacheKey(cacheContext.userId, "contributions", {
-      days,
-      githubLogin,
-      from: fromDate ?? undefined,
-      repo,
+  const key = metricsCacheKey(cacheContext.userId, "contributions", {
+    days,
+    githubLogin,
+    from: fromDate ?? undefined,
+    repo,
   });
 
   return withMetricsCache(
@@ -112,6 +145,13 @@ const repoFilter = repo ? ` repo:${repo}` : "";
         searchUrl.searchParams.set("sort", "author-date");
         searchUrl.searchParams.set("order", "desc");
 
+        // The Authorization header upgrades the rate limit from 60 req/hr
+        // (unauthenticated, shared per IP) to 5,000 req/hr (per user).
+        // Without it, multiple users on the same server IP would exhaust
+        // the shared quota almost immediately.
+        // Authorization header raises the rate limit from 60 req/hr (unauthenticated,
+        // shared per IP) to 5,000 req/hr per user. Without it, shared server IPs
+        // would exhaust the unauthenticated quota almost immediately.
         const searchRes = await fetch(
           searchUrl.toString(),
           {
@@ -163,7 +203,8 @@ const repoFilter = repo ? ` repo:${repo}` : "";
       const commitsByDay: Record<string, number> = {};
       const timeBlocks: TimeBlocks = { morning: 0, afternoon: 0, evening: 0, night: 0 };
       for (const item of allItems) {
-        const date = item.commit.author.date.slice(0, 10);
+
+        const date = getDateInTimezone(item.commit.author.date, timezone);
         commitsByDay[date] = (commitsByDay[date] ?? 0) + 1;
         commitItems.push({
           sha: item.sha,
@@ -173,7 +214,7 @@ const repoFilter = repo ? ` repo:${repo}` : "";
           url: item.html_url,
         });
 
-        const hour = new Date(item.commit.author.date).getHours();
+        const hour = getHourInTimezone(item.commit.author.date, timezone);
         if (hour >= 6 && hour < 12) timeBlocks.morning++;
         else if (hour >= 12 && hour < 18) timeBlocks.afternoon++;
         else if (hour >= 18 && hour < 22) timeBlocks.evening++;
@@ -297,6 +338,7 @@ async function mergeGitLabContributions(
 }
 
 export async function GET(req: NextRequest) {
+  const timezone = req.nextUrl.searchParams.get("timezone") || "UTC";
   const session = await getServerSession(authOptions);
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -320,7 +362,7 @@ export async function GET(req: NextRequest) {
     const parsedDays = daysParam ? parseInt(daysParam, 10) : NaN;
     days = isNaN(parsedDays) ? 30 : Math.max(1, Math.min(365, parsedDays));
   }
-  
+
   const accountId = req.nextUrl.searchParams.get("accountId");
   const usernameParam = req.nextUrl.searchParams.get("username");
   const username = usernameParam ? normalizeGitHubUsername(usernameParam) : null;
@@ -340,11 +382,12 @@ export async function GET(req: NextRequest) {
         username,
         days,
         { bypass, userId: session.githubId ?? session.githubLogin },
+        timezone,
         fromDate,
         repoParam
       );
       return Response.json(result);
-    } catch {
+    } catch (e) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -356,6 +399,7 @@ export async function GET(req: NextRequest) {
         session.githubLogin,
         days,
         { bypass, userId: session.githubId ?? session.githubLogin },
+        timezone,
         fromDate,
         repoParam
       );
@@ -370,7 +414,7 @@ export async function GET(req: NextRequest) {
       });
 
       return Response.json(merged);
-    } catch {
+    } catch (e) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -401,7 +445,7 @@ export async function GET(req: NextRequest) {
           bypass,
           userId: account.githubId,
 
-        }, fromDate, repoParam)
+        }, timezone, fromDate, repoParam)
       )
     );
 
@@ -443,6 +487,7 @@ export async function GET(req: NextRequest) {
         session.githubLogin,
         days,
         { bypass, userId: session.githubId },
+        timezone,
         fromDate
       );
 
@@ -456,7 +501,7 @@ export async function GET(req: NextRequest) {
       });
 
       return Response.json(merged);
-    } catch {
+    } catch (e) {
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -484,10 +529,11 @@ export async function GET(req: NextRequest) {
       accountRow.github_login,
       days,
       { bypass, userId: accountId },
+      timezone,
       fromDate
     );
     return Response.json(result);
-  } catch {
+  } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }
