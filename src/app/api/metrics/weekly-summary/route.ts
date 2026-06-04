@@ -3,10 +3,11 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { GITHUB_API } from "@/lib/github";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 import { getAccountToken } from "@/lib/github-accounts";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { toDateStr } from "@/lib/dateUtils";
+import { calculateCurrentStreak } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -23,30 +24,6 @@ function getCurrentWeekStartUtc(): Date {
   return currentWeekStart;
 }
 
-function calculateCurrentStreak(activeDates: Set<string>): number {
-  const commitDays = Array.from(activeDates).sort(); // ascending "YYYY-MM-DD"
-  if (commitDays.length === 0) return 0;
-
-  let currentRun = 1;
-  const runs: { end: string; length: number }[] = [];
-
-  // Split dates into consecutive runs — any gap > 1 day breaks the streak.
-  for (let i = 1; i < commitDays.length; i++) {
-    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
-    if (diff === 1) { currentRun++; }
-    else { runs.push({ end: commitDays[i - 1], length: currentRun }); currentRun = 1; }
-  }
-  runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
-
-  const today = toDateStr(new Date());
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
-  const lastRun = runs[runs.length - 1];
-
-  // Streak is alive if the last active day is today OR yesterday.
-  // Allowing yesterday prevents the streak from resetting at midnight before
-  // the user has had a chance to commit on the new day.
-  return lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
-}
 
 async function fetchActiveDates(githubLogin: string, token: string): Promise<Set<string>> {
   // Look back 90 days — the maximum window the GitHub Commit Search API supports.
@@ -144,14 +121,10 @@ export async function GET(req: NextRequest) {
     userId = accountId;
   }
 
-  const key = metricsCacheKey(userId, "weekly-summary" as any);
+  const key = metricsCacheKey(userId, "weekly-summary");
 
   try {
-    // Cache TTL of 5 minutes (300 seconds).
-    // This handler makes 3 GitHub API calls (commits Search, PRs Search, streak Search×N)
-    // on every cache miss. Without this cache, rapid refreshes would exhaust the
-    // 30 req/min Search API quota almost immediately.
-    const data = await withMetricsCache({ bypass, key, ttlSeconds: 5 * 60 }, async () => {
+    const data = await withMetricsCache({ bypass, key, ttlSeconds: 30 * 60 }, async () => {
       const currentWeekStart = getCurrentWeekStartUtc();
       const prevWeekStart = new Date(currentWeekStart.getTime() - 7 * 86400000);
       const prevWeekEnd = new Date(currentWeekStart.getTime() - 1);
@@ -301,7 +274,7 @@ export async function GET(req: NextRequest) {
       };
     });
     return Response.json(data);
-  } catch {
+  } catch (e) {
     // Catches errors thrown by the PR Search call or fetchActiveDates (rate limit, network).
     // Returns 502 so the client shows an error state rather than stale/empty summary data.
     return Response.json({ error: "GitHub API error" }, { status: 502 });

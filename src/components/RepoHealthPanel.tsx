@@ -74,7 +74,7 @@ export default function RepoHealthPanel({ health, isOpen, onClose }: Props) {
             <span className={`text-2xl font-bold ${health.grade === "green" ? "text-[var(--accent)]" : health.grade === "yellow" ? "text-[var(--warning,#ca8a04)]" : "text-[var(--destructive)]"}`}>
               {health.score}
             </span>
-            <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--control)] transition-colors" aria-label="Close panel">
+            <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--control)] transition-all hover:opacity-90 active:scale-95" aria-label="Close panel">
               ✕
             </button>
           </div>
