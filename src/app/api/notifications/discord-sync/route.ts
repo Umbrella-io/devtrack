@@ -1,22 +1,15 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { sendMilestoneReached, sendStreakAtRisk, sendWeeklySummary } from "@/lib/discord";
 import { fetchPublicStreak, fetchPublicContributions } from "@/lib/public-profile-data";
 import { toDateStr } from "@/lib/dateUtils";
+import { validateCronRequest } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-  
-  if (!cronSecret) {
-    return NextResponse.json({ error: "CRON_SECRET is not configured" }, { status: 500 });
-  }
-
-  if (authHeader !== `Bearer ${cronSecret}` && process.env.NODE_ENV !== "development") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = validateCronRequest(req);
+  if (authError) return authError;
 
   const { data: users, error } = await supabaseAdmin
     .from("users")
@@ -29,7 +22,7 @@ export async function GET(req: Request) {
 
   const token = process.env.GITHUB_TOKEN;
   const now = new Date();
-  
+
   let processed = 0;
   let notificationsSent = 0;
 
@@ -39,17 +32,17 @@ export async function GET(req: Request) {
     const tz = user.timezone || "UTC";
     let localHour: number;
     let isSunday = false;
-    
+
     try {
       const formatter = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", hour12: false, weekday: "short" });
       const parts = formatter.formatToParts(now);
       const hourPart = parts.find(p => p.type === "hour")?.value;
       const weekdayPart = parts.find(p => p.type === "weekday")?.value;
       localHour = parseInt(hourPart || "0", 10);
-      
+
       // Handle "24" meaning midnight in some Intl implementations
       if (localHour === 24) localHour = 0;
-      
+
       isSunday = weekdayPart === "Sun";
     } catch (e) {
       localHour = now.getUTCHours();
@@ -79,11 +72,11 @@ export async function GET(req: Request) {
     try {
       const streakData = await fetchPublicStreak(user.github_login, token);
       let sentSomething = false;
-      
-      // Determine "today" in the user's timezone, or UTC if fallback
+
+      // Determine "today" in the user`s timezone, or UTC if fallback
       let todayStr: string;
       try {
-        const dFmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+        const dFmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" });
         const [{value: mo},,{value: da},,{value: ye}] = dFmt.formatToParts(now);
         todayStr = `${ye}-${mo}-${da}`;
       } catch (e) {

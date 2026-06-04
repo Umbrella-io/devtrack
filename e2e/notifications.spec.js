@@ -22,6 +22,8 @@ function mockMetricResponse(url) {
     return {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
       prs: { thisWeek: { opened: 3, merged: 2 }, lastWeek: { opened: 1, merged: 1 } },
+      issues: { thisWeek: 4, lastWeek: 3 },
+      productivityScore: { current: 85, previous: 78 },
       activeDays: { thisWeek: 5, lastWeek: 4 },
       streak: 3,
       topRepo: "demo/repo",
@@ -54,27 +56,29 @@ function mockMetricResponse(url) {
 }
 
 test.beforeEach(async ({ page }) => {
-  const token = await encode({
-    secret: process.env.NEXTAUTH_SECRET || authSecret,
+  const sessionToken = await encode({
+    secret: authSecret,
     token: {
       name: "Playwright User",
       email: "playwright@example.com",
+      sub: "12345",
       githubLogin: "playwright-user",
       githubId: "12345",
       accessToken: "test-token",
-      expires: "2099-01-01T00:00:00.000Z",
     },
+    maxAge: 60 * 60,
   });
 
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: String(token ?? ""),
+      value: sessionToken,
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
       sameSite: "Lax",
       secure: false,
+      expires: Math.floor(Date.now() / 1000) + 60 * 60,
     },
   ]);
 

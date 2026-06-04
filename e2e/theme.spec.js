@@ -6,22 +6,23 @@ const authSecret =
   "test-nextauth-secret-for-playwright-tests";
 
 test.beforeEach(async ({ page }) => {
-  const token = await encode({
+  const sessionToken = await encode({
     secret: authSecret,
     token: {
       name: "Playwright User",
       email: "playwright@example.com",
+      sub: "12345",
       githubLogin: "playwright-user",
       githubId: "12345",
       accessToken: "test-token",
-      expires: "2099-01-01T00:00:00.000Z",
     },
+    maxAge: 60 * 60,
   });
 
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: String(token ?? ""),
+      value: sessionToken,
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,

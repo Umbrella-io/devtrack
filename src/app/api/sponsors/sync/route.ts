@@ -1,30 +1,12 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { validateCronRequest } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
-// Sponsor identity must be tied to GitHub's immutable numeric account ID
-// (databaseId / github_id) rather than the mutable login name. A user can
-// rename their GitHub account at any time, and GitHub recycles usernames
-// after a grace period. Matching on login would allow a new account that
-// claims a recycled username to inherit sponsor privileges.
-
-interface SponsorIdentity {
-  githubId: string;  // immutable numeric ID stringified, matches users.github_id
-  login: string;     // current login, kept for logging/response only
-}
-
 export async function GET(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret) {
-    return NextResponse.json({ error: "CRON_SECRET is not configured" }, { status: 500 });
-  }
-
-  if (authHeader !== `Bearer ${cronSecret}` && process.env.NODE_ENV !== "development") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = validateCronRequest(req);
+  if (authError) return authError;
 
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
@@ -34,8 +16,6 @@ export async function GET(req: Request) {
   const targetOwner = "Priyanshu-byte-coder";
 
   try {
-    // Request databaseId alongside login so we can match on the immutable
-    // GitHub numeric account identifier rather than the mutable username.
     const query = `
       query {
         user(login: "${targetOwner}") {
@@ -43,11 +23,9 @@ export async function GET(req: Request) {
             nodes {
               sponsorEntity {
                 ... on User {
-                  databaseId
                   login
                 }
                 ... on Organization {
-                  databaseId
                   login
                 }
               }
@@ -84,28 +62,20 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "GraphQL query returned no user data" }, { status: 502 });
     }
 
-    // Build the authoritative sponsor list keyed on immutable GitHub IDs.
-    const currentSponsors: SponsorIdentity[] = [];
+    const sponsorLogins: string[] = [];
 
     if (data.user.sponsorshipsAsMaintainer?.nodes) {
-      for (const node of data.user.sponsorshipsAsMaintainer.nodes) {
-        const entity = node.sponsorEntity;
-        if (entity?.databaseId) {
-          currentSponsors.push({
-            githubId: String(entity.databaseId),
-            login: entity.login ?? "",
-          });
+      const nodes = data.user.sponsorshipsAsMaintainer.nodes;
+      for (const node of nodes) {
+        if (node.sponsorEntity?.login) {
+          sponsorLogins.push(node.sponsorEntity.login);
         }
       }
     }
 
-    const sponsorGithubIds = new Set(currentSponsors.map((s) => s.githubId));
-
-    // Fetch the set of users currently marked as sponsors using their
-    // immutable github_id, not their login.
-    const { data: existingSponsors, error: fetchErr } = await supabaseAdmin
+    const { data: currentSponsors, error: fetchErr } = await supabaseAdmin
       .from("users")
-      .select("github_id")
+      .select("github_login")
       .eq("is_sponsor", true);
 
     if (fetchErr) {
@@ -113,44 +83,42 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
 
-    const existingIds = new Set<string>(
-      (existingSponsors ?? []).map((u: { github_id: string }) => u.github_id)
+    const currentLogins = new Set<string>(
+      (currentSponsors || []).map((u: any) => String(u.github_login))
     );
+    const newLogins = new Set<string>(sponsorLogins);
 
-    // Diff on immutable IDs.
-    const toRevoke = [...existingIds].filter((id) => !sponsorGithubIds.has(id));
-    const toGrant  = [...sponsorGithubIds].filter((id) => !existingIds.has(id));
+    const toRemove = [...currentLogins].filter((login: string) => !newLogins.has(login));
+    const toAdd = [...newLogins].filter((login: string) => !currentLogins.has(login));
 
-    if (toRevoke.length > 0) {
+    if (toRemove.length > 0) {
       const { error } = await supabaseAdmin
         .from("users")
         .update({ is_sponsor: false })
-        .in("github_id", toRevoke);
+        .in("github_login", toRemove);
 
       if (error) {
-        console.error("Failed to revoke sponsors:", error);
+        console.error("Failed to remove sponsors:", error);
         return NextResponse.json({ error: "Database error" }, { status: 500 });
       }
     }
 
-    if (toGrant.length > 0) {
+    if (toAdd.length > 0) {
       const { error } = await supabaseAdmin
         .from("users")
         .update({ is_sponsor: true })
-        .in("github_id", toGrant);
+        .in("github_login", toAdd);
 
       if (error) {
-        console.error("Failed to grant sponsors:", error);
+        console.error("Failed to add sponsors:", error);
         return NextResponse.json({ error: "Database error" }, { status: 500 });
       }
     }
 
     return NextResponse.json({
       success: true,
-      sponsorCount: currentSponsors.length,
-      granted: toGrant.length,
-      revoked: toRevoke.length,
-      sponsors: currentSponsors.map((s) => s.login),
+      sponsorCount: sponsorLogins.length,
+      sponsors: sponsorLogins
     });
   } catch (error) {
     console.error("Error in sponsors sync:", error);
