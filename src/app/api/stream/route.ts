@@ -15,7 +15,7 @@ const MAX_CONNECTIONS_PER_USER = 4;
 // How often each connection polls the database. 15 s is fast enough for the
 // data types involved (goal sync timestamps and unread notification counts)
 // while being 7.5x cheaper per connection than the previous 2 s interval.
-const POLL_INTERVAL_MS = 15_000;
+const POLL_INTERVAL_MS = 60_000;
 
 // Keep SSE connections bounded even if a proxy or client fails to send an
 // abort signal. EventSource will reconnect automatically when the stream ends.
