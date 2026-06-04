@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { extractValidRepoFromGoal, type ActivityGoal } from "@/lib/goals-sync-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,8 @@ function currentWeekEnd(): string {
 }
 
 const GITHUB_API = "https://api.github.com";
+
+
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -77,6 +80,8 @@ export async function POST() {
   const issuesClosedGoals = activityGoals.filter(g => g.unit === "issues_closed");
   const issuesOpenedGoals = activityGoals.filter(g => g.unit === "issues_opened");
   const openSourcePrGoals = activityGoals.filter(g => g.unit === "open_source_prs");
+  const commitGoals = (activityGoals as ActivityGoal[]).filter(g => g.unit === "commits");
+  const prGoalsToUpdate = (activityGoals as ActivityGoal[]).filter(g => g.unit === "prs");
 
   let totalUpdated = 0;
 
@@ -85,18 +90,27 @@ export async function POST() {
     let commitCount = 0;
     let hasMore = true;
 
-    // Optional repository field (if present in DB)
-    const repo =
-      (goal as any).repo ||
-      (goal as any).repository ||
-      (goal as any).repo_name ||
-      null;
+    // Validate the optional repository filter before using it in a query.
+    // Any value that is not a strict "owner/repo" identifier is treated as
+    // absent so it cannot inject additional search qualifiers.
+    const repo = extractValidRepoFromGoal(goal);
 
     while (hasMore) {
-      const repoQualifier = repo ? `+repo:${repo}` : "";
+      // Build the GitHub Search query using URLSearchParams so that the
+      // combined qualifier string is URL-encoded as a single atomic value
+      // and cannot be split by embedded special characters.
+      const qParts = [`author:${session.githubLogin}`];
+      if (repo) qParts.push(`repo:${repo}`);
+      qParts.push(`author-date:${weekStart}..${weekEnd}`);
+
+      const commitSearchParams = new URLSearchParams({
+        q: qParts.join(" "),
+        per_page: "100",
+        page: String(page),
+      });
 
       const ghRes = await fetch(
-        `${GITHUB_API}/search/commits?q=author:${session.githubLogin}${repoQualifier}+author-date:${weekStart}..${weekEnd}&per_page=100&page=${page}`,
+        `${GITHUB_API}/search/commits?${commitSearchParams.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${session.accessToken}`,
@@ -150,14 +164,19 @@ export async function POST() {
         { status: 500 }
       );
     }
-    
+
     totalUpdated++;
   }
 
   // Count PRs for the current week
   if (prGoalsToUpdate.length > 0) {
+    const prSearchParams = new URLSearchParams({
+      q: `author:${session.githubLogin} type:pr is:merged merged:${weekStart}..${weekEnd}`,
+      per_page: "100",
+    });
+
     const prRes = await fetch(
-      `${GITHUB_API}/search/issues?q=author:${session.githubLogin}+type:pr+is:merged+merged:${weekStart}..${weekEnd}&per_page=100`,
+      `${GITHUB_API}/search/issues?${prSearchParams.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${session.accessToken}`,
@@ -171,16 +190,16 @@ export async function POST() {
       const prData = await prRes.json() as { total_count: number };
       const prCount = prData.total_count || 0;
       const prIds = prGoalsToUpdate.map(g => g.id);
-      
+
       const { error: prUpdateError } = await supabaseAdmin
         .from("goals")
         .update({ current: prCount, last_synced_at: now })
         .in("id", prIds);
-        
+
       if (prUpdateError) {
         return Response.json({ error: "Failed to update PR goals" }, { status: 500 });
       }
-      
+
       totalUpdated += prIds.length;
     } else if (prRes.status === 403 || prRes.status === 429) {
       const resetHeader = prRes.headers.get("X-RateLimit-Reset");

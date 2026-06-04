@@ -44,6 +44,10 @@ function formatDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function formatCommitCount(count: number) {
+  return `${count} commit${count === 1 ? "" : "s"}`;
+}
+
 function buildHeatmap(days: number, contributions: Record<string, number>, fromDate?: string, toDate?: string) {
   let endDate: Date;
   let startDate: Date;
@@ -118,7 +122,7 @@ export default function ContributionHeatmap({
         } else {
           localStorage.setItem("devtrack:heatmap-range", String(days));
         }
-      } catch {
+      } catch (e) {
         setSelectedDays(days);
       }
     }
@@ -152,7 +156,7 @@ export default function ContributionHeatmap({
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem("devtrack:heatmap-range", String(newDays));
-      } catch {}
+      } catch (e) {}
     }
   };
 
@@ -187,7 +191,7 @@ export default function ContributionHeatmap({
         day: "numeric",
       });
     };
-    setCustomLabel(`${fmt(customFrom)} – ${fmt(customTo)}`);
+    setCustomLabel(`${fmt(customFrom)} - ${fmt(customTo)}`);
     setShowPopover(false);
   };
 
@@ -265,9 +269,9 @@ export default function ContributionHeatmap({
   );
   const weekCount = Math.ceil(cells.length / 7);
   const maxCommits = Math.max(
-  ...cells.map((cell) => cell.count),
-  1
-);
+    ...cells.map((cell) => cell.count),
+    1
+  );
   // 100% MATHEMATICALLY PRECISE MONTH TRACKING SYSTEM
   const monthMarkers = useMemo(() => {
     const markers: Array<{ label: string; weekIndex: number }> = [];
@@ -309,24 +313,28 @@ export default function ContributionHeatmap({
 
   const today = new Date();
   const getHeatmapColor = (count: number) => {
-  if (count === 0) return themeConfig.missed;
+    if (count === 0) return themeConfig.missed;
 
-  const normalized = count / maxCommits;
+    const normalized = count / maxCommits;
 
-  if (normalized <= 0.25) {
-    return themeConfig.levelOne;
-  }
+    if (normalized <= 0.25) {
+      return themeConfig.levelOne;
+    }
 
-  if (normalized <= 0.5) {
-    return themeConfig.levelTwo;
-  }
+    if (normalized <= 0.5) {
+      return themeConfig.levelTwo;
+    }
 
-  if (normalized <= 0.75) {
-    return themeConfig.levelThree;
-  }
+    if (normalized <= 0.75) {
+      return themeConfig.levelThree;
+    }
 
-  return themeConfig.levelFour;
-};
+    return themeConfig.levelFour;
+  };
+  const totalCommits = cells
+    .filter((cell) => cell.inRange)
+    .reduce((total, cell) => total + cell.count, 0);
+  const heatmapSummary = `Contribution heatmap showing ${formatCommitCount(totalCommits)} across ${displayDays} days.`;
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
@@ -370,7 +378,7 @@ export default function ContributionHeatmap({
                   : "text-[var(--muted-foreground)] dark:text-gray-300 hover:text-[var(--foreground)] dark:hover:text-white"
               }`}
             >
-              {customLabel ?? "Custom…"}
+              {customLabel ?? "Custom..."}
             </button>
 
             {showPopover && (
@@ -409,7 +417,7 @@ export default function ContributionHeatmap({
                   )}
                   <button
                     onClick={handleCustomApply}
-                    className="mt-2 w-full rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-[var(--background)] transition-opacity hover:opacity-90"
+                    className="mt-2 w-full rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-[var(--background)] transition-opacity hover:opacity-90 active:scale-95"
                   >
                     Apply
                   </button>
@@ -436,7 +444,7 @@ export default function ContributionHeatmap({
           </button>
         </div>
 
-        {/* Legend — Less / More */}
+        {/* Legend - Less / More */}
         <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
           <span className="dark:text-gray-300">Less</span>
           <div className="flex items-center gap-1">
@@ -462,14 +470,18 @@ export default function ContributionHeatmap({
       </div>
 
       {loading ? (
-        <div className="h-[180px] animate-pulse rounded-lg bg-[var(--card-muted)]" />
+        <div className="h-[300px] animate-pulse rounded-lg bg-[var(--card-muted)]" />
       ) : error ? (
         <div className="flex h-[180px] items-center rounded-lg border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-4">
           <p className="text-sm text-[var(--destructive)]">{error} Please try refreshing.</p>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto pb-2 scrollbar-thin">
+          <div
+            className="overflow-x-auto pb-2 scrollbar-thin"
+            role="img"
+            aria-label={heatmapSummary}
+          >
             <div className="mx-auto flex flex-col gap-1" style={{ width: `${totalGridWidth}px` }}>
               
               {/* MATHEMATICAL COORDINATE TIMELINE HEADER BANNER CONTAINER */}
@@ -522,21 +534,23 @@ export default function ContributionHeatmap({
                   const isFuture = cell.date > today;
                   const showTooltipBelow = dayIndex < 2;
                   const isNearRightEdge = weekIndex >= weekCount - 3;
-                  const tooltip = `${cell.date.toLocaleDateString("en-US", {
+                  const formattedDate = cell.date.toLocaleDateString("en-US", {
                     weekday: "short",
                     month: "short",
                     day: "numeric",
-                  })}: ${cell.count} commit${cell.count === 1 ? "" : "s"}`;
+                  });
+                  const accessibleLabel = `${formatCommitCount(cell.count)} on ${cell.dateKey}`;
+                  const tooltip = `${formatCommitCount(cell.count)} on ${formattedDate}`;
 
                   return (
                     <button
                       key={cell.dateKey}
                       type="button"
                       title={isFuture ? "" : tooltip}
-                      aria-label={isFuture ? `${cell.dateKey}: future date` : tooltip}
+                      aria-label={isFuture ? `Future date on ${cell.dateKey}` : accessibleLabel}
                       disabled={isFuture}
                       onClick={() => !isFuture && setSelectedDate(cell.dateKey)}
-                      className={`group relative z-0 h-4 w-4 rounded-[3px] border transition-transform hover:z-20 hover:scale-110 focus:z-20 focus:outline-none focus:ring-2 focus:ring-[var(--heatmap-focus-ring)] disabled:cursor-default disabled:opacity-20 ${
+                      className={`group relative z-0 h-4 w-4 rounded-[3px] border transition-transform hover:z-20 hover:scale-110 focus:z-20 focus-visible:ring-2 focus-visible:ring-[var(--heatmap-focus-ring)] disabled:cursor-default disabled:opacity-20 ${
                         cell.inRange ? "opacity-100" : "opacity-40"
                       }`}
                       style={{
@@ -572,7 +586,7 @@ export default function ContributionHeatmap({
           {/* Commits shown + Updated timestamp */}
           <div className="mt-4 flex items-center justify-between gap-4 text-xs text-[var(--muted-foreground)] dark:text-gray-400">
             <p>
-              {cells.filter((cell) => cell.inRange).reduce((total, cell) => total + cell.count, 0)} commits shown.
+              {totalCommits} commits shown across {displayDays} days.
             </p>
             {lastUpdated && (
               <p>{minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}</p>
