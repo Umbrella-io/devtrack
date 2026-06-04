@@ -36,13 +36,21 @@ export async function GET(req: NextRequest) {
   const result = await requireUser();
   if ("error" in result) return result.error;
 
-  const { data: webhooks } = await supabaseAdmin
+  const { data: webhooks, error } = await supabaseAdmin
     .from("webhook_configs")
     .select("id, name, url, events, is_enabled, created_at, updated_at")
     .eq("user_id", result.user.id)
     .order("created_at", { ascending: false });
 
-  return Response.json({ webhooks: webhooks || [] });
+  if (error) {
+    console.error("Failed to fetch webhooks:", error);
+    return Response.json(
+      { error: "Failed to fetch webhooks" },
+      { status: 500 }
+    );
+  }
+
+  return Response.json({ webhooks: webhooks ?? [] });
 }
 
 export async function POST(req: NextRequest) {

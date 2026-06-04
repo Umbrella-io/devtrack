@@ -41,7 +41,10 @@ export async function GET(req: NextRequest) {
 
   if (error) {
     console.error("Failed to fetch local coding stats:", error);
-    return Response.json({ error: "Failed to fetch local coding stats" }, { status: 500 });
+    return Response.json(
+      { error: "Failed to fetch local coding stats" },
+      { status: 500 }
+    );
   }
 
   if (!sessions || sessions.length === 0) {
