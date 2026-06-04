@@ -49,12 +49,14 @@ export async function POST() {
   const weekStart = currentWeekStart();
   const weekEnd = currentWeekEnd();
 
-  // ── 2. Fetch all commit-based goals for this week ─────────────────────────
+  // ── 2. Fetch all auto-sync-eligible goals for this week ───────────────────
+  const AUTO_SYNC_UNITS = ["commits", "prs", "reviews", "issues_closed", "issues_opened", "open_source_prs"];
+
   const { data: activityGoals, error: goalsError } = await supabaseAdmin
     .from("goals")
     .select("id, unit, repo, repository, repo_name")
     .eq("user_id", user.id)
-    .in("unit", ["commits", "prs"])
+    .in("unit", AUTO_SYNC_UNITS)
     .gte("period_start", weekStart)
     .lte("period_start", weekEnd);
 
@@ -71,6 +73,10 @@ export async function POST() {
 
   const commitGoals = activityGoals.filter(g => g.unit === "commits");
   const prGoalsToUpdate = activityGoals.filter(g => g.unit === "prs");
+  const reviewGoals = activityGoals.filter(g => g.unit === "reviews");
+  const issuesClosedGoals = activityGoals.filter(g => g.unit === "issues_closed");
+  const issuesOpenedGoals = activityGoals.filter(g => g.unit === "issues_opened");
+  const openSourcePrGoals = activityGoals.filter(g => g.unit === "open_source_prs");
 
   let totalUpdated = 0;
 
@@ -187,6 +193,72 @@ export async function POST() {
       return Response.json({ error: message, rateLimited: true }, { status: 429 });
     } else {
       return Response.json({ error: "GitHub API error fetching PRs" }, { status: 502 });
+    }
+  }
+
+  return Response.json({ updated: totalUpdated });
+}
+  // ── Reviews sync ──────────────────────────────────────────────────────────
+  if (reviewGoals.length > 0) {
+    const reviewRes = await fetch(
+      `${GITHUB_API}/search/issues?q=reviewed-by:${session.githubLogin}+type:pr+updated:${weekStart}..${weekEnd}&per_page=1`,
+      {
+        headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      }
+    );
+    if (reviewRes.ok) {
+      const reviewData = await reviewRes.json() as { total_count: number };
+      await supabaseAdmin.from("goals").update({ current: reviewData.total_count || 0, last_synced_at: now }).in("id", reviewGoals.map(g => g.id));
+      totalUpdated += reviewGoals.length;
+    }
+  }
+
+  // ── Issues closed sync ────────────────────────────────────────────────────
+  if (issuesClosedGoals.length > 0) {
+    const icRes = await fetch(
+      `${GITHUB_API}/search/issues?q=assignee:${session.githubLogin}+type:issue+state:closed+closed:${weekStart}..${weekEnd}&per_page=1`,
+      {
+        headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      }
+    );
+    if (icRes.ok) {
+      const icData = await icRes.json() as { total_count: number };
+      await supabaseAdmin.from("goals").update({ current: icData.total_count || 0, last_synced_at: now }).in("id", issuesClosedGoals.map(g => g.id));
+      totalUpdated += issuesClosedGoals.length;
+    }
+  }
+
+  // ── Issues opened sync ────────────────────────────────────────────────────
+  if (issuesOpenedGoals.length > 0) {
+    const ioRes = await fetch(
+      `${GITHUB_API}/search/issues?q=author:${session.githubLogin}+type:issue+created:${weekStart}..${weekEnd}&per_page=1`,
+      {
+        headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      }
+    );
+    if (ioRes.ok) {
+      const ioData = await ioRes.json() as { total_count: number };
+      await supabaseAdmin.from("goals").update({ current: ioData.total_count || 0, last_synced_at: now }).in("id", issuesOpenedGoals.map(g => g.id));
+      totalUpdated += issuesOpenedGoals.length;
+    }
+  }
+
+  // ── Open source PRs sync (PRs to repos the user doesn't own) ─────────────
+  if (openSourcePrGoals.length > 0) {
+    const osRes = await fetch(
+      `${GITHUB_API}/search/issues?q=author:${session.githubLogin}+type:pr+is:merged+merged:${weekStart}..${weekEnd}+-user:${session.githubLogin}&per_page=1`,
+      {
+        headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      }
+    );
+    if (osRes.ok) {
+      const osData = await osRes.json() as { total_count: number };
+      await supabaseAdmin.from("goals").update({ current: osData.total_count || 0, last_synced_at: now }).in("id", openSourcePrGoals.map(g => g.id));
+      totalUpdated += openSourcePrGoals.length;
     }
   }
 

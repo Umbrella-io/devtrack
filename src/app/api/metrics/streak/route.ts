@@ -165,9 +165,15 @@ function calculateStreakFromDates(
   // Current streak is alive if the last active day is today OR yesterday.
   // Allowing yesterday prevents the streak from resetting at midnight before
   // the user has had a chance to make their first commit of the new day.
+  // We also allow 2 days back as a grace period for timezone edge cases
+  // (e.g. a user committing at 11 PM UTC-12 appears as "today" for them
+  // but would be "2 days ago" in UTC by the time the cron runs).
+  const twoDaysAgo = toDateStr(new Date(Date.now() - 2 * 86400000));
   const lastRun = runs[runs.length - 1];
   const currentStreak =
-    lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
+    lastRun.end === today || lastRun.end === yesterday || lastRun.end === twoDaysAgo
+      ? lastRun.length
+      : 0;
 
   return {
     current: currentStreak,
@@ -177,6 +183,8 @@ function calculateStreakFromDates(
     // not the full streak length — useful for the "active days" stat on the dashboard.
     totalActiveDays: commitDays.length,
     freezeDates: Array.from(freezeDates),
+    // streakHistory exposes all consecutive runs for timeline visualization
+    streakHistory: runs,
   };
 }
 

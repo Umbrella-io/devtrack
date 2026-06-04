@@ -2,7 +2,7 @@ import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 import type { GitHubAchievement } from "@/lib/github-achievements";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import { fetchPinnedRepoDetails, type PinnedRepoDetails } from "@/lib/pinned-repos";
-import { getUserByUsername } from "@/lib/supabase";
+import { getUserByUsername, supabaseAdmin } from "@/lib/supabase";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -296,6 +296,14 @@ export async function fetchPublicProfile(
     ),
   ]);
 
+  // Fetch streak milestones for contribution highlights on public profile
+  const { data: streakMilestones } = await supabaseAdmin
+    .from("streak_milestones")
+    .select("streak_count, achieved_at")
+    .eq("user_id", user.id)
+    .order("streak_count", { ascending: false })
+    .limit(5);
+
   return {
     username: user.github_login,
     userId: user.id,
@@ -309,5 +317,9 @@ export async function fetchPublicProfile(
     achievements: achievementsCache.achievements,
     achievementsError: achievementsCache.error,
     spotlightRepos: spotlight,
+    contributionMilestones: (streakMilestones ?? []).map((m) => ({
+      label: `${m.streak_count}-Day Streak`,
+      achievedAt: m.achieved_at ?? null,
+    })),
   };
 }

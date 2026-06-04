@@ -55,4 +55,5 @@ export interface RepoAnalyticsResponse {
   health: RepoHealth;
   primaryStack: string[];
   languageBreakdown: LanguageSlice[];
+  prActivity?: { total: number };
 }
