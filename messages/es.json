@@ -1,0 +1,20 @@
+{
+  "Settings": {
+    "title": "Ajustes",
+    "language": "Idioma",
+    "language_description": "Seleccione su idioma preferido."
+  },
+  "Navigation": {
+    "overview": "Resumen",
+    "resume": "Currículum",
+    "activity": "Actividad",
+    "analytics": "Analítica",
+    "goals": "Metas",
+    "leaderboard": "Clasificación",
+    "home": "Inicio",
+    "features": "Características",
+    "settings": "Ajustes",
+    "sign_out": "Cerrar Sesión",
+    "sign_in": "INICIAR SESIÓN →"
+  }
+}

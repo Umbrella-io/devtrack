@@ -1,4 +1,4 @@
-﻿import { getToken } from "next-auth/jwt";
+import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 import {
   checkAuthRateLimit,
@@ -15,6 +15,19 @@ export const runtime = "nodejs";
 
 const isDev = process.env.NODE_ENV === "development";
 const WINDOW_SECONDS = 60;
+const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'ja', 'zh', 'pt', 'hi'];
+const DEFAULT_LOCALE = 'en';
+
+function getPreferredLocale(req: NextRequest) {
+  const acceptLang = req.headers.get('accept-language');
+  if (!acceptLang) return DEFAULT_LOCALE;
+  // very basic parser
+  const langs = acceptLang.split(',').map(l => l.split(';')[0].trim().substring(0, 2).toLowerCase());
+  for (const lang of langs) {
+    if (SUPPORTED_LOCALES.includes(lang)) return lang;
+  }
+  return DEFAULT_LOCALE;
+}
 
 /* ============================================================
    SECURITY NOTICE: DEVELOPMENT MODE RATE-LIMIT SCALING
@@ -282,6 +295,20 @@ export async function middleware(req: NextRequest) {
   const response = NextResponse.next();
   headers.forEach((value, key) => response.headers.set(key, value));
 
+  // Set locale cookie if not present
+  if (!req.cookies.has('NEXT_LOCALE')) {
+    const locale = getPreferredLocale(req);
+    response.cookies.set('NEXT_LOCALE', locale, { maxAge: 60 * 60 * 24 * 365 });
+  }
+
+  headers.forEach((value, key) =>
+    response.headers.set(key, value)
+  );
+
+  // Cache GET metric responses in the browser for 5 minutes.
+  // This eliminates redundant function invocations on every dashboard
+  // tab-switch or soft navigation, directly cutting Vercel Active CPU usage.
+  // Responses are private (user-specific) so CDN caching is disabled.
   if (req.method === "GET") {
     response.headers.set("Cache-Control", "private, max-age=300, stale-while-revalidate=600");
   }

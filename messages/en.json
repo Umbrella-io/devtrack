@@ -1,0 +1,20 @@
+{
+  "Settings": {
+    "title": "Settings",
+    "language": "Language",
+    "language_description": "Select your preferred language."
+  },
+  "Navigation": {
+    "overview": "Overview",
+    "resume": "Resume",
+    "activity": "Activity",
+    "analytics": "Analytics",
+    "goals": "Goals",
+    "leaderboard": "Leaderboard",
+    "home": "Home",
+    "features": "Features",
+    "settings": "Settings",
+    "sign_out": "Sign Out",
+    "sign_in": "SIGN IN →"
+  }
+}

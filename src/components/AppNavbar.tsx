@@ -6,6 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useTranslations } from "next-intl";
 
 type NavItem = { href: string; label: string };
 
@@ -21,6 +22,7 @@ function isActivePath(pathname: string, href: string) {
 const MONO = "var(--font-jetbrains, ui-monospace, monospace)";
 
 export default function AppNavbar() {
+  const t = useTranslations("Navigation");
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -53,20 +55,20 @@ export default function AppNavbar() {
   const navItems = useMemo<NavItem[]>(() => {
     if (isAuthenticated) {
       return [
-        { href: "/dashboard", label: "Overview" },
-        { href: "/dashboard/career-intelligence", label: "Resume" },
-        { href: "/dashboard#streaks", label: "Activity" },
-        { href: "/dashboard#pull-requests", label: "Analytics" },
-        { href: "/dashboard#goals", label: "Goals" },
-        { href: "/leaderboard", label: "Leaderboard" },
+        { href: "/dashboard", label: t("overview") },
+        { href: "/dashboard/career-intelligence", label: t("resume") },
+        { href: "/dashboard#streaks", label: t("activity") },
+        { href: "/dashboard#pull-requests", label: t("analytics") },
+        { href: "/dashboard#goals", label: t("goals") },
+        { href: "/leaderboard", label: t("leaderboard") },
       ];
     }
     return [
-      { href: "/", label: "Home" },
-      { href: "/#features", label: "Features" },
-      { href: "/leaderboard", label: "Leaderboard" },
+      { href: "/", label: t("home") },
+      { href: "/#features", label: t("features") },
+      { href: "/leaderboard", label: t("leaderboard") },
     ];
-  }, [isAuthenticated]);
+  }, [isAuthenticated, t]);
 
   // Hide the global navbar on pages that have their own navigation structure
   if (pathname === "/" || pathname === "/wrapped") return null;
@@ -138,7 +140,7 @@ export default function AppNavbar() {
                 className="text-[12px] font-medium text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
                 style={{ fontFamily: MONO }}
               >
-                ⚙️ Settings
+                ⚙️ {t("settings")}
               </Link>
               <div className="flex items-center gap-3">
                 <span
@@ -153,10 +155,20 @@ export default function AppNavbar() {
                   className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] font-medium text-red-400 transition-all hover:bg-red-500/20 hover:text-red-300"
                   style={{ fontFamily: MONO }}
                 >
-                  Sign Out
+                  {t("sign_out")}
                 </button>
               </div>
             </div>
+          ) : (
+            !isPublicProfileRoute && (
+              <Link
+                href="/api/auth/signin/github?callbackUrl=/dashboard"
+                className="rounded-full px-5 py-2 text-[13px] font-semibold text-[var(--accent-foreground)] shadow-[0_0_20px_rgba(129,140,248,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(129,140,248,0.5)]"
+                style={{ fontFamily: MONO, background: "var(--accent)" }}
+              >
+                {t("sign_in")}
+              </Link>
+            )
           )}
         </div>
 

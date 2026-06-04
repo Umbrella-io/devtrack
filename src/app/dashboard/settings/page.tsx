@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import WebhookManager from "@/components/webhook/WebhookManager";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useTranslations } from "next-intl";
 
 // ── Max length for the profile bio ──────────────────────────────────────────
 const BIO_MAX = 160;
@@ -124,6 +126,7 @@ function SettingsPageFallback() {
 }
 
 function SettingsPageContent() {
+  const t = useTranslations("Settings");
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -694,11 +697,25 @@ function SettingsPageContent() {
           </Link>
           <div className="sm:text-left mr-2">
             <h1 className="text-3xl pl-2 text-center font-bold text-[var(--foreground)]">
-              Settings
+              {t("title")}
             </h1>
             <p className="md:text-right text-center mt-2 text-[var(--muted-foreground)]">
               Manage your profile and preferences
             </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm mb-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                {t("language")}
+              </h2>
+              <p className="text-sm text-[var(--muted-foreground)] mt-1">
+                {t("language_description")}
+              </p>
+            </div>
+            <LanguageSwitcher />
           </div>
         </div>
 
