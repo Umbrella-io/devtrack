@@ -50,11 +50,8 @@ export interface PublicProfileData {
   achievements: GitHubAchievement[];
   achievementsError?: string | null;
   spotlightRepos?: PinnedRepoDetails[];
-<<<<<<< HEAD
   contributionMilestones?: { label: string; achievedAt: string | null }[];
-=======
   weeklyGoalProgress: WeeklyGoalProgress | null;
->>>>>>> b1910ca0b74f052a85009cc422ec4154d4c64025
 }
 
 async function ghFetch(url: string, token?: string): Promise<Response> {
