@@ -638,9 +638,8 @@ export default function GoalTracker() {
           )}
         </div>
 
-        {["commits", "prs", "reviews", "issues_closed", "issues_opened", "open_source_prs"].includes(unit) && (
         {/* GitHub Warning */}
-        {(unit === "commits" || unit === "prs") && (
+        {["commits", "prs", "reviews", "issues_closed", "issues_opened", "open_source_prs"].includes(unit) && (
           <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--accent)]/10 px-3 py-2">
             ⚡ This goal will auto-update from your GitHub activity.
           </p>
