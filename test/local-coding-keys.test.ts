@@ -66,19 +66,31 @@ describe("Local Coding Keys POST API Endpoint", () => {
     mocks.insertSelect.mockReturnValue({ single: mocks.insertSingle });
   });
 
-  it("stores the generated hash in both API key hash columns", async () => {
+  it("stores the hash in api_key_hash and a display prefix in api_key", async () => {
     const res = await POST(createRequest("  Laptop  "));
     const body = await res.json();
     const returnedApiKey = body.key.api_key;
     const expectedHash = createHash("sha256").update(returnedApiKey).digest("hex");
+    const expectedPrefix = returnedApiKey.slice(0, 8);
 
     expect(res.status).toBe(200);
+    // api_key_hash must hold the SHA-256 digest for authentication.
+    // api_key must hold only the non-sensitive display prefix -- never the hash.
     expect(mocks.insert).toHaveBeenCalledWith({
       user_id: "user-1",
-      api_key: expectedHash,
+      api_key: expectedPrefix,
       api_key_hash: expectedHash,
       name: "Laptop",
     });
     expect(body.message).toContain("Store this API key securely");
+  });
+
+  it("does not write the hash into api_key (prevents credential exposure via display column)", async () => {
+    const res = await POST(createRequest("Work Laptop"));
+    const body = await res.json();
+    const hash = createHash("sha256").update(body.key.api_key).digest("hex");
+    const insertCall = mocks.insert.mock.calls[0][0];
+    expect(insertCall.api_key).not.toBe(hash);
+    expect(insertCall.api_key_hash).toBe(hash);
   });
 });

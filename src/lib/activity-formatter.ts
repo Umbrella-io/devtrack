@@ -177,6 +177,71 @@ export function formatActivity(event: RawEvent): ActivityItem | null {
       url: discussion?.html_url ?? getRepoUrl(repoName),
     };
   }
-  
+
   return null;
+}
+
+// ─── GraphQL discussion types ─────────────────────────────────────────────────
+
+/**
+ * A single node from the `viewer.repositoryDiscussionComments` GraphQL query.
+ * Represents a discussion comment authored by the authenticated user.
+ */
+export interface GraphQLDiscussionCommentNode {
+  createdAt: string;
+  url: string;
+  discussion: {
+    title: string;
+    number: number;
+    url: string;
+    repository: {
+      nameWithOwner: string;
+    };
+  };
+}
+
+/**
+ * Normalize a GitHub GraphQL discussion comment node into the shared
+ * ActivityItem format consumed by the RecentActivity widget.
+ *
+ * The item URL points to the discussion (not the individual comment) so
+ * users land on the full context rather than a deep anchor.
+ */
+export function formatGraphQLDiscussionComment(
+  node: GraphQLDiscussionCommentNode
+): ActivityItem {
+  return {
+    id: `gql-disc-${node.url}`,
+    type: "discussion",
+    createdAt: node.createdAt,
+    title: `Commented on discussion #${node.discussion.number}`,
+    subtitle: node.discussion.title,
+    repo: node.discussion.repository.nameWithOwner,
+    url: node.discussion.url,
+  };
+}
+
+/**
+ * Merge REST-event activity items with GraphQL discussion items.
+ *
+ * Deduplication key: `type-repo-createdAt-title` — any item that appears
+ * in both the REST events feed and the GraphQL discussion feed (e.g. a
+ * DiscussionCommentEvent from REST that matches a comment from GraphQL)
+ * is collapsed to a single entry.  The result is sorted newest-first.
+ */
+export function mergeActivityItems(
+  restItems: ActivityItem[],
+  discussionItems: ActivityItem[]
+): ActivityItem[] {
+  const all = [...restItems, ...discussionItems];
+  return Array.from(
+    new Map(
+      all.map((item) => [
+        `${item.type}-${item.repo}-${item.createdAt}-${item.title}`,
+        item,
+      ])
+    ).values()
+  ).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }

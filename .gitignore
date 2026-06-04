@@ -12,6 +12,7 @@ out/
 # Environment files — NEVER commit these
 .env
 .env.local
+.env.local*
 .env.production
 .env.*.local
 
@@ -50,4 +51,8 @@ public/fallback-*.js
 public/worker-*.js
 public/swe-worker-*.js
 worker/
+
+# temp test artifacts
+server-output.txt
+test-ssr.mjs
 

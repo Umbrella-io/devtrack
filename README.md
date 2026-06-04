@@ -16,7 +16,23 @@
 [![Last Commit](https://img.shields.io/github/last-commit/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/commits/main)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/Priyanshu-byte-coder?label=sponsors&color=ea4aaa)](https://github.com/sponsors/Priyanshu-byte-coder)
 
-**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
+**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Community Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
+
+</div>
+
+---
+
+## Demo
+
+<div align="center">
+
+![DevTrack Dashboard Demo](./public/assets/gifs/dashboard-demo.gif)
+
+*Dashboard: commit streaks, PR analytics, activity heatmap, and goals — all in one view.*
+
+![DevTrack Feature Hover Demo](./public/assets/gifs/feature-hover-demo.gif)
+
+*Interactive widgets with real-time GitHub data.*
 
 </div>
 
@@ -25,12 +41,14 @@
 ## Table of Contents
 
 - [Why DevTrack?](#why-devtrack)
+- [Demo](#demo)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
+- [Community](#community)
 - [Sponsors](#sponsors)
 - [License](#license)
 
@@ -271,6 +289,18 @@ DevTrack is free and open source. Sponsoring helps cover infrastructure costs an
 | One-time | $10+ | One-time thanks, no recurring commitment |
 
 **[Sponsor DevTrack on GitHub](https://github.com/sponsors/Priyanshu-byte-coder)**
+
+---
+
+## Community
+
+Have questions, ideas, or want to connect with other contributors?
+
+- **[GitHub Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** — ask questions, share ideas, show what you've built
+- **[Open an Issue](https://github.com/Priyanshu-byte-coder/devtrack/issues/new/choose)** — bug reports, feature requests, and good-first-issues
+- **[Email the maintainer](mailto:priyanshu.coder.dev@gmail.com)** — for anything else
+
+All contributors are expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ---
 
