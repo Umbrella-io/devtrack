@@ -151,7 +151,11 @@ export default function RecentActivity() {
     setError(null);
 
     const limit = 10;
-    const currentOffset = isLoadMore ? offsetRef.current + limit : 0;
+    const previousOffset = offsetRef.current;
+    const currentOffset = isLoadMore ? previousOffset + limit : 0;
+    
+    // Advance synchronously to prevent race conditions from concurrent calls
+    offsetRef.current = currentOffset;
 
     let queryParams = `?limit=${limit}&offset=${currentOffset}`;
     if (selectedAccount !== null) {
@@ -172,14 +176,15 @@ export default function RecentActivity() {
         } else {
           setItems(fetchedItems);
         }
-        offsetRef.current = currentOffset;
         setHasMore(fetchedItems.length === limit);
       })
-      .catch(() =>
+      .catch(() => {
+        // Roll back the offset on failure
+        offsetRef.current = previousOffset;
         setError(
           "We couldn't load your recent activity right now. Please try again in a moment."
-        )
-      )
+        );
+      })
       .finally(() => {
         setLoading(false);
         setIsLoadingMore(false);
