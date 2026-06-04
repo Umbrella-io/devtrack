@@ -15,8 +15,7 @@ export const runtime = "nodejs";
 
 const isDev = process.env.NODE_ENV === "development";
 const WINDOW_SECONDS = 60;
-const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'ja', 'zh', 'pt', 'hi'];
-const DEFAULT_LOCALE = 'en';
+import { locales as SUPPORTED_LOCALES, defaultLocale as DEFAULT_LOCALE, COOKIE_NAME } from '@/i18n/config';
 
 function getPreferredLocale(req: NextRequest) {
   const acceptLang = req.headers.get('accept-language');
@@ -296,14 +295,15 @@ export async function middleware(req: NextRequest) {
   headers.forEach((value, key) => response.headers.set(key, value));
 
   // Set locale cookie if not present
-  if (!req.cookies.has('NEXT_LOCALE')) {
+  if (!req.cookies.has(COOKIE_NAME)) {
     const locale = getPreferredLocale(req);
-    response.cookies.set('NEXT_LOCALE', locale, { maxAge: 60 * 60 * 24 * 365 });
+    response.cookies.set(COOKIE_NAME, locale, { 
+      maxAge: 60 * 60 * 24 * 365,
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    });
   }
-
-  headers.forEach((value, key) =>
-    response.headers.set(key, value)
-  );
 
   // Cache GET metric responses in the browser for 5 minutes.
   // This eliminates redundant function invocations on every dashboard

@@ -15,6 +15,7 @@
     "features": "Features",
     "settings": "Settings",
     "sign_out": "Sign Out",
-    "sign_in": "SIGN IN →"
+    "sign_in": "SIGN IN →",
+    "logged_in_as": "Logged in as"
   }
 }

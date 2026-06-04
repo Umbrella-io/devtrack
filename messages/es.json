@@ -15,6 +15,7 @@
     "features": "Características",
     "settings": "Ajustes",
     "sign_out": "Cerrar Sesión",
-    "sign_in": "INICIAR SESIÓN →"
+    "sign_in": "INICIAR SESIÓN →",
+    "logged_in_as": "Conectado como"
   }
 }

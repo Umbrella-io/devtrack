@@ -1,8 +1,10 @@
 'use client';
 
 import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
-import { setUserLocale, locales } from '@/services/locale';
+import { locales } from '@/i18n/config';
+import { setUserLocale } from '@/services/locale';
 
 const localeNames: Record<string, string> = {
   en: 'English',
@@ -17,12 +19,15 @@ const localeNames: Record<string, string> = {
 
 export default function LanguageSwitcher() {
   const locale = useLocale();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   function onChange(event: React.ChangeEvent<HTMLSelectElement>) {
     const nextLocale = event.target.value;
     startTransition(() => {
-      setUserLocale(nextLocale);
+      setUserLocale(nextLocale).then(() => {
+        router.refresh();
+      });
     });
   }
 

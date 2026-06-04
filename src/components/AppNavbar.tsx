@@ -218,7 +218,7 @@ export default function AppNavbar() {
                 className="rounded-xl px-4 py-3.5 text-sm font-medium text-[var(--muted-foreground)] hover:bg-white/5 transition-colors"
                 style={{ fontFamily: MONO }}
               >
-                Settings
+                {t("settings")}
               </Link>
             )}
 
@@ -231,7 +231,7 @@ export default function AppNavbar() {
               {isAuthenticated && (
                 <div className="flex flex-col gap-3">
                   <p className="px-4 py-2 text-[12px] text-[var(--muted-foreground)]" style={{ fontFamily: MONO }}>
-                    Logged in as <span className="font-semibold text-[var(--foreground)]">@{identityLabel}</span>
+                    {t("logged_in_as")} <span className="font-semibold text-[var(--foreground)]">@{identityLabel}</span>
                   </p>
                   <button
                     type="button"
@@ -239,7 +239,7 @@ export default function AppNavbar() {
                     className="w-full rounded-xl bg-red-500/10 px-4 py-3.5 text-left text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
                     style={{ fontFamily: MONO }}
                   >
-                    Sign out →
+                    {t("sign_out")}
                   </button>
                 </div>
               )}

@@ -95,7 +95,7 @@ export default async function RootLayout({
         <OfflineBanner />
 
         <div className="flex min-h-screen flex-col">
-          <NextIntlClientProvider messages={messages}>
+          <NextIntlClientProvider locale={locale} messages={messages}>
             <div className="flex-1">
               <Providers>
                 <AppNavbar />
