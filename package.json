@@ -70,5 +70,8 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@9.0.0",
+  "overrides": {
+    "serialize-javascript": "^6.0.2"
+  }
 }
