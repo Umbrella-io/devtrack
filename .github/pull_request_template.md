@@ -1,8 +1,8 @@
 ## Summary
 
-Enhanced the existing `PULL_REQUEST_TEMPLATE.md` to improve contribution quality, accessibility awareness, and reviewer guidance.
+<!-- Briefly describe the changes made in this PR. -->
 
-Closes #1107
+Closes #<!-- issue number -->
 
 ---
 
@@ -10,56 +10,51 @@ Closes #1107
 
 - [ ] Bug fix
 - [ ] New feature
-- [x] Documentation update
+- [ ] Documentation update
 - [ ] Refactor / code cleanup
 
 ---
 
 ## Changes Made
 
-- Improved PR template structure and readability
-- Added accessibility checklist section
-- Added additional notes section
-- Enhanced contributor guidance for testing and review
-- Improved consistency for future pull requests
+<!-- List the changes made in this PR. -->
+- 
+- 
 
 ---
 
 ## How to Test
 
-Steps for the reviewer to verify this works:
-
-1. Create a new pull request
-2. Verify the updated PR template appears automatically
-3. Check that all checklist sections render properly
-4. Ensure markdown formatting works correctly
+<!-- Explain how the reviewer can test these changes locally. -->
+1. 
+2. 
 
 ---
 
 ## Screenshots (if UI change)
 
-N/A
+<!-- Add screenshots or N/A if not applicable. -->
 
 ---
 
 ## Checklist
 
-- [x] Linked issue in summary
-- [x] `npm run lint` passes locally
-- [x] No TypeScript errors (`npm run type-check`)
-- [x] Self-reviewed the diff
+- [ ] Linked issue in summary
+- [ ] `npm run lint` passes locally
+- [ ] No TypeScript errors (`npm run type-check`)
+- [ ] Self-reviewed the diff
 - [ ] Added/updated tests if applicable
 
 ---
 
 ## Accessibility Checklist
 
-- [x] Proper keyboard navigation tested
-- [x] Responsive UI verified
-- [x] Accessibility labels added where needed
+- [ ] Proper keyboard navigation tested
+- [ ] Responsive UI verified
+- [ ] Accessibility labels added where needed
 
 ---
 
 ## Additional Notes
 
-This update standardizes pull request submissions and helps maintain consistent review quality across contributions.
+<!-- Any additional information for the reviewer. -->
