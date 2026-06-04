@@ -191,7 +191,7 @@ export default function NotificationBell() {
               </li>
             ) : error ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--destructive)]">
-                {error}
+                {error.message}
               </li>
             ) : notifications.length === 0 ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
