@@ -16,6 +16,11 @@ create table if not exists users (
   timezone text default 'UTC',
   last_discord_notification_at timestamptz
 );
+
+CREATE INDEX IF NOT EXISTS users_leaderboard_opt_in_idx
+  ON users(leaderboard_opt_in)
+  WHERE leaderboard_opt_in = true;
+
 create table if not exists goals (
   id           text primary key default gen_random_uuid()::text,
   user_id      text not null references users(id) on delete cascade,
