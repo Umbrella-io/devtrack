@@ -49,6 +49,7 @@ export default function AppNavbar() {
 
   const isAuthenticated = status === "authenticated" && Boolean(session);
   const isDashboardRoute = pathname.startsWith("/dashboard");
+  const isPublicProfileRoute = pathname.startsWith("/u/");
   const identityLabel =
     session?.githubLogin ?? session?.user?.name ?? session?.user?.email ?? "user";
 
@@ -133,7 +134,7 @@ export default function AppNavbar() {
         <div className="hidden items-center gap-4 md:flex">
           {/* Show ThemeToggle in navbar except on dashboard, where DashboardHeader provides it */}
           {!isDashboardRoute && <ThemeToggle />}
-          {isAuthenticated && (
+          {isAuthenticated ? (
             <div className="flex items-center gap-4 border-l border-white/10 pl-4">
               <Link 
                 href="/dashboard/settings"
