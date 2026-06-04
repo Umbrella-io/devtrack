@@ -13,11 +13,22 @@ export async function GET() {
   }
 
   try {
-    const { data: user } = await supabaseAdmin
+    const { data: user, error: userError } = await supabaseAdmin
       .from("users")
       .select("id, wakatime_api_key_encrypted")
       .eq("github_id", session.githubId)
       .single();
+
+    if (userError) {
+      if (userError.code === "PGRST116") {
+        return NextResponse.json({ hasData: false, not_configured: true });
+      }
+      console.error("Failed to fetch user for Wakatime stats:", userError);
+      return NextResponse.json(
+        { error: "Failed to fetch Wakatime stats" },
+        { status: 500 }
+      );
+    }
 
     if (!user) {
       return NextResponse.json({ hasData: false, not_configured: true });
@@ -31,14 +42,22 @@ export async function GET() {
     date7DaysAgo.setDate(date7DaysAgo.getDate() - 7);
     const dateStr = date7DaysAgo.toISOString().split("T")[0];
 
-    const { data: stats, error } = await supabaseAdmin
+    const { data: stats, error: statsError } = await supabaseAdmin
       .from("wakatime_stats")
       .select("*")
       .eq("user_id", user.id)
       .gte("date", dateStr)
       .order("date", { ascending: true });
 
-    if (error || !stats || stats.length === 0) {
+    if (statsError) {
+      console.error("Failed to fetch Wakatime stats:", statsError);
+      return NextResponse.json(
+        { error: "Failed to fetch Wakatime stats" },
+        { status: 500 }
+      );
+    }
+
+    if (!stats || stats.length === 0) {
       return NextResponse.json({ hasData: false });
     }
 
@@ -78,7 +97,11 @@ export async function GET() {
       topLanguage: getTop(languagesMap),
       topProject: getTop(projectsMap),
     });
-  } catch {
-    return NextResponse.json({ hasData: false });
+  } catch (err) {
+    console.error("Unexpected error in Wakatime GET:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch Wakatime stats" },
+      { status: 500 }
+    );
   }
 }

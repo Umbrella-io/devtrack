@@ -16,6 +16,13 @@ interface Goal {
   deadline: string | null;
   period_start: string;
   last_synced_at: string | null;
+  last_period: {
+    period_start: string;
+    period_end: string;
+    target: number;
+    achieved: number;
+    completed: boolean;
+  } | null;
 }
 
 const RECURRENCE_LABELS: Record<Recurrence, string> = {
@@ -393,7 +400,7 @@ export default function GoalTracker() {
       ) : (
         <ul className="space-y-4">
           {goals.map((goal) => {
-            const pct = Math.min((goal.current / goal.target) * 100, 100);
+        const pct = goal.current > 0 ? Math.max(1, Math.min(Math.round((goal.current / goal.target) * 100), 100)) : 0;
             const isDeleting = deletingId === goal.id;
             const completed = goal.current >= goal.target;
             const completionLabel = getCompletionLabel(goal);
@@ -446,6 +453,17 @@ export default function GoalTracker() {
                         {completionLabel}
                       </span>
                     ) : null}
+                    {goal.last_period && (
+                      <span
+                        className={`text-xs font-medium ${
+                          goal.last_period.completed ? "text-emerald-500" : "text-[var(--muted-foreground)]"
+                        }`}
+                        title={`Previous period ended ${new Date(goal.last_period.period_end).toLocaleDateString()}`}
+                      >
+                        Last period: {goal.last_period.completed ? "✓" : "○"}{" "}
+                        {goal.last_period.achieved}/{goal.last_period.target} {goal.unit}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
