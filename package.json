@@ -67,6 +67,9 @@
     "typescript": "^5",
     "vitest": "^1.6.0"
   },
+  "overrides": {
+    "glob": ">=10.5.0"
+  },
   "engines": {
     "node": ">=20.0.0"
   },
