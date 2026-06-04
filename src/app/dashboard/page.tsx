@@ -29,6 +29,7 @@ import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 import DailyNoteWidget from "@/components/DailyNoteWidget";
 import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
+import ThrottleBanner from "@/components/ThrottleBanner";
 
 const SkeletonCard = () => (
   <div
@@ -123,20 +124,8 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
       <DashboardHeader />
 
-      <div className="mb-6 flex flex-wrap justify-end items-center gap-2">
-        <Link
-          href="/dashboard/settings"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
-        >
-          Settings
-        </Link>
-
-        <ExportButton />
-      </div>
-
-      <StreakAtRiskBanner />
         {/* Quick actions */}
-        <div className="mt-8 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-8 mb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Left side actions */}
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <Link
@@ -157,7 +146,10 @@ export default async function DashboardPage() {
             <ExportButton />
           </div>
         </div>
-        
+        <div className="space-y-4 mb-8">
+          <ThrottleBanner />
+          <StreakAtRiskBanner />
+        </div>
 
         {/* Hero Section */}
         <section className="mt-8">

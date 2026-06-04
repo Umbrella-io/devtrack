@@ -113,7 +113,7 @@ export default function CareerIntelligence() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ role: selectedRole }),
+        body: JSON.stringify({ role: selectedRole, analysis }),
       });
 
       if (!res.ok) {
