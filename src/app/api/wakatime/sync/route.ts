@@ -1,26 +1,13 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { decryptToken } from "@/lib/crypto";
+import { validateCronRequest } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  // Fail closed when CRON_SECRET is not configured.  Leaving it undefined
-  // causes `Bearer ${undefined}` → "Bearer undefined" to become the expected
-  // credential, which an attacker can trivially supply.
-  if (!cronSecret) {
-    return NextResponse.json(
-      { error: "CRON_SECRET is not configured" },
-      { status: 500 }
-    );
-  }
-
-  if (authHeader !== `Bearer ${cronSecret}` && process.env.NODE_ENV !== "development") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = validateCronRequest(req);
+  if (authError) return authError;
 
   // Fetch users with wakatime keys
   const { data: users, error } = await supabaseAdmin
@@ -41,7 +28,7 @@ export async function GET(req: Request) {
   const CHUNK_SIZE = 5;
   for (let i = 0; i < users.length; i += CHUNK_SIZE) {
     const chunk = users.slice(i, i + CHUNK_SIZE);
-    
+
     await Promise.allSettled(chunk.map(async (user) => {
       try {
         const apiKey = decryptToken(
@@ -71,7 +58,7 @@ export async function GET(req: Request) {
 
         const data = await res.json();
         const now = new Date().toISOString();
-        
+
         const statsToUpsert = data.data.map((day: any) => ({
           user_id: user.id,
           date: day.range.date,

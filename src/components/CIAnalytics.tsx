@@ -103,6 +103,8 @@ export default function CIAnalytics() {
       : "Rate limited"
     : "Refresh";
 
+  const hasNoCIData = !!data && data.totalRuns === 0;
+
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="mb-4 flex items-start justify-between gap-3">
@@ -163,6 +165,27 @@ export default function CIAnalytics() {
             </button>
           )}
         </div>
+      ) : hasNoCIData ? (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="mb-3 text-4xl">⚙️</div>
+      
+          <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+            No CI runs detected
+          </h3>
+      
+          <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
+            Set up GitHub Actions to see workflow and build analytics here.
+          </p>
+      
+          <a
+            href="https://docs.github.com/actions"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--control)]"
+          >
+            Learn GitHub Actions
+          </a>
+        </div>
       ) : data ? (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 stagger-children">
@@ -180,7 +203,7 @@ export default function CIAnalytics() {
               </div>
             ))}
           </div>
-
+      
           <div className="rounded-lg bg-[var(--control)] p-4 stat-cell">
             <p className="text-sm font-medium text-[var(--card-foreground)]">
               Flakiest workflow
