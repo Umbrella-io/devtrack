@@ -1,4 +1,10 @@
 import { throwIfGitHubRateLimited } from "@/lib/github-rate-limit";
+
+// Re-export the canonical GitHubAuthError class from github-fetch so all
+// callers share the same class reference and instanceof checks work correctly.
+import { GitHubAuthError } from "@/lib/github-fetch";
+export { GitHubAuthError };
+
 export const GITHUB_API = "https://api.github.com";
 
 /**
@@ -28,9 +34,10 @@ export async function fetchUserEvents(token: string): Promise<GitHubEvent[]> {
     },
   });
   if (!res.ok) {
-  throwIfGitHubRateLimited(res);
-  throw new Error(`GitHub API error: ${res.status}`);
-}
+    if (res.status === 401) throw new GitHubAuthError();
+    throwIfGitHubRateLimited(res);
+    throw new Error(`GitHub API error: ${res.status}`);
+  }
   return res.json();
 }
 
@@ -59,8 +66,9 @@ export async function fetchUserRepos(
     );
 
     if (!res.ok) {
-       throwIfGitHubRateLimited(res);
-       throw new Error(`GitHub API error: ${res.status}`);
+      if (res.status === 401) throw new GitHubAuthError();
+      throwIfGitHubRateLimited(res);
+      throw new Error(`GitHub API error: ${res.status}`);
     }
 
     const pageRepos = (await res.json()) as GitHubRepo[];
@@ -151,6 +159,7 @@ export async function fetchIssuesMetrics(
   );
 
   if (!searchRes.ok) {
+    if (searchRes.status === 401) throw new GitHubAuthError();
     throwIfGitHubRateLimited(searchRes);
     throw new Error(`GitHub API error: ${searchRes.status}`);
   }
@@ -193,10 +202,12 @@ export async function fetchIssuesMetrics(
   );
 
   if (!thisMonthRes.ok) {
+    if (thisMonthRes.status === 401) throw new GitHubAuthError();
     throwIfGitHubRateLimited(thisMonthRes);
   }
 
   if (!lastMonthRes.ok) {
+    if (lastMonthRes.status === 401) throw new GitHubAuthError();
     throwIfGitHubRateLimited(lastMonthRes);
   }
 

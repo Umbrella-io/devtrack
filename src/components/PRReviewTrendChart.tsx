@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { signOut } from "next-auth/react";
 import { useAccount } from "@/components/AccountContext";
 import {
   CartesianGrid,
@@ -76,10 +77,12 @@ export default function PRReviewTrendChart() {
   const [data, setData] = useState<PRReviewTrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [githubAuthInvalid, setGithubAuthInvalid] = useState(false);
 
   const fetchTrend = useCallback(() => {
     setLoading(true);
     setError(null);
+    setGithubAuthInvalid(false);
 
     const url =
       selectedAccount !== null
@@ -89,11 +92,17 @@ export default function PRReviewTrendChart() {
         : "/api/metrics/pr-review-time";
 
     fetch(url)
-      .then((r) => {
+      .then(async (r) => {
+        const body = await r.json();
+        if (body?.error === "token_expired") {
+          setGithubAuthInvalid(true);
+          return null;
+        }
         if (!r.ok) throw new Error("API error");
-        return r.json();
+        return body as PRReviewTrendResponse;
       })
-      .then((res: PRReviewTrendResponse) => {
+      .then((res) => {
+        if (!res) return;
         setData(res.weeks ?? []);
       })
       .catch(() => {
