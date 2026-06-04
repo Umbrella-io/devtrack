@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
 
 type ActivityType =
@@ -137,7 +137,7 @@ export default function RecentActivity() {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [offset, setOffset] = useState(0);
+  const offsetRef = useRef(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
@@ -146,12 +146,12 @@ export default function RecentActivity() {
       setIsLoadingMore(true);
     } else {
       setLoading(true);
-      setOffset(0);
+      offsetRef.current = 0;
     }
     setError(null);
 
     const limit = 10;
-    const currentOffset = isLoadMore ? offset + limit : 0;
+    const currentOffset = isLoadMore ? offsetRef.current + limit : 0;
 
     let queryParams = `?limit=${limit}&offset=${currentOffset}`;
     if (selectedAccount !== null) {
@@ -172,7 +172,7 @@ export default function RecentActivity() {
         } else {
           setItems(fetchedItems);
         }
-        setOffset(currentOffset);
+        offsetRef.current = currentOffset;
         setHasMore(fetchedItems.length === limit);
       })
       .catch(() =>
@@ -184,7 +184,7 @@ export default function RecentActivity() {
         setLoading(false);
         setIsLoadingMore(false);
       });
-  }, [selectedAccount, offset]);
+  }, [selectedAccount]);
 
   useEffect(() => {
     fetchActivity();
