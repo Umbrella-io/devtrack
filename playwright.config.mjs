@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = Number(process.env.PORT ?? 3000);
+const PORT = Number(process.env.PORT ?? 3002);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${PORT}`;
 const prepareStandaloneCommand =
   "node -e \"const fs=require('fs'); fs.cpSync('public','.next/standalone/public',{recursive:true,force:true}); fs.cpSync('.next/static','.next/standalone/.next/static',{recursive:true,force:true});\"";
