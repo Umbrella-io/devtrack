@@ -96,8 +96,7 @@ export async function GET() {
 
       if (storedPeriodStart < periodStart) {
         const oldVersion = goal.goal_reset_version ?? 0;
-      
-        const { data: resetGoal, error } = await supabaseAdmin
+
         const { error: historyError } = await supabaseAdmin
           .from("goal_history")
           .insert({
@@ -109,13 +108,13 @@ export async function GET() {
             achieved: goal.current,
             completed: goal.current >= goal.target,
           });
-
+        
         if (historyError && historyError.code !== "23505") {
           console.error("Failed to persist goal history before reset:", historyError);
           return goal;
         }
-
-        const { data: updated } = await supabaseAdmin
+        
+        const { data: updated, error } = await supabaseAdmin
           .from("goals")
           .update({
             current: 0,
@@ -128,8 +127,8 @@ export async function GET() {
           .select()
           .single();
       
-        if (resetGoal) {
-          return resetGoal;
+        if (updated) {
+          return updated;
         }
       
         if (error) {
