@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import type { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -10,11 +9,6 @@ import {
   metricsCacheKey,
   withMetricsCache,
 } from "@/lib/metrics-cache";
-=======
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { supabaseAdmin } from "@/lib/supabase";
->>>>>>> 1337d90 (feat: add streak freeze feature (#37))
 
 export const dynamic = "force-dynamic";
 
@@ -22,20 +16,14 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-<<<<<<< HEAD
 // GET /api/streak/freeze
 // Returns whether the user currently has an unused freeze available.
 export async function GET(req: NextRequest) {
-=======
-// Returns whether the user currently has an unused freeze available.
-export async function GET() {
->>>>>>> 1337d90 (feat: add streak freeze feature (#37))
   const session = await getServerSession(authOptions);
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-<<<<<<< HEAD
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
@@ -55,40 +43,21 @@ export async function GET() {
 }
 
 async function getFreezeStatus(userId: string) {
-=======
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
-
-  if (!user) return Response.json({ error: "User not found" }, { status: 404 });
-
->>>>>>> 1337d90 (feat: add streak freeze feature (#37))
   const today = todayStr();
 
   const { data: pending } = await supabaseAdmin
     .from("streak_freezes")
     .select("id, freeze_date")
-<<<<<<< HEAD
     .eq("user_id", userId)
-=======
-    .eq("user_id", user.id)
->>>>>>> 1337d90 (feat: add streak freeze feature (#37))
     .gte("freeze_date", today)
     .limit(1);
 
   const hasFreeze = Array.isArray(pending) && pending.length > 0;
 
-<<<<<<< HEAD
   return { hasFreeze, freezeDate: hasFreeze ? pending![0].freeze_date : null };
 }
 
 // POST /api/streak/freeze
-=======
-  return Response.json({ hasFreeze, freezeDate: hasFreeze ? pending![0].freeze_date : null });
-}
->>>>>>> 1337d90 (feat: add streak freeze feature (#37))
 // Inserts a freeze for today. Fails if the user already holds an unused freeze.
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -96,21 +65,11 @@ export async function POST() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-<<<<<<< HEAD
   const user = await resolveAppUser(session.githubId, session.githubLogin);
-=======
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("github_id", session.githubId)
-    .single();
-
->>>>>>> 1337d90 (feat: add streak freeze feature (#37))
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
   const today = todayStr();
 
-<<<<<<< HEAD
   // Prevent users from stockpiling unused freezes
   const { count } = await supabaseAdmin
     .from("streak_freezes")
@@ -127,14 +86,10 @@ export async function POST() {
     );
   }
 
-=======
-  // only 1 unused freeze at a time
->>>>>>> 1337d90 (feat: add streak freeze feature (#37))
   const { data: existing } = await supabaseAdmin
     .from("streak_freezes")
     .select("id")
     .eq("user_id", user.id)
-<<<<<<< HEAD
     .eq("freeze_date", today)
     .maybeSingle();
 
@@ -144,21 +99,6 @@ export async function POST() {
       { user_id: user.id, freeze_date: today },
       { onConflict: "user_id,freeze_date" }
     )
-=======
-    .gte("freeze_date", today)
-    .limit(1);
-
-  if (Array.isArray(existing) && existing.length > 0) {
-    return Response.json(
-      { error: "You already have an unused streak freeze." },
-      { status: 409 }
-    );
-  }
-
-  const { data: freeze, error } = await supabaseAdmin
-    .from("streak_freezes")
-    .insert({ user_id: user.id, freeze_date: today })
->>>>>>> 1337d90 (feat: add streak freeze feature (#37))
     .select()
     .single();
 
@@ -166,7 +106,6 @@ export async function POST() {
     return Response.json({ error: "Failed to apply freeze." }, { status: 500 });
   }
 
-<<<<<<< HEAD
   const alreadyExisted = existing !== null;
   const statusCode = alreadyExisted ? 200 : 201;
 
@@ -198,7 +137,3 @@ export async function DELETE() {
 
   return Response.json({ success: true });
 }
-=======
-  return Response.json({ freeze }, { status: 201 });
-}
->>>>>>> 1337d90 (feat: add streak freeze feature (#37))
