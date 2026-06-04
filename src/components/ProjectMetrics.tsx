@@ -103,7 +103,7 @@ export default function ProjectMetrics() {
       setShowForm(false);
       setFormData({ jiraDomain: "", email: "", apiToken: "", projectKey: "" });
       fetchData();
-    } catch {
+    } catch (e) {
       setConnectionError("Connection failed");
     } finally {
       setConnecting(false);

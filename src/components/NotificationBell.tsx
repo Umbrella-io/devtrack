@@ -40,7 +40,7 @@ export default function NotificationBell() {
       if (typeof window !== "undefined") {
         localStorage.setItem("devtrack:unread-notification-count", count.toString());
       }
-    } catch {
+    } catch (e) {
       setError("Failed to load notifications. Please try again later.");
     } finally {
       setLoading(false);

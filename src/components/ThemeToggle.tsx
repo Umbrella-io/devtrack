@@ -2,8 +2,9 @@
 
 import { useEffect, useState, type SVGProps } from "react";
 import { useTheme } from "./ThemeContext";
+import { THEME_OPTIONS, type ThemeId } from "@/lib/themes";
 
-const SunIcon = (props: SVGProps<SVGSVGElement>) => (
+const PaletteIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -13,12 +14,14 @@ const SunIcon = (props: SVGProps<SVGSVGElement>) => (
     strokeLinejoin="round"
     {...props}
   >
-    <circle cx="12" cy="12" r="5" />
-    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+    <path d="M12 2a10 10 0 1 0 10 10c0-.55-.45-1-1-1h-2.5a1.5 1.5 0 0 1 0-3H20a1 1 0 0 0 1-1A10 10 0 0 0 12 2Z" />
+    <circle cx="8" cy="8" r="1.25" fill="currentColor" stroke="none" />
+    <circle cx="16" cy="8" r="1.25" fill="currentColor" stroke="none" />
+    <circle cx="16" cy="16" r="1.25" fill="currentColor" stroke="none" />
   </svg>
 );
 
-const MoonIcon = (props: SVGProps<SVGSVGElement>) => (
+const ChevronIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -28,12 +31,12 @@ const MoonIcon = (props: SVGProps<SVGSVGElement>) => (
     strokeLinejoin="round"
     {...props}
   >
-    <path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 1 0 21 12.79z" />
+    <path d="m6 9 6 6 6-6" />
   </svg>
 );
 
 export default function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, themeDefinition, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -42,30 +45,48 @@ export default function ThemeToggle() {
 
   if (!mounted || !theme) {
     return (
-      <div className="inline-flex h-10 w-32 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4" />
+      <div className="inline-flex h-12 w-full max-w-[260px] items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 shadow-sm" />
     );
   }
 
-  const isDark = theme === "dark";
+  const currentLabel = themeDefinition?.name ?? "Theme";
+  const currentDescription = themeDefinition?.description ?? "Customize the dashboard palette";
 
   return (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-sm font-medium text-[var(--card-foreground)] transition-all duration-300 hover:bg-[var(--control)] active:scale-95"
-      aria-label="Toggle theme"
-      aria-pressed={isDark}
-    >
-      <span className="transition-transform duration-300">
-        {isDark ? (
-          <MoonIcon className="h-[18px] w-[18px]" aria-hidden="true" />
-        ) : (
-          <SunIcon className="h-[18px] w-[18px]" aria-hidden="true" />
-        )}
+    <label className="inline-flex min-h-12 w-full max-w-[260px] cursor-pointer items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-[var(--card-foreground)] shadow-sm transition-all duration-300 hover:bg-[var(--control)] focus-within:border-[var(--accent)]">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+        <PaletteIcon className="h-4 w-4" aria-hidden="true" />
       </span>
-      <span className="transition-colors duration-300">
-        {isDark ? "Dark" : "Light"}
+
+      <span className="min-w-0 flex-1">
+        <span className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+          Theme
+        </span>
+        <span className="block truncate text-sm font-semibold text-[var(--card-foreground)]">
+          {currentLabel}
+        </span>
+        <span className="block truncate text-xs text-[var(--muted-foreground)]">
+          {currentDescription}
+        </span>
       </span>
-    </button>
+
+      <span className="relative flex items-center gap-2">
+        <select
+          aria-label="Select dashboard theme"
+          value={theme}
+          onChange={(event) => setTheme(event.target.value as ThemeId)}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        >
+          {THEME_OPTIONS.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+
+        <span className="text-xs font-medium text-[var(--muted-foreground)]">Change</span>
+        <ChevronIcon className="h-4 w-4 text-[var(--muted-foreground)]" aria-hidden="true" />
+      </span>
+    </label>
   );
 }

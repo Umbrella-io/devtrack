@@ -1,32 +1,34 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
-test.beforeEach(async ({ page }) => {
-  const authSecret =
-    process.env.NEXTAUTH_SECRET ||
-    "test-nextauth-secret-for-playwright-tests";
+const authSecret =
+  process.env.NEXTAUTH_SECRET ||
+  "test-nextauth-secret-for-playwright-tests";
 
-  const token = await encode({
+test.beforeEach(async ({ page }) => {
+  const sessionToken = await encode({
     secret: authSecret,
     token: {
       name: "Playwright User",
       email: "playwright@example.com",
+      sub: "12345",
       githubLogin: "playwright-user",
       githubId: "12345",
       accessToken: "test-token",
-      expires: "2099-01-01T00:00:00.000Z",
     },
+    maxAge: 60 * 60,
   });
 
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: String(token ?? ""),
+      value: sessionToken,
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
       sameSite: "Lax",
       secure: false,
+      expires: Math.floor(Date.now() / 1000) + 60 * 60,
     },
   ]);
 
@@ -155,6 +157,10 @@ test.beforeEach(async ({ page }) => {
     "**/api/local-coding/stats**",
     "**/api/metrics/coding-time**",
     "**/api/metrics/coding-activity-insights**",
+    "**/api/wakatime**",
+    "**/api/metrics/productive-hours**",
+    "**/api/user/pinned-repos/details**",
+    "**/api/metrics/repo-explorer**",
   ];
 
   for (const pattern of metricRoutes) {
@@ -193,6 +199,7 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
 
   await page.goto("/dashboard", { waitUntil: "load" });
   await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
+  await page.getByRole("button", { name: "Show 90-day range" }).first().click();
   await page
     .locator("#contribution-activity")
     .getByRole("button", { name: "Show 90-day range" })
@@ -214,7 +221,7 @@ test("goal form posts a new goal", async ({ page }) => {
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
   await page.getByLabel("Unit").selectOption("prs");
-  await page.getByRole("button", { name: "Add goal" }).click();
+  await page.getByRole("button", { name: "Create goal" }).click();
 
   await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);
   expect(goalPosts[0]).toMatchObject({
@@ -264,6 +271,8 @@ function mockMetricResponse(url) {
         thisWeek: { opened: 3, merged: 2 },
         lastWeek: { opened: 1, merged: 1 },
       },
+      issues: { thisWeek: 4, lastWeek: 3 },
+      productivityScore: { current: 85, previous: 78 },
       activeDays: {
         thisWeek: 5,
         lastWeek: 4,
@@ -297,7 +306,7 @@ function mockMetricResponse(url) {
       hasData: false,
     };
   }
-  if (url.includes("/api/metrics/coding-time")) {
+  if (url.includes("/api/metrics/coding-time") || url.includes("/api/wakatime")) {
     return {
       hasData: false,
       not_configured: true,
@@ -318,6 +327,25 @@ function mockMetricResponse(url) {
       consistencyScore: 0,
       productivityLevel: "Low",
       timezone: "UTC",
+    };
+  }
+  if (url.includes("/api/metrics/productive-hours")) {
+    return {
+      grid: [],
+      peak: null,
+      total: 0,
+      days: 0,
+      timezone: "UTC",
+    };
+  }
+  if (url.includes("/api/user/pinned-repos/details")) {
+    return {
+      pinnedRepos: [],
+    };
+  }
+  if (url.includes("/api/metrics/repo-explorer")) {
+    return {
+      repos: [],
     };
   }
   return {};

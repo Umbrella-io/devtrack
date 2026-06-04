@@ -23,14 +23,72 @@ export async function PATCH(
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
-  const body = await req.json().catch(() => ({}));
-  const { current } = body;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
-  if (typeof current !== "number" || !Number.isInteger(current) || current < 0) {
-    return Response.json(
-      { error: "current must be a non-negative integer" },
-      { status: 400 }
-    );
+  if (typeof body !== "object" || body === null) {
+    return Response.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const updates: Record<string, unknown> = {};
+
+  const { title, target, unit, recurrence, current } =
+    body as Record<string, unknown>;
+
+  if (title !== undefined) {
+    if (typeof title !== "string" || title.trim().length === 0) {
+      return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
+    }
+    if (title.length > 100) {
+      return Response.json({ error: "title must be 100 characters or fewer" }, { status: 400 });
+    }
+    updates.title = title.trim();
+  }
+
+  if (target !== undefined) {
+    if (
+      typeof target !== "number" ||
+      !Number.isInteger(target) ||
+      target < 1 ||
+      target > 10_000
+    ) {
+      return Response.json(
+        { error: "target must be an integer between 1 and 10000" },
+        { status: 400 }
+      );
+    }
+    updates.target = target;
+  }
+
+  if (unit !== undefined) {
+    if (typeof unit !== "string" || unit.trim().length === 0) {
+      return Response.json({ error: "unit must be a non-empty string" }, { status: 400 });
+    }
+    updates.unit = unit.trim();
+  }
+
+  if (recurrence !== undefined) {
+    if (recurrence !== "daily" && recurrence !== "weekly" && recurrence !== "monthly") {
+      return Response.json(
+        { error: "recurrence must be 'daily', 'weekly', or 'monthly'" },
+        { status: 400 }
+      );
+    }
+    updates.recurrence = recurrence;
+  }
+
+  if (current !== undefined) {
+    if (typeof current !== "number" || current < 0) {
+      return Response.json(
+        { error: "Invalid current value" },
+        { status: 400 }
+      );
+    }
+    updates.current = current;
   }
 
   const { data: existingGoal } = await supabaseAdmin
@@ -44,10 +102,14 @@ export async function PATCH(
     return Response.json({ error: "Goal not found" }, { status: 404 });
   }
 
+  if (Object.keys(updates).length === 0) {
+    return Response.json({ goal: existingGoal });
+  }
+
   // Block manual progress edits for activity-derived goal types.
   // These goals are synced from GitHub and setting current directly would
   // allow goal completion without any corresponding real activity.
-  if (ACTIVITY_DERIVED_UNITS.has(existingGoal.unit)) {
+  if (current !== undefined && ACTIVITY_DERIVED_UNITS.has(existingGoal.unit)) {
     return Response.json(
       {
         error:
@@ -57,7 +119,7 @@ export async function PATCH(
     );
   }
 
-  if (current > existingGoal.target) {
+  if (typeof current === "number" && current > existingGoal.target) {
     return Response.json(
       { error: "current cannot exceed target" },
       { status: 400 }
@@ -67,7 +129,7 @@ export async function PATCH(
   const wasCompleted = existingGoal.current >= existingGoal.target;
   const { data: updatedGoal, error } = await supabaseAdmin
     .from("goals")
-    .update({ current })
+    .update(updates)
     .eq("id", params.id)
     .eq("user_id", user.id)
     .select()

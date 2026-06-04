@@ -4,9 +4,9 @@ import {
   checkBadgeRateLimit,
   getBadgeClientIp,
 } from "@/lib/badge-rate-limit";
+import { calculateStreakFromDates } from "@/lib/streak";
 import { logError } from "@/lib/error-handler";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
-import { calculateStreak } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -73,25 +73,17 @@ async function fetchStreak(
     items: Array<{ commit: { author: { date: string } } }>;
   };
 
-  const daySet: Record<string, true> = {};
+  const activeDates = new Set<string>();
   for (const item of data.items) {
-    daySet[item.commit.author.date.slice(0, 10)] = true;
+    activeDates.add(item.commit.author.date.slice(0, 10));
   }
-  const commitDays = Object.keys(daySet).sort();
 
-  if (commitDays.length === 0) {
-    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0, stale: undefined };
-  }
-  const { currentStreak, longestStreak } = calculateStreak(
-    commitDays.map((day) => new Date(day))
-  );
-  const lastDay = commitDays[commitDays.length - 1];
-
+  const result = calculateStreakFromDates(activeDates);
   return {
-    current: currentStreak,
-    longest: longestStreak,
-    lastCommitDate: lastDay,
-    totalActiveDays: commitDays.length,
+    current: result.current,
+    longest: result.longest,
+    lastCommitDate: result.lastCommitDate,
+    totalActiveDays: result.totalActiveDays,
   };
 }
 

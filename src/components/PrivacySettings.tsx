@@ -33,7 +33,7 @@ export default function PrivacySettings() {
       URL.revokeObjectURL(url);
 
       setMessage({ kind: "success", text: "Data exported successfully" });
-    } catch {
+    } catch (e) {
       setMessage({ kind: "error", text: "Failed to export data" });
     } finally {
       setDownloading(false);
@@ -152,7 +152,7 @@ export default function PrivacySettings() {
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   placeholder="Type DELETE to confirm"
-                  className="w-full rounded-lg border border-[var(--destructive)]/30 bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none mb-3"
+                  className="w-full rounded-lg border border-[var(--destructive)]/30 bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] mb-3"
                 />
                 <div className="flex gap-2">
                   <button

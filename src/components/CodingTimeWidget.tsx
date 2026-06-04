@@ -39,7 +39,7 @@ export default function CodingTimeWidget() {
         const res = await fetch("/api/wakatime");
         const json = await res.json();
         setData(json);
-      } catch {
+      } catch (e) {
         setData(null);
       } finally {
         setLoading(false);

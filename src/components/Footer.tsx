@@ -96,7 +96,7 @@ export default function Footer() {
                 className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit"
                 href="https://www.linkedin.com/in/priyanshu-doshi-21a54230a/"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 LinkedIn
               </a>
@@ -104,7 +104,7 @@ export default function Footer() {
                 className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit"
                 href="https://github.com/Priyanshu-byte-coder"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 GitHub
               </a>
@@ -112,7 +112,7 @@ export default function Footer() {
                 className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit"
                 href="https://portfolio-eta-gilt-84.vercel.app/"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 Portfolio
               </a>

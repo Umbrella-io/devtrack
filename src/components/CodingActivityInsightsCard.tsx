@@ -247,22 +247,22 @@ export default function CodingActivityInsightsCard() {
             {subtitle}
           </p>
         </div>
-
-         <button aria-label="Refresh"
-  type="button"
-  onClick={fetchInsights}
-  disabled={loading}
-  className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50"
->
-  {loading ? (
-    <>
-      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-      Refreshing
-    </>
-  ) : (
-    "Refresh"
-  )}
-</button> 
+        <button
+          type="button"
+          onClick={fetchInsights}
+          disabled={loading}
+          aria-label="Refresh coding activity insights"
+          className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? (
+            <>
+              <RefreshCw aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
+              Refreshing
+            </>
+          ) : (
+            "Refresh"
+          )}
+        </button>
       </div>
 
       {loading ? (
