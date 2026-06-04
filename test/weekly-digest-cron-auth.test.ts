@@ -6,9 +6,9 @@
  * ----------
  * The original guard used short-circuit AND evaluation:
  *
- *   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
- *     return 401
- *   }
+ * if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+ * return 401
+ * }
  *
  * When CRON_SECRET is undefined, `undefined && ...` is falsy, so the entire
  * condition is skipped and the endpoint executes without any authentication.
@@ -20,9 +20,9 @@
  * The guard was replaced with a fail-closed pattern that matches every other
  * cron endpoint in the codebase:
  *
- *   const cronSecret = process.env.CRON_SECRET;
- *   if (!cronSecret) return 500   // missing config
- *   if (authHeader !== `Bearer ${cronSecret}`) return 401
+ * const cronSecret = process.env.CRON_SECRET;
+ * if (!cronSecret) return 500   // missing config
+ * if (authHeader !== `Bearer ${cronSecret}`) return 401
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -156,8 +156,12 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.sentCount).toBe(2);
-    // One POST to Resend for each user
-    expect(mocks.resendFetch).toHaveBeenCalledTimes(2);
+    
+    // Filter out Gemini API calls and verify only Resend emails are counted
+    const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
+      typeof call[0] === "string" && call[0].includes("api.resend.com")
+    );
+    expect(resendCalls.length).toBe(2);
   });
 
   it("counts sent emails even when RESEND_API_KEY is absent (no network call made)", async () => {
@@ -172,7 +176,12 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
     // sentCount still increments so the response reflects how many users were
     // eligible, but no external call is made
     expect(body.sentCount).toBe(1);
-    expect(mocks.resendFetch).not.toHaveBeenCalled();
+    
+    // Filter out Gemini API calls to ensure no Resend emails were dispatched
+    const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
+      typeof call[0] === "string" && call[0].includes("api.resend.com")
+    );
+    expect(resendCalls.length).toBe(0);
   });
 
   it("does not send emails when authentication fails even if opted-in users exist", async () => {
@@ -224,9 +233,13 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
 
     await GET(makeRequest("Bearer s3cr3t"));
 
-    expect(mocks.resendFetch).toHaveBeenCalledOnce();
+    // Isolate the Resend email delivery call
+    const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
+      typeof call[0] === "string" && call[0].includes("api.resend.com")
+    );
+    expect(resendCalls.length).toBe(1);
 
-    const [, callOptions] = mocks.resendFetch.mock.calls[0];
+    const [, callOptions] = resendCalls[0];
     const body = JSON.parse(callOptions.body);
 
     expect(body.to).toBe("devtracker@example.com");
