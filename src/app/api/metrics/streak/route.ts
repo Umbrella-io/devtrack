@@ -11,16 +11,18 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { calculateStreak } from "@/lib/streak";
+import { calculateStreakFromDates } from "@/lib/streak";
 import { dispatchToAllWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
 
+const STREAK_LOOKBACK_DAYS = 365;
+
 async function fetchActiveDates(
   githubLogin: string,
   token: string,
-  cacheContext: { bypass: boolean; userId: string }
-  , timeZone = "UTC"
+  cacheContext: { bypass: boolean; userId: string },
+  timeZone = "UTC"
 ): Promise<Set<string>> {
   // Cache key is scoped per user + githubLogin so multi-account "combined" view
   // stores each account's dates separately and merges them in the GET handler.
@@ -36,10 +38,10 @@ async function fetchActiveDates(
       ttlSeconds: METRICS_CACHE_TTL_SECONDS.streak,
     },
     async () => {
-      // Look back 90 days — the maximum window GitHub's Commit Search supports.
-      // Requesting beyond 90 days will silently return fewer results.
+      // Look back far enough to correctly compute long streaks.
+      // GitHub Commit Search supports date ranges up to ~1 year.
       const since = new Date();
-      since.setDate(since.getDate() - 90);
+      since.setDate(since.getDate() - STREAK_LOOKBACK_DAYS);
       const sinceStr = since.toISOString().slice(0, 10); // "YYYY-MM-DD"
 
       const activeDates = new Set<string>();
@@ -49,8 +51,8 @@ async function fetchActiveDates(
       //   • Authenticated (OAuth token / PAT): 30 requests/minute
       //   • Unauthenticated:                   10 requests/minute
       //
-      // This loop pages through up to 10 pages (1,000 commits max) to cover
-      // the full 90-day window. Each page = 1 request against the 30 req/min quota.
+      // This loop pages through up to 10 pages (1,000 commits max).
+      // Each page = 1 request against the 30 req/min quota.
       // Most users need only 1–2 pages; the cap of 10 prevents runaway API usage
       // for extremely active accounts.
       while (true) {
@@ -115,102 +117,8 @@ async function fetchActiveDates(
   return new Set(dates);
 }
 
-function calculateStreakFromDates(
-  activeDates: Set<string>,
-  freezeDates: Set<string>
-  , timeZone = "UTC"
-): {
-  current: number;
-  longest: number;
-  lastCommitDate: string | null;
-  totalActiveDays: number;
-  freezeDates: string[];
-} {
-  // Merge commit dates with streak freeze dates before calculating.
-  // A freeze date counts as an "active" day so it doesn't break the streak,
-  // even though no commits were made on that day.
-  const combinedDates = new Set<string>([
-    ...Array.from(activeDates),
-    ...Array.from(freezeDates),
-  ]);
-  const commitDays = Array.from(combinedDates).sort(); // ascending "YYYY-MM-DD"
 
-  if (commitDays.length === 0) {
-    return {
-      current: 0,
-      longest: 0,
-      lastCommitDate: null,
-      totalActiveDays: 0,
-      freezeDates: Array.from(freezeDates),
-    };
-  }
 
-  // Helper: convert "YYYY-MM-DD" -> days since epoch (integer) using UTC
-  function dayKeyToDays(d: string): number {
-    const [y, m, day] = d.split("-").map((s) => Number(s));
-    return Date.UTC(y, m - 1, day) / 86400000;
-  }
-
-  // Compute runs of consecutive days (increasing by 1 day)
-  const daysNums = commitDays.map(dayKeyToDays).sort((a, b) => a - b);
-
-  let longestStreak = 1;
-  let currentRun = 1;
-  const runs: { end: string; length: number }[] = [];
-
-  for (let i = 1; i < daysNums.length; i += 1) {
-    const diff = daysNums[i] - daysNums[i - 1];
-    if (diff === 1) {
-      currentRun += 1;
-      longestStreak = Math.max(longestStreak, currentRun);
-      continue;
-    }
-    runs.push({ end: commitDays[i - 1], length: currentRun });
-    currentRun = 1;
-  }
-  runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
-
-  // Compute today/yesterday as YYYY-MM-DD in the user's timezone
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const y = parts.find((p) => p.type === "year")?.value ?? "0000";
-  const m = parts.find((p) => p.type === "month")?.value ?? "00";
-  const d = parts.find((p) => p.type === "day")?.value ?? "00";
-  const today = `${y}-${m}-${d}`;
-
-  // Yesterday computed by converting today's YYYY-MM-DD to UTC days and subtracting 1
-  const todayDays = dayKeyToDays(today);
-  const yesterdayDays = todayDays - 1;
-  const yesterdayDate = new Date(yesterdayDays * 86400000);
-  const yParts = new Intl.DateTimeFormat("en", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(yesterdayDate);
-  const yy = yParts.find((p) => p.type === "year")?.value ?? "0000";
-  const mm = yParts.find((p) => p.type === "month")?.value ?? "00";
-  const dd = yParts.find((p) => p.type === "day")?.value ?? "00";
-  const yesterday = `${yy}-${mm}-${dd}`;
-
-  const lastRun = runs[runs.length - 1];
-
-  return {
-    current:
-      lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0,
-    longest: longestStreak,
-    lastCommitDate: commitDays[commitDays.length - 1],
-    // totalActiveDays counts only days with real commits or freezes in the 90-day window,
-    // not the full streak length — useful for the "active days" stat on the dashboard.
-    totalActiveDays: commitDays.length,
-    freezeDates: Array.from(freezeDates),
-  };
-}
 
 async function checkAndRecordMilestone(
   userId: string,
@@ -255,11 +163,11 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Fetch streak freeze dates from Supabase for the past 90 days.
+  // Fetch streak freeze dates from Supabase for the past STREAK_LOOKBACK_DAYS.
   // These are merged with commit dates so a freeze day doesn't break the streak.
   // Only fetched when the user has a Supabase row (appUserId is non-null).
   const since = new Date();
-  since.setDate(since.getDate() - 90);
+  since.setDate(since.getDate() - STREAK_LOOKBACK_DAYS);
   const sinceStr = since.toISOString().slice(0, 10);
 
   const freezeDates = new Set<string>();

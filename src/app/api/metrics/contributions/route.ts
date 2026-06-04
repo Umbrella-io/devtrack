@@ -17,6 +17,19 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
+// ─── GitHub API Rate Limiting ──────────────────────────────────────────────────
+// Unauthenticated requests: 60 req/hr (shared per IP).
+// Authenticated requests (OAuth token or PAT): 5,000 req/hr per user.
+// GitHub Search API has an extra secondary limit: ~30 req/min when authenticated.
+//
+// This route always sends the user's GitHub OAuth token in the Authorization
+// header (from NextAuth session), ensuring the 5,000 req/hr limit applies.
+// Users can also add a PAT in settings for the same higher limit.
+//
+// Rate limit errors: GitHub returns HTTP 403 (primary limit) or HTTP 429
+// (secondary/search limit). The X-RateLimit-Remaining: 0 response header
+// confirms quota exhaustion. The user sees "GitHub API error" in the dashboard.
+// ──────────────────────────────────────────────────────────────────────────────
 export const dynamic = "force-dynamic";
 
 interface TimeBlocks {
@@ -132,6 +145,13 @@ async function fetchContributionsForAccount(
         searchUrl.searchParams.set("sort", "author-date");
         searchUrl.searchParams.set("order", "desc");
 
+        // The Authorization header upgrades the rate limit from 60 req/hr
+        // (unauthenticated, shared per IP) to 5,000 req/hr (per user).
+        // Without it, multiple users on the same server IP would exhaust
+        // the shared quota almost immediately.
+        // Authorization header raises the rate limit from 60 req/hr (unauthenticated,
+        // shared per IP) to 5,000 req/hr per user. Without it, shared server IPs
+        // would exhaust the unauthenticated quota almost immediately.
         const searchRes = await fetch(
           searchUrl.toString(),
           {

@@ -22,12 +22,15 @@ interface UserSettings {
   github_login: string;
   bio: string;
   is_public: boolean;
+  public_since?: string | null;
+  show_weekly_goals?: boolean;
   leaderboard_opt_in: boolean;
   weekly_digest_opt_in: boolean;
   has_wakatime_key?: boolean;
   discord_webhook_url?: string;
   timezone?: string;
   pinned_repos?: string[];
+  discord_muted_until?: string | null;
 }
 
 interface LinkedAccount {
@@ -145,6 +148,8 @@ function SettingsPageContent() {
   const [timezone, setTimezone] = useState("");
   const [savingDiscord, setSavingDiscord] = useState(false);
   const [testingDiscord, setTestingDiscord] = useState(false);
+  const [discordMutedUntil, setDiscordMutedUntil] = useState<string | null>(null);
+  const [muteDuration, setMuteDuration] = useState<number>(1);
   const [isDirty, setIsDirty] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
@@ -251,6 +256,7 @@ function SettingsPageContent() {
           setBioDraft(data.bio ?? "");
           setDiscordWebhook(data.discord_webhook_url || "");
           setTimezone(data.timezone || "UTC");
+          setDiscordMutedUntil(data.discord_muted_until ?? null);
           setWebhookUrl(data.webhook_url ?? null);
         }
       } catch (error) {
@@ -499,7 +505,7 @@ function SettingsPageContent() {
       const res = await fetch("/api/user/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ discord_webhook_url: discordWebhook, timezone }),
+        body: JSON.stringify({ discord_webhook_url: discordWebhook, timezone, discord_muted_until: discordMutedUntil }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -541,6 +547,62 @@ function SettingsPageContent() {
       toast.error("Failed to send test notification");
     } finally {
       setTestingDiscord(false);
+    }
+  };
+
+  const handleMuteDiscord = async () => {
+    if (!settings) return;
+    const dayLabel = muteDuration === 1 ? "day" : "days";
+    const mutedUntil = new Date();
+    mutedUntil.setDate(mutedUntil.getDate() + muteDuration);
+    setSavingDiscord(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ discord_muted_until: mutedUntil.toISOString() }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setDiscordMutedUntil(updated.discord_muted_until);
+        setIsDirty(false);
+        toast.success("Discord notifications muted for " + muteDuration + " " + dayLabel);
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to mute notifications");
+      }
+    } catch (_err) {
+      console.error("mute error", _err);
+      toast.error("Failed to mute notifications");
+    } finally {
+      setSavingDiscord(false);
+    }
+  };
+
+  const handleUnmuteDiscord = async () => {
+    if (!settings) return;
+    setSavingDiscord(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ discord_muted_until: null }),
+      });
+      const updated = await res.json();
+      if (!res.ok) {
+        toast.error(updated.error || "Failed to unmute notifications");
+        return;
+      }
+      setSettings(updated);
+      setDiscordMutedUntil(null);
+      setIsDirty(false);
+      toast.success("Discord notifications unmuted");
+    } catch (_err) {
+      console.error("unmute error", _err);
+      toast.error("Failed to unmute notifications");
+    } finally {
+      setSavingDiscord(false);
     }
   };
 
@@ -608,9 +670,44 @@ function SettingsPageContent() {
     return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
         <div className="max-w-2xl mx-auto">
-          <p className="text-[var(--muted-foreground)]">
-            Failed to load settings.
-          </p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-8 text-center">
+            <div className="text-3xl mb-4">⚠️</div>
+            <h2 className="text-lg font-semibold text-[var(--card-foreground)] mb-2">
+              Failed to load settings
+            </h2>
+            <p className="text-sm text-[var(--muted-foreground)] mb-6">
+              This usually happens when the database is temporarily throttled. Try again in a moment.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setLoading(true);
+                  fetch("/api/user/settings")
+                    .then((r) => r.ok ? r.json() : Promise.reject())
+                    .then((data) => {
+                      setSettings(data);
+                      setBioDraft(data.bio ?? "");
+                      setDiscordWebhook(data.discord_webhook_url || "");
+                      setTimezone(data.timezone || "UTC");
+                      setDiscordMutedUntil(data.discord_muted_until ?? null);
+                      setWebhookUrl(data.webhook_url ?? null);
+                    })
+                    .catch(() => toast.error("Still unable to load settings"))
+                    .finally(() => setLoading(false));
+                }}
+                className="rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+              >
+                Try again
+              </button>
+              <Link
+                href="/dashboard"
+                className="rounded-lg border border-[var(--border)] px-5 py-2.5 text-sm font-medium text-[var(--card-foreground)] hover:bg-[var(--control)] transition-colors"
+              >
+                Back to Dashboard
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -699,7 +796,7 @@ function SettingsPageContent() {
                   type="text"
                   value={`${window.location.origin}/u/${settings.github_login}`}
                   readOnly
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:outline-none"
+                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)]"
                 />
                 <button
                   type="button"
@@ -710,60 +807,71 @@ function SettingsPageContent() {
                   {copied ? "Copied!" : "Copy"}
                 </button>
               </div>
+              {settings.public_since && (
+                <p className="mt-3 text-xs text-[var(--muted-foreground)]">
+                  Public since {new Date(settings.public_since).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                </p>
+              )}
             </div>
           )}
 
-          {/* ── Bio field with character counter ── NEW ─────────────────────── */}
-          <div className="mt-6 pt-6 border-t border-[var(--border)]">
-            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-1">
-              Bio
-            </h3>
-            <p className="text-sm text-[var(--muted-foreground)] mb-3">
-              Write a short bio shown on your public profile.
-            </p>
-
-            <textarea
-              id="bio"
-              value={bioDraft}
-              onChange={(e) => {
-                setBioDraft(e.target.value.slice(0, BIO_MAX));
-                setIsDirty(true);
-              }}
-              placeholder="Tell others about yourself..."
-              rows={3}
-              maxLength={BIO_MAX}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] resize-none"
-            />
-
-            {/* Character counter */}
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-xs text-[var(--muted-foreground)]">
-                {bioDraft.length === 0 && "Shown on your public /u/ page."}
-              </p>
-              <p
-                className={`text-xs font-medium tabular-nums transition-colors ${bioDraft.length >= BIO_MAX
-                  ? "text-[var(--destructive)]"
-                  : bioDraft.length >= Math.floor(BIO_MAX * 0.9)
-                    ? "text-yellow-500"
-                    : "text-[var(--muted-foreground)]"
-                  }`}
-              >
-                {bioDraft.length} / {BIO_MAX}
-              </p>
+          {/* Weekly Goals on Profile toggle */}
+          {settings.is_public && (
+            <div className="mt-6 pt-6 border-t border-[var(--border)]">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+                    Weekly Goal Progress
+                  </h3>
+                  <p className="text-sm text-[var(--muted-foreground)] mt-1">
+                    Show your weekly goal completion rate on your public profile.
+                  </p>
+                </div>
+                <label className="flex items-center cursor-pointer select-none"><span className="sr-only">Toggle weekly goal visibility</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={settings.show_weekly_goals ?? false}
+                      aria-label="Toggle weekly goal progress on profile"
+                      onChange={async (e) => {
+                        const value = e.target.checked;
+                        setSaving(true);
+                        try {
+                          const res = await fetch("/api/user/settings", {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ show_weekly_goals: value }),
+                          });
+                          if (res.ok) {
+                            const updated = await res.json();
+                            setSettings(updated);
+                          }
+                        } catch (error) {
+                          console.error("Failed to update weekly goals setting:", error);
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                      disabled={saving}
+                      className="sr-only"
+                    />
+                    <div
+                      className={`block w-10 h-6 rounded-full transition-colors ${settings.show_weekly_goals
+                        ? "bg-[var(--accent)]"
+                        : "bg-[var(--control)]"
+                        }`}
+                    />
+                    <div
+                      className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${settings.show_weekly_goals ? "translate-x-4" : ""
+                        }`}
+                    />
+                  </div>
+                </label>
+              </div>
             </div>
+          )}
 
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={handleSaveBio}
-                disabled={savingBio}
-                className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {savingBio ? "Saving..." : "Save Bio"}
-              </button>
-            </div>
-          </div>
-
+          {/* ── Profile Bio with Markdown preview ─────────────────────── */}
           <div className="mt-6 pt-6 border-t border-[var(--border)]">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -792,7 +900,7 @@ function SettingsPageContent() {
               maxLength={500}
               rows={5}
               placeholder="Write a short bio with **bold**, _italic_, `code`, or links."
-              className="w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-sm text-[var(--card-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+              className="w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-sm text-[var(--card-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             />
 
             {showBioPreview && (
@@ -851,7 +959,6 @@ function SettingsPageContent() {
                   checked={theme === "default"}
                   onChange={() => {
                     setTheme("default");
-                    setIsDirty(true);
                   }}
                   className="accent-[var(--accent)] focus-visible:ring-[var(--accent)]"
                 />
@@ -865,7 +972,6 @@ function SettingsPageContent() {
                   checked={theme === "colour-blind-friendly"}
                   onChange={() => {
                     setTheme("colour-blind-friendly");
-                    setIsDirty(true);
                   }}
                   className="accent-[var(--accent)] focus-visible:ring-[var(--accent)]"
                 />
@@ -882,24 +988,6 @@ function SettingsPageContent() {
             </div>
           )}
 
-          {isDirty && (
-            <div className="mt-6 pt-6 border-t border-[var(--border)] flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  // The toggles themselves already call the API,
-                  // but for the heatmap theme which is local only,
-                  // or to clear the dirty state after a manual change,
-                  // we provide this clear feedback.
-                  setIsDirty(false);
-                  toast.success("Settings saved successfully!");
-                }}
-                className="px-6 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
-              >
-                Save Changes
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -1041,7 +1129,7 @@ function SettingsPageContent() {
                 onChange={(e) => setRepoSearchQuery(e.target.value)}
                 placeholder="Type to search your repositories..."
                 aria-label="Search repositories to pin"
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] mb-4"
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] mb-4"
               />
 
               {loadingRepos ? (
@@ -1147,7 +1235,7 @@ function SettingsPageContent() {
               value={webhookUrl ?? ""}
               onChange={(e) => setWebhookUrl(e.target.value || null)}
               placeholder="https://hooks.slack.com/services/... or https://discord.com/api/webhooks/..."
-              className="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:outline-none"
+              className="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             />
 
             <div className="mt-3 flex gap-2">
@@ -1297,7 +1385,7 @@ function SettingsPageContent() {
                   }}
                   placeholder={settings.has_wakatime_key ? "•••••••••••••••• (Configured)" : "Enter your Wakatime API key"}
                   autoComplete="new-password"
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                 />
                 <button
                   type="button"
@@ -1342,7 +1430,7 @@ function SettingsPageContent() {
                     setIsDirty(true);
                   }}
                   placeholder="https://discord.com/api/webhooks/..."
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                 />
               </div>
             </div>
@@ -1358,7 +1446,7 @@ function SettingsPageContent() {
                   setTimezone(e.target.value);
                   setIsDirty(true);
                 }}
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
               >
                 <option value="UTC">UTC</option>
                 <option value="America/New_York">Eastern Time (ET)</option>
@@ -1398,6 +1486,55 @@ function SettingsPageContent() {
             <p className="mt-2 text-xs text-[var(--muted-foreground)]">
               Leave Webhook URL blank and click Save to unlink Discord.
             </p>
+
+            {discordWebhook && (
+              <div className="border-t border-[var(--border)]/60 pt-4 mt-4">
+                <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
+                  Mute Notifications
+                </h3>
+                {discordMutedUntil && new Date(discordMutedUntil).getTime() > Date.now() ? (
+                  <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4">
+                    <p className="text-sm text-[var(--card-foreground)] mb-3">
+                      Muted until{" "}
+                      <span className="font-semibold">
+                        {new Intl.DateTimeFormat("en-US", {
+                          dateStyle: "long",
+                          timeStyle: "short",
+                        }).format(new Date(discordMutedUntil))}
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleUnmuteDiscord}
+                      disabled={savingDiscord}
+                      className="px-4 py-2 rounded-lg border border-[var(--destructive-muted-border)] text-[var(--destructive)] text-sm font-medium hover:bg-[var(--destructive-muted)] transition-colors disabled:opacity-60"
+                    >
+                      {savingDiscord ? "Unmuting..." : "Unmute Now"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                    <select
+                      value={muteDuration}
+                      onChange={(e) => setMuteDuration(Number(e.target.value))}
+                      className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                    >
+                      <option value={1}>1 day</option>
+                      <option value={3}>3 days</option>
+                      <option value={7}>7 days</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleMuteDiscord}
+                      disabled={savingDiscord}
+                      className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+                    >
+                      {savingDiscord ? "Muting..." : "Mute Notifications"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

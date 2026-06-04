@@ -29,6 +29,7 @@ import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 import DailyNoteWidget from "@/components/DailyNoteWidget";
 import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
+import ThrottleBanner from "@/components/ThrottleBanner";
 
 const SkeletonCard = () => (
   <div
@@ -119,12 +120,12 @@ export default async function DashboardPage() {
   if (!session) redirect("/");
 
   return (
-    <DashboardSSEProvider>
-      <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
-        <DashboardHeader />
+<DashboardSSEProvider>
+    <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
+      <DashboardHeader />
 
         {/* Quick actions */}
-        <div className="mt-8 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-8 mb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Left side actions */}
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <Link
@@ -144,49 +145,9 @@ export default async function DashboardPage() {
           <div className="w-full sm:w-auto">
             <ExportButton />
           </div>
-
-          <div className="mt-6">
-            <CodingActivityInsightsCard />
-          </div>
-
-          <div className="mt-6">
-            <PRReviewTrendChart />
-          </div>
-
-          <div
-            id="issues"
-            className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6"
-          >
-            <div className="lg:col-span-2">
-              <IssueMetrics />
-            </div>
-            <CIAnalytics />
-          </div>
-
-          {/* Row 3b: Discussion activity */}
-          <div className="mt-6">
-            <DiscussionsWidget />
-          </div>
-          <div className="mt-6">
-            <PinnedReposWidget />
-          </div>
-
-          <div className="mt-6">
-            <InactiveRepositoriesCard />
-          </div>
-          <div
-            id="top-repos"
-            className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6"
-          >
-            <TopRepos />
-            <LanguageBreakdown />
-            <GoalTracker />
-          </div>
-          <div id="recent-activity" className="mt-6">
-            <RecentActivity />
-          </div>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-4 mb-8">
+          <ThrottleBanner />
           <StreakAtRiskBanner />
         </div>
 
@@ -249,7 +210,9 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
             <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
               <div className="w-full overflow-x-auto pb-2">
-                <ContributionGraph />
+                <WidgetErrorBoundary>
+                  <ContributionGraph />
+                </WidgetErrorBoundary>
               </div>
               <div className="w-full overflow-x-auto pb-2">
                 <ContributionHeatmap />

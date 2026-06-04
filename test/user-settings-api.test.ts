@@ -147,6 +147,7 @@ describe("User Settings API Endpoints", () => {
         webhook_url: null,
         timezone: "UTC",
         bio: "",
+        discord_muted_until: null,
       });
     });
   });
@@ -233,6 +234,7 @@ describe("User Settings API Endpoints", () => {
         webhook_url: null,
         timezone: "UTC",
         bio: "",
+        discord_muted_until: null,
       });
       
       // Verify that no database updates were triggered (mockUpdate not called because updates is empty)
@@ -261,6 +263,7 @@ describe("User Settings API Endpoints", () => {
         webhook_url: null,
         timezone: "UTC",
         bio: "",
+        discord_muted_until: null,
       });
       
       // Verify update database query was called with the updates object

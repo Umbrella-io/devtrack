@@ -14,6 +14,11 @@ export const LEADERBOARD_BUILD_LOCK_KEY = "leaderboard:build-lock:v1";
 const GITHUB_API = "https://api.github.com";
 
 export type LeaderboardMetric = "streak" | "commits" | "prs";
+export type LeaderboardPeriod = "week" | "month" | "all";
+
+export interface LeaderboardFilters {
+  period?: LeaderboardPeriod;
+}
 
 export interface PublicUser {
   id: string;
@@ -73,28 +78,47 @@ const USER_CONCURRENCY = validateUserConcurrency(
   process.env.LEADERBOARD_USER_CONCURRENCY
 );
 
+const DEFAULT_PERIOD: LeaderboardPeriod = "month";
+
 // Module-level in-memory cache shared between the server component and API route
 // within the same Node.js process (standalone mode).
-let _memoryCache: LeaderboardCacheEntry<LeaderboardPayload> | null = null;
+let _memoryCache = new Map<string, LeaderboardCacheEntry<LeaderboardPayload>>();
 
 export function isFresh(payload: LeaderboardPayload): boolean {
   const ts = Date.parse(payload.generatedAt);
   return Number.isFinite(ts) && Date.now() - ts < CACHE_REFRESH_SECONDS * 1000;
 }
 
-export function getMemoryCachedLeaderboard(): LeaderboardPayload | null {
-  _memoryCache = pruneExpiredLeaderboardCache(_memoryCache);
-  if (_memoryCache && isFresh(_memoryCache.payload)) {
-    return _memoryCache.payload;
+export function getLeaderboardCacheKey(period: LeaderboardPeriod = DEFAULT_PERIOD): string {
+  return `${LEADERBOARD_CACHE_KEY}:${period}`;
+}
+
+export function getMemoryCachedLeaderboard(
+  period: LeaderboardPeriod = DEFAULT_PERIOD
+): LeaderboardPayload | null {
+  const cacheKey = getLeaderboardCacheKey(period);
+  const cached = pruneExpiredLeaderboardCache(_memoryCache.get(cacheKey));
+
+  if (cached && isFresh(cached.payload)) {
+    return cached.payload;
   }
+
+  if (!cached) {
+    _memoryCache.delete(cacheKey);
+  }
+
   return null;
 }
 
-export function setMemoryCachedLeaderboard(payload: LeaderboardPayload): void {
-  _memoryCache = {
+export function setMemoryCachedLeaderboard(
+  payload: LeaderboardPayload,
+  period: LeaderboardPeriod = DEFAULT_PERIOD
+): void {
+  const cacheKey = getLeaderboardCacheKey(period);
+  _memoryCache.set(cacheKey, {
     payload,
     expiresAt: Date.now() + CACHE_REFRESH_SECONDS * 1000,
-  };
+  });
 }
 
 /**
@@ -108,7 +132,7 @@ export function setMemoryCachedLeaderboard(payload: LeaderboardPayload): void {
  */
 export async function clearLeaderboardCache(): Promise<void> {
   // 1. Drop the module-level in-process cache.
-  _memoryCache = null;
+  _memoryCache.clear();
 
   // 2. Drop the shared key from the metrics memory map and from Redis/Upstash
   //    so that other serverless instances also see a cache miss on their next
@@ -189,9 +213,23 @@ function calculateCurrentStreak(commitDates: string[]): number {
   return latest.end === today || latest.end === yesterday ? latest.length : 0;
 }
 
-async function fetchCommitStats(username: string, since: string) {
+function getPeriodSince(period: LeaderboardPeriod): string | undefined {
+  if (period === "all") {
+    return undefined;
+  }
+
+  const days = period === "week" ? 7 : 30;
+  return toDateStr(new Date(Date.now() - days * 86400000));
+}
+
+async function fetchCommitStats(username: string, since?: string) {
   const query = new URLSearchParams({
-    q: `author:${username} author-date:>=${since}`,
+    q: [
+      `author:${username}`,
+      since ? `author-date:>=${since}` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
     per_page: "100",
     sort: "author-date",
     order: "desc",
@@ -202,9 +240,15 @@ async function fetchCommitStats(username: string, since: string) {
   }>(`/search/commits?${query}`);
 }
 
-async function fetchPrCount(username: string, since: string): Promise<number> {
+async function fetchPrCount(username: string, since?: string): Promise<number> {
   const query = new URLSearchParams({
-    q: `author:${username} type:pr created:>=${since}`,
+    q: [
+      `author:${username}`,
+      "type:pr",
+      since ? `created:>=${since}` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
     per_page: "1",
   });
   const data = await fetchGitHubJson<{ total_count: number }>(
@@ -213,7 +257,11 @@ async function fetchPrCount(username: string, since: string): Promise<number> {
   return data?.total_count ?? 0;
 }
 
-export async function buildLeaderboard(): Promise<LeaderboardPayload> {
+export async function buildLeaderboard(
+  filters: LeaderboardFilters = {}
+): Promise<LeaderboardPayload> {
+  const period = filters.period ?? DEFAULT_PERIOD;
+  const periodStart = getPeriodSince(period);
   const { data: users, error } = await supabaseAdmin
     .from("users")
     .select("id, github_login, is_sponsor")
@@ -227,10 +275,9 @@ export async function buildLeaderboard(): Promise<LeaderboardPayload> {
   }
 
   const now = new Date();
-  const monthStart = toDateStr(
-    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+  const streakStart = toDateStr(
+    new Date(Date.now() - 365 * 86400000)
   );
-  const streakStart = toDateStr(new Date(Date.now() - 90 * 86400000));
   const safeUsers = (users ?? []) as PublicUser[];
 
   const rows = await mapWithConcurrency(
@@ -238,9 +285,9 @@ export async function buildLeaderboard(): Promise<LeaderboardPayload> {
     USER_CONCURRENCY,
     async (user) => {
       const [monthlyCommits, streakCommits, prs] = await Promise.all([
-        fetchCommitStats(user.github_login, monthStart),
+        fetchCommitStats(user.github_login, periodStart),
         fetchCommitStats(user.github_login, streakStart),
-        fetchPrCount(user.github_login, monthStart),
+        fetchPrCount(user.github_login, periodStart),
       ]);
 
       const streak = calculateCurrentStreak(
@@ -281,35 +328,42 @@ export async function buildLeaderboard(): Promise<LeaderboardPayload> {
   };
 }
 
-/**
- * Returns cached leaderboard data or builds fresh data.
- * Used by both the server component (direct call) and the API route (thin wrapper).
- * Does NOT include thundering-herd protection — that belongs in the API route
- * where multiple serverless instances may race.
- */
+export async function refreshLeaderboardCache(
+  filters: LeaderboardFilters = {}
+): Promise<LeaderboardPayload> {
+  const payload = await buildLeaderboard(filters);
+  const period = filters.period ?? DEFAULT_PERIOD;
+  const cacheKey = getLeaderboardCacheKey(period);
+  await cacheSet(cacheKey, payload, CACHE_STALE_SECONDS);
+  setMemoryCachedLeaderboard(payload, period);
+  return payload;
+}
+
 export async function getLeaderboardData(
-  bypass = false
+  bypass = false,
+  filters: LeaderboardFilters = {}
 ): Promise<LeaderboardPayload | null> {
+  const period = filters.period ?? DEFAULT_PERIOD;
   if (!bypass) {
-    const mem = getMemoryCachedLeaderboard();
+    const mem = getMemoryCachedLeaderboard(period);
     if (mem) return mem;
 
-    const cached = await cacheGet<LeaderboardPayload>(LEADERBOARD_CACHE_KEY);
+    const cached = await cacheGet<LeaderboardPayload>(getLeaderboardCacheKey(period));
     if (cached && isFresh(cached)) {
-      setMemoryCachedLeaderboard(cached);
+      setMemoryCachedLeaderboard(cached, period);
       return cached;
     }
   }
 
   try {
-    const payload = await buildLeaderboard();
-    await cacheSet(LEADERBOARD_CACHE_KEY, payload, CACHE_STALE_SECONDS);
-    setMemoryCachedLeaderboard(payload);
+    const payload = await buildLeaderboard(filters);
+    const cacheKey = getLeaderboardCacheKey(period);
+    await cacheSet(cacheKey, payload, CACHE_STALE_SECONDS);
+    setMemoryCachedLeaderboard(payload, period);
     return payload;
   } catch (err) {
     console.error("[Leaderboard] Build failed:", err);
-    // Return stale data rather than null when the fresh build fails.
-    const stale = await cacheGet<LeaderboardPayload>(LEADERBOARD_CACHE_KEY);
+    const stale = await cacheGet<LeaderboardPayload>(getLeaderboardCacheKey(period));
     return stale ?? null;
   }
 }
