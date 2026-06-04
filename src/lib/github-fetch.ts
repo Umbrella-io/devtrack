@@ -83,5 +83,11 @@ export async function githubGraphQL<T>(
   }
 
   const json = await res.json();
+
+  if (json.errors?.length) {
+    const msg = json.errors.map((e: { message: string }) => e.message).join("; ");
+    throw new Error(`GitHub GraphQL error: ${msg}`);
+  }
+
   return json.data as T;
 }
