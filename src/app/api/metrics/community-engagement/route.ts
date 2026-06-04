@@ -213,7 +213,7 @@ export async function GET(req: NextRequest) {
     async () => {
       const stats = await fetchUserStats(
         user.id,
-        session.githubLogin,
+        session.githubLogin!,
         session.accessToken!
       );
 

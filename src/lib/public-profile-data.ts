@@ -44,6 +44,7 @@ export interface PublicProfileData {
   achievements: GitHubAchievement[];
   achievementsError?: string | null;
   spotlightRepos?: PinnedRepoDetails[];
+  contributionMilestones?: { label: string; achievedAt: string | null }[];
 }
 
 async function ghFetch(url: string, token?: string): Promise<Response> {

@@ -109,6 +109,7 @@ function calculateStreakFromDates(
   lastCommitDate: string | null;
   totalActiveDays: number;
   freezeDates: string[];
+  streakHistory: { start: string; end: string; length: number }[];
 } {
   // Merge commit dates with streak freeze dates before calculating.
   // A freeze date counts as an "active" day so it doesn't break the streak,
@@ -126,6 +127,7 @@ function calculateStreakFromDates(
       lastCommitDate: null,
       totalActiveDays: 0,
       freezeDates: Array.from(freezeDates),
+      streakHistory: [],
     };
   }
 

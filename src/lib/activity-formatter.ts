@@ -6,7 +6,7 @@
  * only permits the HTTP-verb exports GET/POST/etc. from route files).
  */
 
-export type ActivityType = "push" | "pull_request" | "issue" | "release" | "discussion" | "other";
+export type ActivityType = "push" | "pull_request" | "issue" | "release" | "discussion" | "star" | "review" | "create" | "other";
 
 export interface ActivityItem {
   id: string;
@@ -24,6 +24,7 @@ export interface RawEvent {
   created_at: string;
   repo?: { name?: string };
   payload?: {
+    ref_type?: string;
     ref?: string;
     head?: string;
     action?: string;

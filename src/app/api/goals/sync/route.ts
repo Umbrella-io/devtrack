@@ -196,8 +196,6 @@ export async function POST() {
     }
   }
 
-  return Response.json({ updated: totalUpdated });
-}
   // ── Reviews sync ──────────────────────────────────────────────────────────
   if (reviewGoals.length > 0) {
     const reviewRes = await fetch(
