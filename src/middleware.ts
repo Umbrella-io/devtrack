@@ -5,6 +5,11 @@ import {
   isAuthSensitivePath,
   AUTH_LIMIT,
 } from "@/lib/auth-rate-limit";
+import {
+  isStateChangingMethod,
+  isCsrfExempt,
+  validateCsrf,
+} from "@/lib/csrf";
 
 export const runtime = "nodejs";
 
@@ -201,6 +206,18 @@ export async function middleware(req: NextRequest) {
     });
   }
 
+  const isApiStateChange =
+    pathname.startsWith("/api/") &&
+    isStateChangingMethod(req.method) &&
+    !isCsrfExempt(pathname);
+
+  if (isApiStateChange) {
+    const csrf = validateCsrf(req);
+    if (!csrf.valid) {
+      return NextResponse.json({ error: csrf.reason }, { status: 403 });
+    }
+  }
+
   const protectedRoutes = ["/dashboard", "/settings"];
   const isProtectedRoute = protectedRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
@@ -216,7 +233,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Authentication rate limiting
   if (isAuthSensitivePath(pathname)) {
     const ip = getIp(req);
     const authLimit = isDev ? 1000 : AUTH_LIMIT;

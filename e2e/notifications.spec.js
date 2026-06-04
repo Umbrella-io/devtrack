@@ -46,12 +46,18 @@ function mockMetricResponse(url) {
     return { trend: [] };
   if (url.includes("/api/metrics/inactive-repos"))
     return { repos: [] };
-  if (url.includes("/api/metrics/coding-time"))
+  if (url.includes("/api/metrics/coding-time") || url.includes("/api/wakatime"))
     return { hasData: false, not_configured: true, todaysSeconds: 0, totalSeconds7Days: 0, chartData: [], topLanguage: "", topProject: "" };
   if (url.includes("/api/metrics/coding-activity-insights"))
     return { hourlyCounts: [], mostActiveHour: { hour: 0, count: 0, label: "" }, leastActiveHour: { hour: 0, count: 0, label: "" }, totalActivities: 0, averageDailyCommits: 0, consistencyScore: 0, productivityLevel: "Low", timezone: "UTC" };
   if (url.includes("/api/metrics/contributions"))
     return { data: { "2026-05-16": 3, "2026-05-17": 5, "2026-05-18": 2 } };
+  if (url.includes("/api/metrics/productive-hours"))
+    return { grid: [], peak: null, total: 0, days: 0, timezone: "UTC" };
+  if (url.includes("/api/user/pinned-repos/details"))
+    return { pinnedRepos: [] };
+  if (url.includes("/api/metrics/repo-explorer"))
+    return { repos: [] };
   return {};
 }
 
@@ -142,7 +148,10 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/activity**", "**/api/metrics/commit-time**", "**/api/metrics/personal-records**",
     "**/api/metrics/discussions**", "**/api/metrics/pr-review-trend**", "**/api/metrics/inactive-repos**",
     "**/api/metrics/contributions**", "**/api/metrics/coding-time**", "**/api/metrics/coding-activity-insights**",
-    "**/api/local-coding/stats**",
+    "**/api/local-coding/stats**", "**/api/wakatime**",
+    "**/api/metrics/productive-hours**",
+    "**/api/user/pinned-repos/details**",
+    "**/api/metrics/repo-explorer**",
   ];
 
   for (const pattern of metricRoutes) {

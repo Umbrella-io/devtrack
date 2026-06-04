@@ -277,3 +277,15 @@ CREATE POLICY "message_insert" ON room_messages
   );
 ALTER PUBLICATION supabase_realtime ADD TABLE room_messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE room_members;
+
+-- -------------------------------------------------------
+-- Leaderboard cache: persistent, shared cache for leaderboard API
+-- -------------------------------------------------------
+CREATE TABLE IF NOT EXISTS leaderboard_cache (
+  key text primary key,
+  payload jsonb,
+  generated_at timestamptz,
+  expires_at timestamptz,
+  building_until timestamptz,
+  updated_at timestamptz default now()
+);

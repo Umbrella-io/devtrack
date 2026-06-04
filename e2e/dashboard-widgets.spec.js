@@ -157,6 +157,10 @@ test.beforeEach(async ({ page }) => {
     "**/api/local-coding/stats**",
     "**/api/metrics/coding-time**",
     "**/api/metrics/coding-activity-insights**",
+    "**/api/wakatime**",
+    "**/api/metrics/productive-hours**",
+    "**/api/user/pinned-repos/details**",
+    "**/api/metrics/repo-explorer**",
   ];
 
   for (const pattern of metricRoutes) {
@@ -302,7 +306,7 @@ function mockMetricResponse(url) {
       hasData: false,
     };
   }
-  if (url.includes("/api/metrics/coding-time")) {
+  if (url.includes("/api/metrics/coding-time") || url.includes("/api/wakatime")) {
     return {
       hasData: false,
       not_configured: true,
@@ -323,6 +327,25 @@ function mockMetricResponse(url) {
       consistencyScore: 0,
       productivityLevel: "Low",
       timezone: "UTC",
+    };
+  }
+  if (url.includes("/api/metrics/productive-hours")) {
+    return {
+      grid: [],
+      peak: null,
+      total: 0,
+      days: 0,
+      timezone: "UTC",
+    };
+  }
+  if (url.includes("/api/user/pinned-repos/details")) {
+    return {
+      pinnedRepos: [],
+    };
+  }
+  if (url.includes("/api/metrics/repo-explorer")) {
+    return {
+      repos: [],
     };
   }
   return {};
