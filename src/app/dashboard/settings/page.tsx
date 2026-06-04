@@ -22,6 +22,8 @@ interface UserSettings {
   github_login: string;
   bio: string;
   is_public: boolean;
+  public_since?: string | null;
+  show_weekly_goals?: boolean;
   leaderboard_opt_in: boolean;
   weekly_digest_opt_in: boolean;
   has_wakatime_key?: boolean;
@@ -769,6 +771,67 @@ function SettingsPageContent() {
                 >
                   {copied ? "Copied!" : "Copy"}
                 </button>
+              </div>
+              {settings.public_since && (
+                <p className="mt-3 text-xs text-[var(--muted-foreground)]">
+                  Public since {new Date(settings.public_since).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Weekly Goals on Profile toggle */}
+          {settings.is_public && (
+            <div className="mt-6 pt-6 border-t border-[var(--border)]">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+                    Weekly Goal Progress
+                  </h3>
+                  <p className="text-sm text-[var(--muted-foreground)] mt-1">
+                    Show your weekly goal completion rate on your public profile.
+                  </p>
+                </div>
+                <label className="flex items-center cursor-pointer select-none"><span className="sr-only">Toggle weekly goal visibility</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={settings.show_weekly_goals ?? false}
+                      aria-label="Toggle weekly goal progress on profile"
+                      onChange={async (e) => {
+                        const value = e.target.checked;
+                        setSaving(true);
+                        try {
+                          const res = await fetch("/api/user/settings", {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ show_weekly_goals: value }),
+                          });
+                          if (res.ok) {
+                            const updated = await res.json();
+                            setSettings(updated);
+                          }
+                        } catch (error) {
+                          console.error("Failed to update weekly goals setting:", error);
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                      disabled={saving}
+                      className="sr-only"
+                    />
+                    <div
+                      className={`block w-10 h-6 rounded-full transition-colors ${settings.show_weekly_goals
+                        ? "bg-[var(--accent)]"
+                        : "bg-[var(--control)]"
+                        }`}
+                    />
+                    <div
+                      className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${settings.show_weekly_goals ? "translate-x-4" : ""
+                        }`}
+                    />
+                  </div>
+                </label>
               </div>
             </div>
           )}

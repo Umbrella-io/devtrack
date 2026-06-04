@@ -5,6 +5,8 @@ create table if not exists users (
   webhook_url  text,
   bio          text default '' check (char_length(bio) <= 500),
   is_public    boolean default false,
+  public_since timestamptz,
+  show_weekly_goals boolean default false,
   leaderboard_opt_in boolean default false,
   pinned_repos text[] default '{}',
   created_at   timestamptz default now(),

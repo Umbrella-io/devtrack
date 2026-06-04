@@ -2,7 +2,7 @@ import { calculateStreakFromDates } from "@/lib/streak";
 import type { GitHubAchievement } from "@/lib/github-achievements";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import { fetchPinnedRepoDetails, type PinnedRepoDetails } from "@/lib/pinned-repos";
-import { getUserByUsername } from "@/lib/supabase";
+import { getUserByUsername, supabaseAdmin } from "@/lib/supabase";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -31,6 +31,12 @@ export interface StreakData {
   totalActiveDays: number;
 }
 
+export interface WeeklyGoalProgress {
+  completed: number;
+  total: number;
+  percentage: number;
+}
+
 export interface PublicProfileData {
   username: string;
   bio: string | null;
@@ -44,6 +50,7 @@ export interface PublicProfileData {
   achievements: GitHubAchievement[];
   achievementsError?: string | null;
   spotlightRepos?: PinnedRepoDetails[];
+  weeklyGoalProgress: WeeklyGoalProgress | null;
 }
 
 async function ghFetch(url: string, token?: string): Promise<Response> {
@@ -246,6 +253,33 @@ export async function fetchPublicPullRequests(
   return data.total_count ?? 0;
 }
 
+async function fetchPublicWeeklyGoalProgress(
+  userId: string,
+  showOnProfile: boolean
+): Promise<WeeklyGoalProgress | null> {
+  if (!showOnProfile) return null;
+
+  try {
+    const { data: goals, error } = await supabaseAdmin
+      .from("goals")
+      .select("current, target")
+      .eq("user_id", userId)
+      .eq("recurrence", "weekly");
+
+    if (error || !goals) return null;
+
+    const total = goals.length;
+    if (total === 0) return null;
+
+    const completed = goals.filter((g) => g.current >= g.target).length;
+    const percentage = Math.round((completed / total) * 100);
+
+    return { completed, total, percentage };
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchPublicProfile(
   username: string,
   options: { includeAchievements?: boolean } = {}
@@ -263,6 +297,7 @@ export async function fetchPublicProfile(
     pullRequests,
     achievementsCache,
     spotlight,
+    weeklyGoalProgress,
   ] = await Promise.all([
     fetchPublicGists(user.github_login, githubToken),
     fetchPublicTopRepos(user.github_login, githubToken, 30),
@@ -282,6 +317,7 @@ export async function fetchPublicProfile(
       user.pinned_repos || [],
       githubToken || ""
     ),
+    fetchPublicWeeklyGoalProgress(user.id, user.show_weekly_goals ?? false),
   ]);
 
   return {
@@ -297,5 +333,6 @@ export async function fetchPublicProfile(
     achievements: achievementsCache.achievements,
     achievementsError: achievementsCache.error,
     spotlightRepos: spotlight,
+    weeklyGoalProgress,
   };
 }
