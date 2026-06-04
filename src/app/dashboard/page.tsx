@@ -8,6 +8,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
+import ThrottleBanner from "@/components/ThrottleBanner";
 import CustomizableDashboard from "@/components/dashboard/CustomizableDashboard";
 
 export default async function DashboardPage() {
@@ -19,20 +20,9 @@ export default async function DashboardPage() {
       <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
         <DashboardHeader />
 
-        <div className="mb-6 flex flex-wrap justify-end items-center gap-2">
-          <Link
-            href="/dashboard/settings"
-            className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] hover:opacity-90 transition-opacity min-w-[140px] flex items-center justify-center"
-          >
-            Settings
-          </Link>
-
-          <ExportButton />
-        </div>
-
-        <StreakAtRiskBanner />
-
-        <div className="mt-8 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Quick actions */}
+        <div className="mt-8 mb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Left side actions */}
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <Link
               href="/wrapped"
@@ -40,6 +30,7 @@ export default async function DashboardPage() {
             >
               Year in Code
             </Link>
+
             <Link
               href="/dashboard/settings"
               className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium transition-all hover:bg-white/10 hover:scale-[1.02]"
@@ -51,6 +42,11 @@ export default async function DashboardPage() {
           <div className="w-full sm:w-auto">
             <ExportButton />
           </div>
+        </div>
+
+        <div className="space-y-4 mb-8">
+          <ThrottleBanner />
+          <StreakAtRiskBanner />
         </div>
 
         <section className="mt-8">
@@ -68,9 +64,11 @@ export default async function DashboardPage() {
                   AI Resume Generator
                 </span>
               </div>
+
               <h3 className="text-lg font-bold text-[var(--foreground)]">
                 Generate an ATS-Friendly CV Backed by Your Real Code
               </h3>
+
               <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
                 Analyze your GitHub contributions, merged PRs, and lines of code
                 changed to automatically generate professional bullet points for

@@ -82,9 +82,12 @@ export async function POST() {
       "@/lib/cv/cv-classifier"
     );
 
+    if (!session.githubLogin) {
+      return NextResponse.json({ error: "GitHub login not available" }, { status: 401 });
+    }
     const contributionData = await fetchContributionData(
       session.accessToken as string,
-      session.githubId
+      session.githubLogin
     );
 
     const analysis = classifyContributions(contributionData);
