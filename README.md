@@ -212,6 +212,24 @@ npx playwright install --with-deps chromium
 npm run test:e2e
 ```
 
+### Visual regression tests
+
+DevTrack uses Playwright screenshot assertions for visual regression coverage of the landing page, sign-in page, dashboard header, public profile, and 404 page.
+
+Run visual regression tests locally:
+
+```bash
+npx playwright test -c playwright.visual.config.mjs
+```
+
+Update visual baselines:
+
+```bash
+npx playwright test -c playwright.visual.config.mjs --update-snapshots
+```
+
+Baselines are stored in `tests/snapshots/`. Generate and update baselines in the same Linux/Chromium environment used by CI to avoid OS-specific rendering differences. The visual suite uses a fixed `1280x720` viewport and fails when screenshot differences exceed `0.1%`.
+
 ---
 
 ## Roadmap
