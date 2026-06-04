@@ -16,8 +16,8 @@ jobs:
     steps:
       - uses: actions/first-interaction@v3
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-message: |
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          issue_message: |
             Thanks for opening your first issue on DevTrack! 🎉
 
             A maintainer will take a look shortly. In the meantime:
@@ -26,7 +26,7 @@ jobs:
             - Look for [`good first issue`](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) if you want somewhere to start
 
             If you find DevTrack useful, a ⭐ [star on the repo](https://github.com/Priyanshu-byte-coder/devtrack) is always appreciated — it helps the project reach more developers!
-          pr-message: |
+          pr_message: |
             Thanks for your first PR on DevTrack! 🎉
 
             A maintainer will review it within 48 hours. While you wait:
