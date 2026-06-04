@@ -134,7 +134,7 @@ export async function fetchPublicStreak(
   token?: string
 ): Promise<StreakData> {
   const since = new Date();
-  since.setDate(since.getDate() - 90);
+  since.setDate(since.getDate() - 365);
   const sinceStr = since.toISOString().slice(0, 10);
 
   const res = await ghFetch(
