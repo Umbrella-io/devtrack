@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from "@/lib/supabase";
-import { decryptTokenEdge } from "@/lib/crypto";
+import { decryptTokenEdge } from "@/lib/crypto-edge";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 
 export const runtime = 'edge';
