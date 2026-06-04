@@ -238,33 +238,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const payload = await buildLeaderboard();
-    await cacheSet(LEADERBOARD_CACHE_KEY, payload, CACHE_STALE_SECONDS);
-    setMemoryCachedLeaderboard(payload);
-
-    // Apply optional client-side filters without re-fetching
-    const language = req.nextUrl.searchParams.get("language");
-    const metric = req.nextUrl.searchParams.get("metric") as LeaderboardMetric | null;
-    const period = req.nextUrl.searchParams.get("period"); // weekly | monthly | yearly (informational — data is weekly by default)
-
-    if (language || metric || period) {
-      const filtered = structuredClone(payload);
-      const metricsToFilter = metric ? [metric] : (Object.keys(filtered.leaders) as LeaderboardMetric[]);
-      for (const m of metricsToFilter) {
-        if (!filtered.leaders[m]) continue;
-        // Language filter: keep users whose top language matches (requires language stored on user)
-        if (language) {
-          filtered.leaders[m] = filtered.leaders[m].filter(
-            (entry: LeaderboardEntry) => (entry as any).topLanguage?.toLowerCase() === language.toLowerCase()
-          );
-        }
-        // Re-rank after filtering
-        filtered.leaders[m] = filtered.leaders[m].map((entry: LeaderboardEntry, idx: number) => ({
-          ...entry,
-          rank: idx + 1,
-        }));
-      }
-      return NextResponse.json({ ...filtered, filters: { language, metric, period } });
     const baseLeaderboard = await getLeaderboardData(bypass, { period });
 
     if (!baseLeaderboard) {
