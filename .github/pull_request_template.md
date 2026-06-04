@@ -2,7 +2,7 @@
 
 <!-- Briefly describe the changes made in this PR. -->
 
-Closes #<!-- issue number -->
+Closes <!-- #123 -->
 
 ---
 
@@ -18,16 +18,16 @@ Closes #<!-- issue number -->
 ## Changes Made
 
 <!-- List the changes made in this PR. -->
-- 
-- 
+- <!-- Change 1 -->
+- <!-- Change 2 -->
 
 ---
 
 ## How to Test
 
 <!-- Explain how the reviewer can test these changes locally. -->
-1. 
-2. 
+1. <!-- Step 1 -->
+2. <!-- Step 2 -->
 
 ---
 
