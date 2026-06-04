@@ -239,12 +239,20 @@ export async function GET(req: NextRequest) {
   fromDate.setDate(fromDate.getDate() - days);
   const fromDateStr = fromDate.toISOString().slice(0, 10);
 
-  const { data: sessions } = await supabaseAdmin
+  const { data: sessions, error } = await supabaseAdmin
     .from("local_coding_sessions")
     .select("*")
     .eq("user_id", userId)
     .gte("date", fromDateStr)
     .order("date", { ascending: false });
 
-  return Response.json({ sessions: sessions || [] });
+  if (error) {
+    console.error("Failed to fetch local coding sessions:", error);
+    return Response.json(
+      { error: "Failed to fetch sessions" },
+      { status: 500 }
+    );
+  }
+
+  return Response.json({ sessions: sessions ?? [] });
 }

@@ -5,6 +5,8 @@ create table if not exists users (
   webhook_url  text,
   bio          text default '' check (char_length(bio) <= 500),
   is_public    boolean default false,
+  public_since timestamptz,
+  show_weekly_goals boolean default false,
   leaderboard_opt_in boolean default false,
   pinned_repos text[] default '{}',
   created_at   timestamptz default now(),
@@ -16,6 +18,11 @@ create table if not exists users (
   timezone text default 'UTC',
   last_discord_notification_at timestamptz
 );
+
+CREATE INDEX IF NOT EXISTS users_leaderboard_opt_in_idx
+  ON users(leaderboard_opt_in)
+  WHERE leaderboard_opt_in = true;
+
 create table if not exists goals (
   id           text primary key default gen_random_uuid()::text,
   user_id      text not null references users(id) on delete cascade,
@@ -31,6 +38,32 @@ create table if not exists goals (
   updated_at   timestamptz default now()
 );
 create index if not exists goals_user_period on goals(user_id, period_start);
+create table if not exists goal_history (
+  id           text primary key default gen_random_uuid()::text,
+  goal_id      text not null references goals(id) on delete cascade,
+  user_id      text not null references users(id) on delete cascade,
+  period_start timestamptz not null,
+  period_end   timestamptz not null,
+  target       integer not null,
+  achieved     integer not null default 0,
+  completed    boolean not null default false,
+  created_at   timestamptz not null default now(),
+  unique(goal_id, period_start)
+);
+create index if not exists goal_history_user_period
+  on goal_history(user_id, period_end desc);
+create index if not exists goal_history_goal_period
+  on goal_history(goal_id, period_end desc);
+alter table goal_history enable row level security;
+create policy "goal_history_select_own"
+  on goal_history for select
+  using (user_id = auth.uid()::text);
+create policy "goal_history_insert_own"
+  on goal_history for insert
+  with check (user_id = auth.uid()::text);
+create policy "goal_history_delete_own"
+  on goal_history for delete
+  using (user_id = auth.uid()::text);
 create table if not exists metric_snapshots (
   id            text primary key default gen_random_uuid()::text,
   user_id       text not null references users(id) on delete cascade,
@@ -244,3 +277,15 @@ CREATE POLICY "message_insert" ON room_messages
   );
 ALTER PUBLICATION supabase_realtime ADD TABLE room_messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE room_members;
+
+-- -------------------------------------------------------
+-- Leaderboard cache: persistent, shared cache for leaderboard API
+-- -------------------------------------------------------
+CREATE TABLE IF NOT EXISTS leaderboard_cache (
+  key text primary key,
+  payload jsonb,
+  generated_at timestamptz,
+  expires_at timestamptz,
+  building_until timestamptz,
+  updated_at timestamptz default now()
+);

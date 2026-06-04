@@ -12,7 +12,7 @@ async function fetchUserSettings(userId: string) {
   // Tier 1: All columns
   const res1 = await supabaseAdmin
     .from("users")
-    .select("id, github_login, bio, is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, weekly_digest_opt_in, discord_webhook_url, timezone, webhook_url, discord_muted_until")
+    .select("id, github_login, bio, is_public, public_since, show_weekly_goals, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, weekly_digest_opt_in, discord_webhook_url, timezone, webhook_url, discord_muted_until")
     .eq("id", userId)
     .single();
 
@@ -67,7 +67,7 @@ async function fetchUserSettings(userId: string) {
   // Tier 2: Without bio, for deployments that have not run the latest migration.
   const res2 = await supabaseAdmin
     .from("users")
-    .select("id, github_login, is_public, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, webhook_url")
+      .select("id, github_login, is_public, public_since, show_weekly_goals, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, webhook_url")
     .eq("id", userId)
     .single();
 
@@ -122,7 +122,7 @@ async function fetchUserSettings(userId: string) {
   // Tier 3: Minimal (without pinned_repos and leaderboard_opt_in)
   const res3 = await supabaseAdmin
     .from("users")
-    .select("id, github_login, is_public")
+      .select("id, github_login, is_public, public_since, show_weekly_goals")
     .eq("id", userId)
     .single();
 
@@ -196,6 +196,8 @@ export async function GET(req: NextRequest) {
     github_login: (result.data as any).github_login,
     bio: (result.data as any).bio ?? "",
     is_public: (result.data as any).is_public,
+    public_since: (result.data as any).public_since ?? null,
+    show_weekly_goals: (result.data as any).show_weekly_goals ?? false,
     leaderboard_opt_in: result.leaderboard_opt_in,
     weekly_digest_opt_in: result.weekly_digest_opt_in,
     pinned_repos: result.pinned_repos,
@@ -224,14 +226,14 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  let body: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key?: string; discord_webhook_url?: string | null; timezone?: string; bio?: string; webhook_url?: string | null; discord_muted_until?: string | null };
+  let body: { is_public?: boolean; show_weekly_goals?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key?: string; discord_webhook_url?: string | null; timezone?: string; bio?: string; webhook_url?: string | null; discord_muted_until?: string | null };
   try {
     body = await req.json();
   } catch (e) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { is_public, leaderboard_opt_in, weekly_digest_opt_in, pinned_repos, wakatime_api_key, discord_webhook_url, timezone, bio, webhook_url, discord_muted_until } = body;
+  const { is_public, show_weekly_goals, leaderboard_opt_in, weekly_digest_opt_in, pinned_repos, wakatime_api_key, discord_webhook_url, timezone, bio, webhook_url, discord_muted_until } = body;
 
   // Retrieve supported columns first
   const settingsResult = await fetchUserSettings(user.id);
@@ -241,10 +243,15 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey, hasWeeklyDigestOptIn, hasDiscordSettings, hasBio, hasWebhookUrl, hasDiscordMutedUntil } = settingsResult;
-  const updates: { is_public?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key_encrypted?: string | null; wakatime_api_key_iv?: string | null; discord_webhook_url?: string | null; timezone?: string; bio?: string; webhook_url?: string | null; discord_muted_until?: string | null } = {};
+  const updates: { is_public?: boolean; public_since?: string | null; show_weekly_goals?: boolean; leaderboard_opt_in?: boolean; weekly_digest_opt_in?: boolean; pinned_repos?: string[]; wakatime_api_key_encrypted?: string | null; wakatime_api_key_iv?: string | null; discord_webhook_url?: string | null; timezone?: string; bio?: string; webhook_url?: string | null; discord_muted_until?: string | null } = {};
 
   if (is_public !== undefined && is_public !== null && typeof is_public === "boolean") {
     updates.is_public = is_public;
+    if (is_public) {
+      updates.public_since = new Date().toISOString();
+    } else {
+      updates.public_since = null;
+    }
   }
 
   if (
@@ -258,6 +265,10 @@ export async function PATCH(req: NextRequest) {
       updates.is_public = true;
     }
   }
+  if (show_weekly_goals !== undefined && show_weekly_goals !== null && typeof show_weekly_goals === "boolean") {
+    updates.show_weekly_goals = show_weekly_goals;
+  }
+
   if (hasWebhookUrl && (typeof webhook_url === "string" || webhook_url === null)) {
     updates.webhook_url = webhook_url;
   }
@@ -365,7 +376,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   // Query only supported columns in the returning select statement
-  const selectCols = ["id", "github_login", "is_public"];
+  const selectCols = ["id", "github_login", "is_public", "public_since", "show_weekly_goals"];
   if (hasBio) selectCols.push("bio");
   if (hasLeaderboardOptIn) selectCols.push("leaderboard_opt_in");
   if (hasWeeklyDigestOptIn) selectCols.push("weekly_digest_opt_in");
@@ -411,6 +422,8 @@ export async function PATCH(req: NextRequest) {
     github_login: (updated as any).github_login,
     bio: (updated as any).bio ?? "",
     is_public: (updated as any).is_public,
+    public_since: (updated as any).public_since ?? null,
+    show_weekly_goals: (updated as any).show_weekly_goals ?? false,
     leaderboard_opt_in: (updated as any).leaderboard_opt_in ?? false,
     weekly_digest_opt_in: (updated as any).weekly_digest_opt_in ?? false,
     pinned_repos: (updated as any).pinned_repos || [],

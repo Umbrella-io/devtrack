@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { formatActivity } from "@/lib/activity-formatter";
+import {
+  formatActivity,
+  formatGraphQLDiscussionComment,
+  mergeActivityItems,
+  type GraphQLDiscussionCommentNode,
+  type ActivityItem,
+} from "@/lib/activity-formatter";
 
 describe("formatActivity", () => {
   it("formats PushEvent with 1 commit", () => {
@@ -299,5 +305,170 @@ describe("formatActivity", () => {
     };
     const result = formatActivity(event as any);
     expect(result?.title).toBe("Closed issue #11");
+  });
+});
+
+// ─── formatGraphQLDiscussionComment ──────────────────────────────────────────
+
+describe("formatGraphQLDiscussionComment", () => {
+  const baseNode: GraphQLDiscussionCommentNode = {
+    createdAt: "2024-03-10T14:30:00Z",
+    url: "https://github.com/owner/repo/discussions/42#discussioncomment-999",
+    discussion: {
+      title: "How to contribute",
+      number: 42,
+      url: "https://github.com/owner/repo/discussions/42",
+      repository: { nameWithOwner: "owner/repo" },
+    },
+  };
+
+  it("sets type to discussion", () => {
+    expect(formatGraphQLDiscussionComment(baseNode).type).toBe("discussion");
+  });
+
+  it("builds a human-readable title including the discussion number", () => {
+    expect(formatGraphQLDiscussionComment(baseNode).title).toBe(
+      "Commented on discussion #42"
+    );
+  });
+
+  it("uses the discussion title as subtitle", () => {
+    expect(formatGraphQLDiscussionComment(baseNode).subtitle).toBe(
+      "How to contribute"
+    );
+  });
+
+  it("uses the repository nameWithOwner as repo", () => {
+    expect(formatGraphQLDiscussionComment(baseNode).repo).toBe("owner/repo");
+  });
+
+  it("links to the discussion URL, not the comment-anchor URL", () => {
+    expect(formatGraphQLDiscussionComment(baseNode).url).toBe(
+      "https://github.com/owner/repo/discussions/42"
+    );
+  });
+
+  it("preserves the comment createdAt timestamp", () => {
+    expect(formatGraphQLDiscussionComment(baseNode).createdAt).toBe(
+      "2024-03-10T14:30:00Z"
+    );
+  });
+
+  it("generates a stable id that includes the comment URL", () => {
+    const item = formatGraphQLDiscussionComment(baseNode);
+    expect(item.id).toContain("gql-disc");
+    expect(item.id).toContain(baseNode.url);
+  });
+
+  it("handles a different discussion number correctly", () => {
+    const node: GraphQLDiscussionCommentNode = {
+      ...baseNode,
+      discussion: { ...baseNode.discussion, number: 1 },
+    };
+    expect(formatGraphQLDiscussionComment(node).title).toBe(
+      "Commented on discussion #1"
+    );
+  });
+});
+
+// ─── mergeActivityItems ───────────────────────────────────────────────────────
+
+describe("mergeActivityItems", () => {
+  function makeItem(
+    partial: Partial<ActivityItem> & Pick<ActivityItem, "createdAt">
+  ): ActivityItem {
+    return {
+      id: partial.id ?? `id-${Math.random()}`,
+      type: partial.type ?? "push",
+      createdAt: partial.createdAt,
+      title: partial.title ?? "Title",
+      subtitle: partial.subtitle ?? "subtitle",
+      repo: partial.repo ?? "owner/repo",
+      url: partial.url ?? "https://github.com/owner/repo",
+    };
+  }
+
+  it("returns REST items sorted newest-first when discussion array is empty", () => {
+    const items = [
+      makeItem({ createdAt: "2024-01-01T10:00:00Z" }),
+      makeItem({ createdAt: "2024-01-03T10:00:00Z" }),
+      makeItem({ createdAt: "2024-01-02T10:00:00Z" }),
+    ];
+    const result = mergeActivityItems(items, []);
+    expect(result[0].createdAt).toBe("2024-01-03T10:00:00Z");
+    expect(result[1].createdAt).toBe("2024-01-02T10:00:00Z");
+    expect(result[2].createdAt).toBe("2024-01-01T10:00:00Z");
+  });
+
+  it("interleaves discussion items with REST items in chronological order", () => {
+    const restItems = [
+      makeItem({ id: "r1", createdAt: "2024-01-03T00:00:00Z", type: "push" }),
+      makeItem({ id: "r2", createdAt: "2024-01-01T00:00:00Z", type: "issue" }),
+    ];
+    const discussionItems = [
+      makeItem({ id: "d1", createdAt: "2024-01-02T00:00:00Z", type: "discussion" }),
+    ];
+    const result = mergeActivityItems(restItems, discussionItems);
+    expect(result).toHaveLength(3);
+    expect(result[0].id).toBe("r1");
+    expect(result[1].id).toBe("d1");
+    expect(result[2].id).toBe("r2");
+  });
+
+  it("deduplicates items that share the same type, repo, createdAt, and title", () => {
+    const shared: ActivityItem = {
+      id: "rest-123",
+      type: "discussion",
+      createdAt: "2024-01-15T10:00:00Z",
+      title: "Commented on discussion #42",
+      subtitle: "Some topic",
+      repo: "owner/repo",
+      url: "https://github.com/owner/repo/discussions/42",
+    };
+    const duplicate: ActivityItem = {
+      ...shared,
+      id: "gql-disc-https://github.com/owner/repo/discussions/42#comment-1",
+    };
+    const result = mergeActivityItems([shared], [duplicate]);
+    expect(result).toHaveLength(1);
+  });
+
+  it("keeps distinct items that differ only by title", () => {
+    const a = makeItem({
+      createdAt: "2024-01-15T10:00:00Z",
+      type: "discussion",
+      title: "Commented on discussion #1",
+    });
+    const b = makeItem({
+      createdAt: "2024-01-15T10:00:00Z",
+      type: "discussion",
+      title: "Commented on discussion #2",
+    });
+    const result = mergeActivityItems([a], [b]);
+    expect(result).toHaveLength(2);
+  });
+
+  it("returns only REST items when discussion array is empty", () => {
+    const items = [
+      makeItem({ id: "r1", createdAt: "2024-01-01T00:00:00Z" }),
+      makeItem({ id: "r2", createdAt: "2024-01-02T00:00:00Z" }),
+    ];
+    const result = mergeActivityItems(items, []);
+    expect(result).toHaveLength(2);
+    expect(result.map((i) => i.id)).toContain("r1");
+    expect(result.map((i) => i.id)).toContain("r2");
+  });
+
+  it("returns only discussion items when REST array is empty", () => {
+    const items = [
+      makeItem({ id: "d1", createdAt: "2024-01-01T00:00:00Z", type: "discussion" }),
+    ];
+    const result = mergeActivityItems([], items);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("d1");
+  });
+
+  it("returns an empty array when both inputs are empty", () => {
+    expect(mergeActivityItems([], [])).toEqual([]);
   });
 });

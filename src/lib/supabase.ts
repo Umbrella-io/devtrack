@@ -42,6 +42,8 @@ interface User {
   github_login: string;
   bio: string | null;
   is_public: boolean;
+  public_since: string | null;
+  show_weekly_goals: boolean;
   pinned_repos?: string[];
   created_at: string;
   updated_at: string;
@@ -61,7 +63,7 @@ export async function getUserByUsername(
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
-      .select("id,github_id,github_login,bio,is_public,pinned_repos,created_at,updated_at,is_sponsor")
+      .select("id,github_id,github_login,bio,is_public,public_since,show_weekly_goals,pinned_repos,created_at,updated_at,is_sponsor")
       .ilike("github_login", username)
       .eq("is_public", true)
       .single();
@@ -74,7 +76,7 @@ export async function getUserByUsername(
       if (error.code === "42703") {
         const { data: minimal, error: minError } = await supabaseAdmin
           .from("users")
-          .select("id,github_id,github_login,is_public,created_at,updated_at")
+          .select("id,github_id,github_login,is_public,public_since,show_weekly_goals,created_at,updated_at")
           .ilike("github_login", username)
           .eq("is_public", true)
           .single();
@@ -110,7 +112,7 @@ export async function getUserByGithubId(
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
-      .select("id,github_id,github_login,is_public,created_at,updated_at")
+      .select("id,github_id,github_login,is_public,public_since,show_weekly_goals,created_at,updated_at")
       .eq("github_id", githubId)
       .single();
 
@@ -138,7 +140,7 @@ export async function updateUserPublicFlag(
       .from("users")
       .update({ is_public: isPublic })
       .eq("id", userId)
-      .select("id,github_id,github_login,bio,is_public,created_at,updated_at")
+      .select("id,github_id,github_login,bio,is_public,public_since,show_weekly_goals,created_at,updated_at")
       .single();
 
     if (error) {

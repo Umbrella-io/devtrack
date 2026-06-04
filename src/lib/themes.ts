@@ -1,81 +1,63 @@
-export type Theme =
-    | "light"
-    | "dark"
-    | "dracula"
-    | "nord"
-    | "catppuccin-mocha"
-    | "solarized-dark";
+export type ThemeId =
+  | "classic-dark"
+  | "modern-light-blue"
+  | "nordic-frost"
+  | "cyberpunk-matrix";
 
 export type ThemeMode = "light" | "dark";
 
-export interface ThemeConfig {
-    label: string;
-    mode: ThemeMode;
-    preview: {
-        background: string;
-        accent: string;
-        card: string;
-    };
+export type ThemeDefinition = {
+  id: ThemeId;
+  name: string;
+  description: string;
+  mode: ThemeMode;
+};
+
+export const THEME_STORAGE_KEY = "theme";
+
+export const THEME_OPTIONS: ThemeDefinition[] = [
+  {
+    id: "classic-dark",
+    name: "Classic Dark",
+    description: "OLED black, high contrast",
+    mode: "dark",
+  },
+  {
+    id: "modern-light-blue",
+    name: "Modern Light Blue",
+    description: "Soft light surfaces, pastel blue accents",
+    mode: "light",
+  },
+  {
+    id: "nordic-frost",
+    name: "Nordic Frost",
+    description: "Slate navy with cyan-mint accents",
+    mode: "dark",
+  },
+  {
+    id: "cyberpunk-matrix",
+    name: "Cyberpunk / Matrix",
+    description: "Neon-fueled futuristic contrast",
+    mode: "dark",
+  },
+];
+
+export const DEFAULT_THEME: ThemeId = "classic-dark";
+
+export function isThemeId(value: string | null | undefined): value is ThemeId {
+  return Boolean(value) && THEME_OPTIONS.some((theme) => theme.id === value);
 }
 
-export const themes: Record<Theme, ThemeConfig> = {
-    light: {
-        label: "Default Light",
-        mode: "light",
-        preview: {
-            background: "#ffffff",
-            accent: "#3b82f6",
-            card: "#f8fafc",
-        },
-    },
+export function getThemeDefinition(themeId: ThemeId) {
+  return THEME_OPTIONS.find((theme) => theme.id === themeId) ?? THEME_OPTIONS[0];
+}
 
-    dark: {
-        label: "Default Dark",
-        mode: "dark",
-        preview: {
-            background: "#0f172a",
-            accent: "#60a5fa",
-            card: "#1a2538",
-        },
-    },
+export function isDarkTheme(themeId: ThemeId) {
+  return getThemeDefinition(themeId).mode === "dark";
+}
 
-    dracula: {
-        label: "Dracula",
-        mode: "dark",
-        preview: {
-            background: "#282a36",
-            accent: "#bd93f9",
-            card: "#343746",
-        },
-    },
-
-    nord: {
-        label: "Nord",
-        mode: "dark",
-        preview: {
-            background: "#2e3440",
-            accent: "#88c0d0",
-            card: "#3b4252",
-        },
-    },
-
-    "catppuccin-mocha": {
-        label: "Catppuccin Mocha",
-        mode: "dark",
-        preview: {
-            background: "#1e1e2e",
-            accent: "#f5c2e7",
-            card: "#313244",
-        },
-    },
-
-    "solarized-dark": {
-        label: "Solarized Dark",
-        mode: "dark",
-        preview: {
-            background: "#002b36",
-            accent: "#b58900",
-            card: "#073642",
-        },
-    },
-};
+export function nextThemeId(currentTheme: ThemeId) {
+  const currentIndex = THEME_OPTIONS.findIndex((theme) => theme.id === currentTheme);
+  const fallbackIndex = currentIndex >= 0 ? currentIndex : 0;
+  return THEME_OPTIONS[(fallbackIndex + 1) % THEME_OPTIONS.length].id;
+}
