@@ -28,8 +28,9 @@ const LANGUAGE_REPO_LIMIT = 8;
 
 const memoryRateLimits = new Map<string, RateLimitEntry>();
 
-let _inProcessLeaderboardBuild: Promise<LeaderboardPayload | null> | null = null;
-
+// In-process build promise to dedupe concurrent builds in the same Node
+// process when an external cache/lock (Upstash) is not configured.
+let _inProcessLeaderboardBuild: Promise<import("@/lib/leaderboard").LeaderboardPayload | null> | null = null;
 function getRateLimitKey(req: NextRequest): string {
   return req.ip ?? req.headers.get("x-real-ip") ?? "unknown";
 }
@@ -72,17 +73,26 @@ async function checkRateLimit(
 }
 
 function normalizeLanguage(value: string | null): string | undefined {
-  if (!value) return undefined;
+  if (!value) {
+    return undefined;
+  }
+
   const normalized = value.trim().toLowerCase();
   return normalized || undefined;
 }
 
 function normalizePeriod(value: string | null): LeaderboardPeriod {
-  if (value === "week" || value === "month" || value === "all") return value;
+  if (value === "week" || value === "month" || value === "all") {
+    return value;
+  }
+
   return "all";
 }
 
-function getLanguageCacheKey(filters: { language: string; period: LeaderboardPeriod }): string {
+function getLanguageCacheKey(filters: {
+  language: string;
+  period: LeaderboardPeriod;
+}): string {
   return `${getBaseLeaderboardCacheKey(filters.period)}:${filters.language}`;
 }
 
@@ -92,8 +102,13 @@ function getLeaderboardBuildLockCacheKey(cacheKey: string): string {
 
 async function fetchGitHubJson<T>(path: string): Promise<T | null> {
   const token = process.env.GITHUB_TOKEN;
-  const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   try {
     const res = await fetch(`https://api.github.com${path}`, {
@@ -113,7 +128,10 @@ async function fetchGitHubJson<T>(path: string): Promise<T | null> {
   }
 }
 
-async function fetchLanguageRepositories(username: string, language: string): Promise<string[]> {
+async function fetchLanguageRepositories(
+  username: string,
+  language: string
+): Promise<string[]> {
   const query = new URLSearchParams({
     q: `user:${username} language:${language}`,
     per_page: String(LANGUAGE_REPO_LIMIT),
@@ -121,23 +139,39 @@ async function fetchLanguageRepositories(username: string, language: string): Pr
     order: "desc",
   });
 
-  const data = await fetchGitHubJson<{ items: Array<{ full_name: string }> }>(`/search/repositories?${query.toString()}`);
+  const data = await fetchGitHubJson<{
+    items: Array<{ full_name: string }>;
+  }>(`/search/repositories?${query.toString()}`);
+
   return data?.items.map((repo) => repo.full_name) ?? [];
 }
 
-async function filterLeaderboardByLanguage(leaderboard: LeaderboardPayload, language: string): Promise<LeaderboardPayload> {
+async function filterLeaderboardByLanguage(
+  leaderboard: LeaderboardPayload,
+  language: string
+): Promise<LeaderboardPayload> {
   const normalizedLanguage = language.trim().toLowerCase();
-  if (!normalizedLanguage) return leaderboard;
+  if (!normalizedLanguage) {
+    return leaderboard;
+  }
 
-  const filterEntries = async (entries: LeaderboardPayload["leaders"]["streak"]) => {
+  const filterEntries = async (
+    entries: LeaderboardPayload["leaders"]["streak"]
+  ) => {
     const matches = await Promise.all(
       entries.map(async (entry) => {
-        const repos = await fetchLanguageRepositories(entry.username, normalizedLanguage);
+        const repos = await fetchLanguageRepositories(
+          entry.username,
+          normalizedLanguage
+        );
         return repos.length > 0 ? entry : null;
       })
     );
 
-    return matches.filter((entry): entry is LeaderboardPayload["leaders"]["streak"][number] => entry !== null);
+    return matches.filter(
+      (entry): entry is LeaderboardPayload["leaders"]["streak"][number] =>
+        entry !== null
+    );
   };
 
   return {
@@ -155,10 +189,18 @@ export async function GET(req: NextRequest) {
   const rateLimit = await checkRateLimit(ip);
   const language = normalizeLanguage(req.nextUrl.searchParams.get("lang"));
   const period = normalizePeriod(req.nextUrl.searchParams.get("period"));
-  const cacheKey = language ? getLanguageCacheKey({ language, period }) : getBaseLeaderboardCacheKey(period);
+  const cacheKey = language
+    ? getLanguageCacheKey({ language, period })
+    : getBaseLeaderboardCacheKey(period);
 
   if (!rateLimit.allowed) {
-    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429, headers: { "Retry-After": String(rateLimit.retryAfter) } });
+    return NextResponse.json(
+      { error: "Rate limit exceeded" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfter) },
+      }
+    );
   }
 
   const bypass = isMetricsCacheBypassed(req);
@@ -166,38 +208,72 @@ export async function GET(req: NextRequest) {
   if (!bypass) {
     const cached = await cacheGet<LeaderboardPayload>(cacheKey);
     if (cached && isFresh(cached)) {
-      return NextResponse.json(cached, { headers: { "x-devtrack-leaderboard-cache": "memory" } });
+      return NextResponse.json(cached, {
+        headers: { "x-devtrack-leaderboard-cache": "memory" },
+      });
     }
 
     if (getUpstashConfig()) {
-      const locked = await upstashTryAcquireLock({ key: getLeaderboardBuildLockCacheKey(cacheKey), ttlSeconds: 5 * 60 });
+      const locked = await upstashTryAcquireLock({
+        key: getLeaderboardBuildLockCacheKey(cacheKey),
+        ttlSeconds: 5 * 60,
+      });
+
       if (!locked) {
         if (cached) {
-          return NextResponse.json(cached, { headers: { "x-devtrack-leaderboard-cache": "stale" } });
+          return NextResponse.json(cached, {
+            headers: { "x-devtrack-leaderboard-cache": "stale" },
+          });
         }
 
-        return NextResponse.json({ error: "Leaderboard is rebuilding. Please retry shortly." }, { status: 503, headers: { "Retry-After": "5" } });
+        return NextResponse.json(
+          { error: "Leaderboard is rebuilding. Please retry shortly." },
+          { status: 503, headers: { "Retry-After": "5" } }
+        );
       }
     }
   }
 
   try {
     const baseLeaderboard = await getLeaderboardData(bypass, { period });
+
     if (!baseLeaderboard) {
       const stale = await cacheGet<LeaderboardPayload>(cacheKey);
-      if (stale) return NextResponse.json(stale, { headers: { "x-devtrack-leaderboard-cache": "error-stale" } });
-      return NextResponse.json({ error: "Failed to build leaderboard" }, { status: 500 });
+      if (stale) {
+        return NextResponse.json(stale, {
+          headers: { "x-devtrack-leaderboard-cache": "error-stale" },
+        });
+      }
+
+      return NextResponse.json(
+        { error: "Failed to build leaderboard" },
+        { status: 500 }
+      );
     }
 
-    const payload = language ? await filterLeaderboardByLanguage(baseLeaderboard, language) : baseLeaderboard;
+    const payload = language
+      ? await filterLeaderboardByLanguage(baseLeaderboard, language)
+      : baseLeaderboard;
 
-    if (!bypass) await cacheSet(cacheKey, payload, CACHE_STALE_SECONDS);
+    if (!bypass) {
+      await cacheSet(cacheKey, payload, CACHE_STALE_SECONDS);
+    }
 
     return NextResponse.json(payload);
   } catch (error) {
     console.error("Leaderboard API Error:", error);
+    console.error("Stack:", error instanceof Error ? error.stack : error);
+
     const cached = await cacheGet<LeaderboardPayload>(cacheKey);
-    if (cached) return NextResponse.json(cached, { headers: { "x-devtrack-leaderboard-cache": "error-stale" } });
-    return NextResponse.json({ error: "Failed to build leaderboard" }, { status: 500 });
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { "x-devtrack-leaderboard-cache": "error-stale" },
+      });
+    }
+
+    return NextResponse.json(
+      { error: "Failed to build leaderboard" },
+      { status: 500 }
+    );
   }
 }
