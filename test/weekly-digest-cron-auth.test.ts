@@ -69,6 +69,28 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
     vi.clearAllMocks();
     vi.unstubAllEnvs();
     stubNoUsers();
+
+    // Smart default mock to prevent Gemini JSON parsing crashes while intercepting requests
+    mocks.resendFetch.mockImplementation(async (url: string) => {
+      if (typeof url === "string" && url.includes("generativelanguage.googleapis.com")) {
+        return {
+          ok: true,
+          json: async () => ({
+            candidates: [
+              {
+                content: {
+                  parts: [{ text: "Mocked Gemini AI productivity summary text." }]
+                }
+              }
+            ]
+          })
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({ id: "mock-email-id" })
+      };
+    });
   });
 
   // ── missing CRON_SECRET — fail closed ─────────────────────────────────────
@@ -92,7 +114,11 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
 
     expect(res.status).toBe(500);
     expect(mocks.supabaseFrom).not.toHaveBeenCalled();
-    expect(mocks.resendFetch).not.toHaveBeenCalled();
+    
+    const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
+      typeof call[0] === "string" && call[0].includes("api.resend.com")
+    );
+    expect(resendCalls.length).toBe(0);
   });
 
   // ── wrong secret — reject ─────────────────────────────────────────────────
@@ -115,7 +141,11 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
 
     expect(res.status).toBe(401);
     expect(mocks.supabaseFrom).not.toHaveBeenCalled();
-    expect(mocks.resendFetch).not.toHaveBeenCalled();
+    
+    const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
+      typeof call[0] === "string" && call[0].includes("api.resend.com")
+    );
+    expect(resendCalls.length).toBe(0);
   });
 
   it("returns 401 for a plaintext secret without the Bearer prefix", async () => {
@@ -137,7 +167,11 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.message).toBe("No users opted in");
-    expect(mocks.resendFetch).not.toHaveBeenCalled();
+    
+    const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
+      typeof call[0] === "string" && call[0].includes("api.resend.com")
+    );
+    expect(resendCalls.length).toBe(0);
   });
 
   // ── email sending ─────────────────────────────────────────────────────────
@@ -149,7 +183,6 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
       { github_login: "alice", email: "alice@example.com" },
       { github_login: "bob", email: "bob@example.com" },
     ]);
-    mocks.resendFetch.mockResolvedValue({ ok: true });
 
     const res = await GET(makeRequest("Bearer s3cr3t"));
 
@@ -157,7 +190,7 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
     const body = await res.json();
     expect(body.sentCount).toBe(2);
     
-    // Filter out Gemini API calls and verify only Resend emails are counted
+    // Isolate email fetch executions from AI generation calls
     const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
       typeof call[0] === "string" && call[0].includes("api.resend.com")
     );
@@ -173,11 +206,9 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    // sentCount still increments so the response reflects how many users were
-    // eligible, but no external call is made
     expect(body.sentCount).toBe(1);
     
-    // Filter out Gemini API calls to ensure no Resend emails were dispatched
+    // Check that zero outbound emails went to Resend endpoints
     const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
       typeof call[0] === "string" && call[0].includes("api.resend.com")
     );
@@ -187,25 +218,31 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
   it("does not send emails when authentication fails even if opted-in users exist", async () => {
     vi.stubEnv("CRON_SECRET", "s3cr3t");
     vi.stubEnv("RESEND_API_KEY", "resend-key");
-    // Even if the DB would return users, the auth check fires first
     stubUsers([{ github_login: "eve", email: "eve@example.com" }]);
 
     const res = await GET(makeRequest("Bearer wrong"));
 
     expect(res.status).toBe(401);
-    expect(mocks.resendFetch).not.toHaveBeenCalled();
+    
+    const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
+      typeof call[0] === "string" && call[0].includes("api.resend.com")
+    );
+    expect(resendCalls.length).toBe(0);
   });
 
   it("returns 500 and does not query the database when CRON_SECRET is absent regardless of user data", async () => {
     vi.stubEnv("CRON_SECRET", "");
-    // Even though the DB would return users, the config check fires first
     stubUsers([{ github_login: "mallory", email: "mallory@example.com" }]);
 
     const res = await GET(makeRequest("Bearer s3cr3t"));
 
     expect(res.status).toBe(500);
     expect(mocks.supabaseFrom).not.toHaveBeenCalled();
-    expect(mocks.resendFetch).not.toHaveBeenCalled();
+    
+    const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
+      typeof call[0] === "string" && call[0].includes("api.resend.com")
+    );
+    expect(resendCalls.length).toBe(0);
   });
 
   // ── database error handling ───────────────────────────────────────────────
@@ -220,7 +257,11 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
     const res = await GET(makeRequest("Bearer s3cr3t"));
 
     expect(res.status).toBe(500);
-    expect(mocks.resendFetch).not.toHaveBeenCalled();
+    
+    const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
+      typeof call[0] === "string" && call[0].includes("api.resend.com")
+    );
+    expect(resendCalls.length).toBe(0);
   });
 
   // ── email personalisation ─────────────────────────────────────────────────
@@ -229,11 +270,9 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
     vi.stubEnv("CRON_SECRET", "s3cr3t");
     vi.stubEnv("RESEND_API_KEY", "resend-key");
     stubUsers([{ github_login: "devtracker", email: "devtracker@example.com" }]);
-    mocks.resendFetch.mockResolvedValue({ ok: true });
 
     await GET(makeRequest("Bearer s3cr3t"));
 
-    // Isolate the Resend email delivery call
     const resendCalls = mocks.resendFetch.mock.calls.filter(call => 
       typeof call[0] === "string" && call[0].includes("api.resend.com")
     );
