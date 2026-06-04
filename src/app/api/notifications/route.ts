@@ -54,7 +54,7 @@ export async function GET() {
       .limit(10);
 
     if (error) {
-      console.error("Error fetching notifications:", error);
+      console.error("Failed to fetch notifications:", error);
       return NextResponse.json(
         { error: "Failed to fetch notifications" },
         { status: 500 }
@@ -95,7 +95,7 @@ export async function PATCH() {
       .eq("read", false);
 
     if (error) {
-      console.error("Error updating notification read status:", error);
+      console.error("Failed to mark notifications as read:", error);
       return NextResponse.json(
         { error: "Failed to update notifications" },
         { status: 500 }

@@ -60,43 +60,90 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
     setGreeting(getGreeting(now.getHours()));
     setPrompt(getDailyPrompt(now));
 
+    let localGoal = "";
     try {
-      const storedGoal = window.localStorage.getItem(nextKey)?.trim() ?? "";
-      setGoal(storedGoal);
-      setInputValue(storedGoal);
-      setIsEditing(storedGoal.length === 0);
-    } catch {
+      localGoal = window.localStorage.getItem(nextKey)?.trim() ?? "";
+      setGoal(localGoal);
+      setInputValue(localGoal);
+      setIsEditing(localGoal.length === 0);
+    } catch (e) {
       setGoal("");
       setInputValue("");
       setIsEditing(true);
     }
 
     setIsMounted(true);
+
+    async function fetchGoal() {
+      try {
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        const todayStr = `${year}-${month}-${day}`;
+
+        const res = await fetch(`/api/daily-focus?date=${todayStr}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.goal) {
+            setGoal(data.goal);
+            setInputValue(data.goal);
+            setIsEditing(false);
+            try {
+              window.localStorage.setItem(nextKey, data.goal);
+            } catch (e) {}
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch daily focus", err);
+      }
+    }
+    
+    fetchGoal();
   }, []);
 
-  function handleSave() {
+  async function handleSave() {
     const trimmedGoal = inputValue.trim();
     if (!trimmedGoal || !todayKey) return;
 
     try {
       window.localStorage.setItem(todayKey, trimmedGoal);
-    } catch {}
+    } catch (e) {}
 
     setGoal(trimmedGoal);
     setInputValue(trimmedGoal);
     setIsEditing(false);
+
+    try {
+      const todayStr = todayKey.replace(STORAGE_PREFIX, "");
+      await fetch("/api/daily-focus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal_text: trimmedGoal, date: todayStr }),
+      });
+    } catch (err) {
+      console.error("Failed to save daily focus", err);
+    }
   }
 
-  function handleClear() {
+  async function handleClear() {
     if (!todayKey) return;
 
     try {
       window.localStorage.removeItem(todayKey);
-    } catch {}
+    } catch (e) {}
 
     setGoal("");
     setInputValue("");
     setIsEditing(true);
+
+    try {
+      const todayStr = todayKey.replace(STORAGE_PREFIX, "");
+      await fetch(`/api/daily-focus?date=${todayStr}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Failed to clear daily focus", err);
+    }
   }
 
   function handleEdit() {
@@ -108,13 +155,13 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
     return (
       <section className="surface-card fade-up relative overflow-hidden rounded-3xl border border-[var(--border)] px-5 py-6 shadow-sm md:px-8 md:py-8">
         <div className="space-y-4">
-          <div className="h-6 w-52 rounded bg-[var(--card-muted)] animate-pulse" />
-          <div className="h-4 w-full max-w-xl rounded bg-[var(--card-muted)] animate-pulse" />
+          <div className="h-6 w-52 rounded skeleton-shimmer" />
+          <div className="h-4 w-full max-w-xl rounded skeleton-shimmer" />
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <div className="h-12 rounded-xl bg-[var(--card-muted)] animate-pulse" />
+            <div className="h-12 rounded-xl skeleton-shimmer" />
             <div className="flex gap-3">
-              <div className="h-12 w-24 rounded-xl bg-[var(--card-muted)] animate-pulse" />
-              <div className="h-12 w-24 rounded-xl bg-[var(--card-muted)] animate-pulse" />
+              <div className="h-12 w-24 rounded-xl skeleton-shimmer" />
+              <div className="h-12 w-24 rounded-xl skeleton-shimmer" />
             </div>
           </div>
         </div>
@@ -196,7 +243,7 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
                     value={inputValue}
                     onChange={(event) => setInputValue(event.target.value)}
                     placeholder="Write your main dev goal for today..."
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] shadow-sm transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)] focus:outline-none"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] shadow-sm transition placeholder:text-[var(--muted-foreground)]"
                   />
                 </label>
 
