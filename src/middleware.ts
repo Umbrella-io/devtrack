@@ -1,5 +1,17 @@
-import { getToken } from "next-auth/jwt";
+﻿import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
+import {
+  checkAuthRateLimit,
+  isAuthSensitivePath,
+  AUTH_LIMIT,
+} from "@/lib/auth-rate-limit";
+import {
+  isStateChangingMethod,
+  isCsrfExempt,
+  validateCsrf,
+} from "@/lib/csrf";
+
+export const runtime = "nodejs";
 
 const isDev = process.env.NODE_ENV === "development";
 const WINDOW_SECONDS = 60;
@@ -12,7 +24,7 @@ const WINDOW_SECONDS = 60;
    It is baked into the bundle at build time and cannot change at runtime.
    Therefore, in production builds, isDev is always false and the
    AUTHENTICATED_LIMIT/ANONYMOUS_LIMIT will always be 60/10 respectively.
-   In development (next dev), NODE_ENV is 'development' so the higher
+   In development (next dev), NODE_ENV is "development" so the higher
    limits apply during local testing only.
    ==========================================
    ============================================================ */
@@ -84,12 +96,7 @@ function checkMemoryLimit(
 
   if (active.length >= limit) {
     memoryBuckets.set(key, active);
-    return {
-      allowed: false,
-      limit,
-      remaining: 0,
-      reset,
-    };
+    return { allowed: false, limit, remaining: 0, reset };
   }
 
   active.push(now);
@@ -105,7 +112,6 @@ function checkMemoryLimit(
 
 /**
  * ATOMIC LUA EVALUATION IN UPSTASH REDIS
- * Prunes expired elements, checks window capacity, and commits mutation atomically.
  */
 async function checkUpstashLimit(
   key: string,
@@ -123,7 +129,6 @@ async function checkUpstashLimit(
   const reset = Math.ceil((now + WINDOW_SECONDS * 1000) / 1000);
   const memberToken = `${now}:${Math.random().toString(36).slice(2)}`;
 
-  // Lua script ensures thread-safe atomic execution inside Redis engine
   const luaScript = `
     local key = KEYS[1]
     local cutoff = tonumber(ARGV[1])
@@ -131,10 +136,8 @@ async function checkUpstashLimit(
     local limit = tonumber(ARGV[3])
     local windowSeconds = tonumber(ARGV[4])
     local member = ARGV[5]
-
     redis.call('ZREMRANGEBYSCORE', key, 0, cutoff)
     local currentCount = redis.call('ZCARD', key)
-
     if currentCount >= limit then
       return {0, currentCount}
     else
@@ -154,38 +157,23 @@ async function checkUpstashLimit(
       body: JSON.stringify({
         script: luaScript,
         keys: [key],
-        args: [
-          String(cutoff),
-          String(now),
-          String(limit),
-          String(WINDOW_SECONDS),
-          memberToken,
-        ],
+        args: [String(cutoff), String(now), String(limit), String(WINDOW_SECONDS), memberToken],
       }),
       cache: "no-store",
     });
 
-    if (!response.ok) {
-      return null;
-    }
+    if (!response.ok) { return null; }
 
     const data = await response.json();
-
-    // Upstash REST eval response format: { result: [allowed_flag, current_count] }
     const [allowedFlag, currentCount] = data.result as [number, number];
-    const isAllowed = allowedFlag === 1;
-
     return {
-      allowed: isAllowed,
+      allowed: allowedFlag === 1,
       limit,
       remaining: Math.max(limit - currentCount, 0),
       reset,
     };
   } catch (error) {
-    console.error(
-      "Rate-limiter cloud pipeline failure, falling back to local memory storage:",
-      error
-    );
+    console.error("Rate-limiter cloud pipeline failure, falling back to local memory storage:", error);
     return null;
   }
 }
@@ -200,65 +188,102 @@ async function checkRateLimit(identifier: string, limit: number) {
 }
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-
-  // Protect dashboard and settings routes
   const pathname = req.nextUrl.pathname;
 
-  const protectedRoutes = ["/dashboard", "/settings"];
+  let token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: false,
+    cookieName: "next-auth.session-token",
+  });
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-
-  if (isProtectedRoute && !token) {
-    return NextResponse.redirect(new URL("/", req.url));
+  if (!token) {
+    token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: true,
+      cookieName: "__Secure-next-auth.session-token",
+    });
   }
 
-  const githubId =
-    typeof token?.githubId === "string" ? token.githubId : null;
+  const isApiStateChange =
+    pathname.startsWith("/api/") &&
+    isStateChangingMethod(req.method) &&
+    !isCsrfExempt(pathname);
 
+  if (isApiStateChange) {
+    const csrf = validateCsrf(req);
+    if (!csrf.valid) {
+      return NextResponse.json({ error: csrf.reason }, { status: 403 });
+    }
+  }
+
+  const protectedRoutes = ["/dashboard", "/settings"];
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+
+  if (isProtectedRoute) {
+    if (!token) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
+
+  if (isAuthSensitivePath(pathname)) {
+    const ip = getIp(req);
+    const authLimit = isDev ? 1000 : AUTH_LIMIT;
+    const authResult = checkAuthRateLimit(ip, authLimit);
+
+    if (!authResult.allowed) {
+      console.warn("auth_rate_limit_hit", { ip, path: pathname });
+      const headers = buildHeaders({ ...authResult, limit: authLimit });
+      return NextResponse.json(
+        { error: "Too many authentication attempts. Please try again later." },
+        { status: 429, headers }
+      );
+    }
+
+    return NextResponse.next();
+  }
+
+  const isRateLimitedPath =
+    pathname.startsWith("/api/metrics/") || pathname === "/api/contact";
+
+  if (!isRateLimitedPath) {
+    return NextResponse.next();
+  }
+
+  const githubId = typeof token?.githubId === "string" ? token.githubId : null;
   const identifier = githubId ? `user:${githubId}` : `ip:${getIp(req)}`;
-
-  const limit = githubId
-    ? AUTHENTICATED_LIMIT
-    : ANONYMOUS_LIMIT;
+  const limit = githubId ? AUTHENTICATED_LIMIT : ANONYMOUS_LIMIT;
 
   const result = await checkRateLimit(identifier, limit);
-
   const headers = buildHeaders(result);
 
   if (!result.allowed) {
-    console.warn("metrics_rate_limit_hit", {
-      identifier,
-      path: req.nextUrl.pathname,
-      limit,
+    const isContact = req.nextUrl.pathname.startsWith("/api/contact");
+    console.warn(isContact ? "contact_rate_limit_hit" : "metrics_rate_limit_hit", {
+      identifier, path: req.nextUrl.pathname, limit,
     });
-
     return NextResponse.json(
-      { error: "Too many metrics requests. Please retry shortly." },
+      {
+        error: isContact
+          ? "Too many submissions. Please retry shortly."
+          : "Too many metrics requests. Please retry shortly.",
+      },
       { status: 429, headers }
     );
   }
 
   const response = NextResponse.next();
+  headers.forEach((value, key) => response.headers.set(key, value));
 
-  headers.forEach((value, key) =>
-    response.headers.set(key, value)
-  );
-
-  // Cache GET metric responses in the browser for 5 minutes.
-  // This eliminates redundant function invocations on every dashboard
-  // tab-switch or soft navigation, directly cutting Vercel Active CPU usage.
-  // Responses are private (user-specific) so CDN caching is disabled.
   if (req.method === "GET") {
-    response.headers.set(
-      "Cache-Control",
-      "private, max-age=300, stale-while-revalidate=600"
-    );
+    response.headers.set("Cache-Control", "private, max-age=300, stale-while-revalidate=600");
   }
 
   return response;
@@ -266,9 +291,10 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/dashboard",
     "/dashboard/:path*",
+    "/settings",
     "/settings/:path*",
-    "/api/metrics/:path*",
+    "/api/:path*",
   ],
 };
-

@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = Number(process.env.PORT ?? 3000);
+const PORT = Number(process.env.PORT ?? 3002);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${PORT}`;
+const prepareStandaloneCommand =
+  "node -e \"const fs=require('fs'); fs.cpSync('public','.next/standalone/public',{recursive:true,force:true}); fs.cpSync('.next/static','.next/standalone/.next/static',{recursive:true,force:true});\"";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -22,7 +24,7 @@ export default defineConfig({
   webServer: {
     command:
       process.env.PLAYWRIGHT_SERVER_MODE === "start"
-        ? "node .next/standalone/server.js"
+        ? `${prepareStandaloneCommand} && node .next/standalone/server.js`
         : `node node_modules/next/dist/bin/next dev -H 127.0.0.1 -p ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,

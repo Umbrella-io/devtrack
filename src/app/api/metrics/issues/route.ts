@@ -28,12 +28,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // 1. Core multi-account parameters from main branch (using correct 'request' object)
+  // 1. Core multi-account parameters from main branch
   const accountId = request.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(request);
 
   let token = session.accessToken;
   let userId = session.githubId ?? session.githubLogin;
+  let githubUsername = session.githubLogin; // Track the correct username for the API search string
 
   // 2. Main branch multi-account routing safety checks
   if (accountId && accountId !== session.githubId) {
@@ -48,11 +49,18 @@ export async function GET(request: NextRequest) {
     if (!accountToken) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
+    
+    // Dynamically retrieve the correct account configuration
+    const targetAccount = userRow.accounts?.find((acc: any) => acc.accountId === accountId);
+    if (targetAccount?.username) {
+      githubUsername = targetAccount.username;
+    }
+    
     token = accountToken;
     userId = accountId;
   }
 
-  // 3. Keep your custom metrics logic cache setup using the verified userId
+  // 3. Keep custom metrics logic cache setup using the verified userId
   const key = metricsCacheKey(userId, "issues");
 
   try {
@@ -67,8 +75,8 @@ export async function GET(request: NextRequest) {
         sinceDate.setDate(sinceDate.getDate() - daysLimit);
         const sinceIso = sinceDate.toISOString().split("T")[0];
 
-        // Fetching metrics with the correct multi-account token
-        const githubUrl = `https://api.github.com/search/issues?q=author:${session.githubLogin}+type:issue+created:>=${sinceIso}&per_page=100`;
+        // BUG FIX: Querying with githubUsername instead of hardcoded session profile configuration
+        const githubUrl = `https://api.github.com/search/issues?q=author:${githubUsername}+type:issue+created:>=${sinceIso}&per_page=100`;
 
         const res = await fetch(githubUrl, {
           headers: { Authorization: `Bearer ${token}` },

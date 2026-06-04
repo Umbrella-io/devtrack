@@ -4,25 +4,28 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/copy-standalone-static.js",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "supabase:generate-types": "npx supabase@latest gen types typescript --local > src/types/supabase.ts"
   },
   "dependencies": {
-    "@emnapi/core": "^1.10.0",
-    "@emnapi/runtime": "^1.10.0",
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "@upstash/redis": "^1.38.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
+    "canvas-confetti": "^1.9.4",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "dompurify": "^3.1.6",
     "html-to-image": "^1.11.13",
+    "idb-keyval": "^6.2.4",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.475.0",
@@ -35,16 +38,22 @@
     "recharts": "^2.12.7",
     "rehype-sanitize": "^6.0.0",
     "server-only": "^0.0.1",
-    "sonner": "^2.0.7"
+    "sharp": "^0.34.5",
+    "sonner": "^2.0.7",
+    "swagger-ui-react": "^5.32.6",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/dompurify": "^3.0.5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/swagger-ui-react": "^5.18.0",
     "@typescript-eslint/eslint-plugin": "^8.60.0",
     "@typescript-eslint/parser": "^8.60.0",
     "autoprefixer": "^10.4.19",
@@ -59,6 +68,7 @@
     "vitest": "^1.6.0"
   },
   "engines": {
-  "node": ">=20.0.0"
-  }
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
 }

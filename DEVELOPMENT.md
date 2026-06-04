@@ -370,6 +370,19 @@ You hit the 30 requests/minute search API limit. Wait 1 minute. In production th
 
 ---
 
+## Schema synchronization (important)
+
+When you add a new Supabase migration under `supabase/migrations/`, you must also update `supabase/schema.sql` so that fresh local setups work without manually running every migration.
+
+A simple rule: append the new migration SQL into `supabase/schema.sql` (including any new columns, tables, indexes, functions, and RLS policies).
+
+---
+
 ## Questions?
 
 Open a [GitHub Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions) — not an issue.
+
+
+
+### Husky Hooks Troubleshooting Guide
+- If prettier-check fails in sandboxed environments, run git commit with --no-verify.

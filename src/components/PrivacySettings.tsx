@@ -33,7 +33,7 @@ export default function PrivacySettings() {
       URL.revokeObjectURL(url);
 
       setMessage({ kind: "success", text: "Data exported successfully" });
-    } catch {
+    } catch (e) {
       setMessage({ kind: "error", text: "Failed to export data" });
     } finally {
       setDownloading(false);
@@ -72,7 +72,7 @@ export default function PrivacySettings() {
   }
 
   return (
-    <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="text-xl font-semibold text-[var(--card-foreground)] mb-1">
         Privacy & Data
       </h2>
@@ -104,7 +104,7 @@ export default function PrivacySettings() {
           <button
             onClick={handleExport}
             disabled={downloading}
-            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:opacity-60"
+            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:opacity-60 transition-all duration-200 active:scale-95"
           >
             {downloading ? "Exporting..." : "Export My Data"}
           </button>
@@ -140,15 +140,19 @@ export default function PrivacySettings() {
                   <li>• Linked accounts and integrations</li>
                   <li>• Local coding time data</li>
                 </ul>
-                <p className="text-sm text-[var(--destructive)] mb-3">
+                <label
+                  htmlFor="delete-confirm-input"
+                  className="block text-sm text-[var(--destructive)] mb-3"
+                >
                   Type <strong>DELETE</strong> to confirm:
-                </p>
+                </label>
                 <input
+                  id="delete-confirm-input"
                   type="text"
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   placeholder="Type DELETE to confirm"
-                  className="w-full rounded-lg border border-[var(--destructive)]/30 bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none mb-3"
+                  className="w-full rounded-lg border border-[var(--destructive)]/30 bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] mb-3"
                 />
                 <div className="flex gap-2">
                   <button
