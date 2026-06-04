@@ -110,9 +110,10 @@ export async function POST() {
     const response: CVAnalyzeResponse = { analysis, cached: false };
     return NextResponse.json(response);
   } catch (err) {
-    console.error("CV analyze error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("CV analyze error:", message, err);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: message },
       { status: 500 }
     );
   }
