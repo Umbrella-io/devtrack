@@ -80,8 +80,6 @@ export async function POST() {
   const issuesClosedGoals = activityGoals.filter(g => g.unit === "issues_closed");
   const issuesOpenedGoals = activityGoals.filter(g => g.unit === "issues_opened");
   const openSourcePrGoals = activityGoals.filter(g => g.unit === "open_source_prs");
-  const commitGoals = (activityGoals as ActivityGoal[]).filter(g => g.unit === "commits");
-  const prGoalsToUpdate = (activityGoals as ActivityGoal[]).filter(g => g.unit === "prs");
 
   let totalUpdated = 0;
 

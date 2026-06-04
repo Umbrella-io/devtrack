@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
       const health = computeHealthScore(repoData.name, healthSignals);
 
       // Fetch PR activity for this repo (Issue 1: top repos by PR activity)
-      const prRes = await fetch(`${GITHUB_API}/repos/${repoParam}/pulls?state=all&per_page=1`, {
+      const prRes = await fetch(`${GITHUB_API}/repos/${safeRepoPath}/pulls?state=all&per_page=1`, {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });
