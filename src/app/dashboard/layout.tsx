@@ -29,8 +29,39 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const originalFetch = window.fetch;
+
     window.fetch = async (...args) => {
       const response = await originalFetch(...args);
+
+      if (response.status === 429) {
+        const clonedResponse = response.clone();
+
+        try {
+          const data = await clonedResponse.json();
+
+          if (data?.error === "GITHUB_RATE_LIMITED") {
+            const resetAt = data.rateLimit?.resetAt
+              ? new Date(data.rateLimit.resetAt).toLocaleString(undefined, {
+                  day: "numeric",
+                  month: "short",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+              : null;
+
+            toast.error("GitHub API rate limit reached", {
+              description: resetAt
+                ? `Data will refresh at ${resetAt}.`
+                : "Please try again later.",
+            });
+          }
+        } catch {
+          // Ignore non-JSON 429 responses.
+        }
+
+        return response;
+      }
+
       if (response.status === 401) {
         const cloned = response.clone();
         const sessionStillActive = await hasActiveSession(originalFetch);
@@ -43,8 +74,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         return cloned;
       }
+
       return response;
     };
+
     return () => {
       window.fetch = originalFetch;
     };

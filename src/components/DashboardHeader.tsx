@@ -53,7 +53,10 @@ function isDashboardDataRequest(input: RequestInfo | URL): boolean {
 }
 
 export function DashboardSyncProvider({ children }: { children: ReactNode }) {
-  const [lastSynced, setLastSynced] = useState<Date | null>(null);
+  const [lastSynced, setLastSynced] = useState<Date | null>(() => {
+    const stored = localStorage.getItem("devtrack-last-synced");
+    return stored ? new Date(stored) : null;
+  });
 
   useLayoutEffect(() => {
     const originalFetch = window.fetch;
@@ -62,7 +65,9 @@ export function DashboardSyncProvider({ children }: { children: ReactNode }) {
       const response = await originalFetch(...args);
 
       if (response.ok && isDashboardDataRequest(args[0])) {
-        setLastSynced(new Date());
+        const now = new Date();
+        setLastSynced(now);
+        localStorage.setItem("devtrack-last-synced", now.toISOString());
       }
 
       return response;

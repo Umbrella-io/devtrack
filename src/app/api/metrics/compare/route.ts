@@ -35,9 +35,10 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Invalid GitHub username" }, { status: 400 });
   }
 
-  // Check Supabase cache first (keyed by username + UTC date)
+  // Check Supabase cache first (keyed by username + requester + UTC date)
   const today = toDateStr(new Date());
-  const cacheKey = `${normalizedUsername}::${today}`;
+  const requester = session.githubLogin;
+  const cacheKey = `${normalizedUsername}::${requester}::${today}`;
 
   const { data: cached } = await supabaseAdmin
     .from("comparison_cache")
