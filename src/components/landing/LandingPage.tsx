@@ -695,6 +695,7 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(16px)',
         transition: `all 0.5s ease ${delay}ms`,
+        textAlign: 'center',
       }}
     >
       <div style={{
@@ -724,6 +725,9 @@ function StatsSection({ stats }: { stats: RepoStats }) {
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
         gap: 24, borderTop: `1px solid ${BORDER}`,
+      maxWidth: 1120,
+      margin: '0 auto',
+      justifyItems: 'center',
     }}>
       {items.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />

@@ -132,6 +132,8 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   output: "standalone",
+  // Allow local network host in dev to access Next dev resources (fonts, HMR)
+  allowedDevOrigins: process.env.ALLOWED_DEV_ORIGINS ? process.env.ALLOWED_DEV_ORIGINS.split(',') : ['172.22.224.1'],
   images: {
     remotePatterns: [
       {

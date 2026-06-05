@@ -46,6 +46,19 @@ async function fetchRepoStats(): Promise<RepoStats> {
   }
 
   const token = process.env.GITHUB_TOKEN;
+  // If running locally in development without a token, return seeded demo stats
+  if (process.env.NODE_ENV === 'development' && !token) {
+    return {
+      stars: 106,
+      forks: 20,
+      openIssues: 12,
+      contributorCount: 100,
+      goodFirstIssues: 74,
+      contributors: [],
+      totalCommits: 834,
+      mergedPRs: 685,
+    } as RepoStats;
+  }
   const GH_HEADERS: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
