@@ -68,6 +68,46 @@ export async function GET(request: Request) {
         } else {
           errorCount++;
           console.error("Failed to send digest email:", result.reason);
+    // 3. For each user, send the email
+    // Minimal template logic to prevent timeouts and keep implementation clean
+    let sentCount = 0;
+    let failedCount = 0;
+    
+    for (const user of users) {
+      if (!user.email) continue;
+      
+      const htmlBody = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Your Weekly DevTrack Digest</h2>
+          <p>Hi ${user.github_login},</p>
+          <p>Here is your coding activity summary for the past week!</p>
+          <p><strong>Keep up the great work!</strong></p>
+          <hr style="border: 1px solid #eee; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #666;">
+            You are receiving this because you opted into the Weekly Email Digest in your DevTrack settings.
+          </p>
+        </div>
+      `;
+
+      if (process.env.RESEND_API_KEY) {
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: "DevTrack <digest@devtrack.com>",
+            to: user.email,
+            subject: "Your Weekly DevTrack Digest",
+            html: htmlBody,
+          }),
+        });
+
+        if (!res.ok) {
+          failedCount++;
+          console.error(`Failed to send weekly digest to ${user.email}: ${res.status}`);
+          continue;
         }
       }
 
@@ -75,6 +115,8 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ success: true, sentCount, errorCount });
+
+    return NextResponse.json({ success: true, sentCount, failedCount });
   } catch (err) {
     console.error("Cron weekly-digest failed:", err);
     return NextResponse.json(

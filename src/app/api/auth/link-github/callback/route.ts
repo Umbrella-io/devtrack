@@ -93,8 +93,9 @@ export async function GET(req: NextRequest) {
   });
 
   if (!profileResponse.ok) {
+    const errorCode = profileResponse.status === 403 ? "rate_limited" : "github_profile_failed";
     return NextResponse.redirect(
-      buildSettingsRedirect("error", "github_profile_failed"),
+      buildSettingsRedirect("error", errorCode),
       { status: 302 }
     );
   }
