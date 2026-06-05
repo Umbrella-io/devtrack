@@ -48,8 +48,8 @@ export default function AppNavbar() {
   }, []);
 
   const isAuthenticated = status === "authenticated" && Boolean(session);
-  const isDashboardRoute = pathname.startsWith("/dashboard");
   const isPublicProfileRoute = pathname.startsWith("/u/");
+  const isDashboardRoute = pathname.startsWith("/dashboard");
   const identityLabel =
     session?.githubLogin ?? session?.user?.name ?? session?.user?.email ?? "user";
 
@@ -58,9 +58,6 @@ export default function AppNavbar() {
       return [
         { href: "/dashboard", label: t("overview") },
         { href: "/dashboard/career-intelligence", label: t("resume") },
-        { href: "/dashboard#streaks", label: t("activity") },
-        { href: "/dashboard#pull-requests", label: t("analytics") },
-        { href: "/dashboard#goals", label: t("goals") },
         { href: "/leaderboard", label: t("leaderboard") },
       ];
     }
@@ -135,31 +132,33 @@ export default function AppNavbar() {
           {/* Show ThemeToggle in navbar except on dashboard, where DashboardHeader provides it */}
           {!isDashboardRoute && <ThemeToggle />}
           {isAuthenticated ? (
-            <div className="flex items-center gap-4 border-l border-white/10 pl-4">
-              <Link 
-                href="/dashboard/settings"
-                className="text-[12px] font-medium text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
-                style={{ fontFamily: MONO }}
-              >
-                ⚙️ {t("settings")}
-              </Link>
-              <div className="flex items-center gap-3">
-                <span
-                  className="hidden max-w-[140px] truncate text-[12px] font-medium text-[var(--foreground)] lg:block"
+            !isDashboardRoute && (
+              <div className="flex items-center gap-4 border-l border-white/10 pl-4">
+                <Link
+                  href="/dashboard/settings"
+                  className="text-[12px] font-medium text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
                   style={{ fontFamily: MONO }}
                 >
-                  @{identityLabel}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] font-medium text-red-400 transition-all hover:bg-red-500/20 hover:text-red-300"
-                  style={{ fontFamily: MONO }}
-                >
-                  {t("sign_out")}
-                </button>
+                  ⚙️ {t("settings")}
+                </Link>
+                <div className="flex items-center gap-3">
+                  <span
+                    className="hidden max-w-[140px] truncate text-[12px] font-medium text-[var(--foreground)] lg:block"
+                    style={{ fontFamily: MONO }}
+                  >
+                    @{identityLabel}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] font-medium text-red-400 transition-all hover:bg-red-500/20 hover:text-red-300"
+                    style={{ fontFamily: MONO }}
+                  >
+                    {t("sign_out")}
+                  </button>
+                </div>
               </div>
-            </div>
+            )
           ) : (
             !isPublicProfileRoute && (
               <Link
@@ -213,7 +212,7 @@ export default function AppNavbar() {
               );
             })}
             
-            {isAuthenticated && (
+            {isAuthenticated && !isDashboardRoute && (
               <Link
                 href="/dashboard/settings"
                 className="rounded-xl px-4 py-3.5 text-sm font-medium text-[var(--muted-foreground)] hover:bg-white/5 transition-colors"
@@ -229,20 +228,32 @@ export default function AppNavbar() {
                   <ThemeToggle />
                 </div>
               )}
-              {isAuthenticated && (
-                <div className="flex flex-col gap-3">
-                  <p className="px-4 py-2 text-[12px] text-[var(--muted-foreground)]" style={{ fontFamily: MONO }}>
-                    {t("logged_in_as")} <span className="font-semibold text-[var(--foreground)]">@{identityLabel}</span>
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => signOut({ callbackUrl: "/" })}
-                    className="w-full rounded-xl bg-red-500/10 px-4 py-3.5 text-left text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
-                    style={{ fontFamily: MONO }}
+              {isAuthenticated ? (
+                !isDashboardRoute && (
+                  <div className="flex flex-col gap-3">
+                    <p className="px-4 py-2 text-[12px] text-[var(--muted-foreground)]" style={{ fontFamily: MONO }}>
+                      {t("logged_in_as")} <span className="font-semibold text-[var(--foreground)]">@{identityLabel}</span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                      className="w-full rounded-xl bg-red-500/10 px-4 py-3.5 text-left text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
+                      style={{ fontFamily: MONO }}
+                    >
+                      {t("sign_out")}
+                    </button>
+                  </div>
+                )
+              ) : (
+                !isPublicProfileRoute && (
+                  <Link
+                    href="/api/auth/signin/github?callbackUrl=/dashboard"
+                    className="block w-full rounded-xl px-4 py-3.5 text-center text-sm font-semibold text-[var(--accent-foreground)] shadow-lg"
+                    style={{ background: "var(--accent)", fontFamily: MONO }}
                   >
-                    {t("sign_out")}
-                  </button>
-                </div>
+                    {t("sign_in")}
+                  </Link>
+                )
               )}
             </div>
           </div>

@@ -75,3 +75,39 @@ DevTrack uses Supabase with Row Level Security on all user-data tables.
 ### GSSoC API Logging Redaction Standards
 - Never log authorization tokens or passwords.
 - Redact sensitive data before production logs persist.
+
+---
+
+### GSSoC Vulnerability Reporting Escalation Guide
+
+#### Reporting Flow
+1. **Initial Report**: Open a [Security Advisory](https://github.com/Priyanshu-byte-coder/devtrack/security/advisories/new) for any security vulnerability
+2. **Acknowledgment**: Maintainers acknowledge within 48 hours
+3. **Assessment**: Issue is triaged as Critical, High, Medium, or Low severity
+4. **Fix Timeline**: Critical issues are patched within 72 hours; High within 7 days; Medium within 14 days
+5. **Disclosure**: Coordinated public disclosure after fix is deployed
+
+#### Escalation Paths
+- **No response in 48h**: Tag `@Priyanshu-byte-coder` on the advisory thread
+- **No response in 72h**: Email **doshipriyanshu3@gmail.com** with advisory reference
+- **Disagreement on severity**: Request re-assessment with supporting evidence in the advisory thread
+
+#### GSSoC Contributor Responsibilities
+- Report security issues privately via Security Advisories (never public issues)
+- Include reproduction steps and impact assessment
+- Allow maintainers reasonable time to fix before public disclosure
+- Follow responsible disclosure practices
+
+#### Types of Issues to Report
+- Authentication bypass or session vulnerabilities
+- OAuth token leakage or insufficient revocation
+- Cross-user data exposure
+- SQL injection or database access issues
+- SSRF via GitHub API proxy
+- Missing security headers
+- Rate limit exhaustion vectors
+
+#### Non-Reportable (Out of Scope)
+- Physical device access required
+- Social engineering attacks
+- Volumetric DoS against free-tier infrastructure
