@@ -72,23 +72,27 @@ export async function POST(request: Request) {
       );
     }
 
-    /* ── 4. Load cached analysis ─────────────────────────────── */
-    const { data: analysisRow } = await supabaseAdmin
-      .from("cv_analyses")
-      .select("analysis_data")
-      .eq("user_id", userId)
-      .order("generated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    /* ── 4. Load analysis (from request body or Supabase cache) ── */
+    let analysis: ContributionClassification | null = body.analysis ?? null;
 
-    if (!analysisRow) {
-      return NextResponse.json(
-        { error: "No analysis found. Run /api/cv/analyze first." },
-        { status: 404 }
-      );
+    if (!analysis) {
+      const { data: analysisRow } = await supabaseAdmin
+        .from("cv_analyses")
+        .select("analysis_data")
+        .eq("user_id", userId)
+        .order("generated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!analysisRow) {
+        return NextResponse.json(
+          { error: "No analysis found. Run /api/cv/analyze first." },
+          { status: 404 }
+        );
+      }
+
+      analysis = analysisRow.analysis_data as ContributionClassification;
     }
-
-    const analysis = analysisRow.analysis_data as ContributionClassification;
 
     /* ── 5. Check for cached generation for this role ────────── */
     const { data: cachedContent } = await supabaseAdmin

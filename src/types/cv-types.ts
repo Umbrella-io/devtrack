@@ -200,6 +200,7 @@ export interface CVAnalyzeResponse {
 
 export interface CVGenerateRequest {
   role: TargetRole;
+  analysis?: ContributionClassification;
 }
 
 export interface CVGenerateResponse {
