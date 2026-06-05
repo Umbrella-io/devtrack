@@ -81,13 +81,15 @@ export async function PATCH(
     updates.recurrence = recurrence;
   }
 
-  if (current === undefined || typeof current !== "number" || !Number.isInteger(current) || current < 0) {
-    return Response.json(
-      { error: "current must be a non-negative integer" },
-      { status: 400 }
-    );
+  if (current !== undefined) {
+    if (typeof current !== "number" || !Number.isInteger(current) || current < 0) {
+      return Response.json(
+        { error: "current must be a non-negative integer" },
+        { status: 400 }
+      );
+    }
+    updates.current = current;
   }
-  updates.current = current;
 
   const { data: existingGoal } = await supabaseAdmin
     .from("goals")
