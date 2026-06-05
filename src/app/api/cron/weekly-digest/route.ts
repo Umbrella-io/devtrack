@@ -75,6 +75,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ success: true, sentCount, errorCount });
+
   } catch (err) {
     console.error("Cron weekly-digest failed:", err);
     return NextResponse.json(
