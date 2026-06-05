@@ -15,7 +15,11 @@ const MAX_CONNECTIONS_PER_USER = 4;
 // How often each connection polls the database. 15 s is fast enough for the
 // data types involved (goal sync timestamps and unread notification counts)
 // while being 7.5x cheaper per connection than the previous 2 s interval.
-const POLL_INTERVAL_MS = 15_000;
+const POLL_INTERVAL_MS = 60_000;
+
+// Keep SSE connections bounded even if a proxy or client fails to send an
+// abort signal. EventSource will reconnect automatically when the stream ends.
+const MAX_CONNECTION_DURATION_MS = 5 * 60 * 1000;
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -51,14 +55,59 @@ export async function GET(req: NextRequest) {
 
   let lastCheckedSyncedAt: string | null = null;
   let lastCheckedUnreadCount: number | null = null;
-
-  let isClosed = false;
+  let cleanupStream: (() => void) | null = null;
 
   const stream = new ReadableStream({
     start(controller) {
-      const checkData = async () => {
-        if (isClosed) return;
+      let isClosed = false;
+      let interval: ReturnType<typeof setInterval>;
+      let maxDurationTimeout: ReturnType<typeof setTimeout>;
+
+      const releaseConnectionSlot = () => {
+        const remaining = activeStreamConnections.get(userId) ?? 1;
+        if (remaining <= 1) {
+          activeStreamConnections.delete(userId);
+        } else {
+          activeStreamConnections.set(userId, remaining - 1);
+        }
+      };
+
+      const closeStream = () => {
+        if (isClosed) {
+          return;
+        }
+
+        isClosed = true;
+        clearInterval(interval);
+        clearTimeout(maxDurationTimeout);
+
         try {
+          controller.close();
+        } catch {
+          // The stream may already be closed/canceled by the client.
+        }
+
+        releaseConnectionSlot();
+      };
+
+      const safeEnqueue = (message: string) => {
+        if (isClosed) {
+          return;
+        }
+
+        try {
+          controller.enqueue(message);
+        } catch {
+          closeStream();
+        }
+      };
+
+      const checkData = async () => {
+        try {
+          if (isClosed) {
+            return;
+          }
+
           const { data: goals } = await supabaseAdmin
             .from("goals")
             .select("last_synced_at")
@@ -92,8 +141,8 @@ export async function GET(req: NextRequest) {
             lastCheckedUnreadCount = currentUnreadCount;
           }
 
-          if (hasChanges && !isClosed) {
-            controller.enqueue(`data: ${JSON.stringify(payload)}\n\n`);
+          if (hasChanges) {
+            safeEnqueue(`data: ${JSON.stringify(payload)}\n\n`);
           }
         } catch (error) {
           console.error("SSE Polling Error:", error);
@@ -103,30 +152,27 @@ export async function GET(req: NextRequest) {
       // Register the interval and abort handler synchronously so they are
       // guaranteed to be in place before any async work begins. This prevents
       // a race where abort() fires before the listener is attached.
-      const interval = setInterval(() => {
-        if (!isClosed) checkData();
+      interval = setInterval(() => {
+        checkData();
       }, POLL_INTERVAL_MS);
 
-      req.signal.addEventListener("abort", () => {
-        isClosed = true;
-        clearInterval(interval);
-        try {
-          controller.close();
-        } catch (e) {
-          // ignore already closed
-        }
+      maxDurationTimeout = setTimeout(
+        closeStream,
+        MAX_CONNECTION_DURATION_MS
+      );
 
-        // Decrement the connection counter so the slot becomes available again.
-        const remaining = activeStreamConnections.get(userId) ?? 1;
-        if (remaining <= 1) {
-          activeStreamConnections.delete(userId);
-        } else {
-          activeStreamConnections.set(userId, remaining - 1);
-        }
-      });
+      cleanupStream = closeStream;
+      if (req.signal.aborted) {
+        closeStream();
+      } else {
+        req.signal.addEventListener("abort", closeStream, { once: true });
+      }
 
       // Kick off the first poll immediately (non-blocking).
       checkData();
+    },
+    cancel() {
+      cleanupStream?.();
     },
   });
 

@@ -470,7 +470,7 @@ export default function ContributionHeatmap({
       </div>
 
       {loading ? (
-        <div className="h-[180px] animate-pulse rounded-lg bg-[var(--card-muted)]" />
+        <div className="h-[300px] animate-pulse rounded-lg bg-[var(--card-muted)]" />
       ) : error ? (
         <div className="flex h-[180px] items-center rounded-lg border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-4">
           <p className="text-sm text-[var(--destructive)]">{error} Please try refreshing.</p>
@@ -550,7 +550,7 @@ export default function ContributionHeatmap({
                       aria-label={isFuture ? `Future date on ${cell.dateKey}` : accessibleLabel}
                       disabled={isFuture}
                       onClick={() => !isFuture && setSelectedDate(cell.dateKey)}
-                      className={`group relative z-0 h-4 w-4 rounded-[3px] border transition-transform hover:z-20 hover:scale-110 focus:z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--heatmap-focus-ring)] disabled:cursor-default disabled:opacity-20 ${
+                      className={`group relative z-0 h-4 w-4 rounded-[3px] border transition-transform hover:z-20 hover:scale-110 focus:z-20 focus-visible:ring-2 focus-visible:ring-[var(--heatmap-focus-ring)] disabled:cursor-default disabled:opacity-20 ${
                         cell.inRange ? "opacity-100" : "opacity-40"
                       }`}
                       style={{

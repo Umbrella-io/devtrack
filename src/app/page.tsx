@@ -29,6 +29,20 @@ const jetbrains = JetBrains_Mono({
 });
 
 async function fetchRepoStats(): Promise<RepoStats> {
+  if (
+    process.env.NEXTAUTH_SECRET === "test-nextauth-secret-for-playwright-tests" ||
+    process.env.PLAYWRIGHT_TEST === "true"
+  ) {
+    return {
+      stars: 10,
+      forks: 5,
+      openIssues: 2,
+      contributorCount: 3,
+      goodFirstIssues: 1,
+      contributors: [],
+    };
+  }
+
   const token = process.env.GITHUB_TOKEN;
   const GH_HEADERS: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",

@@ -59,16 +59,37 @@ export default function LocalCodingTime() {
   }, [days]);
 
   if (loading) {
-    return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-        <div className="h-5 w-40 skeleton-shimmer rounded mb-4" />
-        <div className="space-y-2">
-          <div className="h-4 skeleton-shimmer rounded w-3/4" />
-          <div className="h-4 skeleton-shimmer rounded w-1/2" />
-        </div>
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div className="h-6 w-40 rounded bg-[var(--card-muted)] animate-pulse" />
+        <div className="h-8 w-28 rounded bg-[var(--card-muted)] animate-pulse" />
       </div>
-    );
-  }
+
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="h-16 rounded bg-[var(--card-muted)] animate-pulse"
+          />
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        {Array.from({ length: 14 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-4 rounded bg-[var(--card-muted)] animate-pulse"
+          />
+        ))}
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-[var(--border)]">
+        <div className="mx-auto h-3 w-52 rounded bg-[var(--card-muted)] animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
   if (!data || !data.hasData) {
     return (

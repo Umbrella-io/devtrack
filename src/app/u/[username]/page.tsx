@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import ProfileThemeWrapper from "@/components/ProfileThemeWrapper";
 import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -8,7 +9,6 @@ import BadgeSection from "@/components/BadgeSection";
 import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
 import ShareProfileSection from "@/components/ShareProfileSection";
-import ThemeToggle from "@/components/ThemeToggle";
 import SponsorBadge from "@/components/SponsorBadge";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
 import CopyLinkButton from "@/components/CopyLinkButton";
@@ -162,6 +162,7 @@ export default async function PublicProfilePage({
 
   if (!profile) {
     return (
+      <ProfileThemeWrapper>
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors flex items-center justify-center">
         <div className="surface-card max-w-md rounded-2xl p-8 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
@@ -188,6 +189,7 @@ export default async function PublicProfilePage({
           </Link>
         </div>
       </div>
+      </ProfileThemeWrapper>
     );
   }
 
@@ -210,6 +212,7 @@ export default async function PublicProfilePage({
   )}`;
 
   return (
+    <ProfileThemeWrapper>
     <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -275,7 +278,6 @@ export default async function PublicProfilePage({
         <div className="flex items-center gap-3">
         {/* Download stats card button — client component */}
         <div className="flex flex-wrap items-center gap-3">
-          <ThemeToggle />
           <StatsCard
             username={profile.username}
             avatarUrl={avatarUrl}
@@ -316,6 +318,13 @@ export default async function PublicProfilePage({
         </div>
       ) : null}
 
+      {/* Weekly Goal Progress */}
+      {profile.weeklyGoalProgress && (
+        <div className="mt-6">
+          <PublicWeeklyGoalProgress progress={profile.weeklyGoalProgress} />
+        </div>
+      )}
+
       {/* Row 2: Top repos */}
       <div className="mt-6">
         <PublicTopRepos repos={profile.repos} />
@@ -334,6 +343,7 @@ export default async function PublicProfilePage({
         <BadgeSection username={profile.username} />
       </div>
     </div>
+    </ProfileThemeWrapper>
   );
 }
 
@@ -460,6 +470,40 @@ function PublicStreakTracker({ streak }: { streak: any }) {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function PublicWeeklyGoalProgress({
+  progress,
+}: {
+  progress: { completed: number; total: number; percentage: number };
+}) {
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
+        Weekly Goal Progress
+      </h2>
+      <div className="flex items-center gap-4">
+        <div className="relative h-20 w-20">
+          <svg className="h-20 w-20 -rotate-90" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="30" fill="none" stroke="var(--control)" strokeWidth="6" />
+            <circle
+              cx="36" cy="36" r="30"
+              fill="none" stroke="var(--accent)" strokeWidth="6"
+              strokeDasharray={2 * Math.PI * 30}
+              strokeDashoffset={2 * Math.PI * 30 * (1 - progress.percentage / 100)}
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[var(--card-foreground)]">
+            {progress.percentage}%
+          </span>
+        </div>
+        <div className="text-sm text-[var(--muted-foreground)]">
+          {progress.completed} of {progress.total} weekly goals completed
+        </div>
       </div>
     </div>
   );

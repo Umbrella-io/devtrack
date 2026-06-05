@@ -194,8 +194,8 @@ export default function PRMetrics() {
             Stale after
             <select
               value={staleThresholdDays}
-              onChange={(e) => setStaleThresholdDays(Number(e.target.value))}
-              className="rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--foreground)] outline-none"
+              onChange={(event) => setStaleThresholdDays(Number(event.target.value))}
+              className="rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--foreground)] transition-colors"
             >
               {[7, 14, 30].map((days) => (
                 <option key={days} value={days}>{days} days</option>
@@ -206,12 +206,28 @@ export default function PRMetrics() {
       </div>
 
       {loading ? (
-        <div className="space-y-4">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="space-y-4"
+        >
+          <span className="sr-only">Loading PR analytics</span>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse" />
+              <div
+                key={i}
+                aria-hidden="true"
+                className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
+              />
             ))}
           </div>
+          <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
+          <div
+            className="h-[220px] rounded-lg bg-[var(--card-muted)] animate-pulse"
+            aria-hidden="true"
+          />
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">

@@ -39,8 +39,7 @@ export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] 
             value={query} 
             onChange={(e) => { setQuery(e.target.value); setPage(1); }} 
             placeholder="Search repos..." 
-            className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] outline-none focus:border-[var(--accent)] transition-all flex-1 min-w-[200px]" 
-          />
+            className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] transition-all flex-1 min-w-[200px]"           />
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <select 
               value={languageFilter} 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { Trophy, Zap, Flame, Calendar, Star } from "lucide-react";
 
@@ -167,6 +167,48 @@ export default function PersonalRecords() {
   useEffect(() => {
     fetchRecords();
   }, [fetchRecords]);
+
+  useEffect(() => {
+    if (loading || error || !streak || !contributions) return;
+
+    const currentRecords = {
+      longest_streak: streak.longest ?? 0,
+      best_day: getBestDay(contributions.data ?? {}).count,
+      best_week: getBestWeek(contributions.data ?? {}).count,
+      best_month: getBestMonth(contributions.data ?? {}).count,
+      busiest_repo: getBusiestRepo(repos).count,
+    };
+
+    let triggerConfetti = false;
+    const storagePrefix = `devtrack_records_${selectedAccount ?? "default"}_`;
+
+    for (const [key, currentValue] of Object.entries(currentRecords)) {
+      const storageKey = `${storagePrefix}${key}`;
+      const prevValueStr = sessionStorage.getItem(storageKey);
+
+      if (prevValueStr === null) {
+        sessionStorage.setItem(storageKey, String(currentValue));
+      } else {
+        const prevValue = Number(prevValueStr);
+        if (currentValue > prevValue) {
+          triggerConfetti = true;
+          sessionStorage.setItem(storageKey, String(currentValue));
+        } else if (currentValue < prevValue) {
+          sessionStorage.setItem(storageKey, String(currentValue));
+        }
+      }
+    }
+
+    if (triggerConfetti) {
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!prefersReducedMotion) {
+        import("canvas-confetti").then((module) => {
+          const confetti = module.default;
+          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        });
+      }
+    }
+  }, [loading, error, streak, contributions, repos, selectedAccount]);
   const bestDay = getBestDay(contributions?.data ?? {});
   const bestWeek = getBestWeek(contributions?.data ?? {});
   const bestMonth = getBestMonth(contributions?.data ?? {});

@@ -58,7 +58,7 @@ const RepoItem = memo(({
             type="button"
             onClick={() => onSelectActivity(repo.name)}
             className="truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] text-left font-medium"
-            title={repo.description || `View activity for ${repo.name}`}
+            title={[repo.name,repo.description ?? "No description",repo.languages?.[0] ? `Language: ${repo.languages[0].name}` : null,].filter(Boolean).join("\n")}
           >
             <span className="mr-1 text-[var(--muted-foreground)] font-normal">#{idx + 1}</span>
             {shortName}
@@ -421,7 +421,7 @@ export default function TopRepos() {
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
           aria-label="Select time range for top repositories"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus-visible:outline-none focus:border-[var(--accent)]"
+          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)]"
         >
           <option value={7}>Last 7d</option>
           <option value={30}>Last 30d</option>
@@ -456,9 +456,50 @@ export default function TopRepos() {
           </button>
         </div>
       ) : repos.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="mb-3 text-4xl">📦</div>
+      
+          <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+            No repositories found
+          </h3>
+      
+          <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
+            Push your first commit on GitHub to get started and see repository activity here.
+          </p>
+      
+          <a
+            href="https://github.com/new"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--control)]"
+          >
+            Create Repository
+          </a>
+        </div>
       ) : (
       <>
+
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--muted-foreground)]" aria-hidden="true" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search repositories…"
+            aria-label="Search repositories by name"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-9 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:outline-none focus:border-[var(--accent)]"
+          />
+          {searchQuery.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       {repos.length > 10 && (
   <div className="relative mb-3">
     <input
@@ -467,7 +508,7 @@ export default function TopRepos() {
       onChange={(e) => setSearchQuery(e.target.value)}
       placeholder="Search repositories…"
       aria-label="Search repositories"
-      className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:outline-none focus:border-[var(--accent)]"
+      className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)]"
     />
 
     {searchQuery.length > 0 && (
@@ -506,16 +547,6 @@ export default function TopRepos() {
             </span>
           </button>
         </div>
-        <div className="relative mb-4">
-  <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--muted-foreground)]" />
-  <input
-    type="text"
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-    placeholder="Search repositories…"
-    className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-9 py-2 text-sm focus:border-[var(--accent)] focus:outline-none"
-  />
-</div>
         <ul className="space-y-3">
           {filteredRepos.length === 0 ? (
             <p className="text-sm text-[var(--muted-foreground)] py-4 text-center">

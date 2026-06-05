@@ -1,6 +1,15 @@
-import { getToken } from "next-auth/jwt";
+﻿import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
-import { createMemoryFixedWindowRateLimiter, getClientIp } from "@/lib/rate-limit";
+import {
+  checkAuthRateLimit,
+  isAuthSensitivePath,
+  AUTH_LIMIT,
+} from "@/lib/auth-rate-limit";
+import {
+  isStateChangingMethod,
+  isCsrfExempt,
+  validateCsrf,
+} from "@/lib/csrf";
 
 export const runtime = "nodejs";
 
@@ -15,18 +24,14 @@ const WINDOW_SECONDS = 60;
    It is baked into the bundle at build time and cannot change at runtime.
    Therefore, in production builds, isDev is always false and the
    AUTHENTICATED_LIMIT/ANONYMOUS_LIMIT will always be 60/10 respectively.
-   In development (next dev), NODE_ENV is 'development' so the higher
+   In development (next dev), NODE_ENV is "development" so the higher
    limits apply during local testing only.
    ==========================================
    ============================================================ */
 const AUTHENTICATED_LIMIT = isDev ? 5000 : 60;
 const ANONYMOUS_LIMIT = isDev ? 1000 : 10;
-const MEMORY_MAX_ENTRIES = Number(process.env.MEMORY_RATE_LIMIT_MAX_ENTRIES ?? 10_000);
-const memoryLimiter = createMemoryFixedWindowRateLimiter({
-  windowMs: WINDOW_SECONDS * 1000,
-  pruneIntervalMs: 5 * 60 * 1000,
-  maxEntries: Number.isFinite(MEMORY_MAX_ENTRIES) ? MEMORY_MAX_ENTRIES : 10_000,
-});
+
+const memoryBuckets = new Map<string, number[]>();
 
 type RateLimitResult = {
   allowed: boolean;
@@ -36,7 +41,12 @@ type RateLimitResult = {
 };
 
 function getIp(req: NextRequest) {
-  return getClientIp(req);
+  return (
+    req.ip ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown"
+  );
 }
 
 function buildHeaders(result: RateLimitResult) {
@@ -55,19 +65,53 @@ function buildHeaders(result: RateLimitResult) {
   return headers;
 }
 
+function pruneMemoryBuckets(now: number) {
+  if (memoryBuckets.size < 500) {
+    return;
+  }
+
+  const cutoff = now - WINDOW_SECONDS * 1000;
+  for (const [key, values] of Array.from(memoryBuckets.entries())) {
+    const active = values.filter((timestamp: number) => timestamp > cutoff);
+    if (active.length === 0) {
+      memoryBuckets.delete(key);
+    } else {
+      memoryBuckets.set(key, active);
+    }
+  }
+}
 
 function checkMemoryLimit(
   key: string,
   limit: number,
   now: number
 ): RateLimitResult {
-  const result = memoryLimiter.check(key, limit, now);
-  return { ...result, limit };
+  pruneMemoryBuckets(now);
+
+  const cutoff = now - WINDOW_SECONDS * 1000;
+  const active = (memoryBuckets.get(key) ?? []).filter(
+    (timestamp) => timestamp > cutoff
+  );
+  const reset = Math.ceil(((active[0] ?? now) + WINDOW_SECONDS * 1000) / 1000);
+
+  if (active.length >= limit) {
+    memoryBuckets.set(key, active);
+    return { allowed: false, limit, remaining: 0, reset };
+  }
+
+  active.push(now);
+  memoryBuckets.set(key, active);
+
+  return {
+    allowed: true,
+    limit,
+    remaining: Math.max(limit - active.length, 0),
+    reset,
+  };
 }
 
 /**
  * ATOMIC LUA EVALUATION IN UPSTASH REDIS
- * Prunes expired elements, checks window capacity, and commits mutation atomically.
  */
 async function checkUpstashLimit(
   key: string,
@@ -85,7 +129,6 @@ async function checkUpstashLimit(
   const reset = Math.ceil((now + WINDOW_SECONDS * 1000) / 1000);
   const memberToken = `${now}:${Math.random().toString(36).slice(2)}`;
 
-  // Lua script ensures thread-safe atomic execution inside Redis engine
   const luaScript = `
     local key = KEYS[1]
     local cutoff = tonumber(ARGV[1])
@@ -93,10 +136,8 @@ async function checkUpstashLimit(
     local limit = tonumber(ARGV[3])
     local windowSeconds = tonumber(ARGV[4])
     local member = ARGV[5]
-
     redis.call('ZREMRANGEBYSCORE', key, 0, cutoff)
     local currentCount = redis.call('ZCARD', key)
-
     if currentCount >= limit then
       return {0, currentCount}
     else
@@ -116,38 +157,23 @@ async function checkUpstashLimit(
       body: JSON.stringify({
         script: luaScript,
         keys: [key],
-        args: [
-          String(cutoff),
-          String(now),
-          String(limit),
-          String(WINDOW_SECONDS),
-          memberToken,
-        ],
+        args: [String(cutoff), String(now), String(limit), String(WINDOW_SECONDS), memberToken],
       }),
       cache: "no-store",
     });
 
-    if (!response.ok) {
-      return null;
-    }
+    if (!response.ok) { return null; }
 
     const data = await response.json();
-
-    // Upstash REST eval response format: { result: [allowed_flag, current_count] }
     const [allowedFlag, currentCount] = data.result as [number, number];
-    const isAllowed = allowedFlag === 1;
-
     return {
-      allowed: isAllowed,
+      allowed: allowedFlag === 1,
       limit,
       remaining: Math.max(limit - currentCount, 0),
       reset,
     };
   } catch (error) {
-    console.error(
-      "Rate-limiter cloud pipeline failure, falling back to local memory storage:",
-      error
-    );
+    console.error("Rate-limiter cloud pipeline failure, falling back to local memory storage:", error);
     return null;
   }
 }
@@ -164,10 +190,6 @@ async function checkRateLimit(identifier: string, limit: number) {
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // PLAYWRIGHT_SERVER_MODE is not forwarded into the webServer env by
-  // playwright.config.mjs, so isPlaywrightServer is always false at runtime.
-  // Instead, attempt token resolution with both cookie name variants so the
-  // non-secure cookie set by Playwright tests is always found.
   let token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
@@ -184,6 +206,18 @@ export async function middleware(req: NextRequest) {
     });
   }
 
+  const isApiStateChange =
+    pathname.startsWith("/api/") &&
+    isStateChangingMethod(req.method) &&
+    !isCsrfExempt(pathname);
+
+  if (isApiStateChange) {
+    const csrf = validateCsrf(req);
+    if (!csrf.valid) {
+      return NextResponse.json({ error: csrf.reason }, { status: 403 });
+    }
+  }
+
   const protectedRoutes = ["/dashboard", "/settings"];
   const isProtectedRoute = protectedRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
@@ -196,29 +230,45 @@ export async function middleware(req: NextRequest) {
       url.search = "";
       return NextResponse.redirect(url);
     }
+    return NextResponse.next();
+  }
 
+  if (isAuthSensitivePath(pathname)) {
+    const ip = getIp(req);
+    const authLimit = isDev ? 1000 : AUTH_LIMIT;
+    const authResult = checkAuthRateLimit(ip, authLimit);
+
+    if (!authResult.allowed) {
+      console.warn("auth_rate_limit_hit", { ip, path: pathname });
+      const headers = buildHeaders({ ...authResult, limit: authLimit });
+      return NextResponse.json(
+        { error: "Too many authentication attempts. Please try again later." },
+        { status: 429, headers }
+      );
+    }
+
+    return NextResponse.next();
+  }
+
+  const isRateLimitedPath =
+    pathname.startsWith("/api/metrics/") || pathname === "/api/contact";
+
+  if (!isRateLimitedPath) {
     return NextResponse.next();
   }
 
   const githubId = typeof token?.githubId === "string" ? token.githubId : null;
   const identifier = githubId ? `user:${githubId}` : `ip:${getIp(req)}`;
-
-  const limit = githubId
-    ? AUTHENTICATED_LIMIT
-    : ANONYMOUS_LIMIT;
+  const limit = githubId ? AUTHENTICATED_LIMIT : ANONYMOUS_LIMIT;
 
   const result = await checkRateLimit(identifier, limit);
-
   const headers = buildHeaders(result);
 
   if (!result.allowed) {
     const isContact = req.nextUrl.pathname.startsWith("/api/contact");
     console.warn(isContact ? "contact_rate_limit_hit" : "metrics_rate_limit_hit", {
-      identifier,
-      path: req.nextUrl.pathname,
-      limit,
+      identifier, path: req.nextUrl.pathname, limit,
     });
-
     return NextResponse.json(
       {
         error: isContact
@@ -230,20 +280,10 @@ export async function middleware(req: NextRequest) {
   }
 
   const response = NextResponse.next();
+  headers.forEach((value, key) => response.headers.set(key, value));
 
-  headers.forEach((value, key) =>
-    response.headers.set(key, value)
-  );
-
-  // Cache GET metric responses in the browser for 5 minutes.
-  // This eliminates redundant function invocations on every dashboard
-  // tab-switch or soft navigation, directly cutting Vercel Active CPU usage.
-  // Responses are private (user-specific) so CDN caching is disabled.
   if (req.method === "GET") {
-    response.headers.set(
-      "Cache-Control",
-      "private, max-age=300, stale-while-revalidate=600"
-    );
+    response.headers.set("Cache-Control", "private, max-age=300, stale-while-revalidate=600");
   }
 
   return response;
@@ -255,7 +295,6 @@ export const config = {
     "/dashboard/:path*",
     "/settings",
     "/settings/:path*",
-    "/api/metrics/:path*",
-    "/api/contact",
+    "/api/:path*",
   ],
 };

@@ -73,14 +73,14 @@ export default function ConfirmModal({
           <button
             type="button"
             onClick={onCancel}
-            className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--control)] px-5 py-2.5 text-sm font-semibold text-[var(--card-foreground)] transition-all hover:bg-[var(--card-muted)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--control)] px-5 py-2.5 text-sm font-semibold text-[var(--card-foreground)] transition-all hover:bg-[var(--card-muted)] active:scale-95"
           >
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="w-full sm:w-auto rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 shadow-lg shadow-[var(--accent)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            className="w-full sm:w-auto rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 shadow-lg shadow-[var(--accent)]/20"
           >
             {confirmLabel}
           </button>

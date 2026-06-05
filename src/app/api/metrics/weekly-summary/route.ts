@@ -6,8 +6,8 @@ import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib
 import { getAccountToken } from "@/lib/github-accounts";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { calculateStreak } from "@/lib/streak";
 import { toDateStr } from "@/lib/dateUtils";
+import { calculateCurrentStreak } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +24,6 @@ function getCurrentWeekStartUtc(): Date {
   return currentWeekStart;
 }
 
-function calculateCurrentStreak(activeDates: Set<string>): number {
-  const { currentStreak } = calculateStreak(
-    Array.from(activeDates).map((day) => new Date(day))
-  );
-  return currentStreak;
-}
 
 async function fetchActiveDates(githubLogin: string, token: string): Promise<Set<string>> {
   // Look back 90 days — the maximum window the GitHub Commit Search API supports.
@@ -127,14 +121,10 @@ export async function GET(req: NextRequest) {
     userId = accountId;
   }
 
-  const key = metricsCacheKey(userId, "weekly-summary" as any);
+  const key = metricsCacheKey(userId, "weekly-summary");
 
   try {
-    // Cache TTL of 5 minutes (300 seconds).
-    // This handler makes 3 GitHub API calls (commits Search, PRs Search, streak Search×N)
-    // on every cache miss. Without this cache, rapid refreshes would exhaust the
-    // 30 req/min Search API quota almost immediately.
-    const data = await withMetricsCache({ bypass, key, ttlSeconds: 5 * 60 }, async () => {
+    const data = await withMetricsCache({ bypass, key, ttlSeconds: 30 * 60 }, async () => {
       const currentWeekStart = getCurrentWeekStartUtc();
       const prevWeekStart = new Date(currentWeekStart.getTime() - 7 * 86400000);
       const prevWeekEnd = new Date(currentWeekStart.getTime() - 1);

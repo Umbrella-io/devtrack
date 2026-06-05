@@ -62,26 +62,44 @@ export async function githubGraphQL<T>(
   query: string,
   token: string
 ): Promise<T> {
-  const res = await fetch("https://api.github.com/graphql", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ query }),
-    cache: "no-store",
-  });
+  const MAX_RETRIES = 2;
 
-  if (res.status === 403 || res.status === 429) {
-    const resetHeader = res.headers.get("X-RateLimit-Reset");
-    const resetAt = resetHeader ? new Date(Number(resetHeader) * 1000) : null;
-    throw new GitHubRateLimitError(resetAt);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const res = await fetch("https://api.github.com/graphql", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query }),
+      cache: "no-store",
+    });
+
+    if (res.status === 403 || res.status === 429) {
+      const resetHeader = res.headers.get("X-RateLimit-Reset");
+      const resetAt = resetHeader ? new Date(Number(resetHeader) * 1000) : null;
+      throw new GitHubRateLimitError(resetAt);
+    }
+
+    // Retry on transient server errors (502/503)
+    if ((res.status === 502 || res.status === 503) && attempt < MAX_RETRIES) {
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      continue;
+    }
+
+    if (!res.ok) {
+      throw new GitHubApiError(res.status);
+    }
+
+    const json = await res.json();
+
+    if (json.errors?.length) {
+      const msg = json.errors.map((e: { message: string }) => e.message).join("; ");
+      throw new Error(`GitHub GraphQL error: ${msg}`);
+    }
+
+    return json.data as T;
   }
 
-  if (!res.ok) {
-    throw new GitHubApiError(res.status);
-  }
-
-  const json = await res.json();
-  return json.data as T;
+  throw new GitHubApiError(502);
 }
