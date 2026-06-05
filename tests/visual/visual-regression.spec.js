@@ -27,8 +27,8 @@ async function stabilize(page) {
       await document.fonts.ready;
     }
   });
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(250);
+  await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
+  await page.waitForTimeout(500);
 }
 
 async function mockAuthenticatedSession(page) {
