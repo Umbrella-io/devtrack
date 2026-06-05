@@ -95,6 +95,41 @@ function getStatusMessage(
     };
   }
 
+  if (error === "rate_limited") {
+    return {
+      kind: "error",
+      message: "GitHub API rate limit reached. Please try again in a few minutes.",
+    };
+  }
+
+  if (error === "token_exchange_failed") {
+    return {
+      kind: "error",
+      message: "GitHub authorization failed. Please try again.",
+    };
+  }
+
+  if (error === "github_profile_failed") {
+    return {
+      kind: "error",
+      message: "Could not fetch GitHub profile. Please try again.",
+    };
+  }
+
+  if (error === "user_not_found") {
+    return {
+      kind: "error",
+      message: "User not found. Please sign in again.",
+    };
+  }
+
+  if (error === "insert_failed") {
+    return {
+      kind: "error",
+      message: "Failed to save account. Please try again.",
+    };
+  }
+
   return {
     kind: "error",
     message: "Account linking failed. Please try again.",
@@ -136,6 +171,7 @@ function SettingsPageContent() {
   const [webhookSaving, setWebhookSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
   const [removingAccountId, setRemovingAccountId] = useState<string | null>(
     null
   );
@@ -347,9 +383,16 @@ function SettingsPageContent() {
     }
 
     async function loadLinkedAccounts() {
+      setAccountsError(null);
       try {
         const res = await fetch("/api/user/github-accounts");
+        if (res.status === 403) {
+          setAccountsError("GitHub API rate limit reached. Please try again in a few minutes.");
+          setLinkedAccounts([]);
+          return;
+        }
         if (!res.ok) {
+          setAccountsError("Failed to load linked accounts. Please refresh the page.");
           setLinkedAccounts([]);
           return;
         }
@@ -358,6 +401,7 @@ function SettingsPageContent() {
         setLinkedAccounts(data.accounts ?? []);
       } catch (error) {
         console.error("Failed to load linked accounts:", error);
+        setAccountsError("Failed to load linked accounts. Please refresh the page.");
         setLinkedAccounts([]);
       } finally {
         setAccountsLoading(false);
@@ -1309,15 +1353,20 @@ function SettingsPageContent() {
             </div>
           )}
 
+          {accountsError && (
+            <div className="mt-4 rounded-lg border border-[var(--error)]/30 bg-[var(--error)]/10 p-3 text-sm text-[var(--error)]">
+              {accountsError}
+            </div>
+          )}
+
           <div className="mt-6">
             {accountsLoading ? (
-              <div className="space-y-3">
-                {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
-                  />
-                ))}
+              <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Loading linked accounts...
               </div>
             ) : linkedAccounts.length === 0 ? (
               <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)]">
