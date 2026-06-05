@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
 
 type ActivityType =
@@ -137,7 +137,7 @@ export default function RecentActivity() {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [offset, setOffset] = useState(0);
+  const offsetRef = useRef(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
@@ -146,12 +146,16 @@ export default function RecentActivity() {
       setIsLoadingMore(true);
     } else {
       setLoading(true);
-      setOffset(0);
+      offsetRef.current = 0;
     }
     setError(null);
 
     const limit = 10;
-    const currentOffset = isLoadMore ? offset + limit : 0;
+    const previousOffset = offsetRef.current;
+    const currentOffset = isLoadMore ? previousOffset + limit : 0;
+    
+    // Advance synchronously to prevent race conditions from concurrent calls
+    offsetRef.current = currentOffset;
 
     let queryParams = `?limit=${limit}&offset=${currentOffset}`;
     if (selectedAccount !== null) {
@@ -172,19 +176,20 @@ export default function RecentActivity() {
         } else {
           setItems(fetchedItems);
         }
-        setOffset(currentOffset);
         setHasMore(fetchedItems.length === limit);
       })
-      .catch(() =>
+      .catch(() => {
+        // Roll back the offset on failure
+        offsetRef.current = previousOffset;
         setError(
           "We couldn't load your recent activity right now. Please try again in a moment."
-        )
-      )
+        );
+      })
       .finally(() => {
         setLoading(false);
         setIsLoadingMore(false);
       });
-  }, [selectedAccount, offset]);
+  }, [selectedAccount]);
 
   useEffect(() => {
     fetchActivity();

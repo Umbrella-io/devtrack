@@ -4,7 +4,9 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { encryptToken } from "@/lib/crypto";
+import { validateTextInput } from "@/lib/sanitize";
 import { clearLeaderboardCache } from "@/lib/leaderboard";
+import { cacheGet, cacheSet, cacheDelete } from "@/lib/metrics-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -184,6 +186,14 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const cacheKey = `settings:${user.id}`;
+  const SETTINGS_TTL = 5 * 60; // 5 minutes
+
+  const cached = await cacheGet<Record<string, unknown>>(cacheKey, SETTINGS_TTL);
+  if (cached) {
+    return NextResponse.json(cached);
+  }
+
   const result = await fetchUserSettings(user.id);
 
   if (result.error || !result.data) {
@@ -191,7 +201,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch user settings" }, { status: 500 });
   }
 
-  return NextResponse.json({
+  const response = {
     id: (result.data as any).id,
     github_login: (result.data as any).github_login,
     bio: (result.data as any).bio ?? "",
@@ -206,7 +216,10 @@ export async function GET(req: NextRequest) {
     timezone: result.timezone,
     webhook_url: result.webhook_url ?? null,
     discord_muted_until: result.discord_muted_until ?? null,
-  });
+  };
+
+  await cacheSet(cacheKey, response, SETTINGS_TTL);
+  return NextResponse.json(response);
 }
 
 
@@ -297,15 +310,16 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (hasBio && bio !== undefined) {
-    if (typeof bio !== "string") {
-      return NextResponse.json({ error: "Bio must be a string" }, { status: 400 });
+    const result = validateTextInput(bio, "Bio", 500);
+  
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      );
     }
-
-    if (bio.length > 500) {
-      return NextResponse.json({ error: "Bio must be 500 characters or fewer" }, { status: 400 });
-    }
-
-    updates.bio = bio;
+  
+    updates.bio = result.value;
   }
 
   if (hasWakatimeKey && wakatime_api_key !== undefined) {
@@ -400,6 +414,9 @@ export async function PATCH(req: NextRequest) {
     console.error("Error updating settings:", updateError);
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
+
+  // Bust settings cache so next GET returns fresh data.
+  await cacheDelete(`settings:${user.id}`);
 
   // If is_public or leaderboard_opt_in changed, the cached leaderboard would
   // show stale eligibility until it expires (up to 1 hour). Bust the cache

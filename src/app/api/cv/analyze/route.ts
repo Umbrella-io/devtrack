@@ -82,9 +82,12 @@ export async function POST() {
       "@/lib/cv/cv-classifier"
     );
 
+    if (!session.githubLogin) {
+      return NextResponse.json({ error: "GitHub login not available" }, { status: 401 });
+    }
     const contributionData = await fetchContributionData(
       session.accessToken as string,
-      session.githubId
+      session.githubLogin
     );
 
     const analysis = classifyContributions(contributionData);
@@ -107,9 +110,10 @@ export async function POST() {
     const response: CVAnalyzeResponse = { analysis, cached: false };
     return NextResponse.json(response);
   } catch (err) {
-    console.error("CV analyze error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("CV analyze error:", message, err);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: message },
       { status: 500 }
     );
   }

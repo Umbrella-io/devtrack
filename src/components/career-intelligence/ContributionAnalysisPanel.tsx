@@ -211,7 +211,7 @@ export default function ContributionAnalysisPanel({ analysis }: ContributionAnal
                   <a
                     href={repo.url}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-sm font-bold text-[var(--foreground)] hover:text-[var(--accent)] transition-colors"
                   >
                     {repo.name}
