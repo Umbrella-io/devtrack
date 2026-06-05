@@ -370,7 +370,7 @@ test.describe("visual regression screenshots", () => {
 
     await setTheme(page, "classic-dark");
     await page.goto("/dashboard", { waitUntil: "load" });
-    await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible({
       timeout: 30_000,
     });
     await stabilize(page);
@@ -386,7 +386,7 @@ test.describe("visual regression screenshots", () => {
     });
     await page.emulateMedia({ colorScheme: "light" });
     await page.reload({ waitUntil: "load" });
-    await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible({
       timeout: 30_000,
     });
     await stabilize(page);
