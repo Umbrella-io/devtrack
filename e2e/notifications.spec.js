@@ -184,7 +184,9 @@ test("notification bell opens and closes drawer", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
 
   // Wait for the dashboard to fully render
-  await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 30000 });
+  await expect(
+  page.getByRole("heading", { name: "Dashboard", exact: true })
+  ).toBeVisible({ timeout: 30000 });
 
   // Find and click the notification bell
   const bellButton = page.getByRole("button", { name: /Notifications/ });
