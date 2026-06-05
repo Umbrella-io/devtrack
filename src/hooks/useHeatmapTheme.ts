@@ -145,7 +145,7 @@ export function useHeatmapTheme() {
     if (typeof window !== "undefined") {
       try {
         window.localStorage.setItem(STORAGE_KEY, t);
-      } catch {}
+      } catch (e) {}
       window.dispatchEvent(new CustomEvent("heatmap-theme-changed", { detail: t }));
     }
 
