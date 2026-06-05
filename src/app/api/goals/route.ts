@@ -7,7 +7,7 @@ import { stripHtml } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 
-interface Goal {
+interface Goal {  
   id: string;
   user_id: string;
   title: string;
@@ -19,6 +19,7 @@ interface Goal {
   period_start: string | null;
   created_at: string;
   goal_reset_version: number;
+  is_public: boolean;
 }
 
 interface GoalHistory {
