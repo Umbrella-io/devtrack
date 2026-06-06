@@ -8,7 +8,6 @@
  * are migrated. It will be removed in a future release.
  */
 
-// Re-export everything from the admin client (server-only guard is enforced there)
 export {
   supabaseAdmin,
   isSupabaseAdminAvailable,
@@ -18,7 +17,6 @@ export {
   updateUserPublicFlag,
 } from "@/lib/supabase-admin";
 
-// Re-export browser client for convenience
 export {
   supabaseBrowser,
   isBrowserClientAvailable,
