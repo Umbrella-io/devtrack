@@ -56,7 +56,6 @@ export interface RepoAnalyticsResponse {
   primaryStack: string[];
   languageBreakdown: LanguageSlice[];
   prActivity?: { total: number };
-}
 
   /** true when GitHub responded 202 — stats are still being computed */
   statsBuilding?: boolean;
