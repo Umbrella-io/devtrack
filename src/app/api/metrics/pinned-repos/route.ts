@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,9 @@ export async function GET() {
   if (!session?.accessToken) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
+  }
 
   try {
     const response = await fetch("https://api.github.com/graphql", {
@@ -52,6 +56,7 @@ export async function GET() {
     });
 
     if (!response.ok) {
+      if (response.status === 401) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
 
@@ -70,7 +75,7 @@ export async function GET() {
     );
 
     return Response.json({ pinnedRepos: nodes });
-  } catch {
+  } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

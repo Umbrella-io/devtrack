@@ -173,7 +173,7 @@ export async function GET(req: NextRequest) {
           // should not prevent health scores for the remaining repos from loading.
           const signals = await fetchSignalsForRepo(session.accessToken!, repo.name, days);
           scores.push(computeHealthScore(repo.name, signals));
-        } catch {
+        } catch (e) {
           // Swallow per-repo errors (rate limit, private repo, network blip).
           // The repo is simply omitted from the scores array rather than failing the request.
         }
@@ -181,7 +181,7 @@ export async function GET(req: NextRequest) {
       return { repos: scores };
     });
     return Response.json(data);
-  } catch {
+  } catch (e) {
     // Catches errors from fetchReposForAccount (the initial Search API call).
     // Returns 502 so the client shows an error state rather than an empty health widget.
     return Response.json({ error: "GitHub API error" }, { status: 502 });

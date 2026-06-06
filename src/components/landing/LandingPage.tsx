@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from "next/image";
+import Link from 'next/link';
+import { Activity, GitPullRequest, Goal, Share2, type LucideIcon } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
@@ -13,19 +15,21 @@ export type RepoStats = {
   contributorCount: number;
   goodFirstIssues: number;
   contributors: Array<{ login: string; avatar_url: string; html_url: string }>;
+  totalCommits: number;
+  mergedPRs: number;
 };
 
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
    ═══════════════════════════════════════════════════════════ */
-const A = '#818cf8';                  // accent — indigo
-const BG = 'transparent'
-const SURF = '#0e0e0e';
-const BORDER = '#2a2a2a';             // was #1a1a1a — now more visible
-const TEXT = '#e0e0e0';
-const MUTED = '#94a3b8';
-const HC = ['#111', '#1e1b4b', '#3730a3', '#4f46e5', A]; // heatmap levels
-const MC = ['#111', '#1e1b4b', '#3730a3', A];             // mini heatmap
+const A = 'var(--accent)';
+const BG = 'transparent';
+const SURF = 'var(--card)';
+const BORDER = 'var(--border)';
+const TEXT = 'var(--foreground)';
+const MUTED = 'var(--muted-foreground)';
+const HC = ['transparent', 'color-mix(in srgb, var(--accent) 25%, transparent)', 'color-mix(in srgb, var(--accent) 50%, transparent)', 'color-mix(in srgb, var(--accent) 75%, transparent)', 'var(--accent)'];
+const MC = ['transparent', 'color-mix(in srgb, var(--accent) 40%, transparent)', 'color-mix(in srgb, var(--accent) 75%, transparent)', 'var(--accent)'];
 
 const MONO = 'var(--font-jetbrains, ui-monospace, monospace)';
 const DISP = 'var(--font-syne, system-ui, sans-serif)';
@@ -60,6 +64,33 @@ const COMMITS = [
   'fix: timezone-aware streak calculation',
   'docs: update README with setup guide',
   'feat(leaderboard): weekly ranking system',
+];
+
+const ABOUT_HIGHLIGHTS: Array<{
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+}> = [
+  {
+    icon: Activity,
+    title: 'Live GitHub Signals',
+    desc: 'Turn commits, streaks, reviews, and repository activity into a focused dashboard that updates around real developer work.',
+  },
+  {
+    icon: GitPullRequest,
+    title: 'PR Momentum',
+    desc: 'Understand merge rate, review velocity, and open work so teams can spot bottlenecks before they slow shipping down.',
+  },
+  {
+    icon: Goal,
+    title: 'Goal Tracking',
+    desc: 'Set weekly coding targets and see progress move automatically as GitHub activity lands across your repositories.',
+  },
+  {
+    icon: Share2,
+    title: 'Shareable Profile',
+    desc: 'Create a public snapshot of your coding consistency for contributors, collaborators, and portfolio visitors.',
+  },
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -138,48 +169,13 @@ function MouseSpotlight() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   NAV
-   ═══════════════════════════════════════════════════════════ */
-function LandingNav() {
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 30);
-    window.addEventListener('scroll', fn, { passive: true });
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
-
-  return (
-    <nav
-      style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: 52, padding: '0 clamp(20px,4vw,48px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: scrolled ? 'rgba(8,8,8,0.92)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(12px)' : 'none',
-        borderBottom: `1px solid ${scrolled ? BORDER : 'transparent'}`,
-        transition: 'all 0.3s',
-      }}
-    >
-      <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: TEXT, letterSpacing: '-0.02em' }}>
-        <span style={{ color: A }}>▲</span> DEVTRACK
-      </span>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-        <a href="/dashboard" className="lnd-nav-link">Dashboard</a>
-        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-nav-link">
-          SIGN IN →
-        </a>
-      </div>
-    </nav>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════
    BENTO WIDGETS
    ═══════════════════════════════════════════════════════════ */
 const wLabel: React.CSSProperties = {
   fontFamily: MONO, fontSize: 10, fontWeight: 500,
-  color: '#444', textTransform: 'uppercase', letterSpacing: '0.1em',
+  color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.1em',
 };
 const wValue: React.CSSProperties = {
   fontFamily: MONO, fontWeight: 600, color: TEXT,
@@ -220,6 +216,7 @@ function ChartWidget() {
             key={i}
             onMouseEnter={() => setHovBar(i)}
             onMouseLeave={() => setHovBar(-1)}
+            role="presentation"
             style={{
               flex: 1, borderRadius: '2px 2px 0 0',
               background: hovBar === i ? '#fff' : A,
@@ -258,7 +255,7 @@ function StreakWidget() {
       >
         <div style={{ position: 'relative', width: 62, height: 62 }}>
           <svg width="62" height="62" viewBox="0 0 62 62" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="31" cy="31" r={r} fill="none" stroke="#1a1a1a" strokeWidth="3" />
+            <circle cx="31" cy="31" r={r} fill="none" stroke="var(--border)" strokeWidth="3" />
             <circle
               cx="31" cy="31" r={r} fill="none" stroke={A} strokeWidth="3"
               strokeDasharray={circ}
@@ -284,9 +281,9 @@ function MergeWidget() {
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>merge rate</span>
         <span style={{ ...wValue, fontSize: 26, marginTop: 4, color: A }}>
-          87<span style={{ color: '#333', fontSize: 14 }}>%</span>
+          87<span style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>%</span>
         </span>
-        <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
+        <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
           <div style={{
             height: '100%', borderRadius: 2, background: A,
             width: vis ? '87%' : '0%',
@@ -305,9 +302,9 @@ function GoalWidget() {
       <div ref={ref} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
         <span style={wLabel}>weekly goal</span>
         <span style={{ ...wValue, fontSize: 26, marginTop: 4 }}>
-          84<span style={{ color: '#333', fontSize: 14 }}>%</span>
+          84<span style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>%</span>
         </span>
-        <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: '#1a1a1a', overflow: 'hidden' }}>
+        <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
           <div style={{
             height: '100%', borderRadius: 2, background: '#f59e0b',
             width: vis ? '84%' : '0%',
@@ -372,7 +369,7 @@ function HeroSection() {
         gap: 'clamp(32px,5vw,80px)',
         flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
-        overflow: 'hidden',
+        overflow: 'clip',
       }}
     >
       {/* Ambient Animated Background Glow */}
@@ -441,7 +438,7 @@ function HeroSection() {
         >
           YOUR<br />CODE<br />HAS A<br />
           <span style={{ color: A, textShadow: '0 0 30px rgba(129,140,248,0.3)' }}>PULSE</span>
-          <span style={{ color: '#222' }}>.</span>
+          <span style={{ color: 'var(--foreground)' }}>.</span>
         </h1>
 
         {/* Tagline — NOW HIGH CONTRAST */}
@@ -456,7 +453,7 @@ function HeroSection() {
 
         {/* CTAs */}
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary" style={{
+          <Link href="/api/auth/signin/github?callbackUrl=/dashboard" prefetch={false} className="lnd-cta-primary" style={{
             boxShadow: '0 8px 24px rgba(129,140,248,0.3)',
             transition: 'transform 0.3s, box-shadow 0.3s',
             transform: 'translateY(0)',
@@ -473,7 +470,7 @@ function HeroSection() {
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
             </svg>
             Sign in with GitHub
-          </a>
+          </Link>
           <a
             href="https://github.com/Priyanshu-byte-coder/devtrack"
             target="_blank"
@@ -520,7 +517,7 @@ function CommitTicker() {
           <span
             key={i}
             style={{
-              fontFamily: MONO, fontSize: 12, color: '#333',
+              fontFamily: MONO, fontSize: 12, color: 'var(--muted-foreground)',
               display: 'inline-flex', alignItems: 'center', gap: 10,
             }}
           >
@@ -534,6 +531,116 @@ function CommitTicker() {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   ABOUT SECTION
+   ═══════════════════════════════════════════════════════════ */
+function AboutHighlightCard({
+  item,
+  index,
+  visible,
+}: {
+  item: typeof ABOUT_HIGHLIGHTS[0];
+  index: number;
+  visible: boolean;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <article
+      className="lnd-about-card"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(18px)',
+        transition: `opacity 0.55s ease ${index * 80}ms, transform 0.55s ease ${index * 80}ms, border-color 0.25s ease, background 0.25s ease`,
+      }}
+    >
+      <div style={{
+        width: 42, height: 42, borderRadius: 8,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(129,140,248,0.12)',
+        border: '1px solid rgba(129,140,248,0.28)',
+        color: A, marginBottom: 18,
+      }}>
+        <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+      </div>
+      <h3 style={{
+        fontFamily: DISP, fontWeight: 700,
+        fontSize: 19, color: TEXT, margin: '0 0 10px',
+        letterSpacing: 0,
+      }}>
+        {item.title}
+      </h3>
+      <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.65, margin: 0 }}>
+        {item.desc}
+      </p>
+    </article>
+  );
+}
+
+function AboutSection() {
+  const [ref, vis] = useScrollReveal(0.12);
+
+  return (
+    <section
+      id="about"
+      ref={ref}
+      aria-labelledby="about-heading"
+      style={{
+        padding: '88px clamp(20px,4vw,48px)',
+        borderTop: `1px solid ${BORDER}`,
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: 'clamp(28px,5vw,64px)',
+        alignItems: 'start',
+        maxWidth: 1120,
+        margin: '0 auto',
+      }}>
+        <div style={{
+          opacity: vis ? 1 : 0,
+          transform: vis ? 'translateY(0)' : 'translateY(18px)',
+          transition: 'opacity 0.6s ease, transform 0.6s ease',
+        }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
+            ABOUT DEVTRACK
+          </div>
+          <h2
+            id="about-heading"
+            style={{
+              fontFamily: DISP, fontWeight: 800,
+              fontSize: 42,
+              color: TEXT, letterSpacing: 0,
+              lineHeight: 1.05, margin: '0 0 20px',
+            }}
+          >
+            A clearer home for your developer progress.
+          </h2>
+          <p style={{ color: MUTED, fontSize: 16, lineHeight: 1.75, margin: '0 0 28px', maxWidth: 580 }}>
+            DevTrack helps developers, open-source contributors, and teams understand how their GitHub work is moving. It brings activity, pull requests, streaks, goals, and public profile insights into one calm dashboard so new users can quickly see what the platform is for.
+          </p>
+          <a href="#features" className="lnd-cta-secondary">
+            Explore features
+          </a>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 14,
+        }}>
+          {ABOUT_HIGHLIGHTS.map((item, index) => (
+            <AboutHighlightCard key={item.title} item={item} index={index} visible={vis} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    HEATMAP SECTION
    ═══════════════════════════════════════════════════════════ */
 function HeatmapSection() {
@@ -541,15 +648,15 @@ function HeatmapSection() {
   return (
     <section ref={ref} style={{ padding: '64px clamp(20px,4vw,48px)', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: '#333', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           52 weeks of contributions
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>less</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted-foreground)' }}>less</span>
           {HC.map((c, i) => (
             <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: c, border: `1px solid ${BORDER}` }} />
           ))}
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#333' }}>more</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted-foreground)' }}>more</span>
         </div>
       </div>
       <div style={{
@@ -578,12 +685,6 @@ function HeatmapSection() {
 /* ═══════════════════════════════════════════════════════════
    STATS ROW
    ═══════════════════════════════════════════════════════════ */
-const STATS = [
-  { value: 847, label: 'COMMITS TRACKED' },
-  { value: 43,  label: 'PRS MERGED' },
-  { value: 89,  label: 'DAY BEST STREAK' },
-  { value: 67,  label: 'REVIEWS GIVEN' },
-];
 
 function StatItem({ value, label, delay }: { value: number; label: string; delay: number }) {
   const [ref, vis] = useScrollReveal(0.2);
@@ -602,23 +703,29 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
         lineHeight: 1, letterSpacing: '-0.03em',
       }}>
         <Counter end={value} active={vis} />
-        <span style={{ color: '#222', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
+        <span style={{ color: 'var(--foreground)', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: '#333', letterSpacing: '0.12em', marginTop: 8 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted-foreground)', letterSpacing: '0.12em', marginTop: 8 }}>
         {label}
       </div>
     </div>
   );
 }
 
-function StatsSection() {
+function StatsSection({ stats }: { stats: RepoStats }) {
+  const items = [
+    { value: stats.totalCommits,    label: 'COMMITS IN REPO' },
+    { value: stats.mergedPRs,       label: 'PRS MERGED' },
+    { value: stats.contributorCount,label: 'CONTRIBUTORS' },
+    { value: stats.stars,           label: 'GITHUB STARS' },
+  ];
   return (
     <section id="features" style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
-        gap: 24, borderTop: '1px solid #1e293b',
+        gap: 24, borderTop: `1px solid ${BORDER}`,
     }}>
-      {STATS.map((s, i) => (
+      {items.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
       ))}
     </section>
@@ -646,12 +753,20 @@ const FEATURES = [
     desc: 'Full-year visualization of your coding consistency. See patterns emerge across weeks and months.',
   },
   {
-    num: '05', title: 'LANGUAGE BREAKDOWN',
-    desc: 'See which languages dominate your contributions. TypeScript, Python, Go — tracked across all repos.',
+    num: '05', title: 'AI WEEKLY INSIGHTS',
+    desc: 'AI-powered analysis of your coding patterns. Get personalized recommendations to improve your workflow.',
   },
   {
-    num: '06', title: 'PUBLIC PROFILE',
-    desc: 'Share your developer stats with the world. Your coding story, visible to anyone.',
+    num: '06', title: 'RESUME GENERATOR',
+    desc: 'Generate an ATS-friendly CV backed by your real GitHub contributions, merged PRs, and lines changed.',
+  },
+  {
+    num: '07', title: 'PUBLIC LEADERBOARD',
+    desc: 'Opt-in leaderboard ranked by streaks, commits, and PRs. See how you compare with the community.',
+  },
+  {
+    num: '08', title: 'PUBLIC PROFILE',
+    desc: 'Shareable stats page with badges, pinned repos, and achievements. Your coding story, visible to anyone.',
   },
 ];
 
@@ -662,7 +777,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
       ref={ref}
       style={{
         display: 'flex', gap: 'clamp(16px,3vw,32px)',
-        padding: '24px 0', borderBottom: '1px solid #1e293b',
+        padding: '24px 0', borderBottom: `1px solid ${BORDER}`,
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateX(0)' : 'translateX(-12px)',
         transition: `all 0.5s ease ${index * 50}ms`,
@@ -679,8 +794,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         }}>
           {f.title}
         </h3>
-        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>   {/* was '#444' */}
-          {f.desc}
+        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>          {f.desc}
         </p>
       </div>
     </div>
@@ -691,7 +805,7 @@ function FeaturesSection() {
   return (
     <section style={{
       padding: '64px clamp(20px,4vw,48px) 80px',
-      borderTop: '1px solid #1e293b',
+      borderTop: `1px solid ${BORDER}`,
       maxWidth: 720, margin: '0 auto',
     }}>
       <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
@@ -726,7 +840,7 @@ function SetupSection() {
       </div>
 
       <div style={{
-        background: '#0a0a0c', border: `1px solid #1e293b`,
+        background: 'color-mix(in srgb, var(--card) 40%, transparent)', border: `1px solid ${BORDER}`,
         borderRadius: 8, padding: '24px 28px', maxWidth: 480, width: '100%',
         textAlign: 'left', marginBottom: 32,
         fontFamily: MONO, fontSize: 13, lineHeight: 1.8,
@@ -753,9 +867,9 @@ function SetupSection() {
       </div>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary">
+        <Link href="/api/auth/signin/github?callbackUrl=/dashboard" prefetch={false} className="lnd-cta-primary">
           Sign in with GitHub
-        </a>
+        </Link>
         <a
           href="https://github.com/Priyanshu-byte-coder/devtrack"
           target="_blank"
@@ -766,7 +880,7 @@ function SetupSection() {
         </a>
       </div>
 
-      <div style={{ fontFamily: MONO, fontSize: 11, color: '#222', marginTop: 20, letterSpacing: '0.06em' }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--foreground)', marginTop: 20, letterSpacing: '0.06em' }}>
         MIT License · Self-hostable · Free forever · Zero vendor lock-in
       </div>
     </section>
@@ -791,7 +905,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
-        borderTop: '1px solid #1e293b',
+        borderTop: `1px solid ${BORDER}`,
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(24px)',
         transition: 'all 0.7s ease',
@@ -808,11 +922,11 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           <div
             key={s.label}
             style={{
-              background: '#0a0a0c', border: `1px solid #1e293b`,
+              background: 'color-mix(in srgb, var(--card) 40%, transparent)', border: `1px solid ${BORDER}`,
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#94a3b8', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: '0.1em', marginBottom: 10 }}>
               {s.icon} {s.label}
             </div>
             <div style={{
@@ -838,8 +952,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           BUILT IN PUBLIC.<br />
           <span style={{ color: A }}>SHIP WITH US.</span>
         </h2>
-        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>   {/* was '#555' */}
-          DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
+        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>          DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
           who actually use it. Every widget, every metric, every API was contributed by
           someone in this list. {stats.goodFirstIssues > 0 && (
             <span style={{ color: TEXT }}>
@@ -892,10 +1005,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           {stats.contributorCount > stats.contributors.length && (
             <div style={{
               width: 38, height: 38, borderRadius: '50%',
-              border: `2px solid #000000`,
-              background: '#1e293b', marginLeft: -11,
+              border: `2px solid var(--background)`,
+              background: 'var(--card)', marginLeft: -11,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: MONO, fontSize: 10, color: '#cbd5e1', flexShrink: 0,
+              fontFamily: MONO, fontSize: 10, color: MUTED, flexShrink: 0,
             }}>
               +{stats.contributorCount - stats.contributors.length}
             </div>
@@ -934,37 +1047,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   LANDING FOOTER  (above global Footer)
-   ═══════════════════════════════════════════════════════════ */
-function LandingFooter() {
-  return (
-    <footer 
-      data-testid="landing-footer"
-      style={{
-        borderTop: `1px solid ${BORDER}`,   // was '#111'
-        padding: '24px clamp(20px,4vw,48px)',
-        display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
-        justifyContent: 'space-between', alignItems: 'center',
-      }}
-    >
-      <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
-        © {new Date().getFullYear()} DEVTRACK
-      </span>
-      <div style={{ display: 'flex', gap: 20 }}>
-        {[
-          { label: 'GitHub', href: 'https://github.com/Priyanshu-byte-coder/devtrack' },
-          { label: 'Docs', href: 'https://github.com/Priyanshu-byte-coder/devtrack/blob/main/DEVELOPMENT.md' },
-          { label: 'Issues', href: 'https://github.com/Priyanshu-byte-coder/devtrack/issues' },
-        ].map(l => (
-          <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="lnd-footer-link">
-            {l.label}
-          </a>
-        ))}
-      </div>
-    </footer>
-  );
-}
+
 
 /* ═══════════════════════════════════════════════════════════
    MAIN EXPORT
@@ -973,17 +1056,17 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
   return (
     <div
       className="lnd-root"
-      style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}
+      style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'clip' }}
     >
       <MouseSpotlight />
       <HeroSection />
       <CommitTicker />
+      <AboutSection />
       <HeatmapSection />
-      <StatsSection />
+      <StatsSection stats={repoStats} />
       <FeaturesSection />
       <ContributeSection stats={repoStats} />
       <SetupSection />
-      <LandingFooter />
     </div>
   );
 }

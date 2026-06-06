@@ -105,7 +105,7 @@ export function formatTimeZoneLabel(timeZone: string): string {
     if (offset) {
       return normalizeOffsetLabel(offset);
     }
-  } catch {
+  } catch (e) {
     // Fallback to the raw zone name below.
   }
 

@@ -27,6 +27,9 @@ export function dateDiffDays(a: string, b: string): number {
   return (new Date(b).getTime() - new Date(a).getTime()) / 86400000;
 }
 
+// Alias to fix import mismatch (issue #1879)
+export const dateDiff = dateDiffDays;
+
 export function getThisWeekRange(): { start: string; end: string } {
   const now = new Date();
   const weekStart = getUtcWeekStart(now);

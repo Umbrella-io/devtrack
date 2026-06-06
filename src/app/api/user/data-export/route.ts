@@ -201,6 +201,13 @@ export async function GET(req: NextRequest) {
     .eq("user_id", user.id);
   sections.goals = goals || [];
 
+  const { data: goalHistory } = await supabaseAdmin
+    .from("goal_history")
+    .select("id, goal_id, user_id, period_start, period_end, target, achieved, completed, created_at")
+    .eq("user_id", user.id)
+    .order("period_end", { ascending: false });
+  sections.goalHistory = goalHistory || [];
+
   const { data: snapshots } = await supabaseAdmin
     .from("metric_snapshots")
     .select(
@@ -301,17 +308,43 @@ export async function DELETE(req: NextRequest) {
   await writeAuditLog(user.id, "delete", req);
 
   // --- Data deletion ---------------------------------------------------
+  // Delete webhook_deliveries first — they reference webhook_configs via
+  // webhook_id (not user_id), so we must resolve the IDs before removing
+  // the parent webhook_configs rows.
+  const { data: userWebhooks } = await supabaseAdmin
+    .from("webhook_configs")
+    .select("id")
+    .eq("user_id", user.id);
+
+  const webhookIds = userWebhooks?.map((w) => w.id) ?? [];
+  if (webhookIds.length > 0) {
+    await supabaseAdmin
+      .from("webhook_deliveries")
+      .delete()
+      .in("webhook_id", webhookIds);
+  }
+
+  // Tables with a direct user_id foreign key, ordered to respect any
+  // potential FK constraints (children before parents).
+  // ai_insights is included explicitly here even though ON DELETE CASCADE on
+  // the foreign key would remove those rows when the users row is deleted.
+  // The explicit delete is a defense-in-depth measure that works regardless
+  // of whether the FK migration has been applied to a given environment.
   const tablesToDelete = [
-  "streak_freezes",
-  "streak_milestones",
-  "local_coding_sessions",
-  "local_coding_api_keys",
-  "jira_credentials",
-  "webhook_configs",
-  "user_github_accounts",
-  "goals",
-  "metric_snapshots",
-];
+    "notifications",
+    "ai_insights",
+    "data_export_audit",
+    "streak_freezes",
+    "streak_milestones",
+    "local_coding_sessions",
+    "local_coding_api_keys",
+    "jira_credentials",
+    "webhook_configs",
+    "user_github_accounts",
+    "goal_history",
+    "goals",
+    "metric_snapshots",
+  ];
 
   for (const table of tablesToDelete) {
     await supabaseAdmin.from(table).delete().eq("user_id", user.id);

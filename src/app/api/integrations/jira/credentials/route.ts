@@ -59,12 +59,20 @@ export async function GET(req: NextRequest) {
   const result = await requireUser();
   if ("error" in result) return result.error;
 
-  const { data: credentials } = await supabaseAdmin
+  const { data: credentials, error } = await supabaseAdmin
     .from("jira_credentials")
     .select("id, jira_domain, email, project_key, is_active, created_at")
     .eq("user_id", result.user.id);
 
-  return Response.json({ credentials: credentials || [] });
+  if (error) {
+    console.error("Failed to fetch Jira credentials:", error);
+    return Response.json(
+      { error: "Failed to fetch Jira credentials" },
+      { status: 500 }
+    );
+  }
+
+  return Response.json({ credentials: credentials ?? [] });
 }
 
 export async function POST(req: NextRequest) {
@@ -74,7 +82,7 @@ export async function POST(req: NextRequest) {
   let body: JiraCredentialsInput;
   try {
     body = await req.json();
-  } catch {
+  } catch (e) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
