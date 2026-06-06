@@ -20,7 +20,6 @@ import {
   upstashTryAcquireLock,
 } from "@/lib/upstash-rest";
 
-
 export const revalidate = 3600;
 
 const RATE_LIMIT_REQUESTS = 20;

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { encryptToken } from "@/lib/crypto";
+import { validateTextInput } from "@/lib/sanitize";
 import { clearLeaderboardCache } from "@/lib/leaderboard";
 import { cacheGet, cacheSet, cacheDelete } from "@/lib/metrics-cache";
 
@@ -309,15 +310,16 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (hasBio && bio !== undefined) {
-    if (typeof bio !== "string") {
-      return NextResponse.json({ error: "Bio must be a string" }, { status: 400 });
+    const result = validateTextInput(bio, "Bio", 500);
+  
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      );
     }
-
-    if (bio.length > 500) {
-      return NextResponse.json({ error: "Bio must be 500 characters or fewer" }, { status: 400 });
-    }
-
-    updates.bio = bio;
+  
+    updates.bio = result.value;
   }
 
   if (hasWakatimeKey && wakatime_api_key !== undefined) {

@@ -368,7 +368,7 @@ export default function ResumePreview({ content, onContentChange }: ResumePrevie
                           <a
                             href={proj.url}
                             target="_blank"
-                            rel="noreferrer"
+                            rel="noopener noreferrer"
                             className="text-base font-bold text-[var(--foreground)] hover:text-[var(--accent)] transition-colors"
                           >
                             {proj.name}

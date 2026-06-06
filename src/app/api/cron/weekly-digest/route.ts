@@ -37,6 +37,7 @@ export async function GET(request: Request) {
     // 3. For each user, send the email
     // Minimal template logic to prevent timeouts and keep implementation clean
     let sentCount = 0;
+    let failedCount = 0;
     
     for (const user of users) {
       if (!user.email) continue;
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
       `;
 
       if (process.env.RESEND_API_KEY) {
-        await fetch("https://api.resend.com/emails", {
+        const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -68,11 +69,17 @@ export async function GET(request: Request) {
             html: htmlBody,
           }),
         });
+
+        if (!res.ok) {
+          failedCount++;
+          console.error(`Failed to send weekly digest to ${user.email}: ${res.status}`);
+          continue;
+        }
       }
       sentCount++;
     }
 
-    return NextResponse.json({ success: true, sentCount });
+    return NextResponse.json({ success: true, sentCount, failedCount });
   } catch (err) {
     console.error("Cron weekly-digest failed:", err);
     return NextResponse.json({ error: "Failed to process digests" }, { status: 500 });
