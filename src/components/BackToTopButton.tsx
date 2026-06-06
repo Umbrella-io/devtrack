@@ -77,7 +77,7 @@ export default function BackToTopButton() {
               onClick={scrollToTop}
               type="button"
               aria-label="Scroll to top"
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 backdrop-blur-md text-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-2 focus:ring-offset-[var(--background)]"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 backdrop-blur-md text-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:bg-black/70"
             >
               <ArrowUp size={24} aria-hidden="true" className="text-white/90" />
             </button>

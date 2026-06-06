@@ -7,6 +7,7 @@ import {
   mergeMetrics,
 } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
+import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -161,11 +162,11 @@ async function fetchReposForAccount(
         }
       );
 
+      // HTTP 401 = token revoked — throw auth error so caller can surface reconnect.
       // HTTP 403 = Search API rate limit exceeded for this token.
       // HTTP 422 = malformed query (e.g. invalid date format or username characters).
-      // Both throw here so the GET handler returns HTTP 502, and the client
-      // falls back to showing an error state rather than an empty repos list.
       if (!searchRes.ok) {
+        if (searchRes.status === 401) throw new GitHubAuthError();
         throw new Error("GitHub API error");
       }
 
@@ -218,6 +219,9 @@ export async function GET(req: NextRequest) {
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
+  }
 
   const daysParam = req.nextUrl.searchParams.get("days");
   const parsedDays = daysParam ? parseInt(daysParam, 10) : NaN;
@@ -236,9 +240,8 @@ export async function GET(req: NextRequest) {
         { bypass, userId: session.githubId ?? session.githubLogin }
       );
       return Response.json(result);
-    } catch {
-      // fetchReposForAccount throws on GitHub API errors (rate limit, network failure).
-      // Return 502 so the client shows an error state rather than an empty repos widget.
+    } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -299,7 +302,8 @@ export async function GET(req: NextRequest) {
         { bypass, userId: session.githubId }
       );
       return Response.json(result);
-    } catch {
+    } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -330,7 +334,8 @@ export async function GET(req: NextRequest) {
       { bypass, userId: accountId }
     );
     return Response.json(result);
-  } catch {
+  } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }
