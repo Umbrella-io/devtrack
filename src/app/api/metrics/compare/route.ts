@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { toDateStr } from "@/lib/dateUtils";
+import { calculateCurrentStreak } from "@/lib/streak";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -34,9 +35,10 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Invalid GitHub username" }, { status: 400 });
   }
 
-  // Check Supabase cache first (keyed by username + UTC date)
+  // Check Supabase cache first (keyed by username + requester + UTC date)
   const today = toDateStr(new Date());
-  const cacheKey = `${normalizedUsername}::${today}`;
+  const requester = session.githubLogin;
+  const cacheKey = `${normalizedUsername}::${requester}::${today}`;
 
   const { data: cached } = await supabaseAdmin
     .from("comparison_cache")
@@ -118,29 +120,7 @@ export async function GET(req: NextRequest) {
       weeklyMap[weekKey] = (weeklyMap[weekKey] ?? 0) + 1;
     }
 
-    const commitDays = Object.keys(daySet).sort();
-
-    if (commitDays.length > 0) {
-      let currentRun = 1;
-      const runs: { end: string; length: number }[] = [];
-      for (let i = 1; i < commitDays.length; i++) {
-        if (dateDiffDays(commitDays[i - 1], commitDays[i]) === 1) {
-          currentRun++;
-        } else {
-          runs.push({ end: commitDays[i - 1], length: currentRun });
-          currentRun = 1;
-        }
-      }
-      runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
-
-      const todayStr = toDateStr(new Date());
-      const yesterdayStr = toDateStr(new Date(Date.now() - 86400000));
-      const lastRun = runs[runs.length - 1];
-      streak =
-        lastRun.end === todayStr || lastRun.end === yesterdayStr
-          ? lastRun.length
-          : 0;
-    }
+    streak = calculateCurrentStreak(Object.keys(daySet));
   }
 
   // Build ordered weekly array (last 8 weeks) for the chart

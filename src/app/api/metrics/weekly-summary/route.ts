@@ -2,11 +2,13 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { GITHUB_API } from "@/lib/github";
+import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 import { getAccountToken } from "@/lib/github-accounts";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { calculateStreak } from "@/lib/streak";
+import { toDateStr } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -24,28 +26,10 @@ function getCurrentWeekStartUtc(): Date {
 }
 
 function calculateCurrentStreak(activeDates: Set<string>): number {
-  const commitDays = Array.from(activeDates).sort(); // ascending "YYYY-MM-DD"
-  if (commitDays.length === 0) return 0;
-
-  let currentRun = 1;
-  const runs: { end: string; length: number }[] = [];
-
-  // Split dates into consecutive runs — any gap > 1 day breaks the streak.
-  for (let i = 1; i < commitDays.length; i++) {
-    const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
-    if (diff === 1) { currentRun++; }
-    else { runs.push({ end: commitDays[i - 1], length: currentRun }); currentRun = 1; }
-  }
-  runs.push({ end: commitDays[commitDays.length - 1], length: currentRun });
-
-  const today = toDateStr(new Date());
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
-  const lastRun = runs[runs.length - 1];
-
-  // Streak is alive if the last active day is today OR yesterday.
-  // Allowing yesterday prevents the streak from resetting at midnight before
-  // the user has had a chance to commit on the new day.
-  return lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
+  const { currentStreak } = calculateStreak(
+    Array.from(activeDates).map((day) => new Date(day))
+  );
+  return currentStreak;
 }
 
 async function fetchActiveDates(githubLogin: string, token: string): Promise<Set<string>> {
@@ -82,10 +66,12 @@ async function fetchActiveDates(githubLogin: string, token: string): Promise<Set
       }
     );
 
-    // HTTP 403 = Search API rate limit exceeded ("API rate limit exceeded" in body).
-    // Throws here so withMetricsCache propagates the error to the GET handler,
-    // which returns HTTP 502 to the client.
-    if (!searchRes.ok) throw new Error("GitHub API error");
+    // HTTP 401 = token revoked/invalid. HTTP 403 = rate limit.
+    // Both throw so the outer GET handler can distinguish auth failures.
+    if (!searchRes.ok) {
+      if (searchRes.status === 401) throw new GitHubAuthError();
+      throw new Error("GitHub API error");
+    }
 
     const data = (await searchRes.json()) as { items: Array<{ commit: { author: { date: string } } }> };
 
@@ -109,6 +95,9 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
   }
 
   const accountId = req.nextUrl.searchParams.get("accountId");
@@ -176,12 +165,10 @@ export async function GET(req: NextRequest) {
         }
       );
 
-      // Guard against non-200 responses (e.g. 403 secondary rate limit) before
-      // calling .json(). Without this check, commitsData.items is undefined on a
-      // rate-limit response, causing the for-of loop below to throw
-      // "TypeError: undefined is not iterable" and wipe the entire widget.
-      // On failure we fall back to an empty items array so PRs and streak data
-      // remain visible even when the commits search is rate-limited.
+      // 401 = token revoked — surface immediately so the banner appears.
+      // Other non-ok responses (403 rate limit, 5xx) fall back to empty items
+      // so the PRs and streak sections still render on rate-limit transients.
+      if (!commitsRes.ok && commitsRes.status === 401) throw new GitHubAuthError();
       const commitsData: {
         items: Array<{
           commit: { author: { date: string } };
@@ -237,9 +224,8 @@ export async function GET(req: NextRequest) {
         }
       );
 
-      // Unlike commitsRes, a PR Search failure throws and returns 502 —
-      // PR data is more critical to the weekly summary widget than commit counts.
       if (!prsRes.ok) {
+        if (prsRes.status === 401) throw new GitHubAuthError();
         throw new Error("GitHub API error");
       }
 
@@ -301,9 +287,8 @@ export async function GET(req: NextRequest) {
       };
     });
     return Response.json(data);
-  } catch {
-    // Catches errors thrown by the PR Search call or fetchActiveDates (rate limit, network).
-    // Returns 502 so the client shows an error state rather than stale/empty summary data.
+  } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

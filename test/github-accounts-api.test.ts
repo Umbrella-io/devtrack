@@ -120,28 +120,28 @@ describe("GitHub Accounts API Endpoints", () => {
       (getServerSession as any).mockResolvedValue(null);
 
       const req = new NextRequest("http://localhost/api/user/github-accounts/999", { method: "DELETE" });
-      const res = await DELETE(req, { params: { githubId: "999" } });
+      const res = await DELETE(req, { params: Promise.resolve({ githubId: "999"  }) });
       expect(res.status).toBe(401);
       expect(await res.json()).toEqual({ error: "Unauthorized" });
     });
 
     it("returns 400 when githubId parameter is empty", async () => {
       const req = new NextRequest("http://localhost/api/user/github-accounts/ ", { method: "DELETE" });
-      const res = await DELETE(req, { params: { githubId: "" } });
+      const res = await DELETE(req, { params: Promise.resolve({ githubId: ""  }) });
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({ error: "Invalid githubId parameter" });
     });
 
     it("returns 400 when githubId parameter is non-numeric", async () => {
       const req = new NextRequest("http://localhost/api/user/github-accounts/abc", { method: "DELETE" });
-      const res = await DELETE(req, { params: { githubId: "abc" } });
+      const res = await DELETE(req, { params: Promise.resolve({ githubId: "abc"  }) });
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({ error: "Invalid githubId parameter" });
     });
 
     it("returns 400 when githubId parameter has spaces or special characters", async () => {
       const req = new NextRequest("http://localhost/api/user/github-accounts/ 123", { method: "DELETE" });
-      const res = await DELETE(req, { params: { githubId: " 123 " } });
+      const res = await DELETE(req, { params: Promise.resolve({ githubId: " 123 "  }) });
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({ error: "Invalid githubId parameter" });
     });
@@ -150,14 +150,14 @@ describe("GitHub Accounts API Endpoints", () => {
       (resolveAppUser as any).mockResolvedValue(null);
 
       const req = new NextRequest("http://localhost/api/user/github-accounts/999", { method: "DELETE" });
-      const res = await DELETE(req, { params: { githubId: "999" } });
+      const res = await DELETE(req, { params: Promise.resolve({ githubId: "999"  }) });
       expect(res.status).toBe(401);
       expect(await res.json()).toEqual({ error: "Unauthorized" });
     });
 
     it("returns 400 when trying to remove the primary account", async () => {
       const req = new NextRequest("http://localhost/api/user/github-accounts/12345", { method: "DELETE" });
-      const res = await DELETE(req, { params: { githubId: "12345" } });
+      const res = await DELETE(req, { params: Promise.resolve({ githubId: "12345"  }) });
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({ error: "Cannot remove primary account" });
     });
@@ -175,7 +175,7 @@ describe("GitHub Accounts API Endpoints", () => {
       });
 
       const req = new NextRequest("http://localhost/api/user/github-accounts/999", { method: "DELETE" });
-      const res = await DELETE(req, { params: { githubId: "999" } });
+      const res = await DELETE(req, { params: Promise.resolve({ githubId: "999"  }) });
       expect(res.status).toBe(500);
       expect(await res.json()).toEqual({ error: "Delete failed" });
     });
@@ -193,14 +193,14 @@ describe("GitHub Accounts API Endpoints", () => {
       });
 
       const req = new NextRequest("http://localhost/api/user/github-accounts/999", { method: "DELETE" });
-      const res = await DELETE(req, { params: { githubId: "999" } });
+      const res = await DELETE(req, { params: Promise.resolve({ githubId: "999"  }) });
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({ error: "Account not found" });
     });
 
     it("successfully deletes the secondary linked account", async () => {
       const req = new NextRequest("http://localhost/api/user/github-accounts/999", { method: "DELETE" });
-      const res = await DELETE(req, { params: { githubId: "999" } });
+      const res = await DELETE(req, { params: Promise.resolve({ githubId: "999"  }) });
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ success: true });
     });
