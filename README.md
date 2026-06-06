@@ -283,6 +283,61 @@ Want to contribute? Pick an item below and open an issue or start a PR.
 
 ---
 
+
+## 📦 GSSoC Caching Guidelines Reference Manual
+
+Efficient caching improves performance, reduces server load, and enhances user experience in modern web applications.
+
+---
+
+### API Response Caching
+
+Use caching for GET requests where data does not change frequently.
+
+Example:
+Cache-Control: public, max-age=300, stale-while-revalidate=600
+
+
+---
+
+### Frontend Caching
+
+Use tools like React Query or SWR to cache API responses and reduce unnecessary network requests.
+
+---
+
+### Server-Side Caching
+
+Use Redis or in-memory caching for:
+- expensive computations
+- repeated database queries
+- frequently accessed data
+
+---
+
+### Static Asset Caching
+
+Enable long-term caching for static assets:
+Cache-Control: public, max-age=31536000, immutable
+
+
+---
+
+### Cache Invalidation Strategy
+
+Always invalidate cache when underlying data changes using:
+- versioning
+- timestamps
+- manual invalidation
+
+---
+
+### Best Practices
+
+- Do not cache sensitive data
+- Always define TTL (Time To Live)
+- Monitor cache hit/miss ratio for performance optimization
+
 ## Contributing
 
 DevTrack actively welcomes contributors of all skill levels, including **GSSoC 2026 participants**.
