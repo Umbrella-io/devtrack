@@ -39,8 +39,7 @@ export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] 
             value={query} 
             onChange={(e) => { setQuery(e.target.value); setPage(1); }} 
             placeholder="Search repos..." 
-            className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] outline-none focus:border-[var(--accent)] transition-all flex-1 min-w-[200px]" 
-          />
+            className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] transition-all flex-1 min-w-[200px]"           />
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <select 
               value={languageFilter} 
@@ -97,7 +96,7 @@ export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] 
       {/* Cards View */}
       {filteredRepos.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--border)] bg-[var(--card-muted)]/20 p-16 text-center fade-up mt-4">
-          <div className="rounded-full bg-[var(--card)] p-4 shadow-sm mb-4 border border-[var(--border)]">
+          <div className="rounded-full bg-[var(--card)] p-4 shadow-sm mb-4 border border-[var(--border)] transition-all duration-300 hover:shadow-md hover:-translate-y-1">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--muted-foreground)]">
               <path d="M21 12c0 1.2-4 6-9 6s-9-4.8-9-6c0-1.2 4-6 9-6s9 4.8 9 6Z" />
               <circle cx="12" cy="12" r="3" />

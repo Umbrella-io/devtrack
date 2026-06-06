@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import DOMPurify from "dompurify";
 
 interface Insight {
@@ -39,7 +39,7 @@ function SkeletonCard() {
       role="status"
       aria-busy="true"
       aria-live="polite"
-      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm animate-pulse"
+      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm animate-pulse transition-all duration-300 hover:shadow-md hover:-translate-y-1"
     >
       <span className="sr-only">Loading AI Mentor insights</span>
       <div className="flex items-center justify-between mb-4">
@@ -107,7 +107,7 @@ export function AIMentorWidget() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <p className="text-sm text-[var(--muted-foreground)]">{error}</p>
       </div>
     );
@@ -124,7 +124,7 @@ export function AIMentorWidget() {
     : "";
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-[var(--card-foreground)] flex items-center gap-2">

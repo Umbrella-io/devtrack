@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { memo } from "react";
 
 
 import ContributionGraph from "@/components/ContributionGraph";
@@ -22,8 +23,7 @@ import ExportButton from "@/components/ExportButton";
 import PersonalRecords from "@/components/PersonalRecords";
 import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
 
-export default function DashboardWidgets() {
-  return (
+function DashboardWidgets() { return (
     <>
       <WidgetErrorBoundary>
         <DashboardHeader />
@@ -132,3 +132,4 @@ export default function DashboardWidgets() {
   );
 }
 
+export default memo(DashboardWidgets);
