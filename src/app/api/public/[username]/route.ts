@@ -5,6 +5,13 @@ import { getUpstashConfig, upstashRateLimitFixedWindow } from "@/lib/upstash-res
 export const dynamic = "force-dynamic";
 
 /**
+ * GitHub usernames: 1–39 chars, alphanumeric or single hyphens,
+ * cannot start or end with a hyphen.
+ * https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-user-account-settings/github-username-policy
+ */
+const GITHUB_USERNAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/;
+
+/**
  * In-memory rate limiter for IP addresses.
  * Maps IP -> { count: number, resetAt: number }
  * This resets on server restart. For production, use Redis.
@@ -65,6 +72,17 @@ export async function GET(
 ): Promise<NextResponse> {
   cleanOldEntries(ipRateLimits);
   const { username } = params;
+
+  // Validate username before touching any downstream service.
+  // Rejects path-traversal attempts (../../admin), null-byte injections
+  // (%00injected), and anything that could not be a real GitHub username.
+  if (!GITHUB_USERNAME_RE.test(username)) {
+    return NextResponse.json(
+      { error: "Invalid username" },
+      { status: 400 }
+    );
+  }
+
   // Rate limiting
   const ip = getRateLimitKey(req);
   const rateLimit = getUpstashConfig()
