@@ -22,6 +22,8 @@ function mockMetricResponse(url) {
     return {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
       prs: { thisWeek: { opened: 3, merged: 2 }, lastWeek: { opened: 1, merged: 1 } },
+      issues: { thisWeek: 4, lastWeek: 3 },
+      productivityScore: { current: 85, previous: 78 },
       activeDays: { thisWeek: 5, lastWeek: 4 },
       streak: 3,
       topRepo: "demo/repo",
@@ -44,37 +46,45 @@ function mockMetricResponse(url) {
     return { trend: [] };
   if (url.includes("/api/metrics/inactive-repos"))
     return { repos: [] };
-  if (url.includes("/api/metrics/coding-time"))
+  if (url.includes("/api/metrics/coding-time") || url.includes("/api/wakatime"))
     return { hasData: false, not_configured: true, todaysSeconds: 0, totalSeconds7Days: 0, chartData: [], topLanguage: "", topProject: "" };
   if (url.includes("/api/metrics/coding-activity-insights"))
     return { hourlyCounts: [], mostActiveHour: { hour: 0, count: 0, label: "" }, leastActiveHour: { hour: 0, count: 0, label: "" }, totalActivities: 0, averageDailyCommits: 0, consistencyScore: 0, productivityLevel: "Low", timezone: "UTC" };
   if (url.includes("/api/metrics/contributions"))
     return { data: { "2026-05-16": 3, "2026-05-17": 5, "2026-05-18": 2 } };
+  if (url.includes("/api/metrics/productive-hours"))
+    return { grid: [], peak: null, total: 0, days: 0, timezone: "UTC" };
+  if (url.includes("/api/user/pinned-repos/details"))
+    return { pinnedRepos: [] };
+  if (url.includes("/api/metrics/repo-explorer"))
+    return { repos: [] };
   return {};
 }
 
 test.beforeEach(async ({ page }) => {
-  const token = await encode({
-    secret: process.env.NEXTAUTH_SECRET || authSecret,
+  const sessionToken = await encode({
+    secret: authSecret,
     token: {
       name: "Playwright User",
       email: "playwright@example.com",
+      sub: "12345",
       githubLogin: "playwright-user",
       githubId: "12345",
       accessToken: "test-token",
-      expires: "2099-01-01T00:00:00.000Z",
     },
+    maxAge: 60 * 60,
   });
 
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
-      value: String(token ?? ""),
+      value: sessionToken,
       domain: "127.0.0.1",
       path: "/",
       httpOnly: true,
       sameSite: "Lax",
       secure: false,
+      expires: Math.floor(Date.now() / 1000) + 60 * 60,
     },
   ]);
 
@@ -138,7 +148,10 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/activity**", "**/api/metrics/commit-time**", "**/api/metrics/personal-records**",
     "**/api/metrics/discussions**", "**/api/metrics/pr-review-trend**", "**/api/metrics/inactive-repos**",
     "**/api/metrics/contributions**", "**/api/metrics/coding-time**", "**/api/metrics/coding-activity-insights**",
-    "**/api/local-coding/stats**",
+    "**/api/local-coding/stats**", "**/api/wakatime**",
+    "**/api/metrics/productive-hours**",
+    "**/api/user/pinned-repos/details**",
+    "**/api/metrics/repo-explorer**",
   ];
 
   for (const pattern of metricRoutes) {

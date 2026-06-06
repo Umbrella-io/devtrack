@@ -28,6 +28,9 @@ const LANGUAGE_REPO_LIMIT = 8;
 
 const memoryRateLimits = new Map<string, RateLimitEntry>();
 
+// In-process build promise to dedupe concurrent builds in the same Node
+// process when an external cache/lock (Upstash) is not configured.
+let _inProcessLeaderboardBuild: Promise<import("@/lib/leaderboard").LeaderboardPayload | null> | null = null;
 function getRateLimitKey(req: NextRequest): string {
   return req.ip ?? req.headers.get("x-real-ip") ?? "unknown";
 }

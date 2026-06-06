@@ -36,7 +36,7 @@ export async function PATCH(
 
   const updates: Record<string, unknown> = {};
 
-  const { title, target, unit, recurrence, current } =
+  const { title, target, unit, recurrence, current, is_public } =
     body as Record<string, unknown>;
 
   if (title !== undefined) {
@@ -90,6 +90,17 @@ export async function PATCH(
     }
     updates.current = current;
   }
+  
+  if (is_public !== undefined) {
+    if (typeof is_public !== "boolean") {
+      return Response.json(
+        { error: "is_public must be a boolean" },
+        { status: 400 }
+      );
+    }
+
+    updates.is_public = is_public;
+  } 
 
   const { data: existingGoal } = await supabaseAdmin
     .from("goals")

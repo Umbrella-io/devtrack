@@ -318,6 +318,13 @@ export default async function PublicProfilePage({
         </div>
       ) : null}
 
+      {/* Weekly Goal Progress */}
+      {profile.weeklyGoalProgress && (
+        <div className="mt-6">
+          <PublicWeeklyGoalProgress progress={profile.weeklyGoalProgress} />
+        </div>
+      )}
+
       {/* Row 2: Top repos */}
       <div className="mt-6">
         <PublicTopRepos repos={profile.repos} />
@@ -463,6 +470,40 @@ function PublicStreakTracker({ streak }: { streak: any }) {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function PublicWeeklyGoalProgress({
+  progress,
+}: {
+  progress: { completed: number; total: number; percentage: number };
+}) {
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
+        Weekly Goal Progress
+      </h2>
+      <div className="flex items-center gap-4">
+        <div className="relative h-20 w-20">
+          <svg className="h-20 w-20 -rotate-90" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="30" fill="none" stroke="var(--control)" strokeWidth="6" />
+            <circle
+              cx="36" cy="36" r="30"
+              fill="none" stroke="var(--accent)" strokeWidth="6"
+              strokeDasharray={2 * Math.PI * 30}
+              strokeDashoffset={2 * Math.PI * 30 * (1 - progress.percentage / 100)}
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[var(--card-foreground)]">
+            {progress.percentage}%
+          </span>
+        </div>
+        <div className="text-sm text-[var(--muted-foreground)]">
+          {progress.completed} of {progress.total} weekly goals completed
+        </div>
       </div>
     </div>
   );
