@@ -35,9 +35,14 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Invalid GitHub username" }, { status: 400 });
   }
 
-  // Check Supabase cache first (keyed by username + UTC date)
+  // Check Supabase cache first (keyed by viewer identity + target username + UTC date)
+  // Viewer identity must be part of the key because GitHub API results are token-scoped
+  // (private/org repos can differ per viewer), so one user's cached payload must not
+  // be served to a different authenticated user.
+  // Use githubId (stable numeric ID) with githubLogin as fallback.
   const today = toDateStr(new Date());
-  const cacheKey = `${normalizedUsername}::${today}`;
+  const viewerId = session.githubId ?? session.githubLogin;
+  const cacheKey = `${viewerId}::${normalizedUsername}::${today}`;
 
   const { data: cached } = await supabaseAdmin
     .from("comparison_cache")

@@ -24,13 +24,12 @@ function hashApiKey(key: string): string {
 
 async function authenticateApiKey(apiKey: string): Promise<string | null> {
   const keyHash = hashApiKey(apiKey);
-  const keyHashFilter = `api_key_hash.eq.${keyHash},api_key.eq.${keyHash}`;
 
 
   const { data: keyRecord } = await supabaseAdmin
     .from("local_coding_api_keys")
     .select("user_id")
-    .or(keyHashFilter)
+    .eq("api_key_hash", keyHash)
     .single();
 
   if (!keyRecord) {
@@ -40,7 +39,7 @@ async function authenticateApiKey(apiKey: string): Promise<string | null> {
   await supabaseAdmin
     .from("local_coding_api_keys")
     .update({ last_used_at: new Date().toISOString() })
-    .or(keyHashFilter);
+    .eq("api_key_hash", keyHash);
 
   return keyRecord.user_id;
 }
@@ -201,6 +200,21 @@ export async function POST(req: NextRequest) {
     file_count: session.fileCount || 0,
     project_count: session.projectCount || 0,
   }));
+
+  const { count: latestCount } = await supabaseAdmin
+    .from("local_coding_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  
+  if ((latestCount || 0) + newDateCount > MAX_SESSIONS_PER_USER) {
+    return Response.json(
+      {
+        error: `Session limit reached. Maximum ${MAX_SESSIONS_PER_USER} sessions per user.`,
+      },
+      { status: 400 }
+    );
+  }
+
 
   const { error: upsertError } = await supabaseAdmin.rpc("batch_upsert_sessions", {
     sessions: records,

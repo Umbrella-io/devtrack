@@ -7,6 +7,13 @@ import { validateCronRequest } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
+const DISCORD_WEBHOOK_REGEX =
+  /^https:\/\/discord\.com\/api\/webhooks\/\d+\/[\w-]+$/;
+
+function isValidDiscordWebhookUrl(url: string): boolean {
+  return DISCORD_WEBHOOK_REGEX.test(url);
+}
+
 export async function GET(req: Request) {
   const authError = validateCronRequest(req);
   if (authError) return authError;
@@ -28,6 +35,7 @@ export async function GET(req: Request) {
 
   for (const user of users) {
     if (!user.discord_webhook_url) continue;
+    if (!isValidDiscordWebhookUrl(user.discord_webhook_url)) continue;
 
     const tz = user.timezone || "UTC";
     let localHour: number;

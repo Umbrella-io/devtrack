@@ -16,8 +16,24 @@ create table if not exists users (
   is_sponsor   boolean default false,
   discord_webhook_url text,
   timezone text default 'UTC',
-  last_discord_notification_at timestamptz
+  last_discord_notification_at timestamptz,
+  last_ai_summary_at timestamptz
 );
+
+alter table users
+add column if not exists dashboard_layout jsonb not null default
+'{
+  "version": 1,
+  "sections": ["overview", "activity", "analytics", "goals"],
+  "widgets": {
+    "overview": ["weekly-summary", "personal-records", "ai-mentor"],
+    "activity": ["contribution-graph", "contribution-heatmap", "repo-contribution-distribution", "activity-ring", "coding-activity-insights", "streak-tracker", "local-coding-time", "coding-time", "commit-time", "productive-hours"],
+    "analytics": ["repo-analytics", "pr-metrics", "pr-breakdown", "pr-review-trend", "discussions", "community-metrics", "pinned-repos", "top-repos", "inactive-repos"],
+    "goals": ["issue-metrics", "goal-tracker", "daily-note", "recent-activity", "ci-analytics", "language-breakdown", "friend-comparison"]
+  },
+  "hidden": []
+}'::jsonb;
+
 
 CREATE INDEX IF NOT EXISTS users_leaderboard_opt_in_idx
   ON users(leaderboard_opt_in)
