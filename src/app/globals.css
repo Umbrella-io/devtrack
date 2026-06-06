@@ -624,6 +624,24 @@ body {
     var(--shadow-medium);
 }
 
+/* --- Bento Grid Responsive Tuning for screens < 375px --- */
+@media (max-width: 375px) {
+  .lnd-bento-grid {
+    gap: 4px !important;
+    --lnd-label-font-size: 8px;
+    --lnd-label-letter-spacing: 0.05em;
+    --lnd-label-font-size-mini: 7px;
+    --lnd-heatmap-mini-cell-size: 6px;
+    --lnd-heatmap-mini-cell-gap: 1px;
+    --lnd-chart-bar-gap: 1px;
+  }
+  .lnd-bento-grid .lnd-cell {
+    padding: 10px 8px !important;
+    border-radius: 8px !important;
+  }
+}
+
+
 .lnd-heatmap-cell {
   cursor: crosshair;
 }

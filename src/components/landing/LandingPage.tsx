@@ -174,8 +174,8 @@ function MouseSpotlight() {
    BENTO WIDGETS
    ═══════════════════════════════════════════════════════════ */
 const wLabel: React.CSSProperties = {
-  fontFamily: MONO, fontSize: 10, fontWeight: 500,
-  color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.1em',
+  fontFamily: MONO, fontSize: 'var(--lnd-label-font-size, 10px)', fontWeight: 500,
+  color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: 'var(--lnd-label-letter-spacing, 0.1em)',
 };
 const wValue: React.CSSProperties = {
   fontFamily: MONO, fontWeight: 600, color: TEXT,
@@ -210,7 +210,7 @@ function ChartWidget() {
         <span style={wLabel}>contributions / 30d</span>
         <span style={{ ...wLabel, color: A }}>■ active</span>
       </div>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: 2, minHeight: 60 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: 'var(--lnd-chart-bar-gap, 2px)', minHeight: 60 }}>
         {BARS.map((v, i) => (
           <div
             key={i}
@@ -268,7 +268,7 @@ function StreakWidget() {
             <span style={{ ...wValue, fontSize: 20 }}>23</span>
           </div>
         </div>
-        <span style={{ ...wLabel, fontSize: 9 }}>day streak</span>
+        <span style={{ ...wLabel, fontSize: 'var(--lnd-label-font-size-mini, 9px)' }}>day streak</span>
       </div>
     </Cell>
   );
@@ -322,12 +322,12 @@ function HeatmapMini() {
     <Cell>
       <div ref={ref}>
         <span style={{ ...wLabel, display: 'block', marginBottom: 8 }}>heatmap</span>
-        <div style={{ display: 'grid', gridTemplateRows: 'repeat(7, 1fr)', gridAutoFlow: 'column', gap: 2 }}>
+        <div style={{ display: 'grid', gridTemplateRows: 'repeat(7, 1fr)', gridAutoFlow: 'column', gap: 'var(--lnd-heatmap-mini-cell-gap, 2px)' }}>
           {MINI.map((v, i) => (
             <div
               key={i}
               style={{
-                width: 8, height: 8, borderRadius: 1.5,
+                width: 'var(--lnd-heatmap-mini-cell-size, 8px)', height: 'var(--lnd-heatmap-mini-cell-size, 8px)', borderRadius: 1.5,
                 background: MC[v],
                 opacity: vis ? 1 : 0,
                 transform: vis ? 'scale(1)' : 'scale(0)',
@@ -343,10 +343,13 @@ function HeatmapMini() {
 
 function BentoGrid() {
   return (
-    <div style={{
-      display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: 5, width: '100%', maxWidth: 380,
-    }}>
+    <div 
+      className="lnd-bento-grid"
+      style={{
+        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 5, width: '100%', maxWidth: 380,
+      }}
+    >
       <ChartWidget />
       <StreakWidget />
       <MergeWidget />
@@ -365,7 +368,7 @@ function HeroSection() {
       style={{
         minHeight: '100vh',
         display: 'flex', alignItems: 'center',
-        padding: '80px clamp(24px,5vw,64px) 40px',
+        padding: '80px clamp(12px,5vw,64px) 40px',
         gap: 'clamp(32px,5vw,80px)',
         flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
@@ -495,7 +498,7 @@ function HeroSection() {
       </div>
 
       {/* Right: bento */}
-      <div style={{ flex: '1 1 340px', display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
+      <div style={{ flex: '1 1 340px', display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 2, maxWidth: '100%', overflowX: 'hidden' }}>
         <BentoGrid />
       </div>
     </section>
