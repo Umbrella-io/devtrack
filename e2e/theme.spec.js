@@ -58,7 +58,7 @@ test("theme selector switches between themes on the dashboard", async ({ page })
 
   // The DashboardHeader provides the ThemeToggle select on the dashboard
   const themeSelect = page
-    .getByRole("combobox", { name: "Select dashboard theme" })
+    .locator('select[aria-label="Select dashboard theme"]')
     .first();
   await expect(themeSelect).toBeVisible({ timeout: 10000 });
 
@@ -98,7 +98,7 @@ test("public profile page theme selector works without authentication", async ({
   // ThemeToggle select must be present in the AppNavbar and functional without login
   const themeSelect = page
     .getByRole("banner")
-    .getByRole("combobox", { name: "Select dashboard theme" });
+    .locator('select[aria-label="Select dashboard theme"]');
   await expect(themeSelect).toBeVisible({ timeout: 10000 });
 
   const initialValue = await themeSelect.inputValue();
@@ -112,5 +112,5 @@ test("public profile page theme selector works without authentication", async ({
 
   // Theme preference must be persisted to localStorage
   const stored = await page.evaluate(() => localStorage.getItem("theme"));
-  expect(stored === "dark" || stored === "light" || stored === nextTheme).toBe(true);
+  expect(stored).toBe(nextTheme);
 });
