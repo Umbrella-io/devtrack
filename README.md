@@ -2,9 +2,15 @@
 
 # DevTrack
 
-**Your personal developer productivity command center.**
+**Your developer productivity command center.**
 
 > Pull your GitHub activity, commit streaks, PR analytics, and coding goals into one clean, self-hostable dashboard — no enterprise plan, no vendor lock-in.
+
+**What you get:**
+
+- A real-time dashboard for your GitHub stats (streaks, PR analytics, activity)
+- Weekly goals with progress tracking
+- A shareable public profile (`/u/[username]`)
 
 [![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
@@ -18,6 +24,14 @@
 
 **[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Community Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
 
+### Quick Links
+
+- **[Demo](#demo)**
+- **[Features](#features)**
+- **[Getting Started](#getting-started)**
+- **[Roadmap](#roadmap)**
+- **[Contributing](#contributing)**
+
 </div>
 
 ---
@@ -26,13 +40,20 @@
 
 <div align="center">
 
-![DevTrack Dashboard Demo](./public/assets/gifs/dashboard-demo.gif)
-
-*Dashboard: commit streaks, PR analytics, activity heatmap, and goals — all in one view.*
-
-![DevTrack Feature Hover Demo](./public/assets/gifs/feature-hover-demo.gif)
-
-*Interactive widgets with real-time GitHub data.*
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="./public/assets/gifs/dashboard-demo.gif" alt="DevTrack dashboard demo" width="100%" />
+      <br />
+      <em>Dashboard: streaks, PR analytics, activity heatmap, and goals</em>
+    </td>
+    <td width="50%" align="center">
+      <img src="./public/assets/gifs/feature-hover-demo.gif" alt="DevTrack widget demo" width="100%" />
+      <br />
+      <em>Interactive widgets: real-time GitHub data in action</em>
+    </td>
+  </tr>
+</table>
 
 </div>
 
@@ -218,6 +239,8 @@ npm run test:e2e
 
 ### Shipped
 
+These features are live in the current version.
+
 | Feature | Notes |
 |---|---|
 | GitHub OAuth sign-in | |
@@ -243,6 +266,8 @@ npm run test:e2e
 
 ### In Progress / Planned
 
+Want to contribute? Pick an item below and open an issue or start a PR.
+
 | Feature | Difficulty | Issue |
 |---|---|---|
 | Contribution heatmap calendar | Intermediate | [#18](https://github.com/Priyanshu-byte-coder/devtrack/issues/18) |
@@ -257,6 +282,61 @@ npm run test:e2e
 | Mobile app (React Native) | Advanced | — |
 
 ---
+
+
+## 📦 GSSoC Caching Guidelines Reference Manual
+
+Efficient caching improves performance, reduces server load, and enhances user experience in modern web applications.
+
+---
+
+### API Response Caching
+
+Use caching for GET requests where data does not change frequently.
+
+Example:
+Cache-Control: public, max-age=300, stale-while-revalidate=600
+
+
+---
+
+### Frontend Caching
+
+Use tools like React Query or SWR to cache API responses and reduce unnecessary network requests.
+
+---
+
+### Server-Side Caching
+
+Use Redis or in-memory caching for:
+- expensive computations
+- repeated database queries
+- frequently accessed data
+
+---
+
+### Static Asset Caching
+
+Enable long-term caching for static assets:
+Cache-Control: public, max-age=31536000, immutable
+
+
+---
+
+### Cache Invalidation Strategy
+
+Always invalidate cache when underlying data changes using:
+- versioning
+- timestamps
+- manual invalidation
+
+---
+
+### Best Practices
+
+- Do not cache sensitive data
+- Always define TTL (Time To Live)
+- Monitor cache hit/miss ratio for performance optimization
 
 ## Contributing
 
