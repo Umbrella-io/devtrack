@@ -68,6 +68,8 @@ interface User {
   github_login: string;
   bio: string | null;
   is_public: boolean;
+  public_since?: string | null;
+  show_weekly_goals?: boolean;
   pinned_repos?: string[];
   created_at: string;
   updated_at: string;
