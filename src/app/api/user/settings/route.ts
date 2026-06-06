@@ -197,7 +197,7 @@ export async function GET(req: NextRequest) {
   const result = await fetchUserSettings(user.id);
 
   if (result.error || !result.data) {
-    console.error("Error fetching user settings:", result.error);
+    console.error(`Error fetching user settings: code=${result.error?.code} msg=${result.error?.message}`, result.error);
     return NextResponse.json({ error: "Failed to fetch user settings" }, { status: 500 });
   }
 
