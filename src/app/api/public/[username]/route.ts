@@ -37,7 +37,7 @@ export async function GET(
   { params }: { params: Promise<{ username: string }> }
 ): Promise<NextResponse> {
   cleanOldEntries(ipRateLimits);
-  const { username } = params;
+  const { username } = await params;
 
   // Validate username before touching any downstream service.
   // Rejects path-traversal attempts (../../admin), null-byte injections
@@ -49,7 +49,7 @@ export async function GET(
     );
   }
 
-  const { username } = await params;
+
   // Rate limiting
   const ip = getClientIp(req);
   const rateLimit = getUpstashConfig()
