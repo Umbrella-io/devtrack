@@ -8,7 +8,15 @@ export interface StreakResult {
   freezeDates: string[];
 }
 
-function todayAndYesterday(timeZone: string): { today: string; yesterday: string } {
+export interface DateStreakResult {
+  currentStreak: number;
+  longestStreak: number;
+}
+
+function todayAndYesterday(timeZone: string): {
+  today: string;
+  yesterday: string;
+} {
   if (timeZone === "UTC") {
     const today = toDateStr(new Date());
     const yesterday = toDateStr(new Date(Date.now() - 86400000));
@@ -38,10 +46,8 @@ function todayAndYesterday(timeZone: string): { today: string; yesterday: string
 
 /**
  * Canonical streak calculation shared across all endpoints.
- * freeze dates count as active days so they don't break the streak.
- * The streak is alive when the last active day is today or yesterday —
- * the yesterday grace window prevents a reset before the user's first
- * commit of the new calendar day.
+ * Freeze dates count as active days so they do not break the streak.
+ * The streak is alive when the last active day is today or yesterday.
  */
 export function calculateStreakFromDates(
   activeDates: Set<string>,
@@ -52,7 +58,7 @@ export function calculateStreakFromDates(
     ...Array.from(activeDates),
     ...Array.from(freezeDates),
   ]);
-  const commitDays = Array.from(combinedDates).sort(); // ascending "YYYY-MM-DD"
+  const commitDays = Array.from(combinedDates).sort();
 
   if (commitDays.length === 0) {
     return {
@@ -69,27 +75,31 @@ export function calculateStreakFromDates(
   const runs: { start: string; end: string; length: number }[] = [];
   let runStart = commitDays[0];
 
-  // Walk the sorted date list and split into consecutive runs.
-  // dateDiffDays returns 1 for adjacent calendar days — any gap > 1 breaks the streak.
-  for (let i = 1; i < commitDays.length; i++) {
+  for (let i = 1; i < commitDays.length; i += 1) {
     const diff = dateDiffDays(commitDays[i - 1], commitDays[i]);
+
     if (diff === 1) {
-      // Consecutive day — extend the current run.
-      currentRun++;
-      if (currentRun > longestStreak) longestStreak = currentRun;
-    } else {
-      // Gap detected — close the current run and start a new one.
-      runs.push({ start: runStart, end: commitDays[i - 1], length: currentRun });
-      runStart = commitDays[i];
-      currentRun = 1;
+      currentRun += 1;
+      longestStreak = Math.max(longestStreak, currentRun);
+      continue;
     }
+
+    runs.push({
+      start: runStart,
+      end: commitDays[i - 1],
+      length: currentRun,
+    });
+    runStart = commitDays[i];
+    currentRun = 1;
   }
-  // Push the final run.
-  runs.push({ start: runStart, end: commitDays[commitDays.length - 1], length: currentRun });
+
+  runs.push({
+    start: runStart,
+    end: commitDays[commitDays.length - 1],
+    length: currentRun,
+  });
 
   const { today, yesterday } = todayAndYesterday(timeZone);
-
-  // Current streak is alive if the last active day is today OR yesterday.
   const lastRun = runs[runs.length - 1];
   const currentStreak =
     lastRun.end === today || lastRun.end === yesterday ? lastRun.length : 0;
@@ -112,10 +122,8 @@ export function calculateCurrentStreak(dates: Set<string> | string[]): number {
   return calculateStreakFromDates(dateSet).current;
 }
 
-// Adapter for callers that pass Date objects and expect {currentStreak, longestStreak}.
-export function calculateStreak(
-  commitDates: Date[]
-): { currentStreak: number; longestStreak: number } {
+// Adapter for callers that pass Date objects.
+export function calculateStreak(commitDates: Date[]): DateStreakResult {
   const dateSet = new Set(commitDates.map((d) => toDateStr(d)));
   const result = calculateStreakFromDates(dateSet);
   return { currentStreak: result.current, longestStreak: result.longest };
