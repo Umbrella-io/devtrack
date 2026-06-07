@@ -51,6 +51,7 @@
 - [Community](#community)
 - [Sponsors](#sponsors)
 - [License](#license)
+- [Contributors](#contributors)
 
 ---
 
@@ -307,6 +308,20 @@ All contributors are expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.
 ## License
 
 MIT — see [LICENSE](./LICENSE) for details.
+
+---
+
+## Contributors
+
+Thanks to everyone who has helped build DevTrack. Want to join the list? See [CONTRIBUTING.md](./CONTRIBUTING.md) and pick a [good first issue](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22).
+
+<div align="center">
+
+<a href="https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Priyanshu-byte-coder/devtrack" alt="Contributors" />
+</a>
+
+</div>
 
 ---
 
