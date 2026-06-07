@@ -46,9 +46,11 @@ export default function ShortcutsModal({
       return;
     }
 
-    // Save previous active element to restore later
-    previousFocusRef.current = document.activeElement as HTMLElement | null;
-    closeBtnRef.current?.focus();
+    // Save previous active element to restore later, only on initial open
+    if (!previousFocusRef.current) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
+      closeBtnRef.current?.focus();
+    }
 
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (modalRef.current && !modalRef.current.contains(e.target as Node)) {

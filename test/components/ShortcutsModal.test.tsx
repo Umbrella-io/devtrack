@@ -49,6 +49,7 @@ describe("ShortcutsModal Accessibility", () => {
     const focusableElements = screen.getByRole("dialog").querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
+    expect(focusableElements.length).toBeGreaterThan(0);
     
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
@@ -70,6 +71,7 @@ describe("ShortcutsModal Accessibility", () => {
     const focusableElements = screen.getByRole("dialog").querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
+    expect(focusableElements.length).toBeGreaterThan(0);
     
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
