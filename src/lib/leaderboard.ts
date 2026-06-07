@@ -7,7 +7,7 @@ import {
 } from "@/lib/leaderboard-cache";
 import { unstable_cache, revalidateTag } from "next/cache";
 
-export const CACHE_REFRESH_SECONDS = 300; // 5 minutes
+export const CACHE_REFRESH_SECONDS = 3600; // 1 hour
 export const CACHE_STALE_SECONDS = 6 * 60 * 60; // 6 hours
 export const LEADERBOARD_CACHE_KEY = "leaderboard:v1";
 export const LEADERBOARD_BUILD_LOCK_KEY = "leaderboard:build-lock:v1";
@@ -347,7 +347,7 @@ export const getCachedLeaderboard = (filters: LeaderboardFilters = {}) => {
   return unstable_cache(
     async () => buildLeaderboard(filters),
     ["leaderboard", period],
-    { revalidate: 300 }
+    { revalidate: CACHE_REFRESH_SECONDS }
   )();
 };
 
