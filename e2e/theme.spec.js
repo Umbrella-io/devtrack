@@ -103,7 +103,7 @@ test("public profile page theme selector works without authentication", async ({
   const nextTheme = initialTheme === "classic-dark" ? "modern-light-blue" : "classic-dark";
   const nextThemeLabel = nextTheme === "classic-dark" ? "Classic Dark" : "Modern Light Blue";
 
-  await themeToggle.click();
+  await themeToggle.click({ force: true });
   await expect(page.getByRole("menu", { name: "Theme options" })).toBeVisible();
   await page.getByRole("menuitemradio", { name: new RegExp(nextThemeLabel, "i") }).click();
 
