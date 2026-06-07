@@ -1,7 +1,5 @@
-import dns from "dns";
-import { promisify } from "util";
-
-const resolve = promisify(dns.resolve);
+import dns from "dns/promises";
+import net from "net";
 
 const PRIVATE_RANGES = [
   { start: 0x0a000000, end: 0x0affffff },
@@ -12,16 +10,45 @@ const PRIVATE_RANGES = [
 ];
 
 function ipToNumber(ip: string): number {
-  const parts = ip.split(".").map(Number);
-  return (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3];
+  const parts = ip.split(".");
+  if (parts.length !== 4) return NaN;
+  const numParts = parts.map(Number);
+  if (numParts.some((n) => isNaN(n) || n < 0 || n > 255 || !Number.isInteger(n))) return NaN;
+  return ((numParts[0] << 24) | (numParts[1] << 16) | (numParts[2] << 8) | numParts[3]) >>> 0;
 }
 
 function isPrivateIP(ip: string): boolean {
-  if (ip === "::1" || ip === "::" || ip.startsWith("fe80:") || ip.startsWith("fc00:") || ip.startsWith("fd00:")) {
+  ip = ip.toLowerCase();
+
+  // Extract IPv4 from IPv6-mapped IPv4 address
+  if (ip.startsWith("::ffff:")) {
+    const ipv4Part = ip.slice(7);
+    if (ipv4Part.includes(".")) {
+      ip = ipv4Part;
+    } else {
+      // Block non-standard encodings of mapped IPv4
+      return true;
+    }
+  }
+
+  // IPv6 private/loopback checks
+  if (
+    ip === "::1" ||
+    ip === "::" ||
+    ip.startsWith("fe80:") ||
+    ip.startsWith("fc00:") ||
+    ip.startsWith("fd00:")
+  ) {
     return true;
   }
 
+  if (ip.includes(":")) {
+    return false; // Public IPv6
+  }
+
   const num = ipToNumber(ip);
+  if (isNaN(num)) return true; // Block invalid formats
+
   return PRIVATE_RANGES.some(({ start, end }) => num >= start && num <= end);
 }
 
@@ -33,11 +60,36 @@ export async function isSafeUrl(url: string): Promise<boolean> {
     }
 
     const hostname = parsed.hostname;
-    if (hostname === "localhost" || hostname === "0.0.0.0") {
+    let ipToCheck = hostname;
+    if (ipToCheck.startsWith("[") && ipToCheck.endsWith("]")) {
+      ipToCheck = ipToCheck.slice(1, -1);
+    }
+
+    // Block localhost/unspecified/loopback hostnames before DNS resolution
+    if (hostname === "localhost" || ipToCheck === "0.0.0.0" || ipToCheck === "::1") {
       return false;
     }
 
-    const addresses = await resolve(hostname, "A");
+    if (net.isIP(ipToCheck)) {
+      return !isPrivateIP(ipToCheck);
+    }
+
+    const addresses: string[] = [];
+
+    try {
+      const aRecords = await dns.resolve(hostname, "A");
+      if (Array.isArray(aRecords)) addresses.push(...(aRecords as string[]));
+    } catch {}
+
+    try {
+      const aaaaRecords = await dns.resolve(hostname, "AAAA");
+      if (Array.isArray(aaaaRecords)) addresses.push(...(aaaaRecords as string[]));
+    } catch {}
+
+    if (addresses.length === 0) {
+      return false;
+    }
+
     for (const addr of addresses) {
       if (isPrivateIP(addr)) {
         return false;
