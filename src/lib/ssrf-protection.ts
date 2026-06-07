@@ -1,7 +1,5 @@
-import dns from "dns";
-import { promisify } from "util";
-
-const resolve = promisify(dns.resolve);
+import dns from "dns/promises";
+import net from "net";
 
 const PRIVATE_RANGES = [
   { start: 0x0a000000, end: 0x0affffff },
@@ -15,7 +13,7 @@ function ipToNumber(ip: string): number {
   const parts = ip.split(".");
   if (parts.length !== 4) return NaN;
   const numParts = parts.map(Number);
-  if (numParts.some(isNaN)) return NaN;
+  if (numParts.some((n) => isNaN(n) || n < 0 || n > 255 || !Number.isInteger(n))) return NaN;
   return ((numParts[0] << 24) | (numParts[1] << 16) | (numParts[2] << 8) | numParts[3]) >>> 0;
 }
 
@@ -62,20 +60,29 @@ export async function isSafeUrl(url: string): Promise<boolean> {
     }
 
     const hostname = parsed.hostname;
-    // Allow basic bypassing localhost blocks if they try to bypass resolution completely
-    if (hostname === "localhost" || hostname === "0.0.0.0" || hostname === "[::1]") {
+    let ipToCheck = hostname;
+    if (ipToCheck.startsWith("[") && ipToCheck.endsWith("]")) {
+      ipToCheck = ipToCheck.slice(1, -1);
+    }
+
+    // Block localhost/unspecified/loopback hostnames before DNS resolution
+    if (hostname === "localhost" || ipToCheck === "0.0.0.0" || ipToCheck === "::1") {
       return false;
+    }
+
+    if (net.isIP(ipToCheck)) {
+      return !isPrivateIP(ipToCheck);
     }
 
     const addresses: string[] = [];
 
     try {
-      const aRecords = await resolve(hostname, "A");
+      const aRecords = await dns.resolve(hostname, "A");
       if (Array.isArray(aRecords)) addresses.push(...(aRecords as string[]));
     } catch {}
 
     try {
-      const aaaaRecords = await resolve(hostname, "AAAA");
+      const aaaaRecords = await dns.resolve(hostname, "AAAA");
       if (Array.isArray(aaaaRecords)) addresses.push(...(aaaaRecords as string[]));
     } catch {}
 
