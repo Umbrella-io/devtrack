@@ -52,3 +52,7 @@ public/worker-*.js
 public/swe-worker-*.js
 worker/
 
+# temp test artifacts
+server-output.txt
+test-ssr.mjs
+

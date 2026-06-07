@@ -1,51 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-interface Notification {
-  id: string;
-  type: string;
-  message: string;
-  read: boolean;
-  created_at: string;
-}
+
+import { useNotifications } from "@/hooks/useNotifications";
 
 export default function NotificationBell() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading, error, refetch } = useNotifications();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = useCallback(async () => {
-    setLoading(true);
-    setError(null);
 
-    try {
-      const res = await fetch("/api/notifications");
-      if (!res.ok) {
-        throw new Error("Failed to load notifications");
-      }
+  const notifications = data?.notifications ?? [];
+  const unreadCountFromApi = data?.unreadCount ?? 0;
 
-      const data = await res.json();
+  const [unreadCount, setUnreadCount] = useState(0);
 
-      if (!data || !Array.isArray(data.notifications)) {
-        throw new Error("Invalid notifications response");
-      }
+  useEffect(() => {
+    setUnreadCount(unreadCountFromApi);
+  }, [unreadCountFromApi]);
 
-      setNotifications(data.notifications ?? []);
-      const count = data.unreadCount ?? 0;
-      setUnreadCount(count);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("devtrack:unread-notification-count", count.toString());
-      }
-    } catch (e) {
-      setError("Failed to load notifications. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [open, setOpen] = useState(false);
+
+
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -57,16 +33,20 @@ export default function NotificationBell() {
         }
       }
     }
-    fetchNotifications();
 
     const handleNotifications = () => {
-      fetchNotifications();
+      void refetch();
     };
 
+    // initial load
+    void refetch();
+
     window.addEventListener("devtrack:notifications", handleNotifications);
+
     return () =>
       window.removeEventListener("devtrack:notifications", handleNotifications);
-  }, [fetchNotifications]);
+  }, [refetch]);
+
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -84,6 +64,7 @@ export default function NotificationBell() {
   }, []);
 
   const handleOpen = useCallback(async () => {
+
     setOpen((prev) => {
       const next = !prev;
 
@@ -95,21 +76,19 @@ export default function NotificationBell() {
         if (typeof window !== "undefined") {
           localStorage.setItem("devtrack:unread-notification-count", "0");
         }
-        setNotifications((prev) =>
-          prev.map((n) => ({ ...n, read: true }))
-        );
-
         fetch("/api/notifications", { method: "PATCH" }).catch(() => {
           setUnreadCount(previousUnreadCount);
-          setNotifications(previousNotifications);
-          setError("Failed to update notifications. Please try again later.");
+          // data will be revalidated by the hook
           if (typeof window !== "undefined") {
             localStorage.setItem(
               "devtrack:unread-notification-count",
               previousUnreadCount.toString()
             );
           }
+        }).finally(() => {
+          void refetch();
         });
+
       }
 
       return next;
@@ -212,7 +191,7 @@ export default function NotificationBell() {
               </li>
             ) : error ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--destructive)]">
-                {error}
+                {error.message}
               </li>
             ) : notifications.length === 0 ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">

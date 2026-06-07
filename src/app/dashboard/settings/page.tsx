@@ -22,6 +22,8 @@ interface UserSettings {
   github_login: string;
   bio: string;
   is_public: boolean;
+  public_since?: string | null;
+  show_weekly_goals?: boolean;
   leaderboard_opt_in: boolean;
   weekly_digest_opt_in: boolean;
   has_wakatime_key?: boolean;
@@ -93,6 +95,41 @@ function getStatusMessage(
     };
   }
 
+  if (error === "rate_limited") {
+    return {
+      kind: "error",
+      message: "GitHub API rate limit reached. Please try again in a few minutes.",
+    };
+  }
+
+  if (error === "token_exchange_failed") {
+    return {
+      kind: "error",
+      message: "GitHub authorization failed. Please try again.",
+    };
+  }
+
+  if (error === "github_profile_failed") {
+    return {
+      kind: "error",
+      message: "Could not fetch GitHub profile. Please try again.",
+    };
+  }
+
+  if (error === "user_not_found") {
+    return {
+      kind: "error",
+      message: "User not found. Please sign in again.",
+    };
+  }
+
+  if (error === "insert_failed") {
+    return {
+      kind: "error",
+      message: "Failed to save account. Please try again.",
+    };
+  }
+
   return {
     kind: "error",
     message: "Account linking failed. Please try again.",
@@ -134,6 +171,7 @@ function SettingsPageContent() {
   const [webhookSaving, setWebhookSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
   const [removingAccountId, setRemovingAccountId] = useState<string | null>(
     null
   );
@@ -345,9 +383,16 @@ function SettingsPageContent() {
     }
 
     async function loadLinkedAccounts() {
+      setAccountsError(null);
       try {
         const res = await fetch("/api/user/github-accounts");
+        if (res.status === 403) {
+          setAccountsError("GitHub API rate limit reached. Please try again in a few minutes.");
+          setLinkedAccounts([]);
+          return;
+        }
         if (!res.ok) {
+          setAccountsError("Failed to load linked accounts. Please refresh the page.");
           setLinkedAccounts([]);
           return;
         }
@@ -356,6 +401,7 @@ function SettingsPageContent() {
         setLinkedAccounts(data.accounts ?? []);
       } catch (error) {
         console.error("Failed to load linked accounts:", error);
+        setAccountsError("Failed to load linked accounts. Please refresh the page.");
         setLinkedAccounts([]);
       } finally {
         setAccountsLoading(false);
@@ -668,9 +714,44 @@ function SettingsPageContent() {
     return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
         <div className="max-w-2xl mx-auto">
-          <p className="text-[var(--muted-foreground)]">
-            Failed to load settings.
-          </p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-8 text-center">
+            <div className="text-3xl mb-4">⚠️</div>
+            <h2 className="text-lg font-semibold text-[var(--card-foreground)] mb-2">
+              Failed to load settings
+            </h2>
+            <p className="text-sm text-[var(--muted-foreground)] mb-6">
+              This usually happens when the database is temporarily throttled. Try again in a moment.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setLoading(true);
+                  fetch("/api/user/settings")
+                    .then((r) => r.ok ? r.json() : Promise.reject())
+                    .then((data) => {
+                      setSettings(data);
+                      setBioDraft(data.bio ?? "");
+                      setDiscordWebhook(data.discord_webhook_url || "");
+                      setTimezone(data.timezone || "UTC");
+                      setDiscordMutedUntil(data.discord_muted_until ?? null);
+                      setWebhookUrl(data.webhook_url ?? null);
+                    })
+                    .catch(() => toast.error("Still unable to load settings"))
+                    .finally(() => setLoading(false));
+                }}
+                className="rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+              >
+                Try again
+              </button>
+              <Link
+                href="/dashboard"
+                className="rounded-lg border border-[var(--border)] px-5 py-2.5 text-sm font-medium text-[var(--card-foreground)] hover:bg-[var(--control)] transition-colors"
+              >
+                Back to Dashboard
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -770,60 +851,71 @@ function SettingsPageContent() {
                   {copied ? "Copied!" : "Copy"}
                 </button>
               </div>
+              {settings.public_since && (
+                <p className="mt-3 text-xs text-[var(--muted-foreground)]">
+                  Public since {new Date(settings.public_since).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                </p>
+              )}
             </div>
           )}
 
-          {/* ── Bio field with character counter ── NEW ─────────────────────── */}
-          <div className="mt-6 pt-6 border-t border-[var(--border)]">
-            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-1">
-              Bio
-            </h3>
-            <p className="text-sm text-[var(--muted-foreground)] mb-3">
-              Write a short bio shown on your public profile.
-            </p>
-
-            <textarea
-              id="bio"
-              value={bioDraft}
-              onChange={(e) => {
-                setBioDraft(e.target.value.slice(0, BIO_MAX));
-                setIsDirty(true);
-              }}
-              placeholder="Tell others about yourself..."
-              rows={3}
-              maxLength={BIO_MAX}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] resize-none"
-            />
-
-            {/* Character counter */}
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-xs text-[var(--muted-foreground)]">
-                {bioDraft.length === 0 && "Shown on your public /u/ page."}
-              </p>
-              <p
-                className={`text-xs font-medium tabular-nums transition-colors ${bioDraft.length >= BIO_MAX
-                  ? "text-[var(--destructive)]"
-                  : bioDraft.length >= Math.floor(BIO_MAX * 0.9)
-                    ? "text-yellow-500"
-                    : "text-[var(--muted-foreground)]"
-                  }`}
-              >
-                {bioDraft.length} / {BIO_MAX}
-              </p>
+          {/* Weekly Goals on Profile toggle */}
+          {settings.is_public && (
+            <div className="mt-6 pt-6 border-t border-[var(--border)]">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+                    Weekly Goal Progress
+                  </h3>
+                  <p className="text-sm text-[var(--muted-foreground)] mt-1">
+                    Show your weekly goal completion rate on your public profile.
+                  </p>
+                </div>
+                <label className="flex items-center cursor-pointer select-none"><span className="sr-only">Toggle weekly goal visibility</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={settings.show_weekly_goals ?? false}
+                      aria-label="Toggle weekly goal progress on profile"
+                      onChange={async (e) => {
+                        const value = e.target.checked;
+                        setSaving(true);
+                        try {
+                          const res = await fetch("/api/user/settings", {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ show_weekly_goals: value }),
+                          });
+                          if (res.ok) {
+                            const updated = await res.json();
+                            setSettings(updated);
+                          }
+                        } catch (error) {
+                          console.error("Failed to update weekly goals setting:", error);
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                      disabled={saving}
+                      className="sr-only"
+                    />
+                    <div
+                      className={`block w-10 h-6 rounded-full transition-colors ${settings.show_weekly_goals
+                        ? "bg-[var(--accent)]"
+                        : "bg-[var(--control)]"
+                        }`}
+                    />
+                    <div
+                      className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${settings.show_weekly_goals ? "translate-x-4" : ""
+                        }`}
+                    />
+                  </div>
+                </label>
+              </div>
             </div>
+          )}
 
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={handleSaveBio}
-                disabled={savingBio}
-                className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {savingBio ? "Saving..." : "Save Bio"}
-              </button>
-            </div>
-          </div>
-
+          {/* ── Profile Bio with Markdown preview ─────────────────────── */}
           <div className="mt-6 pt-6 border-t border-[var(--border)]">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -911,7 +1003,6 @@ function SettingsPageContent() {
                   checked={theme === "default"}
                   onChange={() => {
                     setTheme("default");
-                    setIsDirty(true);
                   }}
                   className="accent-[var(--accent)] focus-visible:ring-[var(--accent)]"
                 />
@@ -925,7 +1016,6 @@ function SettingsPageContent() {
                   checked={theme === "colour-blind-friendly"}
                   onChange={() => {
                     setTheme("colour-blind-friendly");
-                    setIsDirty(true);
                   }}
                   className="accent-[var(--accent)] focus-visible:ring-[var(--accent)]"
                 />
@@ -942,24 +1032,6 @@ function SettingsPageContent() {
             </div>
           )}
 
-          {isDirty && (
-            <div className="mt-6 pt-6 border-t border-[var(--border)] flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  // The toggles themselves already call the API,
-                  // but for the heatmap theme which is local only,
-                  // or to clear the dirty state after a manual change,
-                  // we provide this clear feedback.
-                  setIsDirty(false);
-                  toast.success("Settings saved successfully!");
-                }}
-                className="px-6 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
-              >
-                Save Changes
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -1281,15 +1353,20 @@ function SettingsPageContent() {
             </div>
           )}
 
+          {accountsError && (
+            <div className="mt-4 rounded-lg border border-[var(--error)]/30 bg-[var(--error)]/10 p-3 text-sm text-[var(--error)]">
+              {accountsError}
+            </div>
+          )}
+
           <div className="mt-6">
             {accountsLoading ? (
-              <div className="space-y-3">
-                {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-20 rounded-lg bg-[var(--card-muted)] animate-pulse"
-                  />
-                ))}
+              <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Loading linked accounts...
               </div>
             ) : linkedAccounts.length === 0 ? (
               <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)]">

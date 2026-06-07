@@ -75,6 +75,36 @@ export async function GET(request: Request) {
   const WINDOW_MS = 60 * 60 * 1000;
   const MAX_REQUESTS = 5;
 
+  const { searchParams } = new URL(request.url);
+  const rawType = searchParams.get("type") ?? "weekly_summary";
+
+  // Validate against the DB CHECK constraint allowlist so that an unrecognised
+  // type fails with a clear 400 instead of a Supabase constraint-violation 500.
+  if (!VALID_INSIGHT_TYPES.has(rawType as InsightType)) {
+    return NextResponse.json(
+      { error: `Invalid insight type. Must be one of: ${[...VALID_INSIGHT_TYPES].join(", ")}` },
+      { status: 400 }
+    );
+  }
+  const type = rawType as InsightType;
+
+  // Check the cache before touching the rate-limit counter so that repeated
+  // reads of already-generated insights never consume quota.
+  const { data: cached } = await supabaseAdmin
+    .from("ai_insights")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("insight_type", type)
+    .gte("expires_at", new Date().toISOString())
+    .order("generated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (cached) {
+    return NextResponse.json({ data: cached.content, cached: true });
+  }
+
+  // No valid cache — enforce the rate limit only when a fresh generation is needed.
   let existing = aiInsightsRateLimit.get(userId);
   if (!existing || currentTime > existing.resetTime) {
     existing = { count: 0, resetTime: currentTime + WINDOW_MS };
@@ -95,33 +125,6 @@ export async function GET(request: Request) {
     );
   }
   existing.count += 1;
-
-  const { searchParams } = new URL(request.url);
-  const rawType = searchParams.get("type") ?? "weekly_summary";
-
-  // Validate against the DB CHECK constraint allowlist so that an unrecognised
-  // type fails with a clear 400 instead of a Supabase constraint-violation 500.
-  if (!VALID_INSIGHT_TYPES.has(rawType as InsightType)) {
-    return NextResponse.json(
-      { error: `Invalid insight type. Must be one of: ${[...VALID_INSIGHT_TYPES].join(", ")}` },
-      { status: 400 }
-    );
-  }
-  const type = rawType as InsightType;
-
-  const { data: cached } = await supabaseAdmin
-    .from("ai_insights")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("insight_type", type)
-    .gte("expires_at", new Date().toISOString())
-    .order("generated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (cached) {
-    return NextResponse.json({ data: cached.content, cached: true });
-  }
 
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
   const cookie = request.headers.get("cookie") ?? "";
