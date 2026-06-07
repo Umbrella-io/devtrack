@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeOgUserParams } from "@/app/api/og/user/route";
+import { normalizeOgUserParams } from "@/lib/og-user-params";
 
 describe("normalizeOgUserParams", () => {
   it("derives the avatar from a validated username instead of trusting avatar input", () => {

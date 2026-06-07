@@ -1,75 +1,8 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
-import { normalizeGitHubUsername } from "@/lib/validate-github-username";
+import { normalizeOgUserParams } from "@/lib/og-user-params";
 
 export const runtime = "edge";
-
-const MAX_NAME_LENGTH = 48;
-const MAX_LANGUAGE_LENGTH = 24;
-const MAX_METRIC_VALUE = 999999;
-
-type OgUserParams = {
-  username: string;
-  name: string;
-  avatar: string;
-  topLang: string;
-  streak: number;
-  commits: number;
-};
-
-function truncate(value: string, maxLength: number): string {
-  const trimmed = value.trim();
-  return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
-}
-
-function normalizeTextParam(
-  value: string | null,
-  fallback: string,
-  maxLength: number
-): string {
-  if (!value) {
-    return fallback;
-  }
-
-  return truncate(value, maxLength) || fallback;
-}
-
-function normalizeNonNegativeInteger(value: string | null): number {
-  if (!value) {
-    return 0;
-  }
-
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return 0;
-  }
-
-  return Math.min(Math.floor(parsed), MAX_METRIC_VALUE);
-}
-
-export function normalizeOgUserParams(searchParams: URLSearchParams): OgUserParams {
-  const username =
-    normalizeGitHubUsername(searchParams.get("username")) ?? "developer";
-  const name = normalizeTextParam(
-    searchParams.get("name"),
-    username,
-    MAX_NAME_LENGTH
-  );
-  const topLang = normalizeTextParam(
-    searchParams.get("topLang"),
-    "JavaScript",
-    MAX_LANGUAGE_LENGTH
-  );
-
-  return {
-    username,
-    name,
-    avatar: `https://github.com/${username}.png?size=200`,
-    topLang,
-    streak: normalizeNonNegativeInteger(searchParams.get("streak")),
-    commits: normalizeNonNegativeInteger(searchParams.get("commits")),
-  };
-}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -100,7 +33,7 @@ export async function GET(req: NextRequest) {
           
           <div style={{ display: "flex", alignItems: "center", gap: "28px" }}>
             {avatar ? (
-              <img src={avatar} width={100} height={100} style={{ borderRadius: "50%", border: "3px solid rgba(99,102,241,0.7)", objectFit: "cover" }} />
+              <img src={avatar} alt={`${username} avatar`} width={100} height={100} style={{ borderRadius: "50%", border: "3px solid rgba(99,102,241,0.7)", objectFit: "cover" }} />
             ) : (
               <div style={{ width: "100px", height: "100px", borderRadius: "50%", background: "linear-gradient(135deg,#6366f1,#10b981)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "44px", fontWeight: 700, color: "#fff" }}>
                 {username[0]?.toUpperCase()}
