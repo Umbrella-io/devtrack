@@ -190,19 +190,32 @@ async function checkRateLimit(identifier: string, limit: number) {
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
+  // In production (HTTPS), NextAuth.js writes the session to the
+  // __Secure-next-auth.session-token cookie (Secure flag set).
+  // We must try the secure cookie first; the plain cookie is only
+  // present in local development (HTTP, no Secure flag).
+  const isProduction = process.env.NODE_ENV === "production";
+
   let token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
-    secureCookie: false,
-    cookieName: "next-auth.session-token",
+    secureCookie: isProduction,
+    cookieName: isProduction
+      ? "__Secure-next-auth.session-token"
+      : "next-auth.session-token",
   });
 
   if (!token) {
+    // Fallback: try the opposite cookie name to handle edge cases such as
+    // a production build served over HTTP (e.g. a staging environment without TLS)
+    // or a dev build that somehow received a Secure cookie.
     token = await getToken({
       req,
       secret: process.env.NEXTAUTH_SECRET,
-      secureCookie: true,
-      cookieName: "__Secure-next-auth.session-token",
+      secureCookie: !isProduction,
+      cookieName: !isProduction
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
     });
   }
 
