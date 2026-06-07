@@ -20,7 +20,7 @@ for (const [key, value] of Object.entries(process.env)) {
   if (key.startsWith('NEXT_PUBLIC_')) {
     const lowerKey = key.toLowerCase();
     const lowerValue = (value || '').toLowerCase();
-    
+
     // Check if the key name contains any blocked private keywords
     const isLeakingName = BLOCKED_KEYWORDS.some(kw => lowerKey.includes(kw));
     
