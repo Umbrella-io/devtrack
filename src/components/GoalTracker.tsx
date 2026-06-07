@@ -599,7 +599,7 @@ export default function GoalTracker() {
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
                     role="progressbar"
-                    aria-valuenow={Math.round(pct)}
+                    aria-valuenow={Math.max(0, Math.min(Math.round(pct), 100))}
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-label={`${goal.title}: ${goal.current} of ${goal.target} ${goal.unit}`}
