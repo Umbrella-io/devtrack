@@ -86,7 +86,10 @@ export default function StreakAtRiskBanner({
     setIsAtRisk(true);
   }, [lastCommitDate, currentStreak, hasStreakFreezeState, dismissed]);
 
-  if (!isAtRisk || dismissed) return null;
+  // Guard: hide banner when streak freeze is confirmed active (true) or
+  // still loading (undefined). Only render when we know for sure the user
+  // has no freeze (hasStreakFreezeState === false) and the streak is at risk.
+  if (!isAtRisk || dismissed || hasStreakFreezeState !== false) return null;
 
   return (
     <div

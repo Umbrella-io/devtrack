@@ -2,9 +2,15 @@
 
 # DevTrack
 
-**Your personal developer productivity command center.**
+**Your developer productivity command center.**
 
 > Pull your GitHub activity, commit streaks, PR analytics, and coding goals into one clean, self-hostable dashboard — no enterprise plan, no vendor lock-in.
+
+**What you get:**
+
+- A real-time dashboard for your GitHub stats (streaks, PR analytics, activity)
+- Weekly goals with progress tracking
+- A shareable public profile (`/u/[username]`)
 
 [![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
@@ -18,6 +24,14 @@
 
 **[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Community Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
 
+### Quick Links
+
+- **[Demo](#demo)**
+- **[Features](#features)**
+- **[Getting Started](#getting-started)**
+- **[Roadmap](#roadmap)**
+- **[Contributing](#contributing)**
+
 </div>
 
 ---
@@ -26,13 +40,20 @@
 
 <div align="center">
 
-![DevTrack Dashboard Demo](./public/assets/gifs/dashboard-demo.gif)
-
-*Dashboard: commit streaks, PR analytics, activity heatmap, and goals — all in one view.*
-
-![DevTrack Feature Hover Demo](./public/assets/gifs/feature-hover-demo.gif)
-
-*Interactive widgets with real-time GitHub data.*
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="./public/assets/gifs/dashboard-demo.gif" alt="DevTrack dashboard demo" width="100%" />
+      <br />
+      <em>Dashboard: streaks, PR analytics, activity heatmap, and goals</em>
+    </td>
+    <td width="50%" align="center">
+      <img src="./public/assets/gifs/feature-hover-demo.gif" alt="DevTrack widget demo" width="100%" />
+      <br />
+      <em>Interactive widgets: real-time GitHub data in action</em>
+    </td>
+  </tr>
+</table>
 
 </div>
 
@@ -46,6 +67,7 @@
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
+- [Docker Development Setup](#docker-development-setup)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [Community](#community)
@@ -144,6 +166,7 @@ devtrack/
 For local development and contributing, see **[DEVELOPMENT.md](./DEVELOPMENT.md)**.
 To deploy your own instance, see the **[Self-Hosting Guide](./docs/self-hosting.md)**.
 
+
 ### Quick Start
 
 **1. Clone and install**
@@ -215,9 +238,89 @@ npm run test:e2e
 
 ---
 
+## Docker Development Setup
+
+DevTrack includes Docker support for local development, allowing contributors to get started quickly without manually installing dependencies or configuring environments.
+
+### Prerequisites
+
+- Docker Desktop (Windows/macOS) or Docker Engine (Linux)
+- Docker Compose v2+
+
+Verify installation:
+
+```bash
+docker --version
+docker compose version
+```
+
+### Configure Environment Variables
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in the required values as described in the Environment Variables section above.
+
+### Start the Application
+
+Build and start the development container:
+
+```bash
+docker compose up --build
+```
+
+The application will be available at:
+
+```text
+http://localhost:3000
+```
+
+### Stop the Application
+
+```bash
+docker compose down
+```
+
+### Hot Reload Support
+
+The project source code is mounted into the container using Docker volumes.
+
+Any changes made to files on your host machine are automatically reflected inside the container, enabling Next.js hot reload during development without rebuilding the image.
+
+### Rebuild After Dependency Changes
+
+If you modify `package.json` or install new dependencies:
+
+```bash
+docker compose down
+docker compose up --build
+```
+
+### Troubleshooting
+
+Remove containers and rebuild from scratch:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+View container logs:
+
+```bash
+docker compose logs -f
+```
+
+---
+
 ## Roadmap
 
 ### Shipped
+
+These features are live in the current version.
 
 | Feature | Notes |
 |---|---|
@@ -244,6 +347,8 @@ npm run test:e2e
 
 ### In Progress / Planned
 
+Want to contribute? Pick an item below and open an issue or start a PR.
+
 | Feature | Difficulty | Issue |
 |---|---|---|
 | Contribution heatmap calendar | Intermediate | [#18](https://github.com/Priyanshu-byte-coder/devtrack/issues/18) |
@@ -258,6 +363,61 @@ npm run test:e2e
 | Mobile app (React Native) | Advanced | — |
 
 ---
+
+
+## 📦 GSSoC Caching Guidelines Reference Manual
+
+Efficient caching improves performance, reduces server load, and enhances user experience in modern web applications.
+
+---
+
+### API Response Caching
+
+Use caching for GET requests where data does not change frequently.
+
+Example:
+Cache-Control: public, max-age=300, stale-while-revalidate=600
+
+
+---
+
+### Frontend Caching
+
+Use tools like React Query or SWR to cache API responses and reduce unnecessary network requests.
+
+---
+
+### Server-Side Caching
+
+Use Redis or in-memory caching for:
+- expensive computations
+- repeated database queries
+- frequently accessed data
+
+---
+
+### Static Asset Caching
+
+Enable long-term caching for static assets:
+Cache-Control: public, max-age=31536000, immutable
+
+
+---
+
+### Cache Invalidation Strategy
+
+Always invalidate cache when underlying data changes using:
+- versioning
+- timestamps
+- manual invalidation
+
+---
+
+### Best Practices
+
+- Do not cache sensitive data
+- Always define TTL (Time To Live)
+- Monitor cache hit/miss ratio for performance optimization
 
 ## Contributing
 

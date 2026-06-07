@@ -5,6 +5,8 @@ create table if not exists users (
   webhook_url  text,
   bio          text default '' check (char_length(bio) <= 500),
   is_public    boolean default false,
+  public_since timestamptz,
+  show_weekly_goals boolean default false,
   leaderboard_opt_in boolean default false,
   pinned_repos text[] default '{}',
   created_at   timestamptz default now(),
@@ -14,8 +16,29 @@ create table if not exists users (
   is_sponsor   boolean default false,
   discord_webhook_url text,
   timezone text default 'UTC',
-  last_discord_notification_at timestamptz
+  last_discord_notification_at timestamptz,
+  last_ai_summary_at timestamptz
 );
+
+alter table users
+add column if not exists dashboard_layout jsonb not null default
+'{
+  "version": 1,
+  "sections": ["overview", "activity", "analytics", "goals"],
+  "widgets": {
+    "overview": ["weekly-summary", "personal-records", "ai-mentor"],
+    "activity": ["contribution-graph", "contribution-heatmap", "repo-contribution-distribution", "activity-ring", "coding-activity-insights", "streak-tracker", "local-coding-time", "coding-time", "commit-time", "productive-hours"],
+    "analytics": ["repo-analytics", "pr-metrics", "pr-breakdown", "pr-review-trend", "discussions", "community-metrics", "pinned-repos", "top-repos", "inactive-repos"],
+    "goals": ["issue-metrics", "goal-tracker", "daily-note", "recent-activity", "ci-analytics", "language-breakdown", "friend-comparison"]
+  },
+  "hidden": []
+}'::jsonb;
+
+
+CREATE INDEX IF NOT EXISTS users_leaderboard_opt_in_idx
+  ON users(leaderboard_opt_in)
+  WHERE leaderboard_opt_in = true;
+
 create table if not exists goals (
   id           text primary key default gen_random_uuid()::text,
   user_id      text not null references users(id) on delete cascade,
@@ -270,3 +293,15 @@ CREATE POLICY "message_insert" ON room_messages
   );
 ALTER PUBLICATION supabase_realtime ADD TABLE room_messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE room_members;
+
+-- -------------------------------------------------------
+-- Leaderboard cache: persistent, shared cache for leaderboard API
+-- -------------------------------------------------------
+CREATE TABLE IF NOT EXISTS leaderboard_cache (
+  key text primary key,
+  payload jsonb,
+  generated_at timestamptz,
+  expires_at timestamptz,
+  building_until timestamptz,
+  updated_at timestamptz default now()
+);

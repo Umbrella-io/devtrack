@@ -275,7 +275,9 @@ export async function buildLeaderboard(
   }
 
   const now = new Date();
-  const streakStart = toDateStr(new Date(Date.now() - 90 * 86400000));
+  const streakStart = toDateStr(
+    new Date(Date.now() - 365 * 86400000)
+  );
   const safeUsers = (users ?? []) as PublicUser[];
 
   const rows = await mapWithConcurrency(
