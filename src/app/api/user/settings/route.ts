@@ -121,7 +121,7 @@ async function fetchUserSettings(userId: string) {
     };
   }
 
-  // Tier 3: Minimal (without pinned_repos and leaderboard_opt_in)
+  // Tier 3: Without public_since and show_weekly_goals (added by migrations)
   const res3 = await supabaseAdmin
     .from("users")
       .select("id, github_login, is_public, public_since, show_weekly_goals")
@@ -150,9 +150,60 @@ async function fetchUserSettings(userId: string) {
     };
   }
 
+  if (res3.error.code !== "42703") {
+    return {
+      data: null,
+      error: res3.error,
+      hasLeaderboardOptIn: false,
+      hasPinnedRepos: false,
+      hasWakatimeKey: false,
+      hasWeeklyDigestOptIn: false,
+      hasDiscordSettings: false,
+      hasBio: false,
+      hasDiscordMutedUntil: false,
+      leaderboard_opt_in: false,
+      weekly_digest_opt_in: false,
+      pinned_repos: [] as string[],
+      wakatime_api_key_encrypted: null,
+      wakatime_api_key_iv: null,
+      discord_webhook_url: null,
+      timezone: "UTC",
+      discord_muted_until: null,
+    };
+  }
+
+  // Tier 4: Absolute minimum — columns guaranteed in every schema version
+  const res4 = await supabaseAdmin
+    .from("users")
+      .select("id, github_login, is_public")
+    .eq("id", userId)
+    .single();
+
+  if (!res4.error) {
+    return {
+      data: res4.data as any,
+      error: null,
+      hasLeaderboardOptIn: false,
+      hasPinnedRepos: false,
+      hasWakatimeKey: false,
+      hasWeeklyDigestOptIn: false,
+      hasDiscordSettings: false,
+      hasBio: false,
+      hasDiscordMutedUntil: false,
+      leaderboard_opt_in: false,
+      weekly_digest_opt_in: false,
+      pinned_repos: [] as string[],
+      wakatime_api_key_encrypted: null,
+      wakatime_api_key_iv: null,
+      discord_webhook_url: null,
+      timezone: "UTC",
+      discord_muted_until: null,
+    };
+  }
+
   return {
     data: null,
-    error: res3.error,
+    error: res4.error,
     hasLeaderboardOptIn: false,
     hasPinnedRepos: false,
     hasWakatimeKey: false,
@@ -197,7 +248,7 @@ export async function GET(req: NextRequest) {
   const result = await fetchUserSettings(user.id);
 
   if (result.error || !result.data) {
-    console.error("Error fetching user settings:", result.error);
+    console.error(`Error fetching user settings: code=${result.error?.code} msg=${result.error?.message}`, result.error);
     return NextResponse.json({ error: "Failed to fetch user settings" }, { status: 500 });
   }
 

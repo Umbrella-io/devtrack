@@ -1,4 +1,4 @@
-﻿import { getToken } from "next-auth/jwt";
+import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 import {
   checkAuthRateLimit,
@@ -223,12 +223,26 @@ export async function middleware(req: NextRequest) {
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
+  const adminRoutes = ["/admin"];
+  const isAdminRoute = adminRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+
+  if ((isProtectedRoute || isAdminRoute) && !token) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   if (isProtectedRoute) {
-    if (!token) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      url.search = "";
-      return NextResponse.redirect(url);
+    return NextResponse.next();
+  }
+
+  if (isAdminRoute) {
+    // Check if token explicitly has the admin role
+    if (!token?.role || token.role !== "admin") {
+      return new NextResponse("Forbidden: Admin access required", { status: 403 });
     }
     return NextResponse.next();
   }
@@ -295,6 +309,8 @@ export const config = {
     "/dashboard/:path*",
     "/settings",
     "/settings/:path*",
+    "/admin",
+    "/admin/:path*",
     "/api/:path*",
   ],
 };

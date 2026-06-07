@@ -55,4 +55,6 @@ export interface RepoAnalyticsResponse {
   health: RepoHealth;
   primaryStack: string[];
   languageBreakdown: LanguageSlice[];
+  /** true when GitHub responded 202 — stats are still being computed */
+  statsBuilding?: boolean;
 }
