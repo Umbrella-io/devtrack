@@ -3,6 +3,7 @@ import type { GitHubAchievement } from "@/lib/github-achievements";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import { fetchPinnedRepoDetails, type PinnedRepoDetails } from "@/lib/pinned-repos";
 import { getUserByUsername, supabaseAdmin } from "@/lib/supabase";
+import { resolveServerGitHubToken } from "@/lib/github-app";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -287,7 +288,9 @@ export async function fetchPublicProfile(
   const user = await getUserByUsername(username);
   if (!user) return null;
 
-  const githubToken = process.env.GITHUB_TOKEN;
+  // Prefer a GitHub App installation token (5 000 req/hr per installation)
+  // over a plain PAT, then fall back to unauthenticated (60 req/hr per IP).
+  const githubToken = await resolveServerGitHubToken();
   const [
     publicGists,
     repos,
