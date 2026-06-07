@@ -1,5 +1,6 @@
 "use client";
 
+// Compact navbar variant uses ThemeId + THEME_OPTIONS (not legacy Theme/themes exports).
 import { useEffect, useRef, useState, type SVGProps } from "react";
 import { THEME_OPTIONS, type ThemeId } from "@/lib/themes";
 import { useTheme } from "./ThemeContext";
