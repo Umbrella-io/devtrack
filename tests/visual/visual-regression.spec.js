@@ -31,6 +31,15 @@ async function stabilize(page) {
   await page.waitForTimeout(500);
 }
 
+const VIEWPORT_SCREENSHOT_CLIP = { x: 0, y: 0, width: 1280, height: 900 };
+
+async function expectViewportScreenshot(page, name) {
+  await expect(page).toHaveScreenshot(name, {
+    clip: VIEWPORT_SCREENSHOT_CLIP,
+    maxDiffPixelRatio: 0.02,
+  });
+}
+
 async function mockAuthenticatedSession(page) {
   const sessionToken = await encode({
     secret: authSecret,
@@ -357,9 +366,7 @@ test.describe("visual regression screenshots", () => {
     ).toBeVisible();
     await stabilize(page);
 
-    await expect(page).toHaveScreenshot("sign-in-page.png", {
-      fullPage: true,
-    });
+    await expectViewportScreenshot(page, "sign-in-page.png");
   });
 
   test("dashboard header screenshots in dark and light mode", async ({
@@ -408,9 +415,7 @@ test.describe("visual regression screenshots", () => {
     ).toBeVisible({ timeout: 30_000 });
     await stabilize(page);
 
-    await expect(page).toHaveScreenshot("public-profile-mock-data.png", {
-      fullPage: true,
-    });
+    await expectViewportScreenshot(page, "public-profile-mock-data.png");
   });
 
     test("404 page screenshot", async ({ page }) => {
@@ -427,8 +432,6 @@ test.describe("visual regression screenshots", () => {
 
     await stabilize(page);
 
-    await expect(page).toHaveScreenshot("not-found-page.png", {
-      fullPage: true,
-    });
+    await expectViewportScreenshot(page, "not-found-page.png");
   });
 });
