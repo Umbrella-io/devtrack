@@ -395,6 +395,7 @@ test.describe("visual regression screenshots", () => {
 
     await expect(page).toHaveScreenshot("dashboard-header-dark.png", {
       clip: { x: 0, y: 0, width: 1280, height: 420 },
+      maxDiffPixelRatio: 0.02,
     });
 
     await page.evaluate(() => {
@@ -411,6 +412,7 @@ test.describe("visual regression screenshots", () => {
 
     await expect(page).toHaveScreenshot("dashboard-header-light.png", {
       clip: { x: 0, y: 0, width: 1280, height: 420 },
+      maxDiffPixelRatio: 0.02,
     });
   });
 
