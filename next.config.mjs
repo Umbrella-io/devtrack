@@ -164,7 +164,27 @@ const nextConfig = {
           { key: "X-DNS-Prefetch-Control", value: "off" },
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://avatars.githubusercontent.com https://github.githubassets.com; connect-src 'self' https://api.github.com https://groq.com https://api.groq.com; frame-ancestors 'none';",
+            // base-uri 'none' — blocks <base> tag injection that could hijack
+            //   relative URLs for scripts/links.
+            // object-src 'none' — blocks legacy Flash/plugin XSS vectors.
+            // upgrade-insecure-requests — instructs the browser to upgrade
+            //   any http:// sub-resource requests to https:// automatically.
+            // worker-src blob: — required for next-pwa service worker registration.
+            // connect-src includes Supabase so authenticated API calls succeed,
+            //   and Upstash Redis for the rate-limiter health checks.
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: blob: https://avatars.githubusercontent.com https://github.githubassets.com",
+              "connect-src 'self' https://api.github.com https://groq.com https://api.groq.com https://*.supabase.co wss://*.supabase.co https://*.upstash.io",
+              "frame-ancestors 'none'",
+              "base-uri 'none'",
+              "object-src 'none'",
+              "upgrade-insecure-requests",
+              "worker-src blob:",
+            ].join("; "),
           },
         ],
       },
