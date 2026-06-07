@@ -138,6 +138,22 @@ devtrack/
 
 ---
 
+## API Documentation
+
+DevTrack includes a documented REST API.
+
+Documentation resources:
+
+- `docs/api.md` — API usage guide
+- `public/openapi.yaml` — OpenAPI 3.1 specification
+- `/api-docs` — Interactive Swagger UI
+
+After starting the development server, open:
+
+`http://localhost:3000/api-docs`
+
+---
+
 ## Getting Started
 
 For local development and contributing, see **[DEVELOPMENT.md](./DEVELOPMENT.md)**.
