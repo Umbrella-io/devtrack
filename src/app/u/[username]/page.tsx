@@ -202,10 +202,6 @@ export async function generateMetadata({
   const ogImageUrl = new URL(`${baseUrl}/api/og/user`);
   ogImageUrl.searchParams.set("username", username);
   ogImageUrl.searchParams.set("name", username);
-  ogImageUrl.searchParams.set(
-    "avatar",
-    `https://avatars.githubusercontent.com/${username}`
-  );
   ogImageUrl.searchParams.set("topLang", "Code");
   ogImageUrl.searchParams.set("streak", "0");
   ogImageUrl.searchParams.set("commits", "0");

@@ -58,7 +58,7 @@ test("theme selector switches between themes on the dashboard", async ({ page })
 
   // The DashboardHeader provides the ThemeToggle select on the dashboard
   const themeSelect = page
-    .getByRole("combobox", { name: "Select dashboard theme" })
+    .locator('select[aria-label="Select dashboard theme"]')
     .first();
   await expect(themeSelect).toBeVisible({ timeout: 10000 });
 
@@ -95,22 +95,19 @@ test("public profile page theme selector works without authentication", async ({
   // Confirm we're on the public profile route (no auth redirect)
   await expect(page).toHaveURL(/\/u\//);
 
-  // ThemeToggle select must be present in the AppNavbar and functional without login
-  const themeSelect = page
-    .getByRole("banner")
-    .getByRole("combobox", { name: "Select dashboard theme" });
-  await expect(themeSelect).toBeVisible({ timeout: 10000 });
+  // AppNavbar uses the compact theme menu on public routes
+  const themeToggle = page.getByRole("banner").getByRole("button", { name: "Choose theme" });
+  await expect(themeToggle).toBeVisible({ timeout: 10000 });
 
-  const initialValue = await themeSelect.inputValue();
+  const initialTheme = await page.evaluate(() => localStorage.getItem("theme") ?? "classic-dark");
+  const nextTheme = initialTheme === "classic-dark" ? "modern-light-blue" : "classic-dark";
+  const nextThemeLabel = nextTheme === "classic-dark" ? "Classic Dark" : "Modern Light Blue";
 
-  // Switch to a different theme
-  const nextTheme = initialValue === "classic-dark" ? "modern-light-blue" : "classic-dark";
-  await themeSelect.selectOption(nextTheme);
-
-  // Value must have changed
-  await expect(themeSelect).toHaveValue(nextTheme);
+  await themeToggle.click({ force: true });
+  await expect(page.getByRole("menu", { name: "Theme options" })).toBeVisible();
+  await page.getByRole("menuitemradio", { name: new RegExp(nextThemeLabel, "i") }).click();
 
   // Theme preference must be persisted to localStorage
   const stored = await page.evaluate(() => localStorage.getItem("theme"));
-  expect(stored === "dark" || stored === "light" || stored === nextTheme).toBe(true);
+  expect(stored).toBe(nextTheme);
 });

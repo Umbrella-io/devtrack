@@ -3,8 +3,24 @@ const path = require('path');
 
 function copyDir(src, dest) {
   if (!fs.existsSync(src)) return;
-  fs.mkdirSync(dest, { recursive: true });
-  const entries = fs.readdirSync(src, { withFileTypes: true });
+
+  try {
+    fs.mkdirSync(dest, { recursive: true });
+  } catch (error) {
+    console.error(`Failed to create directory: ${dest}`);
+    console.error(error.message);
+    return;
+  }
+
+  let entries;
+
+  try {
+    entries = fs.readdirSync(src, { withFileTypes: true });
+  } catch (error) {
+    console.error(`Failed to read directory: ${src}`);
+    console.error(error.message);
+    return;
+  }
 
   for (const entry of entries) {
     const srcPath = path.join(src, entry.name);
@@ -13,11 +29,15 @@ function copyDir(src, dest) {
     if (entry.isDirectory()) {
       copyDir(srcPath, destPath);
     } else {
-      fs.copyFileSync(srcPath, destPath);
+      try {
+        fs.copyFileSync(srcPath, destPath);
+      } catch (error) {
+        console.error(`Failed to copy ${srcPath} to ${destPath}`);
+        console.error(error.message);
+      }
     }
   }
 }
-
 const standaloneDir = path.join(__dirname, '..', '.next', 'standalone');
 
 if (fs.existsSync(standaloneDir)) {
