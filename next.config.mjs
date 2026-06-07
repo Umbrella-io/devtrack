@@ -157,8 +157,11 @@ const nextConfig = {
             value: "camera=(), microphone=(), geolocation=()",
           },
           {
+            // OWASP recommends a minimum of 2 years (63,072,000 seconds).
+            // preload submits the domain to the browser HSTS preload lists,
+            // so even a first HTTP visit is intercepted before it leaves the device.
             key: "Strict-Transport-Security",
-            value: "max-age=31536000; includeSubDomains; preload",
+            value: "max-age=63072000; includeSubDomains; preload",
           },
           { key: "X-XSS-Protection", value: "1; mode=block" },
           { key: "X-DNS-Prefetch-Control", value: "off" },
