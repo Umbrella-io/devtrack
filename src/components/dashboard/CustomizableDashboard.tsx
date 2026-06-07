@@ -61,13 +61,14 @@ export const RepoWidgetSkeleton = () => (
   <div
     role="status"
     aria-busy="true"
+    aria-label="Loading repository widget"
     className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
   >
-    <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center justify-between mb-6" aria-hidden="true">
       <div className="h-6 w-40 bg-[var(--card-muted)] rounded animate-pulse" />
       <div className="h-6 w-20 bg-[var(--card-muted)] rounded animate-pulse" />
     </div>
-    <div className="space-y-5">
+    <div className="space-y-5" aria-hidden="true">
       {[1, 2, 3, 4, 5].map((i) => (
         <div key={i}>
           <div className="flex items-center justify-between mb-2">
@@ -87,21 +88,23 @@ export const ChartSkeleton = () => (
   <div
     role="status"
     aria-busy="true"
+    aria-label="Loading chart"
     className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
   >
-    <div className="h-6 w-32 bg-[var(--card-muted)] rounded mb-6 animate-pulse" />
-    <div className="h-48 w-full bg-[var(--card-muted)] rounded-lg animate-pulse" />
+    <div className="h-6 w-32 bg-[var(--card-muted)] rounded mb-6 animate-pulse" aria-hidden="true" />
+    <div className="h-48 w-full bg-[var(--card-muted)] rounded-lg animate-pulse" aria-hidden="true" />
   </div>
 );
 
-export const ProfileStatsSkeleton = () => (
+export const StatsGridSkeleton = () => (
   <div
     role="status"
     aria-busy="true"
+    aria-label="Loading statistics"
     className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
   >
-    <div className="h-6 w-40 bg-[var(--card-muted)] rounded mb-6 animate-pulse" />
-    <div className="grid grid-cols-2 gap-4">
+    <div className="h-6 w-40 bg-[var(--card-muted)] rounded mb-6 animate-pulse" aria-hidden="true" />
+    <div className="grid grid-cols-2 gap-4" aria-hidden="true">
       {[1, 2, 3, 4].map((i) => (
         <div key={i} className="h-24 bg-[var(--card-muted)] rounded-lg animate-pulse" />
       ))}
@@ -113,10 +116,11 @@ export const ContributionHeatmapSkeleton = () => (
   <div
     role="status"
     aria-busy="true"
+    aria-label="Loading contribution heatmap"
     className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
   >
-    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-6 animate-pulse" />
-    <div className="grid grid-cols-7 gap-1">
+    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-6 animate-pulse" aria-hidden="true" />
+    <div className="grid grid-cols-7 gap-1" aria-hidden="true">
       {Array.from({ length: 35 }).map((_, i) => (
         <div key={i} className="aspect-square rounded-sm bg-[var(--card-muted)] animate-pulse" />
       ))}
@@ -156,7 +160,7 @@ const RepoContributionDistribution = dynamic(
 
 const PRMetrics = dynamic(() => import("@/components/PRMetrics"), {
   ssr: false,
-  loading: () => <ProfileStatsSkeleton />,
+  loading: () => <StatsGridSkeleton />,
 });
 
 const PRBreakdownChart = dynamic(() => import("@/components/PRBreakdownChart"), {
