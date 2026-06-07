@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type SVGProps } from "react";
+import { useEffect, useRef, useState, type SVGProps } from "react";
 import { useTheme } from "./ThemeContext";
 import { THEME_OPTIONS, type ThemeId } from "@/lib/themes";
 
@@ -21,72 +21,139 @@ const PaletteIcon = (props: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const ChevronIcon = (props: SVGProps<SVGSVGElement>) => (
+const CheckIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="2.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
   >
-    <path d="m6 9 6 6 6-6" />
+    <path d="m20 6-11 11-5-5" />
   </svg>
 );
 
+/**
+ * Compact theme switcher: a small icon button that opens a
+ * dropdown listing all themes. Replaces the wide preview card
+ * that was dominating the navbar (issue #2102).
+ */
 export default function ThemeToggle() {
-  const { theme, themeDefinition, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted || !theme) {
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  // Close on Escape key
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, []);
+
+  if (!mounted) {
+    // Skeleton placeholder matching button size
     return (
-      <div className="inline-flex h-12 w-full max-w-[260px] items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 shadow-sm" />
+      <div className="h-8 w-8 animate-pulse rounded-lg bg-white/5" />
     );
   }
 
-  const currentLabel = themeDefinition?.name ?? "Theme";
-  const currentDescription = themeDefinition?.description ?? "Customize the dashboard palette";
-
   return (
-    <label className="inline-flex min-h-12 w-full max-w-[260px] cursor-pointer items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-[var(--card-foreground)] shadow-sm transition-all duration-300 hover:bg-[var(--control)] focus-within:border-[var(--accent)]">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+    <div ref={ref} className="relative">
+      {/* Compact icon trigger button */}
+      <button
+        type="button"
+        aria-label="Switch theme"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[var(--muted-foreground)] transition-colors hover:bg-white/10 hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+      >
         <PaletteIcon className="h-4 w-4" aria-hidden="true" />
-      </span>
+      </button>
 
-      <span className="min-w-0 flex-1">
-        <span className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-          Theme
-        </span>
-        <span className="block truncate text-sm font-semibold text-[var(--card-foreground)]">
-          {currentLabel}
-        </span>
-        <span className="block truncate text-xs text-[var(--muted-foreground)]">
-          {currentDescription}
-        </span>
-      </span>
-
-      <span className="relative flex items-center gap-2">
-        <select
-          aria-label="Select dashboard theme"
-          value={theme}
-          onChange={(event) => setTheme(event.target.value as ThemeId)}
-          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      {/* Dropdown panel */}
+      {open && (
+        <div
+          role="listbox"
+          aria-label="Select theme"
+          className="absolute right-0 top-full z-50 mt-2 w-52 origin-top-right overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl"
+          style={{ animation: "fadeInScale 0.12s ease both" }}
         >
-          {THEME_OPTIONS.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </select>
+          <p className="border-b border-white/5 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--muted-foreground)]">
+            Theme
+          </p>
+          <ul className="py-1">
+            {THEME_OPTIONS.map((option) => {
+              const isActive = theme === option.id;
+              return (
+                <li key={option.id}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    onClick={() => {
+                      setTheme(option.id as ThemeId);
+                      setOpen(false);
+                    }}
+                    className="flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+                  >
+                    <span
+                      className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center"
+                      style={{ color: "var(--accent)" }}
+                    >
+                      {isActive && <CheckIcon className="h-3.5 w-3.5" />}
+                    </span>
+                    <span className="min-w-0">
+                      <span
+                        className="block text-[13px] font-medium"
+                        style={{
+                          color: isActive
+                            ? "var(--accent)"
+                            : "var(--card-foreground)",
+                        }}
+                      >
+                        {option.name}
+                      </span>
+                      <span className="block truncate text-[11px] text-[var(--muted-foreground)]">
+                        {option.description}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
-        <span className="text-xs font-medium text-[var(--muted-foreground)]">Change</span>
-        <ChevronIcon className="h-4 w-4 text-[var(--muted-foreground)]" aria-hidden="true" />
-      </span>
-    </label>
+      <style>{`
+        @keyframes fadeInScale {
+          from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0);    }
+        }
+      `}</style>
+    </div>
   );
 }
