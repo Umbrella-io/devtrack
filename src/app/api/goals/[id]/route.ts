@@ -72,9 +72,9 @@ export async function PATCH(
   }
 
   if (recurrence !== undefined) {
-    if (recurrence !== "daily" && recurrence !== "weekly" && recurrence !== "monthly") {
+    if (recurrence !== "none" && recurrence !== "weekly" && recurrence !== "monthly") {
       return Response.json(
-        { error: "recurrence must be 'daily', 'weekly', or 'monthly'" },
+        { error: "recurrence must be 'none', 'weekly', or 'monthly'" },
         { status: 400 }
       );
     }
