@@ -233,6 +233,50 @@ npm test
 # End-to-end tests (requires Chromium)
 npx playwright install --with-deps chromium
 npm run test:e2e
+
+### E2E Test Suite (Playwright)
+
+DevTrack ships a Playwright-based end-to-end suite that covers the full user journey — from OAuth sign-in through to dashboard rendering and API route correctness. **No real GitHub or Supabase credentials are needed**; all external calls are mocked inside the specs via `page.route()`.
+
+#### Spec files
+
+| File | What it covers |
+|------|----------------|
+| `e2e/auth.spec.ts` | Landing page loads, "Sign in with GitHub" button visible, OAuth redirect fires, unauthenticated dashboard redirects |
+| `e2e/dashboard.spec.ts` | Dashboard renders all 6 widgets after mock login, no uncaught console errors |
+| `e2e/goals.spec.ts` | Create goal → POST fires with correct payload → goal appears in list; delete goal → removed from list |
+| `e2e/streak.spec.ts` | Streak widget shows numeric current/longest values, freeze button visible and triggers API call |
+| `e2e/api.spec.ts` | `/api/metrics/contributions` returns 200 with valid session, 401 without; `/api/goals` POST returns 401 without session |
+
+The existing smoke specs (`e2e/landing.spec.js`, `e2e/auth-bypass.spec.js`, etc.) remain untouched.
+
+#### Running locally
+
+```bash
+# 1. Install Playwright browsers (one-time)
+npx playwright install --with-deps chromium
+
+# 2. Run the full suite (dev server auto-starts on port 3002)
+npm run test:e2e
+
+# 3. Run a single spec file
+npx playwright test e2e/goals.spec.ts
+
+# 4. Open the interactive UI runner
+npx playwright test --ui
+
+# 5. View the HTML report after a run
+npx playwright show-report
+\```
+
+The test server is configured in `playwright.config.mjs`. It auto-starts `next dev` on `http://127.0.0.1:3002` with placeholder credentials so no `.env.local` is required for E2E runs.
+
+#### CI
+
+E2E tests run automatically on every pull request targeting `main` via `.github/workflows/e2e.yml`. The job builds the Next.js app in standalone mode, installs Chromium, runs the suite, and uploads the Playwright HTML report as an artifact retained for 7 days.
+```
+
+4. Everything else in the README stays exactly as it is. The rest of the file — Docker setup, Roadmap, Contributing, Sponsors, etc. — don't touch.
 ```
 
 ---
