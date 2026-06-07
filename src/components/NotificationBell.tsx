@@ -10,7 +10,7 @@ export default function NotificationBell() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
 
-  const notifications = data?.notifications ?? [];
+  const notifications = useMemo(() => data?.notifications ?? [], [data?.notifications]);
   const unreadCountFromApi = data?.unreadCount ?? 0;
 
   const [unreadCount, setUnreadCount] = useState(0);
@@ -93,7 +93,7 @@ export default function NotificationBell() {
 
       return next;
     });
-  }, [notifications, unreadCount]);
+  }, [notifications, unreadCount, refetch]);
 
   function timeAgo(iso: string): string {
     const mins = Math.floor(
