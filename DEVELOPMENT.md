@@ -24,7 +24,7 @@ You also need free accounts on:
 ```bash
 git clone https://github.com/Priyanshu-byte-coder/devtrack.git
 cd devtrack
-npm install
+pnpm install
 ```
 
 ---
