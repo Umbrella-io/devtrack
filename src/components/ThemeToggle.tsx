@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type SVGProps } from "react";
-import { Theme, themes } from "@/lib/themes";
-import { useTheme } from "./ThemeContext";
 import { THEME_OPTIONS, type ThemeId } from "@/lib/themes";
+import { useTheme } from "./ThemeContext";
 
 const PaletteIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg
@@ -54,15 +53,6 @@ type ThemeToggleProps = {
   variant?: "default" | "compact";
 };
 
-function ThemeIcon({ themeKey }: { themeKey: Theme }) {
-  const isDark = themes[themeKey].mode === "dark";
-  return isDark ? (
-    <MoonIcon className="h-4 w-4" aria-hidden="true" />
-  ) : (
-    <SunIcon className="h-4 w-4" aria-hidden="true" />
-  );
-}
-
 function CompactThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -102,7 +92,7 @@ function CompactThemeToggle() {
     );
   }
 
-  const handleSelect = (nextTheme: Theme) => {
+  const handleSelect = (nextTheme: ThemeId) => {
     setTheme(nextTheme);
     setOpen(false);
   };
@@ -117,7 +107,7 @@ function CompactThemeToggle() {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <ThemeIcon themeKey={theme} />
+        <PaletteIcon className="h-4 w-4" aria-hidden="true" />
       </button>
 
       {open && (
@@ -130,15 +120,15 @@ function CompactThemeToggle() {
             Theme
           </p>
           <ul className="mt-1 space-y-0.5">
-            {Object.entries(themes).map(([themeKey, config]) => {
-              const isActive = theme === themeKey;
+            {THEME_OPTIONS.map((option) => {
+              const isActive = theme === option.id;
               return (
-                <li key={themeKey}>
+                <li key={option.id}>
                   <button
                     type="button"
                     role="menuitemradio"
                     aria-checked={isActive}
-                    onClick={() => handleSelect(themeKey as Theme)}
+                    onClick={() => handleSelect(option.id)}
                     className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors ${
                       isActive
                         ? "bg-[var(--accent-soft)] text-[var(--foreground)]"
@@ -146,14 +136,15 @@ function CompactThemeToggle() {
                     }`}
                   >
                     <span
-                      className="h-3 w-3 shrink-0 rounded-full border border-black/10"
-                      style={{ backgroundColor: config.preview.accent }}
+                      className={`h-3 w-3 shrink-0 rounded-full border border-black/10 ${
+                        option.mode === "dark" ? "bg-slate-700" : "bg-sky-200"
+                      }`}
                       aria-hidden="true"
                     />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-medium">{config.label}</span>
+                      <span className="block truncate text-xs font-medium">{option.name}</span>
                       <span className="block truncate text-[10px] text-[var(--muted-foreground)]">
-                        {config.mode === "dark" ? "Dark Theme" : "Light Theme"}
+                        {option.description}
                       </span>
                     </span>
                     {isActive && (
@@ -171,7 +162,7 @@ function CompactThemeToggle() {
 }
 
 function DefaultThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, themeDefinition } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -184,7 +175,6 @@ function DefaultThemeToggle() {
     );
   }
 
-  const isDark = themes[theme].mode === "dark";
   const currentLabel = themeDefinition?.name ?? "Theme";
   const currentDescription = themeDefinition?.description ?? "Customize the dashboard palette";
 
