@@ -27,8 +27,8 @@ async function stabilize(page) {
       await document.fonts.ready;
     }
   });
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(250);
+  await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
+  await page.waitForTimeout(500);
 }
 
 async function mockAuthenticatedSession(page) {
@@ -362,12 +362,30 @@ test.describe("visual regression screenshots", () => {
     });
   });
 
-  test("dashboard header screenshots in dark and light mode", async ({
-    page,
-  }) => {
+  test("dashboard header screenshots in dark and light mode", async ({ page }) => {
     await mockAuthenticatedSession(page);
     await mockDashboardApis(page);
-
+    await page.addInitScript(() => {
+      const fixedTime = new Date(2026, 4, 18, 19, 0, 0).valueOf();
+      const RealDate = Date;
+      
+    class MockDate extends RealDate {
+      constructor(...args) {
+        if (args.length === 0) {
+          super(fixedTime);
+          return;
+        }
+        super(...args);
+      } 
+      
+      static now() {
+      return fixedTime;
+      }
+    }
+    
+    globalThis.Date = MockDate;
+  });
+  
     await setTheme(page, "classic-dark");
     await page.goto("/dashboard", { waitUntil: "load" });
     await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible({

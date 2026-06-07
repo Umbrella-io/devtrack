@@ -16,7 +16,8 @@ create table if not exists users (
   is_sponsor   boolean default false,
   discord_webhook_url text,
   timezone text default 'UTC',
-  last_discord_notification_at timestamptz
+  last_discord_notification_at timestamptz,
+  last_ai_summary_at timestamptz
 );
 
 alter table users

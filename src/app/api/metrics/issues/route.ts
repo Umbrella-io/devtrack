@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { fetchIssuesMetrics } from "@/lib/github";
+import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -17,6 +18,9 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
   }
 
   const accountId = req.nextUrl.searchParams.get("accountId");
@@ -50,6 +54,7 @@ export async function GET(req: NextRequest) {
     );
     return Response.json(metrics);
   } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }
