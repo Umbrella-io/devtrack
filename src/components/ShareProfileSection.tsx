@@ -110,7 +110,7 @@ return (
             <span>𝕏</span>
             <span>X</span>
           </a>
-        
+
           <a
             href={linkedInShareUrl}
             target="_blank"

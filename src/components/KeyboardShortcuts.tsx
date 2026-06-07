@@ -9,16 +9,16 @@ export default function KeyboardShortcuts() {
   const [isOpen, setIsOpen] = useState(false);
 
   const [announcement, setAnnouncement] = useState("");
-  const { theme, toggleTheme } = useTheme();
+  const { theme, themeDefinition, toggleTheme } = useTheme();
   const keyboardToggleRef = useRef(false);
   const shortcutsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (keyboardToggleRef.current && theme !== undefined) {
-      setAnnouncement(theme === "dark" ? "Dark mode enabled" : "Light mode enabled");
+      setAnnouncement(`${themeDefinition?.name ?? "Theme"} enabled`);
     }
     keyboardToggleRef.current = false;
-  }, [theme]);
+  }, [theme, themeDefinition]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

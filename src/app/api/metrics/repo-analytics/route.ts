@@ -90,18 +90,25 @@ export async function GET(req: NextRequest) {
       });
 
       let timeline: { date: string; events: number }[] = [];
-      if (activityRes.ok && activityRes.status === 200) {
+      let statsBuilding = false;
+
+      if (activityRes.status === 202) {
+        // GitHub is computing stats asynchronously; surface this to the caller
+        statsBuilding = true;
+      } else if (activityRes.ok) {
         const activityData = await activityRes.json();
         if (Array.isArray(activityData) && activityData.length > 0) {
           const lastWeek = activityData[activityData.length - 1];
-          const days = lastWeek.days || [];
-          const today = new Date();
+          const days: number[] = lastWeek.days || [];
+          // `lastWeek.week` is a Unix timestamp (seconds) for the Sunday that starts the bucket.
+          // Derive labels from it so they always match the actual calendar days GitHub recorded.
+          const weekStart = new Date((lastWeek.week as number) * 1000);
           for (let i = 0; i < 7; i++) {
-            const d = new Date(today);
-            d.setDate(d.getDate() - (6 - i));
+            const d = new Date(weekStart);
+            d.setUTCDate(d.getUTCDate() + i);
             timeline.push({
-              date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              events: days[i] || 0
+              date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
+              events: days[i] ?? 0,
             });
           }
         }
@@ -145,7 +152,8 @@ export async function GET(req: NextRequest) {
         timeline,
         health,
         primaryStack,
-        languageBreakdown
+        languageBreakdown,
+        ...(statsBuilding ? { statsBuilding: true } : {}),
       };
 
       return result;
