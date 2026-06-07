@@ -166,7 +166,7 @@ export default function PRReviewTrendChart() {
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-            PR Review Time Trend
+            PR Analytics — Review Trend
           </h2>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             Average time from PR open to merge over the last 12 weeks.

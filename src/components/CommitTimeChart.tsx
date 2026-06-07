@@ -101,7 +101,7 @@ export default function CommitTimeChart() {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-          Commits by Time of Day
+          Activity Overview
         </h2>
         <select
           value={days}

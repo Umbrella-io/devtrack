@@ -410,7 +410,7 @@ export default function TopRepos() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <SectionHeader
-    title={`Top Repositories${!loading && repos.length > 0 ? ` (${repos.length})` : ""}`}
+    title={`Repo Analytics${!loading && repos.length > 0 ? ` (${repos.length})` : ""}`}
   />
 
           {pinError && (

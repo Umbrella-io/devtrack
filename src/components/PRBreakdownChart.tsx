@@ -73,7 +73,7 @@ export default function PRBreakdownChart() {
   if (error) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Breakdown</h2>
+        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics — Breakdown</h2>
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
@@ -97,7 +97,7 @@ export default function PRBreakdownChart() {
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Breakdown</h2>
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Analytics — Breakdown</h2>
       {total === 0 ? (
         <p className="flex h-[200px] items-center justify-center text-sm text-[var(--muted-foreground)]">
           No pull requests found.
