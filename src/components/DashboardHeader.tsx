@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+
 import NotificationBell from "@/components/NotificationBell";
 import {
   createContext,
@@ -17,7 +17,6 @@ import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import { Moon, Sun } from "lucide-react";
-import { toast } from "sonner";
 
 type DashboardSyncContextValue = {
   lastSynced: Date | null;
@@ -124,7 +123,8 @@ export default function DashboardHeader() {
         let nightOwlCommitsCount = 0;
         let earlyBirdCommitsCount = 0;
 
-        commitsArray.forEach((repo: any) => {
+
+         commitsArray.forEach((repo: { last_commit_date?: string }) => {                                                                                                                                            
           if (repo.last_commit_date) {
             const commitHour = new Date(repo.last_commit_date).getHours();
             if (commitHour >= 0 && commitHour <= 4) nightOwlCommitsCount++;
@@ -141,19 +141,9 @@ export default function DashboardHeader() {
 
     evaluateCodingDistributionMilestones();
   }, [session]);
-  const [copied, setCopied] = useState(false);
+  
 
-  const handleCopyLink = () => {
-    if (!session?.githubLogin) return;
-    const profileUrl = `${window.location.origin}/u/${session.githubLogin}`;
-    navigator.clipboard.writeText(profileUrl).then(() => {
-      setCopied(true);
-      toast.success("Profile link copied!");
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {
-      toast.error("Failed to copy link");
-    });
-  };
+ 
   const [menuOpen, setMenuOpen] = useState(false);
 
   const { lastSynced } = useDashboardSync();
