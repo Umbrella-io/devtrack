@@ -9,7 +9,6 @@ import {
   type LeaderboardEntry,
   type LeaderboardPayload,
   type LeaderboardMetric,
-  type LeaderboardEntry,
   type LeaderboardPeriod,
 } from "@/lib/leaderboard";
 import {
