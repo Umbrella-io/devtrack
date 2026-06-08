@@ -74,23 +74,20 @@ export function useGoalTracker() {
     try {
       const res = await fetch("/api/goals/sync", { method: "POST" });
       if (!res.ok) {
-        let msg = "Sync failed. Please try again.";
+        // Read the body once — the Fetch API only allows a single read per response.
+        let errData: { error?: string } = {};
         try {
-          const errData = await res.json();
-          if (errData && errData.error) {
-            msg = errData.error;
-          }
+          errData = await res.json();
         } catch (e) {}
-        if (res.status === 401) {
-          msg = "Unauthorized. Please log in again.";
-        } else if (res.status === 502) {
-          msg = "GitHub sync failed: Expired token or missing repo scope.";
-        }
+
         if (res.status === 429) {
-          const data = await res.json();
-          setSyncError(data.error ?? "GitHub rate limit reached. Please try again later.");
+          setSyncError(errData.error ?? "GitHub rate limit reached. Please try again later.");
+        } else if (res.status === 401) {
+          setSyncError("Unauthorized. Please log in again.");
+        } else if (res.status === 502) {
+          setSyncError("GitHub sync failed: Expired token or missing repo scope.");
         } else {
-          setSyncError("Failed to sync goals. Please try again.");
+          setSyncError(errData.error ?? "Sync failed. Please try again.");
         }
         return;
       }
@@ -598,9 +595,13 @@ export default function GoalTracker() {
 
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
+                    role="progressbar"
+                    aria-valuenow={Math.max(0, Math.min(Math.round(pct), 100))}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`${goal.title}: ${goal.current} of ${goal.target} ${goal.unit}`}
                     className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
                     style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
-                    
                   />
                 </div>
               <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--control)] p-3">
