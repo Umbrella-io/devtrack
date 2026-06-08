@@ -161,16 +161,46 @@ const RepoItem = memo(({
     </li>
   );
 }, (prevProps, nextProps) => {
+  const areLanguagesEqual = (a?: RepoLanguage[], b?: RepoLanguage[]) => {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    if (a.length !== b.length) return false;
+    return a.every((lang, index) => {
+      const other = b[index];
+      return (
+        lang.name === other.name &&
+        lang.bytes === other.bytes &&
+        lang.percentage === other.percentage
+      );
+    });
+  };
+
+  const areHealthSignalsEqual = (a?: RepoHealthScore["signals"], b?: RepoHealthScore["signals"]) => {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    return (
+      a.commitFrequency === b.commitFrequency &&
+      a.prMergeRate === b.prMergeRate &&
+      a.avgPrOpenTimeHours === b.avgPrOpenTimeHours &&
+      a.openIssuesCount === b.openIssuesCount &&
+      a.daysSinceLastCommit === b.daysSinceLastCommit
+    );
+  };
+
   return (
     prevProps.repo.name === nextProps.repo.name &&
     prevProps.repo.commits === nextProps.repo.commits &&
+    prevProps.repo.url === nextProps.repo.url &&
+    prevProps.repo.description === nextProps.repo.description &&
+    areLanguagesEqual(prevProps.repo.languages, nextProps.repo.languages) &&
     prevProps.idx === nextProps.idx &&
     prevProps.isPinned === nextProps.isPinned &&
     prevProps.barWidth === nextProps.barWidth &&
     prevProps.shortName === nextProps.shortName &&
     prevProps.healthLoading === nextProps.healthLoading &&
     prevProps.health?.score === nextProps.health?.score &&
-    prevProps.health?.grade === nextProps.health?.grade
+    prevProps.health?.grade === nextProps.health?.grade &&
+    areHealthSignalsEqual(prevProps.health?.signals, nextProps.health?.signals)
   );
 });
 RepoItem.displayName = "RepoItem";
