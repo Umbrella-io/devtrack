@@ -67,11 +67,13 @@
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
+- [Docker Development Setup](#docker-development-setup)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [Community](#community)
 - [Sponsors](#sponsors)
 - [License](#license)
+- [Contributors](#contributors)
 
 ---
 
@@ -159,10 +161,27 @@ devtrack/
 
 ---
 
+## API Documentation
+
+DevTrack includes a documented REST API.
+
+Documentation resources:
+
+- `docs/api.md` — API usage guide
+- `public/openapi.yaml` — OpenAPI 3.1 specification
+- `/api-docs` — Interactive Swagger UI
+
+After starting the development server, open:
+
+`http://localhost:3000/api-docs`
+
+---
+
 ## Getting Started
 
 For local development and contributing, see **[DEVELOPMENT.md](./DEVELOPMENT.md)**.
 To deploy your own instance, see the **[Self-Hosting Guide](./docs/self-hosting.md)**.
+
 
 ### Quick Start
 
@@ -231,6 +250,146 @@ npm test
 # End-to-end tests (requires Chromium)
 npx playwright install --with-deps chromium
 npm run test:e2e
+
+### E2E Test Suite (Playwright)
+
+DevTrack ships a Playwright-based end-to-end suite that covers the full user journey — from OAuth sign-in through to dashboard rendering and API route correctness. **No real GitHub or Supabase credentials are needed**; all external calls are mocked inside the specs via `page.route()`.
+
+#### Spec files
+
+| File | What it covers |
+|------|----------------|
+| `e2e/auth.spec.ts` | Landing page loads, "Sign in with GitHub" button visible, OAuth redirect fires, unauthenticated dashboard redirects |
+| `e2e/dashboard.spec.ts` | Dashboard renders all 6 widgets after mock login, no uncaught console errors |
+| `e2e/goals.spec.ts` | Create goal → POST fires with correct payload → goal appears in list; delete goal → removed from list |
+| `e2e/streak.spec.ts` | Streak widget shows numeric current/longest values, freeze button visible and triggers API call |
+| `e2e/api.spec.ts` | `/api/metrics/contributions` returns 200 with valid session, 401 without; `/api/goals` POST returns 401 without session |
+
+The existing smoke specs (`e2e/landing.spec.js`, `e2e/auth-bypass.spec.js`, etc.) remain untouched.
+
+#### Running locally
+
+```bash
+# 1. Install Playwright browsers (one-time)
+npx playwright install --with-deps chromium
+
+# 2. Run the full suite (dev server auto-starts on port 3002)
+npm run test:e2e
+
+# 3. Run a single spec file
+npx playwright test e2e/goals.spec.ts
+
+# 4. Open the interactive UI runner
+npx playwright test --ui
+
+# 5. View the HTML report after a run
+npx playwright show-report
+\```
+
+The test server is configured in `playwright.config.mjs`. It auto-starts `next dev` on `http://127.0.0.1:3002` with placeholder credentials so no `.env.local` is required for E2E runs.
+
+#### CI
+
+E2E tests run automatically on every pull request targeting `main` via `.github/workflows/e2e.yml`. The job builds the Next.js app in standalone mode, installs Chromium, runs the suite, and uploads the Playwright HTML report as an artifact retained for 7 days.
+```
+
+4. Everything else in the README stays exactly as it is. The rest of the file — Docker setup, Roadmap, Contributing, Sponsors, etc. — don't touch.
+```
+
+### Visual regression tests
+
+DevTrack uses Playwright screenshot assertions for visual regression coverage of the landing page, sign-in page, dashboard header, public profile, and 404 page.
+
+Run visual regression tests locally:
+
+```bash
+npx playwright test -c playwright.visual.config.mjs
+```
+
+Update visual baselines:
+
+```bash
+npx playwright test -c playwright.visual.config.mjs --update-snapshots
+```
+
+Baselines are stored in `tests/snapshots/`. Generate and update baselines in the same Linux/Chromium environment used by CI to avoid OS-specific rendering differences. The visual suite uses a fixed `1280x720` viewport and fails when screenshot differences exceed `0.1%`.
+
+---
+
+## Docker Development Setup
+
+DevTrack includes Docker support for local development, allowing contributors to get started quickly without manually installing dependencies or configuring environments.
+
+### Prerequisites
+
+- Docker Desktop (Windows/macOS) or Docker Engine (Linux)
+- Docker Compose v2+
+
+Verify installation:
+
+```bash
+docker --version
+docker compose version
+```
+
+### Configure Environment Variables
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in the required values as described in the Environment Variables section above.
+
+### Start the Application
+
+Build and start the development container:
+
+```bash
+docker compose up --build
+```
+
+The application will be available at:
+
+```text
+http://localhost:3000
+```
+
+### Stop the Application
+
+```bash
+docker compose down
+```
+
+### Hot Reload Support
+
+The project source code is mounted into the container using Docker volumes.
+
+Any changes made to files on your host machine are automatically reflected inside the container, enabling Next.js hot reload during development without rebuilding the image.
+
+### Rebuild After Dependency Changes
+
+If you modify `package.json` or install new dependencies:
+
+```bash
+docker compose down
+docker compose up --build
+```
+
+### Troubleshooting
+
+Remove containers and rebuild from scratch:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+View container logs:
+
+```bash
+docker compose logs -f
 ```
 
 ---
@@ -387,6 +546,20 @@ All contributors are expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.
 ## License
 
 MIT — see [LICENSE](./LICENSE) for details.
+
+---
+
+## Contributors
+
+Thanks to everyone who has helped build DevTrack. Want to join the list? See [CONTRIBUTING.md](./CONTRIBUTING.md) and pick a [good first issue](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22).
+
+<div align="center">
+
+<a href="https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Priyanshu-byte-coder/devtrack" alt="Contributors" />
+</a>
+
+</div>
 
 ---
 

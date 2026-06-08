@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getRoomById, getRoomMembers } from '@/lib/supabase';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getRoomById, getRoomMembers } from '@/lib/supabase-rooms';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
 
 export async function GET(

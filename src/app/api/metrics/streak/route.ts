@@ -117,9 +117,6 @@ async function fetchActiveDates(
   return new Set(dates);
 }
 
-
-
-
 async function checkAndRecordMilestone(
   userId: string,
   currentStreak: number
