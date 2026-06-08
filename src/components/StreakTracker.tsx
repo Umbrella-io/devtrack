@@ -9,6 +9,11 @@ import { toast } from "sonner";
 import { toPng } from "html-to-image";
 import { Flame, Trophy, Calendar, Zap, Copy, CheckCircle, Medal, Star, Sparkles } from "lucide-react";
 
+
+const DATA_WINDOW_DAYS = 90;
+const dataWindowLabel = `Last ${DATA_WINDOW_DAYS} days`;
+
+
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
 interface StreakData {
@@ -491,12 +496,12 @@ export default function StreakTracker() {
         tooltip: "Your longest streak ever",
       },
       {
-        label: "Active Days (90d)",
+        label: `Active Days (${DATA_WINDOW_DAYS}d)`,
         value: animatedActiveDays,
         unit: "days",
         highlight: false,
         icon: Calendar,
-        tooltip: "Days you made commits in the last 90 days",
+        tooltip: `Days you made commits in the ${dataWindowLabel.toLowerCase()}`,
       },
       {
         label: "Last Commit",

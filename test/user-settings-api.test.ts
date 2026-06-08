@@ -54,6 +54,8 @@ describe("User Settings API Endpoints", () => {
         weekly_digest_opt_in: false,
         discord_webhook_url: null,
         timezone: "UTC",
+        public_since: null,
+        show_weekly_goals: false,
       },
       error: null,
     });
@@ -82,6 +84,8 @@ describe("User Settings API Endpoints", () => {
                 weekly_digest_opt_in: updatesObj.weekly_digest_opt_in !== undefined ? updatesObj.weekly_digest_opt_in : false,
                 discord_webhook_url: updatesObj.discord_webhook_url !== undefined ? updatesObj.discord_webhook_url : null,
                 timezone: updatesObj.timezone !== undefined ? updatesObj.timezone : "UTC",
+                public_since: updatesObj.public_since !== undefined ? updatesObj.public_since : null,
+                show_weekly_goals: updatesObj.show_weekly_goals !== undefined ? updatesObj.show_weekly_goals : false,
               },
               error: null,
             }),
@@ -148,6 +152,8 @@ describe("User Settings API Endpoints", () => {
         timezone: "UTC",
         bio: "",
         discord_muted_until: null,
+        public_since: null,
+        show_weekly_goals: false,
       });
     });
   });
@@ -235,6 +241,8 @@ describe("User Settings API Endpoints", () => {
         timezone: "UTC",
         bio: "",
         discord_muted_until: null,
+        public_since: null,
+        show_weekly_goals: false,
       });
       
       // Verify that no database updates were triggered (mockUpdate not called because updates is empty)
@@ -264,12 +272,15 @@ describe("User Settings API Endpoints", () => {
         timezone: "UTC",
         bio: "",
         discord_muted_until: null,
+        public_since: null,
+        show_weekly_goals: false,
       });
       
       // Verify update database query was called with the updates object
       expect(mockUpdate).toHaveBeenCalledWith({
         is_public: false,
         pinned_repos: ["repo-2", "repo-3"],
+        public_since: null,
       });
     });
   });

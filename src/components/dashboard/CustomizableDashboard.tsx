@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import CommitHeatmap from "@/components/CommitHeatmap";
 import {
   closestCenter,
   DndContext,
@@ -57,89 +58,142 @@ import {
   type DashboardWidgetId,
 } from "@/lib/dashboard-layout";
 
-const SkeletonCard = () => (
+export const RepoWidgetSkeleton = () => (
   <div
     role="status"
     aria-busy="true"
-    aria-live="polite"
+    aria-label="Loading repository widget"
+    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
+  >
+    <div className="flex items-center justify-between mb-6" aria-hidden="true">
+      <div className="h-6 w-40 bg-[var(--card-muted)] rounded animate-pulse" />
+      <div className="h-6 w-20 bg-[var(--card-muted)] rounded animate-pulse" />
+    </div>
+    <div className="space-y-5" aria-hidden="true">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="h-4 w-1/3 bg-[var(--card-muted)] rounded animate-pulse" />
+            <div className="h-4 w-16 bg-[var(--card-muted)] rounded animate-pulse" />
+          </div>
+          <div className="h-1.5 w-full bg-[var(--control)] rounded-full overflow-hidden">
+             <div className="h-full bg-[var(--card-muted)] animate-pulse w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+export const ChartSkeleton = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-label="Loading chart"
+    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
+  >
+    <div className="h-6 w-32 bg-[var(--card-muted)] rounded mb-6 animate-pulse" aria-hidden="true" />
+    <div className="h-48 w-full bg-[var(--card-muted)] rounded-lg animate-pulse" aria-hidden="true" />
+  </div>
+);
+
+export const StatsGridSkeleton = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-label="Loading statistics"
+    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
+  >
+    <div className="h-6 w-40 bg-[var(--card-muted)] rounded mb-6 animate-pulse" aria-hidden="true" />
+    <div className="grid grid-cols-2 gap-4" aria-hidden="true">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="h-24 bg-[var(--card-muted)] rounded-lg animate-pulse" />
+      ))}
+    </div>
+  </div>
+);
+
+export const SkeletonCard = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-label="Loading widget"
     className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
   >
-    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-4 animate-pulse" />
-    <div className="h-40 bg-[var(--card-muted)] rounded animate-pulse" />
+    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-4 animate-pulse" aria-hidden="true" />
+    <div className="h-40 bg-[var(--card-muted)] rounded animate-pulse" aria-hidden="true" />
   </div>
 );
 
-const ContributionGraphSkeleton = () => (
-  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-    <h2 className="text-lg font-semibold text-[var(--foreground)]">
-      Your Commits
-    </h2>
-    <div className="mt-3 h-40 rounded bg-[var(--card-muted)] animate-pulse" />
-  </div>
-);
-
-const PRMetricsSkeleton = () => (
-  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-    <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-      PR Analytics
-    </h2>
-    <div className="mt-3 h-40 rounded bg-[var(--card-muted)] animate-pulse" />
+export const ContributionHeatmapSkeleton = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-label="Loading contribution heatmap"
+    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
+  >
+    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-6 animate-pulse" aria-hidden="true" />
+    <div className="grid grid-cols-7 gap-1" aria-hidden="true">
+      {Array.from({ length: 35 }).map((_, i) => (
+        <div key={i} className="aspect-square rounded-sm bg-[var(--card-muted)] animate-pulse" />
+      ))}
+    </div>
   </div>
 );
 
 const CodingActivityInsightsCard = dynamic(
   () => import("@/components/CodingActivityInsightsCard"),
-  { ssr: false, loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <ChartSkeleton /> },
 );
 
 const FriendComparison = dynamic(() => import("@/components/FriendComparison"), {
   ssr: false,
-  loading: () => <SkeletonCard />,
+  loading: () => <RepoWidgetSkeleton />,
 });
 
 const ActivityRingChart = dynamic(
   () => import("@/components/ActivityRingChart"),
-  { ssr: false, loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <ChartSkeleton /> },
 );
 
 const ContributionGraph = dynamic(
   () => import("@/components/ContributionGraph"),
-  { ssr: false, loading: () => <ContributionGraphSkeleton /> },
+  { ssr: false, loading: () => <ChartSkeleton /> },
 );
 
 const ContributionHeatmap = dynamic(
   () => import("@/components/ContributionHeatmap"),
-  { ssr: false, loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <ContributionHeatmapSkeleton /> },
 );
 
 const RepoContributionDistribution = dynamic(
   () => import("@/components/RepoContributionDistribution"),
-  { ssr: false, loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <ChartSkeleton /> },
 );
 
 const PRMetrics = dynamic(() => import("@/components/PRMetrics"), {
   ssr: false,
-  loading: () => <PRMetricsSkeleton />,
+  loading: () => <StatsGridSkeleton />,
 });
 
 const PRBreakdownChart = dynamic(() => import("@/components/PRBreakdownChart"), {
   ssr: false,
-  loading: () => <SkeletonCard />,
+  loading: () => <ChartSkeleton />,
 });
 
 const CommitTimeChart = dynamic(() => import("@/components/CommitTimeChart"), {
   ssr: false,
-  loading: () => <SkeletonCard />,
+  loading: () => <ChartSkeleton />,
 });
 
 const PRReviewTrendChart = dynamic(
   () => import("@/components/PRReviewTrendChart"),
-  { ssr: false, loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <ChartSkeleton /> },
 );
 
 const ProductiveHoursWidget = dynamic(
   () => import("@/components/ProductiveHoursWidget"),
-  { ssr: false, loading: () => <SkeletonCard /> },
+  { ssr: false, loading: () => <ChartSkeleton /> },
 );
 
 const SECTION_ANCHOR_IDS: Record<DashboardSectionId, string> = {
@@ -166,6 +220,7 @@ const SECTION_GRID_CLASSES: Record<DashboardSectionId, string> = {
 const WIDGET_SPAN_CLASSES: Partial<Record<DashboardWidgetId, string>> = {
   "weekly-summary": "xl:col-span-2",
   "contribution-graph": "xl:col-span-2",
+  "commit-heatmap-time": "xl:col-span-2",
   "repo-analytics": "lg:col-span-2",
   "issue-metrics": "xl:col-span-2",
   "goal-tracker": "xl:col-span-2",
@@ -221,21 +276,21 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
 
     case "repo-contribution-distribution":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<ChartSkeleton />}>
           <RepoContributionDistribution />
         </LazyWidget>
       );
 
     case "activity-ring":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<ChartSkeleton />}>
           <ActivityRingChart />
         </LazyWidget>
       );
 
     case "coding-activity-insights":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<ChartSkeleton />}>
           <CodingActivityInsightsCard />
         </LazyWidget>
       );
@@ -251,8 +306,15 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
 
     case "commit-time":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<ChartSkeleton />}>
           <CommitTimeChart />
+        </LazyWidget>
+      );
+
+    case "commit-heatmap-time":
+      return (
+        <LazyWidget fallback={<SkeletonCard />}>
+          <CommitHeatmap />
         </LazyWidget>
       );
 
@@ -261,7 +323,7 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
 
     case "repo-analytics":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<RepoWidgetSkeleton />}>
           <RepoAnalyticsExplorer />
         </LazyWidget>
       );
@@ -271,21 +333,21 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
 
     case "pr-breakdown":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<ChartSkeleton />}>
           <PRBreakdownChart />
         </LazyWidget>
       );
 
     case "pr-review-trend":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<ChartSkeleton />}>
           <PRReviewTrendChart />
         </LazyWidget>
       );
 
     case "discussions":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<RepoWidgetSkeleton />}>
           <DiscussionsWidget />
         </LazyWidget>
       );
@@ -295,28 +357,28 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
 
     case "pinned-repos":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<RepoWidgetSkeleton />}>
           <PinnedReposWidget />
         </LazyWidget>
       );
 
     case "top-repos":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<RepoWidgetSkeleton />}>
           <TopRepos />
         </LazyWidget>
       );
 
     case "inactive-repos":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<RepoWidgetSkeleton />}>
           <InactiveRepositoriesCard />
         </LazyWidget>
       );
 
     case "issue-metrics":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<ChartSkeleton />}>
           <IssueMetrics />
         </LazyWidget>
       );
@@ -333,28 +395,28 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
 
     case "recent-activity":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<RepoWidgetSkeleton />}>
           <RecentActivity />
         </LazyWidget>
       );
 
     case "ci-analytics":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<ChartSkeleton />}>
           <CIAnalytics />
         </LazyWidget>
       );
 
     case "language-breakdown":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<ChartSkeleton />}>
           <LanguageBreakdown />
         </LazyWidget>
       );
 
     case "friend-comparison":
       return (
-        <LazyWidget fallback={<SkeletonCard />}>
+        <LazyWidget fallback={<RepoWidgetSkeleton />}>
           <FriendComparison />
         </LazyWidget>
       );
@@ -400,39 +462,39 @@ export default function CustomizableDashboard() {
   }, []);
 
   useEffect(() => {
-  let isMounted = true;
+    let isMounted = true;
 
-  const loadRemoteLayout = async () => {
-    try {
-      const response = await fetch("/api/user/dashboard-layout", {
-        method: "GET",
-        cache: "no-store",
-      });
+    const loadRemoteLayout = async () => {
+      try {
+        const response = await fetch("/api/user/dashboard-layout", {
+          method: "GET",
+          cache: "no-store",
+        });
 
-      if (!response.ok) {
-        return;
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { layout?: unknown };
+
+        if (isMounted && data.layout) {
+          setLayout(normalizeDashboardLayout(data.layout));
+        }
+      } catch {
+        // Keep localStorage layout when remote sync is unavailable.
+      } finally {
+        if (isMounted) {
+          setHasLoadedRemoteLayout(true);
+        }
       }
+    };
 
-      const data = (await response.json()) as { layout?: unknown };
+    loadRemoteLayout();
 
-      if (isMounted && data.layout) {
-        setLayout(normalizeDashboardLayout(data.layout));
-      }
-    } catch {
-      // Keep localStorage layout when remote sync is unavailable.
-    } finally {
-      if (isMounted) {
-        setHasLoadedRemoteLayout(true);
-      }
-    }
-  };
-
-  loadRemoteLayout();
-
-  return () => {
-    isMounted = false;
-  };
-}, []);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -453,61 +515,61 @@ export default function CustomizableDashboard() {
   );
 
   useEffect(() => {
-  if (!isHydrated || !hasLoadedRemoteLayout) return;
+    if (!isHydrated || !hasLoadedRemoteLayout) return;
 
-  const controller = new AbortController();
+    const controller = new AbortController();
 
-  const timeoutId = window.setTimeout(() => {
-    fetch("/api/user/dashboard-layout", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ layout }),
-      signal: controller.signal,
-    }).catch(() => {
-      // Local persistence already succeeded; remote sync can retry later.
-    });
-  }, 700);
+    const timeoutId = window.setTimeout(() => {
+      fetch("/api/user/dashboard-layout", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ layout }),
+        signal: controller.signal,
+      }).catch(() => {
+        // Local persistence already succeeded; remote sync can retry later.
+      });
+    }, 700);
 
-  return () => {
-    window.clearTimeout(timeoutId);
-    controller.abort();
-  };
-}, [hasLoadedRemoteLayout, isHydrated, layout]);
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [hasLoadedRemoteLayout, isHydrated, layout]);
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
-  if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) return;
 
-  const activeWidgetId = active.id;
-  const overWidgetId = over.id;
+    const activeWidgetId = active.id;
+    const overWidgetId = over.id;
 
-  if (
-    !isDashboardWidgetId(activeWidgetId) ||
-    !isDashboardWidgetId(overWidgetId)
-  ) {
-    return;
-  }
-
-  setLayout((currentLayout) => {
-    const fromSection = findWidgetSection(currentLayout, activeWidgetId);
-    const toSection = findWidgetSection(currentLayout, overWidgetId);
-
-    if (!fromSection || !toSection) {
-      return currentLayout;
+    if (
+      !isDashboardWidgetId(activeWidgetId) ||
+      !isDashboardWidgetId(overWidgetId)
+    ) {
+      return;
     }
 
-    const overIndex = currentLayout.widgets[toSection].indexOf(overWidgetId);
+    setLayout((currentLayout) => {
+      const fromSection = findWidgetSection(currentLayout, activeWidgetId);
+      const toSection = findWidgetSection(currentLayout, overWidgetId);
 
-    return moveWidget(
-      currentLayout,
-      fromSection,
-      toSection,
-      activeWidgetId,
-      overIndex,
-    );
-  });
-};
+      if (!fromSection || !toSection) {
+        return currentLayout;
+      }
+
+      const overIndex = currentLayout.widgets[toSection].indexOf(overWidgetId);
+
+      return moveWidget(
+        currentLayout,
+        fromSection,
+        toSection,
+        activeWidgetId,
+        overIndex,
+      );
+    });
+  };
 
   const handleHideWidget = (widgetId: DashboardWidgetId) => {
     setLayout((currentLayout) => hideWidget(currentLayout, widgetId));

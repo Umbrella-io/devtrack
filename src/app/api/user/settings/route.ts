@@ -429,6 +429,8 @@ export async function PATCH(req: NextRequest) {
       github_login: (settingsResult.data as any).github_login,
       bio: (settingsResult.data as any).bio ?? "",
       is_public: (settingsResult.data as any).is_public,
+      public_since: (settingsResult.data as any).public_since ?? null,
+      show_weekly_goals: (settingsResult.data as any).show_weekly_goals ?? false,
       leaderboard_opt_in: settingsResult.leaderboard_opt_in,
       weekly_digest_opt_in: settingsResult.weekly_digest_opt_in,
       pinned_repos: settingsResult.pinned_repos,

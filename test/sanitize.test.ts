@@ -29,6 +29,11 @@ describe("stripHtml", () => {
   it("returns empty string for empty input", () => {
     expect(stripHtml("")).toBe("");
   });
+
+  it("normalizes and strips Unicode look-alike full-width angle brackets", () => {
+    expect(stripHtml("＜script＞alert(1)＜/script＞")).toBe("alert(1)");
+    expect(stripHtml("＜b＞Hello＜/b＞")).toBe("Hello");
+  });
 });
 
 describe("validateTextInput", () => {
