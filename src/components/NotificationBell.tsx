@@ -1,16 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 
 import { useNotifications } from "@/hooks/useNotifications";
+
+const EMPTY_NOTIFICATIONS: any[] = [];
 
 export default function NotificationBell() {
   const { data, loading, error, refetch } = useNotifications();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
 
-  const notifications = data?.notifications ?? [];
+  const notifications = data?.notifications ?? EMPTY_NOTIFICATIONS;
   const unreadCountFromApi = data?.unreadCount ?? 0;
 
   const [unreadCount, setUnreadCount] = useState(0);
@@ -93,7 +95,7 @@ export default function NotificationBell() {
 
       return next;
     });
-  }, [notifications, unreadCount]);
+  }, [notifications, unreadCount, refetch]);
 
   function timeAgo(iso: string): string {
     const mins = Math.floor(

@@ -54,10 +54,10 @@ html[data-theme="modern-light-blue"] {
   --card-foreground: #0f172a;
   --card-muted: #eff4fb;
   --border: #d9e2ef;
-  --accent: #5b8def;
-  --accent-secondary: #8eb7ff;
+  --accent: #2563eb;
+  --accent-secondary: #1d4ed8;
   --ring: #9cc5ff;
-  --focus-ring: #5b8def;
+  --focus-ring: #2563eb;
   --success: #059669;
   --warning: #d97706;
   --destructive: #dc2626;
