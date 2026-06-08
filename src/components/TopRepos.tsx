@@ -258,6 +258,7 @@ export default function TopRepos() {
   const [pinnedRepos, setPinnedRepos] = useState<string[]>([]);
   const [pinError, setPinError] = useState<string | null>(null);
   const [activeHealthRepo, setActiveHealthRepo] = useState<string | null>(null);
+  const [selectedExplorer, setSelectedExplorer] = useState<string | null>(null);
   const [selectedRepoForActivity, setSelectedRepoForActivity] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   useEffect(() => {
@@ -586,6 +587,13 @@ export default function TopRepos() {
      )}
       {activeHealthRepo && healthScores[activeHealthRepo] && (
         <RepoHealthPanel
+      {selectedExplorer && healthScores[selectedExplorer] && (
+        <RepoHealthExplorer
+          health={healthScores[selectedExplorer]}
+          isOpen={!!selectedExplorer}
+          onClose={() => setSelectedExplorer(null)}
+        />
+      )}
           health={healthScores[activeHealthRepo]}
           isOpen={true}
           onClose={() => setActiveHealthRepo(null)}
