@@ -18,6 +18,7 @@ export const METRICS_CACHE_TTL_SECONDS = {
   "coding-activity-insights": 30 * 60,
   compare: 30 * 60,
   "weekly-summary": 30 * 60,
+  "commit-times": 30 * 60,
 } as const;
 
 type MetricsCacheEndpoint = keyof typeof METRICS_CACHE_TTL_SECONDS;

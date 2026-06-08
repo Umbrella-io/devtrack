@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import CommitHeatmap from "@/components/CommitHeatmap";
 import {
   closestCenter,
   DndContext,
@@ -166,6 +167,7 @@ const SECTION_GRID_CLASSES: Record<DashboardSectionId, string> = {
 const WIDGET_SPAN_CLASSES: Partial<Record<DashboardWidgetId, string>> = {
   "weekly-summary": "xl:col-span-2",
   "contribution-graph": "xl:col-span-2",
+  "commit-heatmap-time": "xl:col-span-2",
   "repo-analytics": "lg:col-span-2",
   "issue-metrics": "xl:col-span-2",
   "goal-tracker": "xl:col-span-2",
@@ -253,6 +255,13 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
       return (
         <LazyWidget fallback={<SkeletonCard />}>
           <CommitTimeChart />
+        </LazyWidget>
+      );
+
+    case "commit-heatmap-time":
+      return (
+        <LazyWidget fallback={<SkeletonCard />}>
+          <CommitHeatmap />
         </LazyWidget>
       );
 
@@ -400,39 +409,39 @@ export default function CustomizableDashboard() {
   }, []);
 
   useEffect(() => {
-  let isMounted = true;
+    let isMounted = true;
 
-  const loadRemoteLayout = async () => {
-    try {
-      const response = await fetch("/api/user/dashboard-layout", {
-        method: "GET",
-        cache: "no-store",
-      });
+    const loadRemoteLayout = async () => {
+      try {
+        const response = await fetch("/api/user/dashboard-layout", {
+          method: "GET",
+          cache: "no-store",
+        });
 
-      if (!response.ok) {
-        return;
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { layout?: unknown };
+
+        if (isMounted && data.layout) {
+          setLayout(normalizeDashboardLayout(data.layout));
+        }
+      } catch {
+        // Keep localStorage layout when remote sync is unavailable.
+      } finally {
+        if (isMounted) {
+          setHasLoadedRemoteLayout(true);
+        }
       }
+    };
 
-      const data = (await response.json()) as { layout?: unknown };
+    loadRemoteLayout();
 
-      if (isMounted && data.layout) {
-        setLayout(normalizeDashboardLayout(data.layout));
-      }
-    } catch {
-      // Keep localStorage layout when remote sync is unavailable.
-    } finally {
-      if (isMounted) {
-        setHasLoadedRemoteLayout(true);
-      }
-    }
-  };
-
-  loadRemoteLayout();
-
-  return () => {
-    isMounted = false;
-  };
-}, []);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -453,61 +462,61 @@ export default function CustomizableDashboard() {
   );
 
   useEffect(() => {
-  if (!isHydrated || !hasLoadedRemoteLayout) return;
+    if (!isHydrated || !hasLoadedRemoteLayout) return;
 
-  const controller = new AbortController();
+    const controller = new AbortController();
 
-  const timeoutId = window.setTimeout(() => {
-    fetch("/api/user/dashboard-layout", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ layout }),
-      signal: controller.signal,
-    }).catch(() => {
-      // Local persistence already succeeded; remote sync can retry later.
-    });
-  }, 700);
+    const timeoutId = window.setTimeout(() => {
+      fetch("/api/user/dashboard-layout", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ layout }),
+        signal: controller.signal,
+      }).catch(() => {
+        // Local persistence already succeeded; remote sync can retry later.
+      });
+    }, 700);
 
-  return () => {
-    window.clearTimeout(timeoutId);
-    controller.abort();
-  };
-}, [hasLoadedRemoteLayout, isHydrated, layout]);
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [hasLoadedRemoteLayout, isHydrated, layout]);
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
-  if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) return;
 
-  const activeWidgetId = active.id;
-  const overWidgetId = over.id;
+    const activeWidgetId = active.id;
+    const overWidgetId = over.id;
 
-  if (
-    !isDashboardWidgetId(activeWidgetId) ||
-    !isDashboardWidgetId(overWidgetId)
-  ) {
-    return;
-  }
-
-  setLayout((currentLayout) => {
-    const fromSection = findWidgetSection(currentLayout, activeWidgetId);
-    const toSection = findWidgetSection(currentLayout, overWidgetId);
-
-    if (!fromSection || !toSection) {
-      return currentLayout;
+    if (
+      !isDashboardWidgetId(activeWidgetId) ||
+      !isDashboardWidgetId(overWidgetId)
+    ) {
+      return;
     }
 
-    const overIndex = currentLayout.widgets[toSection].indexOf(overWidgetId);
+    setLayout((currentLayout) => {
+      const fromSection = findWidgetSection(currentLayout, activeWidgetId);
+      const toSection = findWidgetSection(currentLayout, overWidgetId);
 
-    return moveWidget(
-      currentLayout,
-      fromSection,
-      toSection,
-      activeWidgetId,
-      overIndex,
-    );
-  });
-};
+      if (!fromSection || !toSection) {
+        return currentLayout;
+      }
+
+      const overIndex = currentLayout.widgets[toSection].indexOf(overWidgetId);
+
+      return moveWidget(
+        currentLayout,
+        fromSection,
+        toSection,
+        activeWidgetId,
+        overIndex,
+      );
+    });
+  };
 
   const handleHideWidget = (widgetId: DashboardWidgetId) => {
     setLayout((currentLayout) => hideWidget(currentLayout, widgetId));
