@@ -483,7 +483,7 @@ export default function GoalTracker() {
             const isDeleting = deletingId === goal.id;
             const completed = goal.current >= goal.target;
             const completionLabel = getCompletionLabel(goal);
-            const isAutoSynced = goal.unit === "commits" || goal.unit === "prs";
+            const isAutoSynced = ["commits", "prs", "reviews", "issues_closed", "issues_opened", "open_source_prs"].includes(goal.unit);
 
             return (
               <li key={goal.id} className="relative">
@@ -698,9 +698,13 @@ export default function GoalTracker() {
             >
               <option value="commits">Commits ⚡</option>
               <option value="prs">PRs ⚡</option>
+              <option value="reviews">Code Reviews</option>
+              <option value="issues_closed">Issues Closed</option>
+              <option value="issues_opened">Issues Opened</option>
+              <option value="open_source_prs">Open Source PRs</option>
+              <option value="milestones">Milestones</option>
               <option value="hours">Hours</option>
               <option value="streak">Streak (days)</option>
-              <option value="language">Lines of Code</option>
             </select>
           </div>
         </div>
@@ -753,9 +757,14 @@ export default function GoalTracker() {
         </div>
 
         {/* GitHub Warning */}
-        {(unit === "commits" || unit === "prs") && (
+        {["commits", "prs", "reviews", "issues_closed", "issues_opened", "open_source_prs"].includes(unit) && (
           <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--accent)]/10 px-3 py-2">
             ⚡ This goal will auto-update from your GitHub activity.
+          </p>
+        )}
+        {unit === "milestones" && (
+          <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--card-muted)] px-3 py-2">
+            🏁 Track custom milestones manually using the +1 button.
           </p>
         )}
 

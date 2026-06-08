@@ -89,9 +89,9 @@ export async function PATCH(
   }
 
   if (current !== undefined) {
-    if (typeof current !== "number" || current < 0) {
+    if (typeof current !== "number" || !Number.isInteger(current) || current < 0) {
       return Response.json(
-        { error: "Invalid current value" },
+        { error: "current must be a non-negative integer" },
         { status: 400 }
       );
     }

@@ -8,6 +8,7 @@ import {
   LEADERBOARD_BUILD_LOCK_KEY,
   type LeaderboardEntry,
   type LeaderboardPayload,
+  type LeaderboardMetric,
   type LeaderboardPeriod,
 } from "@/lib/leaderboard";
 import {
@@ -20,7 +21,7 @@ import {
   upstashTryAcquireLock,
 } from "@/lib/upstash-rest";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 const RATE_LIMIT_REQUESTS = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;

@@ -113,6 +113,18 @@ export const StatsGridSkeleton = () => (
   </div>
 );
 
+export const SkeletonCard = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-label="Loading widget"
+    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+  >
+    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-4 animate-pulse" aria-hidden="true" />
+    <div className="h-40 bg-[var(--card-muted)] rounded animate-pulse" aria-hidden="true" />
+  </div>
+);
+
 export const ContributionHeatmapSkeleton = () => (
   <div
     role="status"

@@ -296,6 +296,24 @@ E2E tests run automatically on every pull request targeting `main` via `.github/
 4. Everything else in the README stays exactly as it is. The rest of the file — Docker setup, Roadmap, Contributing, Sponsors, etc. — don't touch.
 ```
 
+### Visual regression tests
+
+DevTrack uses Playwright screenshot assertions for visual regression coverage of the landing page, sign-in page, dashboard header, public profile, and 404 page.
+
+Run visual regression tests locally:
+
+```bash
+npx playwright test -c playwright.visual.config.mjs
+```
+
+Update visual baselines:
+
+```bash
+npx playwright test -c playwright.visual.config.mjs --update-snapshots
+```
+
+Baselines are stored in `tests/snapshots/`. Generate and update baselines in the same Linux/Chromium environment used by CI to avoid OS-specific rendering differences. The visual suite uses a fixed `1280x720` viewport and fails when screenshot differences exceed `0.1%`.
+
 ---
 
 ## Docker Development Setup
