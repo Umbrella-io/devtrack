@@ -52,8 +52,16 @@ export default function PinnedReposWidget({
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-32 rounded-xl skeleton-shimmer border border-[var(--border)]"
-            />
+              className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--card-muted)] p-5"
+            >
+              <div className="h-5 w-3/4 bg-[var(--border)] rounded animate-pulse" />
+              <div className="h-3 w-1/2 bg-[var(--border)] rounded animate-pulse" />
+              <div className="h-8 w-full bg-[var(--border)] rounded animate-pulse mt-2" />
+              <div className="border-t border-[var(--border)]/60 pt-3 mt-1 flex justify-between">
+                <div className="h-8 w-1/3 bg-[var(--border)] rounded animate-pulse" />
+                <div className="h-8 w-1/3 bg-[var(--border)] rounded animate-pulse" />
+              </div>
+            </div>
           ))}
         </div>
       </div>

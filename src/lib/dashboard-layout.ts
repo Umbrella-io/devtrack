@@ -19,6 +19,7 @@ export type DashboardWidgetId =
   | "local-coding-time"
   | "coding-time"
   | "commit-time"
+  | "commit-heatmap-time"
   | "productive-hours"
   | "repo-analytics"
   | "pr-metrics"
@@ -71,6 +72,7 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   "local-coding-time": "Local Coding Time",
   "coding-time": "Coding Time",
   "commit-time": "Commit Time",
+  "commit-heatmap-time": "Commit Time Heatmap",
   "productive-hours": "Productive Hours",
   "repo-analytics": "Repository Analytics",
   "pr-metrics": "PR Metrics",
@@ -105,6 +107,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
       "local-coding-time",
       "coding-time",
       "commit-time",
+      "commit-heatmap-time",
       "productive-hours",
     ],
     analytics: [
