@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface ShortcutsModalProps {
   isOpen: boolean;
@@ -27,6 +27,7 @@ export default function ShortcutsModal({
 }: ShortcutsModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
@@ -35,63 +36,83 @@ export default function ShortcutsModal({
     }
   }, []);
 
-   useEffect(() => {
-    if (!isOpen) return;
+  useEffect(() => {
+    if (!isOpen) {
+      // Restore focus on close
+      if (previousFocusRef.current) {
+        previousFocusRef.current.focus();
+        previousFocusRef.current = null;
+      }
+      return;
+    }
 
-     closeBtnRef.current?.focus();
+    // Save previous active element to restore later, only on initial open
+    if (!previousFocusRef.current) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
+      closeBtnRef.current?.focus();
+    }
 
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-       if (
-        modalRef.current &&
-        !modalRef.current.contains(e.target as Node)
-       ) {
-         onClose();
-       }
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        onClose();
+      }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-       if (e.key === "Escape") {
-         onClose();
-         return;
-     }
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
 
-     if (e.key === "Tab") {
+      if (e.key === "Tab") {
         if (!modalRef.current) return;
 
-         const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
-         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
 
-     if (focusableElements.length === 0) return;
+        if (focusableElements.length === 0) return;
 
-       const firstElement = focusableElements[0];
-         const lastElement = focusableElements[focusableElements.length - 1];
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
 
         if (e.shiftKey && document.activeElement === firstElement) {
-         lastElement.focus();
-         e.preventDefault();
+          lastElement.focus();
+          e.preventDefault();
         } else if (!e.shiftKey && document.activeElement === lastElement) {
           firstElement.focus();
-           e.preventDefault();
-         }
-       }
-     };
-
-     document.addEventListener("keydown", handleKeyDown);
-     document.addEventListener("mousedown", handleClickOutside);
-     document.addEventListener("touchstart", handleClickOutside);
-    return () => {
-       document.removeEventListener("keydown", handleKeyDown);
-       document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
+          e.preventDefault();
+        }
+      }
     };
-   }, [isOpen, onClose]);
+
+    // Prevent focus from escaping the modal programmatically or via browser UI interactions
+    const handleFocusIn = (e: FocusEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        closeBtnRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("focusin", handleFocusIn);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("focusin", handleFocusIn);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <div
       ref={modalRef}
       role="dialog"
+      aria-modal="true"
       aria-labelledby="shortcuts-title"
       className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl"
     >

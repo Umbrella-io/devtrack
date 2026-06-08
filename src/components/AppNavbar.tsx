@@ -126,9 +126,9 @@ export default function AppNavbar() {
         </nav>
 
         {/* Desktop right */}
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden shrink-0 items-center gap-2 md:flex">
           {/* Show ThemeToggle in navbar except on dashboard, where DashboardHeader provides it */}
-          {!isDashboardRoute && <ThemeToggle />}
+          {!isDashboardRoute && <ThemeToggle variant="compact" />}
           {isAuthenticated ? (
             !isDashboardRoute && (
               <div className="flex items-center gap-4 border-l border-white/10 pl-4">
@@ -161,7 +161,7 @@ export default function AppNavbar() {
             !isPublicProfileRoute && (
               <Link
                 href="/api/auth/signin/github?callbackUrl=/dashboard"
-                className="rounded-full px-5 py-2 text-[13px] font-semibold text-[var(--accent-foreground)] shadow-[0_0_20px_rgba(129,140,248,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(129,140,248,0.5)]"
+                className="shrink-0 rounded-full px-5 py-2 text-[13px] font-semibold text-[var(--accent-foreground)] shadow-[0_0_20px_rgba(129,140,248,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(129,140,248,0.5)]"
                 style={{ fontFamily: MONO, background: "var(--accent)" }}
               >
                 SIGN IN →
@@ -222,8 +222,11 @@ export default function AppNavbar() {
 
             <div className="mt-4 border-t border-white/10 pt-4">
               {!isDashboardRoute && (
-                <div className="px-4 py-2">
-                  <ThemeToggle />
+                <div className="flex items-center justify-between px-4 py-2">
+                  <span className="text-sm font-medium text-[var(--muted-foreground)]" style={{ fontFamily: MONO }}>
+                    Theme
+                  </span>
+                  <ThemeToggle variant="compact" />
                 </div>
               )}
               {isAuthenticated ? (
