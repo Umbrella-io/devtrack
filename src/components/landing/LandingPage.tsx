@@ -852,12 +852,12 @@ function SetupSection() {
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981' }} />
         </div>
-        <div style={{ color: '#10b981', fontWeight: 500 }}># start tracking in 30 seconds</div>
+        <div style={{ color: 'var(--success)', fontWeight: 500 }}># start tracking in 30 seconds</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>→</span> sign in at{' '}
           <span style={{ color: A }}>devtrack.vercel.app</span>
         </div>
-        <div style={{ color: '#10b981', marginTop: 8, fontWeight: 500 }}># or self-host</div>
+        <div style={{ color: 'var(--success)', marginTop: 8, fontWeight: 500 }}># or self-host</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>$</span> git clone github.com/…/devtrack
         </div>
