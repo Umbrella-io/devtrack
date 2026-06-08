@@ -104,11 +104,11 @@ export default async function DashboardPage() {
 
   return (
     <DashboardSSEProvider>
-      <div className="min-h-screen bg-[var(--background)] px-3 py-5 text-[var(--foreground)] transition-colors sm:px-6 sm:py-8 lg:px-8 max-w-[1600px] mx-auto">
+      <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
         <DashboardHeader />
 
         {/* Quick actions */}
-        <div className="mt-6 mb-6 sm:mt-8 sm:mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-8 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Left side actions */}
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <Link
@@ -140,10 +140,10 @@ export default async function DashboardPage() {
         </section>
 
         {/* 1. OVERVIEW SECTION */}
-        <section className="mt-10 sm:mt-14 space-y-6">
+        <section className="mt-14 space-y-6">
           <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-            <div className="h-7 w-1.5 sm:h-8 rounded-full bg-[var(--accent)] shadow-[0_0_15px_var(--accent)]"></div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Overview</h2>
+            <div className="h-8 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_15px_var(--accent)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
           </div>
           <div className="grid grid-cols-1 gap-6 w-full">
             <WeeklySummaryCard />
@@ -159,18 +159,18 @@ export default async function DashboardPage() {
         </section>
 
         {/* 2. ACTIVITY & CODING TIME */}
-        <section id="streaks" className="mt-10 sm:mt-14 space-y-6 scroll-mt-20 sm:scroll-mt-28">
+        <section id="streaks" className="mt-14 space-y-6 scroll-mt-28">
           <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-            <div className="h-7 w-1.5 sm:h-8 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Activity & Coding</h2>
+            <div className="h-8 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Activity & Coding</h2>
           </div>
           
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
             <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
-              <div className="w-full overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
+              <div className="w-full overflow-x-auto pb-2">
                 <ContributionGraph />
               </div>
-              <div className="w-full overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
+              <div className="w-full overflow-x-auto pb-2">
                 <ContributionHeatmap />
               </div>
               <LazyWidget fallback={<SkeletonCard />}>
@@ -192,10 +192,10 @@ export default async function DashboardPage() {
         </section>
 
         {/* 3. ANALYTICS & REPOSITORIES */}
-        <section id="pull-requests" className="mt-10 sm:mt-14 space-y-6 scroll-mt-20 sm:scroll-mt-28">
+        <section id="pull-requests" className="mt-14 space-y-6 scroll-mt-28">
           <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-            <div className="h-7 w-1.5 sm:h-8 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Analytics & Repositories</h2>
+            <div className="h-8 w-1.5 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Analytics & Repositories</h2>
           </div>
 
           {/* Repo Analytics Explorer spans full width */}
@@ -236,8 +236,8 @@ export default async function DashboardPage() {
         {/* 4. GOALS & INSIGHTS */}
         <section id="goals" className="mt-14 space-y-6 scroll-mt-28 mb-12">
           <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-            <div className="h-7 w-1.5 sm:h-8 rounded-full bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Goals & Insights</h2>
+            <div className="h-8 w-1.5 rounded-full bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
+            <h2 className="text-2xl font-bold tracking-tight">Goals & Insights</h2>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
