@@ -5,6 +5,9 @@ import { summarizeCodingActivity } from "@/lib/coding-activity-insights";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import { useAccount } from "@/components/AccountContext";
 
+const DATA_WINDOW_DAYS = 90;
+
+
 interface RepoActivityDrawerProps {
   repoName: string;
   isOpen: boolean;
@@ -171,7 +174,7 @@ export default function RepoActivityDrawer({ repoName, isOpen, onClose }: RepoAc
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">Commit Heatmap (Last 90 Days)</h3>
+                <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">{`Commit Heatmap (Last ${DATA_WINDOW_DAYS} Days)`}</h3>
                 <div className="overflow-x-auto pb-2 scrollbar-thin">
                   <div 
                     className="grid gap-[2px]" 

@@ -433,16 +433,22 @@ export default function TopRepos() {
           role="status"
           aria-live="polite"
           aria-busy="true"
-          className="space-y-3"
+          className="space-y-5 mt-4"
         >
           <span className="sr-only">Loading top repositories</span>
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              aria-hidden="true"
-              className="h-10 rounded bg-[var(--card-muted)] animate-pulse"
-            />
-          ))}
+          <div aria-hidden="true" className="space-y-5">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="h-4 w-1/3 bg-[var(--card-muted)] rounded animate-pulse" />
+                  <div className="h-4 w-16 bg-[var(--card-muted)] rounded animate-pulse" />
+                </div>
+                <div className="h-1.5 w-full bg-[var(--control)] rounded-full overflow-hidden">
+                  <div className="h-full bg-[var(--card-muted)] animate-pulse w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
