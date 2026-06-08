@@ -110,7 +110,7 @@ function buildContributionQuery(login: string): string {
     avatarUrl
     bio
     repositories(
-      first: 50
+      first: 20
       orderBy: { field: PUSHED_AT, direction: DESC }
       ownerAffiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]
     ) {
@@ -129,7 +129,7 @@ function buildContributionQuery(login: string): string {
           nodes { topic { name } }
         }
         pullRequests(
-          first: 20
+          first: 10
           states: MERGED
           orderBy: { field: UPDATED_AT, direction: DESC }
         ) {
@@ -148,7 +148,7 @@ function buildContributionQuery(login: string): string {
         defaultBranchRef {
           target {
             ... on Commit {
-              history(first: 30) {
+              history(first: 15) {
                 nodes {
                   message
                   committedDate

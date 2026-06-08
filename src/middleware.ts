@@ -1,24 +1,46 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
+import {
+  checkAuthRateLimit,
+  isAuthSensitivePath,
+  AUTH_LIMIT,
+} from "@/lib/auth-rate-limit";
+import {
+  isStateChangingMethod,
+  isCsrfExempt,
+  validateCsrf,
+} from "@/lib/csrf";
+
+export const runtime = "nodejs";
 
 const isDev = process.env.NODE_ENV === "development";
-const WINDOW_SECONDS = 60;
 
-/* ============================================================
-   SECURITY NOTICE: DEVELOPMENT MODE RATE-LIMIT SCALING
-   These high thresholds are configured STRICTLY for local mock
-   testing pipelines to handle high concurrent local dashboard refreshes.
-   NOTE: In Next.js, process.env.NODE_ENV is a compile-time constant.
-   It is baked into the bundle at build time and cannot change at runtime.
-   Therefore, in production builds, isDev is always false and the
-   AUTHENTICATED_LIMIT/ANONYMOUS_LIMIT will always be 60/10 respectively.
-   In development (next dev), NODE_ENV is 'development' so the higher
-   limits apply during local testing only.
-   ==========================================
-   ============================================================ */
-const AUTHENTICATED_LIMIT = isDev ? 5000 : 60;
-const ANONYMOUS_LIMIT = isDev ? 1000 : 10;
-const LOGIN_LIMIT = isDev ? 100 : 5;
+/**
+ * Configuration constants for API rate limits and window sizes.
+ * Values are scaled in development mode (scaled auth: 1000, authenticated metrics: 5000, anonymous metrics: 1000)
+ * to prevent developer/testing workflow interruptions under rapid mock API loading.
+ */
+const RATE_LIMIT_CONFIG = {
+  /**
+   * The sliding rate limit window size in seconds.
+   */
+  WINDOW_SECONDS: 60,
+
+  /**
+   * Maximum allowed API metrics requests for authenticated users in the window.
+   */
+  AUTHENTICATED_LIMIT: isDev ? 5000 : 60,
+
+  /**
+   * Maximum allowed API metrics requests for anonymous users in the window.
+   */
+  ANONYMOUS_LIMIT: isDev ? 1000 : 10,
+
+  /**
+   * Maximum allowed sign-in attempts for authentication routes in the window.
+   */
+  AUTH_LIMIT: isDev ? 1000 : AUTH_LIMIT,
+} as const;
 
 const memoryBuckets = new Map<string, number[]>();
 
@@ -59,7 +81,7 @@ function pruneMemoryBuckets(now: number) {
     return;
   }
 
-  const cutoff = now - WINDOW_SECONDS * 1000;
+  const cutoff = now - RATE_LIMIT_CONFIG.WINDOW_SECONDS * 1000;
   for (const [key, values] of Array.from(memoryBuckets.entries())) {
     const active = values.filter((timestamp: number) => timestamp > cutoff);
     if (active.length === 0) {
@@ -77,20 +99,15 @@ function checkMemoryLimit(
 ): RateLimitResult {
   pruneMemoryBuckets(now);
 
-  const cutoff = now - WINDOW_SECONDS * 1000;
+  const cutoff = now - RATE_LIMIT_CONFIG.WINDOW_SECONDS * 1000;
   const active = (memoryBuckets.get(key) ?? []).filter(
     (timestamp) => timestamp > cutoff
   );
-  const reset = Math.ceil(((active[0] ?? now) + WINDOW_SECONDS * 1000) / 1000);
+  const reset = Math.ceil(((active[0] ?? now) + RATE_LIMIT_CONFIG.WINDOW_SECONDS * 1000) / 1000);
 
   if (active.length >= limit) {
     memoryBuckets.set(key, active);
-    return {
-      allowed: false,
-      limit,
-      remaining: 0,
-      reset,
-    };
+    return { allowed: false, limit, remaining: 0, reset };
   }
 
   active.push(now);
@@ -106,7 +123,6 @@ function checkMemoryLimit(
 
 /**
  * ATOMIC LUA EVALUATION IN UPSTASH REDIS
- * Prunes expired elements, checks window capacity, and commits mutation atomically.
  */
 async function checkUpstashLimit(
   key: string,
@@ -120,11 +136,10 @@ async function checkUpstashLimit(
     return null;
   }
 
-  const cutoff = now - WINDOW_SECONDS * 1000;
-  const reset = Math.ceil((now + WINDOW_SECONDS * 1000) / 1000);
+  const cutoff = now - RATE_LIMIT_CONFIG.WINDOW_SECONDS * 1000;
+  const reset = Math.ceil((now + RATE_LIMIT_CONFIG.WINDOW_SECONDS * 1000) / 1000);
   const memberToken = `${now}:${Math.random().toString(36).slice(2)}`;
 
-  // Lua script ensures thread-safe atomic execution inside Redis engine
   const luaScript = `
     local key = KEYS[1]
     local cutoff = tonumber(ARGV[1])
@@ -132,10 +147,8 @@ async function checkUpstashLimit(
     local limit = tonumber(ARGV[3])
     local windowSeconds = tonumber(ARGV[4])
     local member = ARGV[5]
-
     redis.call('ZREMRANGEBYSCORE', key, 0, cutoff)
     local currentCount = redis.call('ZCARD', key)
-
     if currentCount >= limit then
       return {0, currentCount}
     else
@@ -155,38 +168,23 @@ async function checkUpstashLimit(
       body: JSON.stringify({
         script: luaScript,
         keys: [key],
-        args: [
-          String(cutoff),
-          String(now),
-          String(limit),
-          String(WINDOW_SECONDS),
-          memberToken,
-        ],
+        args: [String(cutoff), String(now), String(limit), String(RATE_LIMIT_CONFIG.WINDOW_SECONDS), memberToken],
       }),
       cache: "no-store",
     });
 
-    if (!response.ok) {
-      return null;
-    }
+    if (!response.ok) { return null; }
 
     const data = await response.json();
-
-    // Upstash REST eval response format: { result: [allowed_flag, current_count] }
     const [allowedFlag, currentCount] = data.result as [number, number];
-    const isAllowed = allowedFlag === 1;
-
     return {
-      allowed: isAllowed,
+      allowed: allowedFlag === 1,
       limit,
       remaining: Math.max(limit - currentCount, 0),
       reset,
     };
   } catch (error) {
-    console.error(
-      "Rate-limiter cloud pipeline failure, falling back to local memory storage:",
-      error
-    );
+    console.error("Rate-limiter cloud pipeline failure, falling back to local memory storage:", error);
     return null;
   }
 }
@@ -201,75 +199,129 @@ async function checkRateLimit(identifier: string, limit: number) {
 }
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-
-  // Protect dashboard and settings routes
   const pathname = req.nextUrl.pathname;
 
-  const isAuthRoute =
-  pathname.startsWith("/api/auth/signin") ||
-  pathname.startsWith("/api/auth/callback");
+  // In production (HTTPS), NextAuth.js writes the session to the
+  // __Secure-next-auth.session-token cookie (Secure flag set).
+  // We must try the secure cookie first; the plain cookie is only
+  // present in local development (HTTP, no Secure flag).
+  const isProduction = process.env.NODE_ENV === "production";
 
-  const protectedRoutes = ["/dashboard", "/settings"];
+  let token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: isProduction,
+    cookieName: isProduction
+      ? "__Secure-next-auth.session-token"
+      : "next-auth.session-token",
+  });
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-
-  if (isProtectedRoute && !token) {
-    return NextResponse.redirect(new URL("/", req.url));
+  if (!token) {
+    // Fallback: try the opposite cookie name to handle edge cases such as
+    // a production build served over HTTP (e.g. a staging environment without TLS)
+    // or a dev build that somehow received a Secure cookie.
+    token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: !isProduction,
+      cookieName: !isProduction
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+    });
   }
 
-  const githubId =
-    typeof token?.githubId === "string" ? token.githubId : null;
+  const isApiStateChange =
+    pathname.startsWith("/api/") &&
+    isStateChangingMethod(req.method) &&
+    !isCsrfExempt(pathname);
 
+  if (isApiStateChange) {
+    const csrf = validateCsrf(req);
+    if (!csrf.valid) {
+      return NextResponse.json({ error: csrf.reason }, { status: 403 });
+    }
+  }
+
+  const protectedRoutes = ["/dashboard", "/settings"];
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+
+  const adminRoutes = ["/admin"];
+  const isAdminRoute = adminRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+
+  if ((isProtectedRoute || isAdminRoute) && !token) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  if (isProtectedRoute) {
+    return NextResponse.next();
+  }
+
+  if (isAdminRoute) {
+    // Check if token explicitly has the admin role
+    if (!token?.role || token.role !== "admin") {
+      return new NextResponse("Forbidden: Admin access required", { status: 403 });
+    }
+    return NextResponse.next();
+  }
+
+  if (isAuthSensitivePath(pathname)) {
+    const ip = getIp(req);
+    const authLimit = RATE_LIMIT_CONFIG.AUTH_LIMIT;
+    const authResult = checkAuthRateLimit(ip, authLimit);
+
+    if (!authResult.allowed) {
+      console.warn("auth_rate_limit_hit", { ip, path: pathname });
+      const headers = buildHeaders({ ...authResult, limit: authLimit });
+      return NextResponse.json(
+        { error: "Too many authentication attempts. Please try again later." },
+        { status: 429, headers }
+      );
+    }
+
+    return NextResponse.next();
+  }
+
+  const isRateLimitedPath =
+    pathname.startsWith("/api/metrics/") || pathname === "/api/contact";
+
+  if (!isRateLimitedPath) {
+    return NextResponse.next();
+  }
+
+  const githubId = typeof token?.githubId === "string" ? token.githubId : null;
   const identifier = githubId ? `user:${githubId}` : `ip:${getIp(req)}`;
-
- const limit = isAuthRoute
-  ? LOGIN_LIMIT
-  : githubId
-    ? AUTHENTICATED_LIMIT
-    : ANONYMOUS_LIMIT;
+  const limit = githubId ? RATE_LIMIT_CONFIG.AUTHENTICATED_LIMIT : RATE_LIMIT_CONFIG.ANONYMOUS_LIMIT;
 
   const result = await checkRateLimit(identifier, limit);
-
   const headers = buildHeaders(result);
 
   if (!result.allowed) {
-    console.warn("metrics_rate_limit_hit", {
-      identifier,
-      path: req.nextUrl.pathname,
-      limit,
+    const isContact = req.nextUrl.pathname.startsWith("/api/contact");
+    console.warn(isContact ? "contact_rate_limit_hit" : "metrics_rate_limit_hit", {
+      identifier, path: req.nextUrl.pathname, limit,
     });
-
-   return NextResponse.json(
-  {
-    error: isAuthRoute
-      ? "Too many login attempts. Please try again later."
-      : "Too many metrics requests. Please retry shortly."
-  },
-  { status: 429, headers }
-);
-}
+    return NextResponse.json(
+      {
+        error: isContact
+          ? "Too many submissions. Please retry shortly."
+          : "Too many metrics requests. Please retry shortly.",
+      },
+      { status: 429, headers }
+    );
+  }
 
   const response = NextResponse.next();
+  headers.forEach((value, key) => response.headers.set(key, value));
 
-  headers.forEach((value, key) =>
-    response.headers.set(key, value)
-  );
-
-  // Cache GET metric responses in the browser for 5 minutes.
-  // This eliminates redundant function invocations on every dashboard
-  // tab-switch or soft navigation, directly cutting Vercel Active CPU usage.
-  // Responses are private (user-specific) so CDN caching is disabled.
   if (req.method === "GET") {
-    response.headers.set(
-      "Cache-Control",
-      "private, max-age=300, stale-while-revalidate=600"
-    );
+    response.headers.set("Cache-Control", "private, max-age=300, stale-while-revalidate=600");
   }
 
   return response;
@@ -277,10 +329,12 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-  "/dashboard/:path*",
-  "/settings/:path*",
-  "/api/metrics/:path*",
-  "/api/auth/signin/:path*",
-  "/api/auth/callback/:path*",
-],
+    "/dashboard",
+    "/dashboard/:path*",
+    "/settings",
+    "/settings/:path*",
+    "/admin",
+    "/admin/:path*",
+    "/api/:path*",
+  ],
 };

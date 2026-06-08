@@ -15,6 +15,8 @@ export type RepoStats = {
   contributorCount: number;
   goodFirstIssues: number;
   contributors: Array<{ login: string; avatar_url: string; html_url: string }>;
+  totalCommits: number;
+  mergedPRs: number;
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -367,7 +369,7 @@ function HeroSection() {
         gap: 'clamp(32px,5vw,80px)',
         flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
-        overflow: 'hidden',
+        overflow: 'clip',
       }}
     >
       {/* Ambient Animated Background Glow */}
@@ -584,7 +586,7 @@ function AboutSection() {
       aria-labelledby="about-heading"
       style={{
         padding: '88px clamp(20px,4vw,48px)',
-        borderTop: '1px solid #1e293b',
+        borderTop: `1px solid ${BORDER}`,
         position: 'relative',
         zIndex: 1,
       }}
@@ -683,12 +685,6 @@ function HeatmapSection() {
 /* ═══════════════════════════════════════════════════════════
    STATS ROW
    ═══════════════════════════════════════════════════════════ */
-const STATS = [
-  { value: 847, label: 'COMMITS TRACKED' },
-  { value: 43,  label: 'PRS MERGED' },
-  { value: 89,  label: 'DAY BEST STREAK' },
-  { value: 67,  label: 'REVIEWS GIVEN' },
-];
 
 function StatItem({ value, label, delay }: { value: number; label: string; delay: number }) {
   const [ref, vis] = useScrollReveal(0.2);
@@ -716,14 +712,20 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
   );
 }
 
-function StatsSection() {
+function StatsSection({ stats }: { stats: RepoStats }) {
+  const items = [
+    { value: stats.totalCommits,    label: 'COMMITS IN REPO' },
+    { value: stats.mergedPRs,       label: 'PRS MERGED' },
+    { value: stats.contributorCount,label: 'CONTRIBUTORS' },
+    { value: stats.stars,           label: 'GITHUB STARS' },
+  ];
   return (
     <section id="features" style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
         gap: 24, borderTop: `1px solid ${BORDER}`,
     }}>
-      {STATS.map((s, i) => (
+      {items.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
       ))}
     </section>
@@ -751,12 +753,20 @@ const FEATURES = [
     desc: 'Full-year visualization of your coding consistency. See patterns emerge across weeks and months.',
   },
   {
-    num: '05', title: 'LANGUAGE BREAKDOWN',
-    desc: 'See which languages dominate your contributions. TypeScript, Python, Go — tracked across all repos.',
+    num: '05', title: 'AI WEEKLY INSIGHTS',
+    desc: 'AI-powered analysis of your coding patterns. Get personalized recommendations to improve your workflow.',
   },
   {
-    num: '06', title: 'PUBLIC PROFILE',
-    desc: 'Share your developer stats with the world. Your coding story, visible to anyone.',
+    num: '06', title: 'RESUME GENERATOR',
+    desc: 'Generate an ATS-friendly CV backed by your real GitHub contributions, merged PRs, and lines changed.',
+  },
+  {
+    num: '07', title: 'PUBLIC LEADERBOARD',
+    desc: 'Opt-in leaderboard ranked by streaks, commits, and PRs. See how you compare with the community.',
+  },
+  {
+    num: '08', title: 'PUBLIC PROFILE',
+    desc: 'Shareable stats page with badges, pinned repos, and achievements. Your coding story, visible to anyone.',
   },
 ];
 
@@ -784,8 +794,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         }}>
           {f.title}
         </h3>
-        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>   {/* was '#444' */}
-          {f.desc}
+        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>          {f.desc}
         </p>
       </div>
     </div>
@@ -843,12 +852,12 @@ function SetupSection() {
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981' }} />
         </div>
-        <div style={{ color: '#10b981', fontWeight: 500 }}># start tracking in 30 seconds</div>
+        <div style={{ color: 'var(--success)', fontWeight: 500 }}># start tracking in 30 seconds</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>→</span> sign in at{' '}
           <span style={{ color: A }}>devtrack.vercel.app</span>
         </div>
-        <div style={{ color: '#10b981', marginTop: 8, fontWeight: 500 }}># or self-host</div>
+        <div style={{ color: 'var(--success)', marginTop: 8, fontWeight: 500 }}># or self-host</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>$</span> git clone github.com/…/devtrack
         </div>
@@ -917,7 +926,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#94a3b8', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: '0.1em', marginBottom: 10 }}>
               {s.icon} {s.label}
             </div>
             <div style={{
@@ -943,8 +952,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           BUILT IN PUBLIC.<br />
           <span style={{ color: A }}>SHIP WITH US.</span>
         </h2>
-        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>   {/* was '#555' */}
-          DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
+        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>          DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
           who actually use it. Every widget, every metric, every API was contributed by
           someone in this list. {stats.goodFirstIssues > 0 && (
             <span style={{ color: TEXT }}>
@@ -997,10 +1005,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           {stats.contributorCount > stats.contributors.length && (
             <div style={{
               width: 38, height: 38, borderRadius: '50%',
-              border: `2px solid #000000`,
-              background: '#1e293b', marginLeft: -11,
+              border: `2px solid var(--background)`,
+              background: 'var(--card)', marginLeft: -11,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: MONO, fontSize: 10, color: '#cbd5e1', flexShrink: 0,
+              fontFamily: MONO, fontSize: 10, color: MUTED, flexShrink: 0,
             }}>
               +{stats.contributorCount - stats.contributors.length}
             </div>
@@ -1048,14 +1056,14 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
   return (
     <div
       className="lnd-root"
-      style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}
+      style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'clip' }}
     >
       <MouseSpotlight />
       <HeroSection />
       <CommitTicker />
       <AboutSection />
       <HeatmapSection />
-      <StatsSection />
+      <StatsSection stats={repoStats} />
       <FeaturesSection />
       <ContributeSection stats={repoStats} />
       <SetupSection />
