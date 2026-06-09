@@ -74,23 +74,20 @@ export function useGoalTracker() {
     try {
       const res = await fetch("/api/goals/sync", { method: "POST" });
       if (!res.ok) {
-        let msg = "Sync failed. Please try again.";
+        // Read the body once — the Fetch API only allows a single read per response.
+        let errData: { error?: string } = {};
         try {
-          const errData = await res.json();
-          if (errData && errData.error) {
-            msg = errData.error;
-          }
+          errData = await res.json();
         } catch (e) {}
-        if (res.status === 401) {
-          msg = "Unauthorized. Please log in again.";
-        } else if (res.status === 502) {
-          msg = "GitHub sync failed: Expired token or missing repo scope.";
-        }
+
         if (res.status === 429) {
-          const data = await res.json();
-          setSyncError(data.error ?? "GitHub rate limit reached. Please try again later.");
+          setSyncError(errData.error ?? "GitHub rate limit reached. Please try again later.");
+        } else if (res.status === 401) {
+          setSyncError("Unauthorized. Please log in again.");
+        } else if (res.status === 502) {
+          setSyncError("GitHub sync failed: Expired token or missing repo scope.");
         } else {
-          setSyncError("Failed to sync goals. Please try again.");
+          setSyncError(errData.error ?? "Sync failed. Please try again.");
         }
         return;
       }
@@ -486,7 +483,7 @@ export default function GoalTracker() {
             const isDeleting = deletingId === goal.id;
             const completed = goal.current >= goal.target;
             const completionLabel = getCompletionLabel(goal);
-            const isAutoSynced = goal.unit === "commits" || goal.unit === "prs";
+            const isAutoSynced = ["commits", "prs", "reviews", "issues_closed", "issues_opened", "open_source_prs"].includes(goal.unit);
 
             return (
               <li key={goal.id} className="relative">
@@ -598,9 +595,13 @@ export default function GoalTracker() {
 
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
+                    role="progressbar"
+                    aria-valuenow={Math.max(0, Math.min(Math.round(pct), 100))}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`${goal.title}: ${goal.current} of ${goal.target} ${goal.unit}`}
                     className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
                     style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
-                    
                   />
                 </div>
               <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--control)] p-3">
@@ -697,9 +698,13 @@ export default function GoalTracker() {
             >
               <option value="commits">Commits ⚡</option>
               <option value="prs">PRs ⚡</option>
+              <option value="reviews">Code Reviews</option>
+              <option value="issues_closed">Issues Closed</option>
+              <option value="issues_opened">Issues Opened</option>
+              <option value="open_source_prs">Open Source PRs</option>
+              <option value="milestones">Milestones</option>
               <option value="hours">Hours</option>
               <option value="streak">Streak (days)</option>
-              <option value="language">Lines of Code</option>
             </select>
           </div>
         </div>
@@ -752,9 +757,14 @@ export default function GoalTracker() {
         </div>
 
         {/* GitHub Warning */}
-        {(unit === "commits" || unit === "prs") && (
+        {["commits", "prs", "reviews", "issues_closed", "issues_opened", "open_source_prs"].includes(unit) && (
           <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--accent)]/10 px-3 py-2">
             ⚡ This goal will auto-update from your GitHub activity.
+          </p>
+        )}
+        {unit === "milestones" && (
+          <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--card-muted)] px-3 py-2">
+            🏁 Track custom milestones manually using the +1 button.
           </p>
         )}
 

@@ -18,6 +18,7 @@ export const METRICS_CACHE_TTL_SECONDS = {
   "coding-activity-insights": 30 * 60,
   compare: 30 * 60,
   "weekly-summary": 30 * 60,
+  "commit-times": 30 * 60,
 } as const;
 
 type MetricsCacheEndpoint = keyof typeof METRICS_CACHE_TTL_SECONDS;
@@ -245,5 +246,31 @@ export async function invalidateUserMetricsCache(userId: string): Promise<void> 
     } while (cursor !== 0);
   } catch (e) {
     // Invalidation failures must not break the webhook response.
+  }
+}
+
+export async function invalidateLeaderboardCache(): Promise<void> {
+  const prefix = `leaderboard:`;
+
+  for (const key of memoryCache.keys()) {
+    if (key.startsWith(prefix)) {
+      memoryCache.delete(key);
+    }
+  }
+
+  const redis = getRedisClient();
+  if (!redis) return;
+
+  try {
+    let cursor = 0;
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, { match: `${prefix}*`, count: 100 });
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+      cursor = Number(nextCursor);
+    } while (cursor !== 0);
+  } catch (e) {
+    // Invalidation failures must not break the settings/webhook response.
   }
 }

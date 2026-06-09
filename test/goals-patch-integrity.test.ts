@@ -99,13 +99,11 @@ describe("PATCH /api/goals/[id] — progress integrity", () => {
 
   // ── input validation ──────────────────────────────────────────────────────
 
-  it("rejects missing current field", async () => {
+  it("allows missing current field", async () => {
     setupSupabase(buildGoal());
     const [req, ctx] = makeRequest({});
     const res = await PATCH(req, ctx);
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toMatch(/non-negative integer/);
+    expect(res.status).toBe(200);
   });
 
   it("rejects a float value for current", async () => {

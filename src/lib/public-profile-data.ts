@@ -51,6 +51,7 @@ export interface PublicProfileData {
   achievements: GitHubAchievement[];
   achievementsError?: string | null;
   spotlightRepos?: PinnedRepoDetails[];
+  contributionMilestones?: { label: string; achievedAt: string | null }[];
   weeklyGoalProgress: WeeklyGoalProgress | null;
 }
 
@@ -323,6 +324,14 @@ export async function fetchPublicProfile(
     fetchPublicWeeklyGoalProgress(user.id, user.show_weekly_goals ?? false),
   ]);
 
+  // Fetch streak milestones for contribution highlights on public profile
+  const { data: streakMilestones } = await supabaseAdmin
+    .from("streak_milestones")
+    .select("streak_count, achieved_at")
+    .eq("user_id", user.id)
+    .order("streak_count", { ascending: false })
+    .limit(5);
+
   return {
     username: user.github_login,
     bio: user.bio ?? null,
@@ -336,6 +345,10 @@ export async function fetchPublicProfile(
     achievements: achievementsCache.achievements,
     achievementsError: achievementsCache.error,
     spotlightRepos: spotlight,
+    contributionMilestones: (streakMilestones ?? []).map((m) => ({
+      label: `${m.streak_count}-Day Streak`,
+      achievedAt: m.achieved_at ?? null,
+    })),
     weeklyGoalProgress,
   };
 }

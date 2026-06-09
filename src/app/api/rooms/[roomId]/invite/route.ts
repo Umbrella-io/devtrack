@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getRoomById, getRoomMembers, addRoomMember } from '@/lib/supabase';
+import { getRoomById, getRoomMembers, addRoomMember } from '@/lib/supabase-rooms';
 import { NextResponse } from 'next/server';
 
 export async function POST(
