@@ -51,11 +51,13 @@ test("[API E2E] /api/metrics/streak returns 401 without a session", async ({
   expect([401, 302, 403]).toContain(res.status());
 });
 
-test("[API E2E] /api/metrics/contributions accepts valid session cookie", async ({
+test("[API E2E] /api/metrics/contributions returns 200 with valid session cookie", async ({
+  page,
   request,
 }) => {
   const sessionToken = await buildSessionCookie();
 
+  // Add the signed cookie to the browser context.
   await page.context().addCookies([
     {
       name: "next-auth.session-token",
@@ -69,7 +71,7 @@ test("[API E2E] /api/metrics/contributions accepts valid session cookie", async 
     },
   ]);
 
-  // Setup session mock BEFORE making the request
+  // Mock the NextAuth session verify call so the API handler resolves the user.
   await page.route("**/api/auth/session**", (route) =>
     route.fulfill({
       contentType: "application/json",
@@ -116,13 +118,20 @@ test("[API E2E] /api/goals POST without session returns 401 or 403", async ({
 });
 
 test("[API E2E] /api/metrics/contributions with days param returns valid JSON when authenticated", async ({
-  request,
+  page,
 }) => {
   const sessionToken = await buildSessionCookie();
 
-  const res = await request.get("/api/metrics/contributions?days=30", {
-    headers: {
-      Cookie: `next-auth.session-token=${sessionToken}`,
+  await page.context().addCookies([
+    {
+      name: "next-auth.session-token",
+      value: sessionToken,
+      domain: "127.0.0.1",
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax",
+      secure: false,
+      expires: Math.floor(Date.now() / 1000) + 60 * 60,
     },
   ]);
 

@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getRoomById, getRoomMessages, getRoomMessagesSince, sendRoomMessage } from '@/lib/supabase-rooms';
+import { getRoomById, getRoomMessages, sendRoomMessage } from '@/lib/supabase-rooms';
 import { validateTextInput } from '@/lib/sanitize';
 import { NextResponse } from 'next/server';
 
@@ -10,7 +10,7 @@ export async function GET(
 ) {
   const { roomId } = await params;
   const session = await getServerSession(authOptions);
-  if (!session?.githubLogin)
+  if (!session?.user?.name)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const room = await getRoomById(roomId, session.user.name);
   if (!room) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -26,7 +26,7 @@ export async function POST(
 ) {
   const { roomId } = await params;
   const session = await getServerSession(authOptions);
-  if (!session?.githubLogin)
+  if (!session?.user?.name)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const room = await getRoomById(roomId, session.user.name);
   if (!room) return NextResponse.json({ error: 'Not found' }, { status: 404 });

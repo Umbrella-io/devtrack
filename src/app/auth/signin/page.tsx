@@ -13,22 +13,27 @@ const DISP = "var(--font-syne, system-ui, sans-serif)";
 
 /** Maps NextAuth error codes → user-facing messages. */
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  github: "githubError",
-  OAuthCallback: "oauthCallbackError",
-  OAuthSignin: "oauthSigninError",
-  Configuration: "configurationError",
-  AccessDenied: "accessDeniedError",
-  Verification: "verificationError",
-  Default: "defaultError",
+  github:
+    "GitHub sign-in failed. This is usually caused by incorrect OAuth credentials or a mismatched callback URL. Check your GitHub OAuth App settings and try again.",
+  OAuthCallback:
+    "The OAuth callback could not be completed. Please try signing in again.",
+  OAuthSignin:
+    "Could not start the GitHub sign-in flow. Please try again.",
+  Configuration:
+    "There is a server configuration error. Please contact the site administrator.",
+  AccessDenied:
+    "Access was denied. You may have cancelled the GitHub authorization.",
+  Verification:
+    "The sign-in link has expired or has already been used.",
+  Default:
+    "An unexpected authentication error occurred. Please try again.",
 };
 
-function getErrorMessageKey(error: string): string {
+function getErrorMessage(error: string): string {
   return AUTH_ERROR_MESSAGES[error] ?? AUTH_ERROR_MESSAGES.Default;
 }
 
 function AuthErrorBanner({ error }: { error: string }) {
-  const t = useTranslations("auth");
-
   return (
     <div
       role="alert"
@@ -54,7 +59,7 @@ function AuthErrorBanner({ error }: { error: string }) {
           textTransform: "uppercase",
         }}
       >
-        ⚠ {t("signInFailed")}
+        ⚠ Sign-in failed
       </p>
       <p
         style={{
@@ -65,7 +70,7 @@ function AuthErrorBanner({ error }: { error: string }) {
           lineHeight: 1.65,
         }}
       >
-        {t(getErrorMessageKey(error))}
+        {getErrorMessage(error)}
       </p>
     </div>
   );
@@ -104,11 +109,8 @@ function MouseSpotlight() {
  * boundary because useSearchParams() opts the subtree out of static rendering.
  */
 function SignInContent() {
-  const t = useTranslations("auth");
-  const common = useTranslations("common");
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
-
 
   // Clear the ?error= param from the URL immediately after reading it so
   // that refreshing the page or navigating back doesn't show a stale error
@@ -161,7 +163,7 @@ function SignInContent() {
     textDecoration: "none",
   fontSize:12 }}
         >
-           ← {common("backToHome")}
+           ← Back to home
         </Link>
       </div>
 
@@ -192,8 +194,8 @@ function SignInContent() {
             margin: "0 0 16px",
           }}
         >
-          {t("welcome")}<br />
-          <span style={{ color: A }}>{t("back")}</span>
+          WELCOME<br />
+          <span style={{ color: A }}>BACK.</span>
         </h1>
 
         <p
@@ -205,7 +207,7 @@ function SignInContent() {
             fontFamily: MONO,
           }}
         >
-          {t("tagline")}
+          Track streaks, PR velocity &amp; coding growth.
         </p>
 
         {error && <AuthErrorBanner error={error} />}
@@ -240,9 +242,8 @@ function SignInContent() {
           aria-label="Sign in with GitHub"
           className="primary-button relative w-full inline-flex items-center justify-center gap-3 rounded-xl py-3 font-semibold"
         >
-          {t("signInWithGitHub")}
+          Sign in with GitHub
         </button>
-
 
         <div
           style={{
@@ -253,7 +254,7 @@ function SignInContent() {
             lineHeight: 1.8,
           }}
         >
-          {t("licenseLine")}
+          MIT License · Self-hostable · Free forever
         </div>
       </div>
       </div>

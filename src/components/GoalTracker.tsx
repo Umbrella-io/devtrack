@@ -52,7 +52,6 @@ export function useGoalTracker() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [incrementingId, setIncrementingId] = useState<string | null>(null);
 
   const [activeConfettiGoalId, setActiveConfettiGoalId] = useState<string | null>(null);
   const prevGoalsRef = useRef<Map<string, boolean>>(new Map());
@@ -140,11 +139,6 @@ export function useGoalTracker() {
     if (e) e.preventDefault();
     setCreating(true);
     setCreateError(null);
-    if (target <= 0) {
-      setCreateError("Target must be greater than 0.");
-      setCreating(false);
-      return;
-    }
 
     if (target <= 0) {
       setCreateError("Target must be greater than 0.");
@@ -184,21 +178,22 @@ export function useGoalTracker() {
 
   async function handleDelete(id: string) {
     const previousGoals = goals;
+    setGoals((prev) => prev.filter((g) => g.id !== id));
+    setConfirmingId(null);
     setDeletingId(id);
     setDeleteError(null);
 
     try {
       const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
       if (!res.ok) {
+        setGoals(previousGoals);
         setDeleteError("Failed to delete goal. Please try again.");
-      } else {
-        setGoals((prev) => prev.filter((g) => g.id !== id));
       }
     } catch (e) {
+      setGoals(previousGoals);
       setDeleteError("Failed to delete goal. Please check your connection.");
     } finally {
       setDeletingId(null);
-      setConfirmingId(null);
     }
   }
 
@@ -290,8 +285,6 @@ export function useGoalTracker() {
     deletingId,
     deleteError,
     setDeleteError,
-    incrementingId,
-    setIncrementingId,
     activeConfettiGoalId,
     handleSync,
     handleCreate,
@@ -327,8 +320,6 @@ export default function GoalTracker() {
     deletingId,
     deleteError,
     setDeleteError,
-    incrementingId,
-    setIncrementingId,
     activeConfettiGoalId,
     handleSync,
     handleCreate,
@@ -427,13 +418,12 @@ export default function GoalTracker() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-[var(--card-foreground)]">Goals</h2>
-        <Button
-          variant="outline"
-          size="sm"
+        <button
           onClick={handleSync}
           disabled={syncing}
           title="Refresh commit-based goals from GitHub"
           aria-label="Refresh commit goals"
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] px-2.5 py-1 text-xs text-[var(--muted-foreground)] transition hover:text-[var(--card-foreground)] hover:border-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -449,7 +439,7 @@ export default function GoalTracker() {
             />
           </svg>
           {syncing ? "Syncing…" : "Refresh"}
-        </Button>
+        </button>
       </div>
 
       {/* Sync Error */}
@@ -588,43 +578,36 @@ export default function GoalTracker() {
                     </span>
 
                     {!isAutoSynced && (
-                      <Button
-                        variant="default"
-                        size="sm"
+                      <button
                         onClick={async () => {
                           const newCurrent = goal.current + 1;
                           if (newCurrent > goal.target) return;
-                          setIncrementingId(goal.id);
-                          try {
-                            const res = await fetch(`/api/goals/${goal.id}`, {
-                              method: "PATCH",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ current: newCurrent }),
-                            });
-                            if (res.ok) {
-                              setGoals((prevGoals) =>
-                                prevGoals.map((g) =>
-                                  g.id === goal.id ? { ...g, current: newCurrent } : g
-                                )
-                              );
-                            }
-                          } catch (e) {
-                            console.error("Failed to increment goal:", e);
-                          } finally {
-                            setIncrementingId(null);
+                          const res = await fetch(`/api/goals/${goal.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ current: newCurrent }),
+                          });
+                          if (res.ok) {
+                            setGoals((prevGoals) =>
+                              prevGoals.map((g) =>
+                                g.id === goal.id ? { ...g, current: newCurrent } : g
+                              )
+                            );
                           }
                         }}
-                        disabled={goal.current >= goal.target || incrementingId === goal.id}
+                        disabled={goal.current >= goal.target}
                         aria-label={`Increment "${goal.title}" progress by 1`}
+                        className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
                       >
                         +1
-                      </Button>
+                      </button>
                     )}
 
                     <button
                       type="button"
                       onClick={() => setConfirmingId(goal.id)}
                       disabled={isDeleting}
+                      className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors disabled:opacity-50"
                       aria-label={`Delete goal: ${goal.title}`}
                       title="Delete goal"
                     >
@@ -641,7 +624,7 @@ export default function GoalTracker() {
                           clipRule="evenodd"
                         />
                       </svg>
-                    </Button>
+                    </button>
                   </div>
                 </div>
 
@@ -821,9 +804,10 @@ export default function GoalTracker() {
           </p>
         )}
 
-        <Button
+        <button
           type="submit"
           disabled={creating || !title.trim()}
+          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {creating ? (
             <>
@@ -833,7 +817,7 @@ export default function GoalTracker() {
           ) : (
             "Create goal"
           )}
-        </Button>
+        </button>
         {createError && (
           <p className="text-sm text-[var(--destructive)]">{createError}</p>
         )}
@@ -846,7 +830,6 @@ export default function GoalTracker() {
         message={`Are you sure you want to permanently remove your "${activeConfirmingGoal?.title || "active coding"}" goal? This will erase all gathered progress history numbers parameters.`}
         confirmLabel={deletingId ? "Deleting..." : "Permanently Delete"}
         cancelLabel="Keep Goal"
-        disabled={deletingId !== null}
         onConfirm={() => {
           if (confirmingId) handleDelete(confirmingId);
         }}
