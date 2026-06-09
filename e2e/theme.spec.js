@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
+import { installDashboardApiMocks } from "./helpers/dashboard-mocks.js";
 
 const authSecret =
   process.env.NEXTAUTH_SECRET ||
@@ -52,47 +53,40 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
-  await page.route("**/api/user/github-orgs**", async (route) => {
+  await page.route("**/api/notifications**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ orgs: [], hasReadOrgScope: true }),
+      body: JSON.stringify({ notifications: [], unreadCount: 0 }),
     });
   });
 
-  await page.route("**/api/daily-focus**", async (route) => {
+  await page.route("**/api/goals**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ goal: "" }),
+      body: JSON.stringify({ goals: [] }),
     });
   });
 
-  await page.route("**/api/user/dashboard-layout**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ layout: null, source: "default" }),
-    });
-  });
+  await installDashboardApiMocks(page);
 });
 
 test("theme selector switches between themes on the dashboard", async ({ page }) => {
-  await page.goto("/dashboard");
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByRole("heading", { name: "Dashboard", exact: true })
+  ).toBeVisible({ timeout: 30_000 });
 
-  // The DashboardHeader provides the ThemeToggle select on the dashboard
-  const themeSelect = page
-    .locator('select[aria-label="Select dashboard theme"]')
-    .first();
-  await expect(themeSelect).toBeVisible({ timeout: 10000 });
+  const themeSelect = page.getByRole("combobox", {
+    name: "Select dashboard theme",
+  });
+  await expect(themeSelect).toBeVisible({ timeout: 10_000 });
 
   const initialValue = await themeSelect.inputValue();
-
-  // Pick a different theme from the available options
-  const nextTheme = initialValue === "classic-dark" ? "modern-light-blue" : "classic-dark";
+  const nextTheme =
+    initialValue === "classic-dark" ? "modern-light-blue" : "classic-dark";
   await themeSelect.selectOption(nextTheme);
 
-  // Verify the select value updated
   await expect(themeSelect).toHaveValue(nextTheme);
-
-  // Verify the theme is persisted to localStorage
   const stored = await page.evaluate(() => localStorage.getItem("theme"));
   expect(stored).toBe(nextTheme);
 });

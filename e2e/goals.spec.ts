@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
+import {
+  installDashboardApiMocks,
+  scrollToWidget,
+} from "./helpers/dashboard-mocks";
 
 /**
  * goals.spec.ts
@@ -79,64 +83,15 @@ async function setupGoalsMocks(page: import("@playwright/test").Page) {
     })
   );
 
-  // Stub remaining metric routes so the page loads without errors.
-  const stubs = [
-    "**/api/metrics/contributions**",
-    "**/api/metrics/streak**",
-    "**/api/streak/freeze**",
-    "**/api/metrics/prs**",
-    "**/api/metrics/pr-breakdown**",
-    "**/api/metrics/pr-review-trend**",
-    "**/api/metrics/issues**",
-    "**/api/metrics/languages**",
-    "**/api/metrics/weekly-summary**",
-    "**/api/ai-insights**",
-    "**/api/metrics/repos**",
-    "**/api/metrics/pinned-repos**",
-    "**/api/metrics/compare**",
-    "**/api/metrics/repo-health**",
-    "**/api/metrics/ci**",
-    "**/api/user/github-accounts**",
-    "**/api/integrations/jira**",
-    "**/api/metrics/activity**",
-    "**/api/metrics/commit-time**",
-    "**/api/metrics/personal-records**",
-    "**/api/metrics/discussions**",
-    "**/api/metrics/inactive-repos**",
-    "**/api/local-coding/stats**",
-    "**/api/metrics/coding-time**",
-    "**/api/metrics/coding-activity-insights**",
-    "**/api/wakatime**",
-    "**/api/metrics/productive-hours**",
-    "**/api/user/pinned-repos/details**",
-    "**/api/metrics/repo-explorer**",
-  ];
-  for (const pattern of stubs) {
-    await page.route(pattern, (route) =>
-      route.fulfill({ contentType: "application/json", body: JSON.stringify({}) })
-    );
-  }
+  await installDashboardApiMocks(page);
+}
 
-  await page.route("**/api/user/github-orgs**", (route) =>
-    route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ orgs: [], hasReadOrgScope: true }),
-    })
-  );
-
-  await page.route("**/api/daily-focus**", (route) =>
-    route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ goal: "" }),
-    })
-  );
-
-  await page.route("**/api/user/dashboard-layout**", (route) =>
-    route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ layout: null, source: "default" }),
-    })
-  );
+async function openGoalsWidget(page: import("@playwright/test").Page) {
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByRole("heading", { name: "Dashboard", exact: true })
+  ).toBeVisible({ timeout: 30_000 });
+  await scrollToWidget(page, "Goals");
 }
 
 test("[Goals E2E] goals widget renders on dashboard", async ({ page }) => {
@@ -152,13 +107,7 @@ test("[Goals E2E] goals widget renders on dashboard", async ({ page }) => {
     });
   });
 
-  await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true })
-  ).toBeVisible({ timeout: 30_000 });
-  await expect(
-    page.getByRole("heading", { name: "Goals", exact: true })
-  ).toBeVisible({ timeout: 10_000 });
+  await openGoalsWidget(page);
 });
 
 test("[Goals E2E] creating a goal sends POST /api/goals with correct payload", async ({
@@ -183,14 +132,11 @@ test("[Goals E2E] creating a goal sends POST /api/goals with correct payload", a
     });
   });
 
-  await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true })
-  ).toBeVisible({ timeout: 30_000 });
+  await openGoalsWidget(page);
 
-  await page.getByLabel("Goal title").fill("Ship one PR");
-  await page.getByLabel("Target").fill("1");
-  await page.getByLabel("Unit").selectOption("prs");
+  await page.locator("#goal-title").fill("Ship one PR");
+  await page.locator("#goal-target").fill("1");
+  await page.locator("#goal-unit").selectOption("prs");
   await page.getByRole("button", { name: "Create goal" }).click();
 
   await expect.poll(() => goalPosts, { timeout: 10_000 }).toHaveLength(1);
@@ -240,18 +186,13 @@ test("[Goals E2E] newly created goal appears in the goals list", async ({
     });
   });
 
-  await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true })
-  ).toBeVisible({ timeout: 30_000 });
+  await openGoalsWidget(page);
 
-  // Existing goal should be present.
   await expect(page.getByText("Existing Goal")).toBeVisible({ timeout: 10_000 });
 
-  // Create a new goal.
-  await page.getByLabel("Goal title").fill("Ship five PRs");
-  await page.getByLabel("Target").fill("5");
-  await page.getByLabel("Unit").selectOption("prs");
+  await page.locator("#goal-title").fill("Ship five PRs");
+  await page.locator("#goal-target").fill("5");
+  await page.locator("#goal-unit").selectOption("prs");
   await page.getByRole("button", { name: "Create goal" }).click();
 
   // The new goal should appear without a page reload.
@@ -300,18 +241,15 @@ test("[Goals E2E] deleting a goal removes it from the list", async ({
     return route.continue();
   });
 
-  await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true })
-  ).toBeVisible({ timeout: 30_000 });
+  await openGoalsWidget(page);
   await expect(page.getByText("Goal to Delete")).toBeVisible({ timeout: 10_000 });
 
-  // Click the delete button next to this goal.
-  const goalRow = page.locator("li, [data-testid='goal-item']").filter({
-    hasText: "Goal to Delete",
-  });
-  await goalRow.getByRole("button", { name: /delete|remove/i }).click();
+  await page
+    .getByRole("button", { name: "Delete goal: Goal to Delete" })
+    .click();
+  await page.getByRole("button", { name: "Permanently Delete" }).click();
 
-  // Goal should be gone.
-  await expect(page.getByText("Goal to Delete")).not.toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Goal to Delete")).not.toBeVisible({
+    timeout: 10_000,
+  });
 });
