@@ -1,3 +1,9 @@
+// Skip in CI — placeholder values are expected there
+if (process.env.CI || process.env.GITHUB_ACTIONS) {
+  console.log("✅ Environment validation skipped in CI.");
+  process.exit(0);
+}
+
 const sensitivePatterns = [
   "private_key",
   "secret",

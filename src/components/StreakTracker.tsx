@@ -562,7 +562,7 @@ export default function StreakTracker() {
             </button>
           </div>
         )}
-        <div ref={containerRef} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+        <div ref={containerRef} data-testid="streak-widget" className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <SectionHeader title="Commit Streaks" />
             {data && <div className="h-8 w-24" />}
@@ -687,7 +687,7 @@ export default function StreakTracker() {
             </p>
           )}
 
-          {!freezeLoading && freeze?.hasFreeze && (
+          {freeze && freeze.hasFreeze && (
             <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-4 py-3">
               <div className="flex items-center gap-2">
                 <CheckCircle size={18} className="text-[var(--accent)]" aria-hidden="true" />
@@ -699,16 +699,16 @@ export default function StreakTracker() {
                   <button
                     type="button"
                     onClick={handleCancelFreeze}
-                    disabled={cancelling}
-                    className="rounded-md bg-[var(--destructive)]/10 px-2.5 py-1 text-xs font-medium text-[var(--destructive)] transition hover:bg-[var(--destructive)]/20 disabled:opacity-60"
+                    disabled={cancelling || freezeLoading}
+                    className="rounded-md bg-[var(--destructive)]/10 px-2.5 py-1 text-xs font-medium text-[var(--destructive)] transition hover:bg-[var(--destructive)]/20 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {cancelling ? "Removing..." : "Yes, remove"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmCancel(false)}
-                    disabled={cancelling}
-                    className="rounded-md border border-[var(--border)] px-2.5 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)]"
+                    disabled={cancelling || freezeLoading}
+                    className="rounded-md border border-[var(--border)] px-2.5 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Keep
                   </button>
@@ -717,7 +717,8 @@ export default function StreakTracker() {
                 <button
                   type="button"
                   onClick={handleCancelFreeze}
-                  className="rounded-md border border-[var(--border)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)]"
+                  disabled={cancelling || freezeLoading}
+                  className="rounded-md border border-[var(--border)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:bg-[var(--control)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel freeze
                 </button>
@@ -725,7 +726,7 @@ export default function StreakTracker() {
             </div>
           )}
 
-          {!freezeLoading && !freeze?.hasFreeze && (
+          {freeze && !freeze.hasFreeze && (
             <div className="mt-4 flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-[var(--foreground)]">Streak Freeze</span>
@@ -746,14 +747,15 @@ export default function StreakTracker() {
               </div>
               <button
                 type="button"
+                data-testid="streak-freeze-button"
                 onClick={handleApplyFreeze}
-                disabled={freezeLoading || freeze?.hasFreeze}
-                className={`rounded-md px-3 py-1 text-xs font-medium transition ${freezeLoading || freeze?.hasFreeze
+                disabled={freezeLoading || cancelling}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition ${freezeLoading || cancelling
                     ? "cursor-not-allowed opacity-50 bg-[var(--accent)]"
                     : "bg-[var(--accent)] hover:opacity-90"
                   } text-[var(--accent-foreground)]`}
               >
-                {freeze?.hasFreeze ? "Freeze Active" : "Freeze Streak"}
+                {freezeLoading ? "Freezing..." : "Freeze Streak"}
               </button>
             </div>
           )}
