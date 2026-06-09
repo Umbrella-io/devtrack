@@ -52,6 +52,7 @@ export function useGoalTracker() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [incrementingId, setIncrementingId] = useState<string | null>(null);
 
   const [activeConfettiGoalId, setActiveConfettiGoalId] = useState<string | null>(null);
   const prevGoalsRef = useRef<Map<string, boolean>>(new Map());
@@ -178,22 +179,21 @@ export function useGoalTracker() {
 
   async function handleDelete(id: string) {
     const previousGoals = goals;
-    setGoals((prev) => prev.filter((g) => g.id !== id));
-    setConfirmingId(null);
     setDeletingId(id);
     setDeleteError(null);
 
     try {
       const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
       if (!res.ok) {
-        setGoals(previousGoals);
         setDeleteError("Failed to delete goal. Please try again.");
+      } else {
+        setGoals((prev) => prev.filter((g) => g.id !== id));
       }
     } catch (e) {
-      setGoals(previousGoals);
       setDeleteError("Failed to delete goal. Please check your connection.");
     } finally {
       setDeletingId(null);
+      setConfirmingId(null);
     }
   }
 
@@ -285,6 +285,8 @@ export function useGoalTracker() {
     deletingId,
     deleteError,
     setDeleteError,
+    incrementingId,
+    setIncrementingId,
     activeConfettiGoalId,
     handleSync,
     handleCreate,
@@ -320,6 +322,8 @@ export default function GoalTracker() {
     deletingId,
     deleteError,
     setDeleteError,
+    incrementingId,
+    setIncrementingId,
     activeConfettiGoalId,
     handleSync,
     handleCreate,
@@ -585,20 +589,27 @@ export default function GoalTracker() {
                         onClick={async () => {
                           const newCurrent = goal.current + 1;
                           if (newCurrent > goal.target) return;
-                          const res = await fetch(`/api/goals/${goal.id}`, {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ current: newCurrent }),
-                          });
-                          if (res.ok) {
-                            setGoals((prevGoals) =>
-                              prevGoals.map((g) =>
-                                g.id === goal.id ? { ...g, current: newCurrent } : g
-                              )
-                            );
+                          setIncrementingId(goal.id);
+                          try {
+                            const res = await fetch(`/api/goals/${goal.id}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ current: newCurrent }),
+                            });
+                            if (res.ok) {
+                              setGoals((prevGoals) =>
+                                prevGoals.map((g) =>
+                                  g.id === goal.id ? { ...g, current: newCurrent } : g
+                                )
+                              );
+                            }
+                          } catch (e) {
+                            console.error("Failed to increment goal:", e);
+                          } finally {
+                            setIncrementingId(null);
                           }
                         }}
-                        disabled={goal.current >= goal.target}
+                        disabled={goal.current >= goal.target || incrementingId === goal.id}
                         aria-label={`Increment "${goal.title}" progress by 1`}
                       >
                         +1
@@ -830,6 +841,7 @@ export default function GoalTracker() {
         message={`Are you sure you want to permanently remove your "${activeConfirmingGoal?.title || "active coding"}" goal? This will erase all gathered progress history numbers parameters.`}
         confirmLabel={deletingId ? "Deleting..." : "Permanently Delete"}
         cancelLabel="Keep Goal"
+        disabled={deletingId !== null}
         onConfirm={() => {
           if (confirmingId) handleDelete(confirmingId);
         }}
