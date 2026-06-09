@@ -25,6 +25,7 @@ import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
 import GoalTracker from "@/components/GoalTracker";
 import StreakTracker from "@/components/StreakTracker";
+import ConsistencyScoreWidget from "@/components/ConsistencyScoreWidget";
 import TopRepos from "@/components/TopRepos";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
 import InactiveRepositoriesCard from "@/components/InactiveRepositoriesCard";
@@ -151,6 +152,11 @@ const FriendComparison = dynamic(() => import("@/components/FriendComparison"), 
   loading: () => <RepoWidgetSkeleton />,
 });
 
+const GitHubAchievementProgress = dynamic(
+  () => import("@/components/GitHubAchievementProgress"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
 const ActivityRingChart = dynamic(
   () => import("@/components/ActivityRingChart"),
   { ssr: false, loading: () => <ChartSkeleton /> },
@@ -196,6 +202,11 @@ const ProductiveHoursWidget = dynamic(
   { ssr: false, loading: () => <ChartSkeleton /> },
 );
 
+const AchievementProgressTracker = dynamic(
+  () => import("@/components/AchievementProgressTracker"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
 const SECTION_ANCHOR_IDS: Record<DashboardSectionId, string> = {
   overview: "overview",
   activity: "streaks",
@@ -204,17 +215,17 @@ const SECTION_ANCHOR_IDS: Record<DashboardSectionId, string> = {
 };
 
 const SECTION_ACCENT_CLASSES: Record<DashboardSectionId, string> = {
-  overview: "bg-[var(--accent)] shadow-[0_0_15px_var(--accent)]",
-  activity: "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]",
-  analytics: "bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]",
-  goals: "bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]",
+  overview: "h-1 bg-gradient-to-r from-[var(--accent)] to-[var(--accent)]/60 rounded-full shadow-md",
+  activity: "h-1 bg-gradient-to-r from-emerald-500 to-emerald-500/60 rounded-full shadow-md",
+  analytics: "h-1 bg-gradient-to-r from-blue-500 to-blue-500/60 rounded-full shadow-md",
+  goals: "h-1 bg-gradient-to-r from-purple-500 to-purple-500/60 rounded-full shadow-md",
 };
 
 const SECTION_GRID_CLASSES: Record<DashboardSectionId, string> = {
-  overview: "grid grid-cols-1 xl:grid-cols-2 gap-6 w-full",
-  activity: "grid grid-cols-1 xl:grid-cols-3 gap-6 w-full",
-  analytics: "grid grid-cols-1 lg:grid-cols-2 gap-6 w-full",
-  goals: "grid grid-cols-1 xl:grid-cols-3 gap-6 w-full",
+  overview: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full",
+  activity: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full",
+  analytics: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 w-full",
+  goals: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full",
 };
 
 const WIDGET_SPAN_CLASSES: Partial<Record<DashboardWidgetId, string>> = {
@@ -297,6 +308,13 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
 
     case "streak-tracker":
       return <StreakTracker />;
+
+    case "consistency-score":
+      return (
+        <LazyWidget fallback={<ChartSkeleton />}>
+          <ConsistencyScoreWidget />
+        </LazyWidget>
+      );
 
     case "local-coding-time":
       return <LocalCodingTime />;
@@ -418,6 +436,13 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
       return (
         <LazyWidget fallback={<RepoWidgetSkeleton />}>
           <FriendComparison />
+        </LazyWidget>
+      );
+
+    case "achievement-progress":
+      return (
+        <LazyWidget fallback={<SkeletonCard />}>
+          <GitHubAchievementProgress />
         </LazyWidget>
       );
 
@@ -584,7 +609,7 @@ export default function CustomizableDashboard() {
   };
 
   return (
-    <div className="mt-14">
+    <div className="mt-10 px-0.5">
       <DashboardLayoutToolbar
         isEditing={isEditing}
         hiddenWidgets={layout.hidden}
@@ -611,24 +636,32 @@ export default function CustomizableDashboard() {
             <section
               key={sectionId}
               id={SECTION_ANCHOR_IDS[sectionId]}
-              className={`space-y-6 scroll-mt-28 ${
-                sectionId === "goals" ? "mb-12" : "mb-14"
+              className={`scroll-mt-28 ${
+                sectionId === "goals" ? "mb-16" : "mb-14"
               }`}
             >
-              <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <div className="space-y-2 mb-6">
                 <div
-                  className={`h-8 w-1.5 rounded-full ${SECTION_ACCENT_CLASSES[sectionId]}`}
+                  className={`w-12 ${SECTION_ACCENT_CLASSES[sectionId]}`}
                 />
-                <h2 className="text-2xl font-bold tracking-tight">
-                  {DASHBOARD_SECTION_LABELS[sectionId]}
-                </h2>
+                <div>
+                  <h2 className="text-3xl font-bold tracking-tight text-[var(--foreground)]">
+                    {DASHBOARD_SECTION_LABELS[sectionId]}
+                  </h2>
+                  <p className="mt-1 text-sm text-[var(--muted-foreground)] font-medium">
+                    {sectionId === "overview" && "Quick summary of your development profile"}
+                    {sectionId === "activity" && "Your coding patterns and contributions"}
+                    {sectionId === "analytics" && "In-depth analysis of your repositories and code"}
+                    {sectionId === "goals" && "Track progress, milestones, and insights"}
+                  </p>
+                </div>
               </div>
 
               <SortableContext
                 items={sectionWidgets}
                 strategy={rectSortingStrategy}
               >
-                <div className={SECTION_GRID_CLASSES[sectionId]}>
+                <div className={`${SECTION_GRID_CLASSES[sectionId]} auto-rows-max`}>
                   {sectionWidgets.map((widgetId) => (
                     <SortableDashboardWidget
                       key={widgetId}
