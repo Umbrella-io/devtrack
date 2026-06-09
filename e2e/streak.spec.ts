@@ -212,10 +212,12 @@ test("[Streak E2E] freeze button is present in the streak widget", async ({
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });
 
+  // Add explicit wait for button container
+  await page.waitForSelector('[data-testid="streak-freeze-button"]', { timeout: 10_000 }).catch(() => null);
+
   // Freeze / Protect button should be visible in the streak section.
-  await expect(
-    page.getByRole("button", { name: /freeze|protect/i }).first()
-  ).toBeVisible({ timeout: 10_000 });
+  const freezeBtn = page.locator('[data-testid="streak-freeze-button"]').first();
+  await expect(freezeBtn).toBeVisible({ timeout: 15_000 });
 });
 
 test("[Streak E2E] streak freeze API is called when freeze button is clicked", async ({

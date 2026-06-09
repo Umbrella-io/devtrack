@@ -343,7 +343,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch user settings" }, { status: 500 });
   }
 
-  const response = {
+  return NextResponse.json({
     id: (result.data as any).id,
     github_login: (result.data as any).github_login,
     bio: (result.data as any).bio ?? "",
@@ -593,9 +593,6 @@ export async function PATCH(req: NextRequest) {
     console.error("Error updating settings:", updateError);
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
-
-  // Bust settings cache so next GET returns fresh data.
-  await cacheDelete(`settings:${user.id}`);
 
   // If is_public or leaderboard_opt_in changed, the cached leaderboard would
   // show stale eligibility until it expires (up to 1 hour). Bust the cache

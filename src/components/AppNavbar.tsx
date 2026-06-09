@@ -48,8 +48,8 @@ export default function AppNavbar() {
   }, []);
 
   const isAuthenticated = status === "authenticated" && Boolean(session);
-  const isPublicProfileRoute = pathname.startsWith("/u/");
   const isDashboardRoute = pathname.startsWith("/dashboard");
+  const isPublicProfileRoute = pathname.startsWith("/u/");
   const identityLabel =
     session?.githubLogin ?? session?.user?.name ?? session?.user?.email ?? "user";
 
@@ -212,7 +212,7 @@ export default function AppNavbar() {
               );
             })}
             
-            {isAuthenticated && !isDashboardRoute && (
+            {isAuthenticated && (
               <Link
                 href="/dashboard/settings"
                 className="rounded-xl px-4 py-3.5 text-sm font-medium text-[var(--muted-foreground)] hover:bg-white/5 transition-colors"

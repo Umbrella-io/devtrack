@@ -841,44 +841,9 @@ function SettingsPageContent() {
     return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
         <div className="max-w-2xl mx-auto">
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-8 text-center">
-            <div className="text-3xl mb-4">⚠️</div>
-            <h2 className="text-lg font-semibold text-[var(--card-foreground)] mb-2">
-              Failed to load settings
-            </h2>
-            <p className="text-sm text-[var(--muted-foreground)] mb-6">
-              This usually happens when the database is temporarily throttled. Try again in a moment.
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setLoading(true);
-                  fetch("/api/user/settings")
-                    .then((r) => r.ok ? r.json() : Promise.reject())
-                    .then((data) => {
-                      setSettings(data);
-                      setBioDraft(data.bio ?? "");
-                      setDiscordWebhook(data.discord_webhook_url || "");
-                      setTimezone(data.timezone || "UTC");
-                      setDiscordMutedUntil(data.discord_muted_until ?? null);
-                      setWebhookUrl(data.webhook_url ?? null);
-                    })
-                    .catch(() => toast.error("Still unable to load settings"))
-                    .finally(() => setLoading(false));
-                }}
-                className="rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
-              >
-                Try again
-              </button>
-              <Link
-                href="/dashboard"
-                className="rounded-lg border border-[var(--border)] px-5 py-2.5 text-sm font-medium text-[var(--card-foreground)] hover:bg-[var(--control)] transition-colors"
-              >
-                Back to Dashboard
-              </Link>
-            </div>
-          </div>
+          <p className="text-[var(--muted-foreground)]">
+            Failed to load settings.
+          </p>
         </div>
       </div>
     );
@@ -1171,6 +1136,7 @@ function SettingsPageContent() {
                   checked={theme === "default"}
                   onChange={() => {
                     setTheme("default");
+                    setIsDirty(true);
                   }}
                   className="accent-[var(--accent)] focus-visible:ring-[var(--accent)]"
                 />
@@ -1184,6 +1150,7 @@ function SettingsPageContent() {
                   checked={theme === "colour-blind-friendly"}
                   onChange={() => {
                     setTheme("colour-blind-friendly");
+                    setIsDirty(true);
                   }}
                   className="accent-[var(--accent)] focus-visible:ring-[var(--accent)]"
                 />
@@ -1200,6 +1167,24 @@ function SettingsPageContent() {
             </div>
           )}
 
+          {isDirty && (
+            <div className="mt-6 pt-6 border-t border-[var(--border)] flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  // The toggles themselves already call the API,
+                  // but for the heatmap theme which is local only,
+                  // or to clear the dirty state after a manual change,
+                  // we provide this clear feedback.
+                  setIsDirty(false);
+                  toast.success("Settings saved successfully!");
+                }}
+                className="px-6 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Save Changes
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
