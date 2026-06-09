@@ -88,19 +88,11 @@ test("settings page saves and reflects changes", async ({ page }) => {
   // Wait for settings to load
   await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
   
-  // Find the public profile toggle (which is visually a checkbox)
-  // The label wraps the checkbox and "Public Profile" isn't strictly associated with the input
-  // Since we know the DOM structure:
-  // It has a hidden input type="checkbox"
-  const publicProfileCheckbox = page.locator("input[type='checkbox']").first();
-  
-  // Initially false based on our mock
+  const publicProfileCheckbox = page.getByRole("checkbox", {
+    name: "Toggle Public Profile",
+  });
+
   await expect(publicProfileCheckbox).not.toBeChecked();
-  
-  // Click the label/toggle container to change it
-  // We can click the parent container or the label
-  await page.locator("text=Public Profile").locator("..").locator("..").locator("input[type='checkbox']").first().evaluate(node => node.click());
-  
-  // It should now be checked (our mock returns the patched value)
+  await publicProfileCheckbox.check({ force: true });
   await expect(publicProfileCheckbox).toBeChecked();
 });

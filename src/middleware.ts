@@ -14,6 +14,8 @@ import {
 export const runtime = "nodejs";
 
 const isDev = process.env.NODE_ENV === "development";
+const isPlaywrightE2E = process.env.PLAYWRIGHT_TEST === "true";
+const isRelaxedRateLimit = isDev || isPlaywrightE2E;
 
 /**
  * Configuration constants for API rate limits and window sizes.
@@ -29,17 +31,17 @@ const RATE_LIMIT_CONFIG = {
   /**
    * Maximum allowed API metrics requests for authenticated users in the window.
    */
-  AUTHENTICATED_LIMIT: isDev ? 5000 : 60,
+  AUTHENTICATED_LIMIT: isRelaxedRateLimit ? 5000 : 60,
 
   /**
    * Maximum allowed API metrics requests for anonymous users in the window.
    */
-  ANONYMOUS_LIMIT: isDev ? 1000 : 10,
+  ANONYMOUS_LIMIT: isRelaxedRateLimit ? 1000 : 10,
 
   /**
    * Maximum allowed sign-in attempts for authentication routes in the window.
    */
-  AUTH_LIMIT: isDev ? 1000 : AUTH_LIMIT,
+  AUTH_LIMIT: isRelaxedRateLimit ? 1000 : AUTH_LIMIT,
 } as const;
 
 const memoryBuckets = new Map<string, number[]>();

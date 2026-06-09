@@ -315,6 +315,7 @@ function mockMetricResponse(url) {
       longest: 9,
       lastCommitDate: "2026-05-18",
       totalActiveDays: 12,
+      freezeDates: [],
     };
   }
   if (url.includes("/api/metrics/weekly-summary")) {
@@ -350,7 +351,14 @@ function mockMetricResponse(url) {
     };
   }
   if (url.includes("/api/streak/freeze")) {
-    return { freezes: [] };
+    return { hasFreeze: false, freezeDate: null };
+  }
+  if (url.includes("/api/metrics/contributions")) {
+    return {
+      days: 365,
+      total: 10,
+      data: { "2026-05-16": 3, "2026-05-17": 5, "2026-05-18": 2 },
+    };
   }
   if (url.includes("/api/integrations/jira")) {
     return null;
