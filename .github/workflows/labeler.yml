@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/labeler@v5
+      - uses: actions/labeler@v6
         continue-on-error: true
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
