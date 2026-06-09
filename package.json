@@ -78,7 +78,11 @@
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.4.11",
     "typescript": "^5",
-    "vitest": "^1.6.0"
+    "vitest": "^1.6.0",
+    "@emnapi/core": "^1.11.0",
+    "@emnapi/runtime": "^1.11.0",
+    "tree-sitter": "^0.22.4",
+    "web-tree-sitter": "^0.24.5"
   },
   "overrides": {
     "glob": ">=10.5.0",

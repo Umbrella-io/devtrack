@@ -275,6 +275,7 @@ function Cell({
   );
 }
 
+
 function ChartWidget() {
   const [ref, vis] = useScrollReveal(0);
   const [hovBar, setHovBar] = useState(-1);
@@ -418,18 +419,41 @@ function HeatmapMini() {
 
 function BentoGrid() {
   return (
-    <div style={{
-      display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: 5, width: '100%', maxWidth: 380,
-    }}>
-      <ChartWidget />
-      <StreakWidget />
-      <MergeWidget />
-      <GoalWidget />
-      <HeatmapMini />
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 5,
+        width: '100%',
+        maxWidth: 380,
+        overflowX: 'hidden',
+        minWidth: 0,
+      }}
+    >
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media (max-width: 374px) {
+              .lnd-root .lnd-bento-grid {
+                grid-template-columns: 1fr !important;
+                max-width: 100% !important;
+              }
+            }
+          `,
+        }}
+      />
+
+      <div className="lnd-bento-grid" style={{ display: 'contents' }}>
+        <ChartWidget />
+        <StreakWidget />
+        <MergeWidget />
+        <GoalWidget />
+        <HeatmapMini />
+      </div>
     </div>
   );
 }
+
 
 /* ═══════════════════════════════════════════════════════════
    HERO
