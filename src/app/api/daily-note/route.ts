@@ -1,16 +1,21 @@
 import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { getToken } from "next-auth/jwt";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { resolveAppUser } from "@/lib/resolve-user";
+
+export const dynamic = "force-dynamic";
+
+async function getAppUserId(req: NextRequest): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  if (!session?.githubId) return null;
+  const user = await resolveAppUser(session.githubId, session.githubLogin);
+  return user?.id ?? null;
+}
 
 export async function GET(req: NextRequest) {
   try {
-    const token = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    const userId = token?.githubId;
-
+    const userId = await getAppUserId(req);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -30,7 +35,6 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (todayError && todayError.code !== "PGRST116") {
-      console.error("Failed to fetch today's daily note:", todayError);
       return NextResponse.json(
         { error: "Failed to fetch daily notes" },
         { status: 500 }
@@ -45,7 +49,6 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (yesterdayError && yesterdayError.code !== "PGRST116") {
-      console.error("Failed to fetch yesterday's daily note:", yesterdayError);
       return NextResponse.json(
         { error: "Failed to fetch daily notes" },
         { status: 500 }
@@ -63,13 +66,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const token = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    const userId = token?.githubId;
-
+    const userId = await getAppUserId(req);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

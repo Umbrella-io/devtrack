@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -70,20 +71,20 @@ export default function ConfirmModal({
         </div>
 
         <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
+          <Button
+            variant="outline"
             onClick={onCancel}
-            className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--control)] px-5 py-2.5 text-sm font-semibold text-[var(--card-foreground)] transition-all hover:bg-[var(--card-muted)] active:scale-95"
+            className="w-full sm:w-auto"
           >
             {cancelLabel}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="default"
             onClick={onConfirm}
-            className="w-full sm:w-auto rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95 shadow-lg shadow-[var(--accent)]/20"
+            className="w-full sm:w-auto shadow-lg shadow-[var(--accent)]/20"
           >
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -28,16 +28,21 @@ function formatCommitCount(count: number): string {
 function InsightRow({
   label,
   value,
+  ariaLabel,
 }: {
   label: string;
   value: string;
+  ariaLabel?: string;
 }) {
   return (
     <div className="rounded-lg bg-[var(--control)] px-3 py-2">
       <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
         {label}
       </p>
-      <p className="mt-1 text-sm font-medium text-[var(--card-foreground)]">
+      <p
+        className="mt-1 text-sm font-medium text-[var(--card-foreground)]"
+        aria-label={ariaLabel}
+      >
         {value}
       </p>
     </div>
@@ -176,7 +181,7 @@ export default function CodingActivityInsightsCard() {
       return [];
     }
 
-    const rows = [
+    const rows: { label: string; value: string; ariaLabel?: string }[] = [
       {
         label: "Most active",
         value: `${data.mostActiveHour.label} with ${formatCommitCount(data.mostActiveHour.count)}`,
@@ -191,18 +196,19 @@ export default function CodingActivityInsightsCard() {
       },
 
       {
-          label: "Productivity",
-          value:
-            data.productivityLevel === "Excellent"
-              ? "🟢 Excellent"
-              : data.productivityLevel === "Very Good"
-                ? "🔵 Very Good"
-                : data.productivityLevel === "Good"
-                  ? "🟡 Good"
-                  : data.productivityLevel === "Moderate"
-                    ? "🟠 Moderate"
-                    : "🔴 Low",
-        },
+        label: "Productivity",
+        value:
+          data.productivityLevel === "Excellent"
+            ? "🟢 Excellent"
+            : data.productivityLevel === "Very Good"
+              ? "🔵 Very Good"
+              : data.productivityLevel === "Good"
+                ? "🟡 Good"
+                : data.productivityLevel === "Moderate"
+                  ? "🟠 Moderate"
+                  : "🔴 Low",
+        ariaLabel: `Productivity level: ${data.productivityLevel ?? "Low"}`,
+      },
 
       {
         label: "Daily Average",
@@ -349,6 +355,7 @@ export default function CodingActivityInsightsCard() {
           key={row.label}
           label={row.label}
           value={row.value}
+          ariaLabel={row.ariaLabel}
         />
       ))}
     </div>

@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 
 const A = "#818cf8";
 const ERR = "#f87171";
@@ -213,7 +214,31 @@ function SignInContent() {
 
         <button
           type="button"
-          onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+          onClick={async () => {
+            try {
+              const res = await signIn("github", { callbackUrl: "/dashboard", redirect: false });
+              
+              if (res?.error) {
+                toast.error(getErrorMessage(res.error));
+                return;
+              }
+
+              if (res?.url) {
+                const url = new URL(res.url, window.location.origin);
+                // NextAuth redirects to ?csrf=true or back to the signin page if environment mismatch occurs
+                if (url.searchParams.get("csrf") === "true" || url.pathname === "/auth/signin") {
+                  toast.error(
+                    "Sign-in failed due to a security mismatch. If you're running locally, ensure you access the app via localhost (or the exact NEXTAUTH_URL) and not 127.0.0.1.",
+                    { duration: 10000 }
+                  );
+                } else {
+                  window.location.assign(res.url);
+                }
+              }
+            } catch (err) {
+              toast.error("An unexpected error occurred during sign in.");
+            }
+          }}
           aria-label="Sign in with GitHub"
           className="primary-button relative w-full inline-flex items-center justify-center gap-3 rounded-xl py-3 font-semibold"
         >

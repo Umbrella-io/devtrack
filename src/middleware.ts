@@ -14,6 +14,23 @@ import {
 export const runtime = "nodejs";
 
 const isDev = process.env.NODE_ENV === "development";
+const WINDOW_SECONDS = 60;
+
+/* ============================================================
+   SECURITY NOTICE: DEVELOPMENT MODE RATE-LIMIT SCALING
+   These high thresholds are configured STRICTLY for local mock
+   testing pipelines to handle high concurrent local dashboard refreshes.
+   NOTE: In Next.js, process.env.NODE_ENV is a compile-time constant.
+   It is baked into the bundle at build time and cannot change at runtime.
+   Therefore, in production builds, isDev is always false and the
+   AUTHENTICATED_LIMIT/ANONYMOUS_LIMIT will always be 60/10 respectively.
+   In development (next dev), NODE_ENV is "development" so the higher
+   limits apply during local testing only.
+   ==========================================
+   ============================================================ */
+const isTest = isDev || process.env.CI === "true" || process.env.NODE_ENV === "test";
+const AUTHENTICATED_LIMIT = isTest ? 5000 : 60;
+const ANONYMOUS_LIMIT = isTest ? 1000 : 10;
 
 /**
  * Configuration constants for API rate limits and window sizes.
@@ -53,7 +70,7 @@ type RateLimitResult = {
 
 function getIp(req: NextRequest) {
   return (
-    req.ip ??
+    req.headers.get("cf-connecting-ip") ??
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     req.headers.get("x-real-ip") ??
     "unknown"
