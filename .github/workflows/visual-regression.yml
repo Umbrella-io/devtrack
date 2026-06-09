@@ -61,7 +61,7 @@ jobs:
         run: npx playwright test -c playwright.visual.config.mjs
 
       - name: Upload visual regression artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: visual-regression-artifacts

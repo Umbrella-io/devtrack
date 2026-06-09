@@ -562,7 +562,7 @@ export default function StreakTracker() {
             </button>
           </div>
         )}
-        <div ref={containerRef} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+        <div ref={containerRef} data-testid="streak-widget" className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <SectionHeader title="Commit Streaks" />
             {data && <div className="h-8 w-24" />}
@@ -747,6 +747,7 @@ export default function StreakTracker() {
               </div>
               <button
                 type="button"
+                data-testid="streak-freeze-button"
                 onClick={handleApplyFreeze}
                 disabled={freezeLoading || cancelling}
                 className={`rounded-md px-3 py-1 text-xs font-medium transition ${freezeLoading || cancelling

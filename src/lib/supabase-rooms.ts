@@ -49,8 +49,28 @@ export async function getRoomMessages(roomId: string, limit = 50, before?: strin
   return (data ?? []).reverse();
 }
 
+export async function getRoomMessagesSince(roomId: string, after: string): Promise<RoomMessage[]> {
+  const { data, error } = await supabaseAdmin
+    .from("room_messages")
+    .select("*")
+    .eq("room_id", roomId)
+    .gt("created_at", after)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function sendRoomMessage(roomId: string, senderUsername: string, senderAvatar: string | null, content: string): Promise<RoomMessage> {
   const { data, error } = await supabaseAdmin.from("room_messages").insert({ room_id: roomId, sender_username: senderUsername, sender_avatar: senderAvatar, content }).select().single();
   if (error) throw error;
   return data;
+}
+
+export async function removeRoomMember(roomId: string, githubUsername: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("room_members")
+    .delete()
+    .eq("room_id", roomId)
+    .eq("github_username", githubUsername);
+  if (error) throw error;
 }
