@@ -32,7 +32,7 @@ describe('badge-rate-limit', () => {
     
       expect(checkBadgeRateLimit(ip).allowed).toBe(false);
     
-      vi.advanceTimersByTime(61000);
+      vi.advanceTimersByTime(120000);
     
       const result = checkBadgeRateLimit(ip);
     

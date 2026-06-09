@@ -46,16 +46,16 @@ export default function SortableDashboardWidget({
       ref={setNodeRef}
       style={style}
       className={`relative min-w-0 ${className} ${
-        isDragging ? "opacity-70" : ""
-      }`}
+        isDragging ? "opacity-60 scale-95" : ""
+      } transition-all duration-150`}
     >
       {isEditing ? (
-        <div className="absolute right-3 top-3 z-20 flex items-center gap-2">
+        <div className="absolute right-2 top-2 z-20 flex items-center gap-1.5">
           <button
             type="button"
             aria-label={`Drag widget: ${title}`}
-            title={`Drag ${title}`}
-            className="touch-none rounded-lg border border-[var(--border)] bg-[var(--card)]/95 p-2 text-[var(--muted-foreground)] shadow-sm backdrop-blur transition hover:text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            title={`Drag to reorder ${title}`}
+            className="touch-none rounded-lg border border-[var(--border)] bg-[var(--card)]/95 p-2 text-[var(--muted-foreground)] shadow-sm backdrop-blur transition-all hover:text-[var(--foreground)] hover:shadow-md hover:border-[var(--accent)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] cursor-grab active:cursor-grabbing"
             {...attributes}
             {...listeners}
           >
@@ -67,7 +67,7 @@ export default function SortableDashboardWidget({
             aria-label={`Hide widget: ${title}`}
             title={`Hide ${title}`}
             onClick={() => onHide(id)}
-            className="rounded-lg border border-[var(--border)] bg-[var(--card)]/95 p-2 text-[var(--muted-foreground)] shadow-sm backdrop-blur transition hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            className="rounded-lg border border-[var(--border)] bg-[var(--card)]/95 p-2 text-[var(--muted-foreground)] shadow-sm backdrop-blur transition-all hover:text-red-500 hover:shadow-md hover:border-red-500/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
           >
             <EyeOff className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -77,8 +77,8 @@ export default function SortableDashboardWidget({
       <div
         className={
           isEditing
-            ? "rounded-xl outline outline-1 outline-dashed outline-[var(--accent)]/60 outline-offset-4 transition"
-            : undefined
+            ? "rounded-xl outline outline-2 outline-dashed outline-[var(--accent)]/40 outline-offset-2 transition-all"
+            : "rounded-xl hover:shadow-lg transition-shadow duration-200"
         }
       >
         {children}

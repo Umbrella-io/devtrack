@@ -119,9 +119,10 @@ async function setupGoalsMocks(page: import("@playwright/test").Page) {
 }
 
 test("[Goals E2E] goals widget renders on dashboard", async ({ page }) => {
+  page.on("console", msg => console.log("BROWSER CONSOLE:", msg.text()));
   await setupGoalsMocks(page);
 
-  await page.route("**/api/goals**", (route) => {
+  await page.route(/\/api\/goals(\?|$)/, (route) => {
     if (route.request().method() === "POST") {
       return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ok: true }) });
     }
@@ -147,7 +148,8 @@ test("[Goals E2E] creating a goal sends POST /api/goals with correct payload", a
 
   const goalPosts: unknown[] = [];
 
-  await page.route("**/api/goals**", async (route) => {
+  // Use regex so only /api/goals is matched — NOT /api/goals/sync or /api/goals/:id.
+  await page.route(/\/api\/goals(\?|$)/, async (route) => {
     if (route.request().method() === "POST") {
       goalPosts.push(route.request().postDataJSON());
       return route.fulfill({
@@ -167,13 +169,18 @@ test("[Goals E2E] creating a goal sends POST /api/goals with correct payload", a
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });
 
-  await page.getByLabel("Goal title").fill("Ship one PR");
+  // Scroll the goal form into view and wait for it to be interactive.
+  const titleInput = page.getByLabel("Goal title");
+  await titleInput.scrollIntoViewIfNeeded();
+  await titleInput.waitFor({ state: "visible", timeout: 10_000 });
+
+  await titleInput.fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
   await page.getByLabel("Unit").selectOption("prs");
   await page.getByRole("button", { name: "Create goal" }).click();
 
-  await expect.poll(() => goalPosts, { timeout: 10_000 }).toHaveLength(1);
-  expect(goalPosts[0]).toMatchObject({ title: "Ship one PR", target: 1, unit: "prs" });
+  await expect.poll(() => goalPosts.filter(Boolean), { timeout: 10_000 }).toHaveLength(1);
+  expect(goalPosts.find(Boolean)).toMatchObject({ title: "Ship one PR", target: 1, unit: "prs" });
 });
 
 test("[Goals E2E] newly created goal appears in the goals list", async ({
@@ -194,9 +201,14 @@ test("[Goals E2E] newly created goal appears in the goals list", async ({
     },
   ];
 
-  await page.route("**/api/goals**", async (route) => {
+  // Use regex so only /api/goals is matched — NOT /api/goals/sync or /api/goals/:id.
+  await page.route(/\/api\/goals(\?|$)/, async (route) => {
     if (route.request().method() === "POST") {
-      const body = route.request().postDataJSON() as Record<string, unknown>;
+      const body = route.request().postDataJSON() as Record<string, unknown> | null;
+      // Guard: /api/goals/sync POSTs (if leaked) have null body — skip them.
+      if (!body) {
+        return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ok: true }) });
+      }
       goalsStore.push({
         id: `g-new-${Date.now()}`,
         title: body.title as string,
@@ -227,8 +239,13 @@ test("[Goals E2E] newly created goal appears in the goals list", async ({
   // Existing goal should be present.
   await expect(page.getByText("Existing Goal")).toBeVisible({ timeout: 10_000 });
 
+  // Scroll goal form into view and wait for it to be interactive.
+  const titleInput = page.getByLabel("Goal title");
+  await titleInput.scrollIntoViewIfNeeded();
+  await titleInput.waitFor({ state: "visible", timeout: 10_000 });
+
   // Create a new goal.
-  await page.getByLabel("Goal title").fill("Ship five PRs");
+  await titleInput.fill("Ship five PRs");
   await page.getByLabel("Target").fill("5");
   await page.getByLabel("Unit").selectOption("prs");
   await page.getByRole("button", { name: "Create goal" }).click();
@@ -276,7 +293,14 @@ test("[Goals E2E] deleting a goal removes it from the list", async ({
         body: JSON.stringify({ ok: true }),
       });
     }
-    return route.continue();
+    // PATCH (goal sharing toggle) — fulfill with a minimal goal object
+    if (route.request().method() === "PATCH") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ goal: goalsStore[0] ?? {} }),
+      });
+    }
+    return route.fulfill({ status: 204, body: "" });
   });
 
   await page.goto("/dashboard", { waitUntil: "load" });
@@ -285,12 +309,13 @@ test("[Goals E2E] deleting a goal removes it from the list", async ({
   ).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText("Goal to Delete")).toBeVisible({ timeout: 10_000 });
 
-  // Click the delete button next to this goal.
-  const goalRow = page.locator("li, [data-testid='goal-item']").filter({
-    hasText: "Goal to Delete",
-  });
-  await goalRow.getByRole("button", { name: /delete|remove/i }).click();
+  // Click the delete button (trash icon) next to this goal.
+  const goalRow = page.locator("li").filter({ hasText: "Goal to Delete" }).first();
+  await goalRow.getByRole("button", { name: /delete goal/i }).click();
+
+  // A confirmation modal appears — click "Permanently Delete" to confirm.
+  await page.getByRole("button", { name: /permanently delete/i }).click();
 
   // Goal should be gone.
-  await expect(page.getByText("Goal to Delete")).not.toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Goal to Delete", { exact: true })).not.toBeVisible({ timeout: 10_000 });
 });

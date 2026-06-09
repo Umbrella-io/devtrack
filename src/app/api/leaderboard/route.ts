@@ -33,7 +33,7 @@ const memoryRateLimits = new Map<string, RateLimitEntry>();
 // process when an external cache/lock (Upstash) is not configured.
 let _inProcessLeaderboardBuild: Promise<LeaderboardPayload | null> | null = null;
 function getRateLimitKey(req: NextRequest): string {
-  return req.ip ?? req.headers.get("x-real-ip") ?? "unknown";
+  return req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
 }
 
 function checkMemoryRateLimit(
