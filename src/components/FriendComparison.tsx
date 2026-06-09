@@ -166,9 +166,12 @@ export default function FriendComparison() {
   }
 
   const handleCompare = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await runCompare(trimmedFriendUsername);
-  };
+  e.preventDefault();
+
+  if (loading) return;
+
+  await runCompare(trimmedFriendUsername);
+};
 
   const clearComparison = () => {
     setFriendUsername("");
@@ -286,12 +289,12 @@ export default function FriendComparison() {
           </div>
 
           <button
-            type="submit"
-            disabled={loading || !trimmedFriendUsername}
-            className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-colors disabled:opacity-50 hover:opacity-90"
-          >
-            {loading ? "Loading..." : "Compare"}
-          </button>
+  type="submit"
+  disabled={loading}
+  className="disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {loading ? "Comparing..." : "Compare"}
+</button>
         </form>
       </div>
 
