@@ -38,11 +38,14 @@ export interface WeeklyGoalProgress {
   percentage: number;
 }
 
+export type PublicWidgetKey = "streak" | "contributions" | "languages" | "prs";
+
 export interface PublicProfileData {
   username: string;
   bio: string | null;
   isSponsor: boolean;
   publicGists: number;
+  memberSince: string | null;
   repos: TopRepo[];
   contributions: ContributionData;
   streak: StreakData;
@@ -53,6 +56,7 @@ export interface PublicProfileData {
   spotlightRepos?: PinnedRepoDetails[];
   contributionMilestones?: { label: string; achievedAt: string | null }[];
   weeklyGoalProgress: WeeklyGoalProgress | null;
+  publicWidgets: PublicWidgetKey[];
 }
 
 async function ghFetch(url: string, token?: string): Promise<Response> {
@@ -332,11 +336,30 @@ export async function fetchPublicProfile(
     .order("streak_count", { ascending: false })
     .limit(5);
 
+  // Fetch public_widgets preference (added by 20260608000000 migration; falls back gracefully)
+  let publicWidgets: PublicWidgetKey[] = ["streak", "contributions"];
+  try {
+    const { data: widgetsRow } = await supabaseAdmin
+      .from("users")
+      .select("public_widgets")
+      .eq("id", user.id)
+      .single();
+    if (widgetsRow?.public_widgets && Array.isArray(widgetsRow.public_widgets)) {
+      const valid: PublicWidgetKey[] = ["streak", "contributions", "languages", "prs"];
+      publicWidgets = (widgetsRow.public_widgets as string[]).filter(
+        (w): w is PublicWidgetKey => valid.includes(w as PublicWidgetKey)
+      );
+    }
+  } catch {
+    // Column may not exist yet; use defaults
+  }
+
   return {
     username: user.github_login,
     bio: user.bio ?? null,
     isSponsor: user.is_sponsor ?? false,
     publicGists,
+    memberSince: user.created_at ?? null,
     repos,
     contributions,
     streak,
@@ -350,5 +373,6 @@ export async function fetchPublicProfile(
       achievedAt: m.achieved_at ?? null,
     })),
     weeklyGoalProgress,
+    publicWidgets,
   };
 }

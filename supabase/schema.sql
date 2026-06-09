@@ -17,6 +17,7 @@ create table if not exists users (
   discord_webhook_url text,
   timezone text default 'UTC',
   last_discord_notification_at timestamptz,
+  organizations_config jsonb default '{}'::jsonb
   last_ai_summary_at timestamptz
 );
 

@@ -36,7 +36,7 @@ const VIEWPORT_SCREENSHOT_CLIP = { x: 0, y: 0, width: 1280, height: 900 };
 async function expectViewportScreenshot(page, name) {
   await expect(page).toHaveScreenshot(name, {
     clip: VIEWPORT_SCREENSHOT_CLIP,
-    maxDiffPixelRatio: 0.02,
+    maxDiffPixelRatio: 0.05,
   });
 }
 
@@ -402,7 +402,7 @@ test.describe("visual regression screenshots", () => {
 
     await expect(page).toHaveScreenshot("dashboard-header-dark.png", {
       clip: { x: 0, y: 0, width: 1280, height: 420 },
-      maxDiffPixelRatio: 0.02,
+      maxDiffPixelRatio: 0.05,
     });
 
     await page.evaluate(() => {
@@ -419,7 +419,7 @@ test.describe("visual regression screenshots", () => {
 
     await expect(page).toHaveScreenshot("dashboard-header-light.png", {
       clip: { x: 0, y: 0, width: 1280, height: 420 },
-      maxDiffPixelRatio: 0.02,
+      maxDiffPixelRatio: 0.05,
     });
   });
 

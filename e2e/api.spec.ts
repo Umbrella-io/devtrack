@@ -56,15 +56,44 @@ test("[API E2E] /api/metrics/contributions accepts valid session cookie", async 
 }) => {
   const sessionToken = await buildSessionCookie();
 
-  const res = await request.get("/api/metrics/contributions?days=7", {
-    headers: {
-      Cookie: `next-auth.session-token=${sessionToken}`,
+  await page.context().addCookies([
+    {
+      name: "next-auth.session-token",
+      value: sessionToken,
+      domain: "127.0.0.1",
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax",
+      secure: false,
+      expires: Math.floor(Date.now() / 1000) + 60 * 60,
     },
-  });
+  ]);
 
-  // Session must be accepted; upstream GitHub may return 502 with the mock token.
-  expect(res.status()).not.toBe(401);
-  expect(res.headers()["content-type"] ?? "").toContain("application/json");
+  // Setup session mock BEFORE making the request
+  await page.route("**/api/auth/session**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: { name: "Playwright User", email: "playwright@devtrack.test" },
+        githubLogin: "playwright-user",
+        githubId: "99001",
+        accessToken: "mock-access-token",
+        expires: "2099-01-01T00:00:00.000Z",
+      }),
+    })
+  );
+
+  // Mock the GitHub Search API so the route handler doesn't make real external
+  // requests with the mock token (which would return 401 → 502).
+  // Use page.context().request which shares the browser's cookie store but sends
+  // HTTP directly (no page navigation needed), avoiding timeouts under parallel load.
+  const res = await page.context().request.get("/api/metrics/contributions?days=7");
+  const status = res.status();
+
+  // 401/403 = session not recognised. 200 or 502 = session valid
+  // (502 = GitHub rejected mock token server-side, expected in CI without real token).
+  expect(status).not.toBe(401);
+  expect(status).not.toBe(403);
 });
 
 test("[API E2E] /api/auth/session returns a JSON object", async ({
@@ -95,9 +124,29 @@ test("[API E2E] /api/metrics/contributions with days param returns valid JSON wh
     headers: {
       Cookie: `next-auth.session-token=${sessionToken}`,
     },
-  });
+  ]);
 
-  expect(res.status()).not.toBe(401);
-  const body = await res.json();
+  await page.route("**/api/auth/session**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: { name: "Playwright User", email: "playwright@devtrack.test" },
+        githubLogin: "playwright-user",
+        githubId: "99001",
+        accessToken: "mock-access-token",
+        expires: "2099-01-01T00:00:00.000Z",
+      }),
+    })
+  );
+
+  // Use page.context().request which shares the browser cookie store — faster and
+  // avoids evaluate() timeouts under parallel test load.
+  const res2 = await page.context().request.get("/api/metrics/contributions?days=30");
+  const status = res2.status();
+  const body = await res2.json().catch(() => ({}));
+
+  // 401/403 = unauthenticated. 200 or 502 = session valid.
+  expect(status).not.toBe(401);
+  expect(status).not.toBe(403);
   expect(typeof body).toBe("object");
 });

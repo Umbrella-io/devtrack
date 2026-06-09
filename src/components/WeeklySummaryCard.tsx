@@ -516,6 +516,7 @@ ${ai.text ? `\nAI Summary\n----------\n${ai.text}` : ""}
                   </div>
                 </div>
               </div>
+
             )}
 
             {/* Active Days Comparison */}

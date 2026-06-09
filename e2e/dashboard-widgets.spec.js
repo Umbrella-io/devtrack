@@ -161,6 +161,7 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/productive-hours**",
     "**/api/user/pinned-repos/details**",
     "**/api/metrics/repo-explorer**",
+    "**/api/metrics/pr-review-time**",
   ];
 
   for (const pattern of metricRoutes) {
@@ -180,24 +181,24 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
-  await page.route("**/api/user/github-orgs**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ orgs: [], hasReadOrgScope: true }),
-    });
-  });
-
-  await page.route("**/api/daily-focus**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ goal: "" }),
-    });
-  });
-
   await page.route("**/api/user/dashboard-layout**", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ layout: null }),
+      });
+    } else {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      });
+    }
+  });
+
+  await page.route("**/api/daily-note**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ layout: null, source: "default" }),
+      body: JSON.stringify({ note: null }),
     });
   });
 });
@@ -331,6 +332,14 @@ function mockMetricResponse(url) {
         thisWeek: 5,
         lastWeek: 4,
       },
+      issues: {
+        thisWeek: 2,
+        lastWeek: 1,
+      },
+      productivityScore: {
+        current: 85,
+        previous: 80,
+      },
       streak: 3,
       topRepo: "demo/repo",
     };
@@ -352,13 +361,6 @@ function mockMetricResponse(url) {
   }
   if (url.includes("/api/streak/freeze")) {
     return { hasFreeze: false, freezeDate: null };
-  }
-  if (url.includes("/api/metrics/contributions")) {
-    return {
-      days: 365,
-      total: 10,
-      data: { "2026-05-16": 3, "2026-05-17": 5, "2026-05-18": 2 },
-    };
   }
   if (url.includes("/api/integrations/jira")) {
     return null;
@@ -408,15 +410,14 @@ function mockMetricResponse(url) {
       timezone: "UTC",
     };
   }
-  if (url.includes("/api/user/pinned-repos/details")) {
-    return {
-      pinnedRepos: [],
-    };
-  }
   if (url.includes("/api/metrics/repo-explorer")) {
-    return {
-      repos: [],
-    };
+    return { repos: [] };
+  }
+  if (url.includes("/api/user/pinned-repos/details")) {
+    return { pinnedRepos: [], repos: [] };
+  }
+  if (url.includes("/api/metrics/pr-review-time")) {
+    return { avgReviewHours: 0, avgFirstReviewHours: 0 };
   }
   return {};
 }
