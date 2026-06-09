@@ -125,13 +125,13 @@ describe('formatActivity', () => {
     expect(result?.url).toBe('https://github.com/owner/repo/releases/tag/v1.0.0');
   });
 
-  it('returns null for unknown event type', () => {
-    const event = {
-      ...baseEvent,
-      type: 'WatchEvent',
-    };
-    expect(formatActivity(event as any)).toBeNull();
-  });
+    it('returns null for unknown event type', () => {
+      const event = {
+        id: '123',
+        type: 'UnknownFakeEventXYZ',
+      };
+      expect(formatActivity(event as any)).toBeNull();
+    });
 
   it('returns null for event with no repo name', () => {
     const event = {

@@ -38,13 +38,13 @@ function buildGoal(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function makeRequest(body: unknown, goalId = "goal-1"): [Request, { params: { id: string } }] {
+function makeRequest(body: unknown, goalId = "goal-1"): [Request, { params: Promise<{ id: string }> }] {
   const req = new Request(`http://localhost/api/goals/${goalId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return [req, { params: { id: goalId } }];
+  return [req, { params: Promise.resolve({ id: goalId }) }];
 }
 
 function setupSupabase(goal: ReturnType<typeof buildGoal> | null, updateResult?: ReturnType<typeof buildGoal>) {

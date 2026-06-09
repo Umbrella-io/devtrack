@@ -23,7 +23,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("next-auth", () => ({ getServerSession: mocks.getServerSession }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
-vi.mock("@/lib/supabase", () => ({
+vi.mock("@/lib/supabase-rooms", () => ({
   getRoomById: mocks.getRoomById,
   getRoomMessages: mocks.getRoomMessages,
   sendRoomMessage: mocks.sendRoomMessage,
@@ -68,7 +68,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
       "@/app/api/rooms/[roomId]/messages/route"
     );
     const res = await POST(makePost("Hello"), {
-      params: { roomId: "room-1" },
+      params: Promise.resolve({ roomId: "room-1" }),
     });
     expect(res.status).toBe(401);
     expect(mocks.sendRoomMessage).not.toHaveBeenCalled();
@@ -80,7 +80,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
       "@/app/api/rooms/[roomId]/messages/route"
     );
     const res = await POST(makePost("Hello"), {
-      params: { roomId: "nonexistent" },
+      params: Promise.resolve({ roomId: "nonexistent" }),
     });
     expect(res.status).toBe(404);
     expect(mocks.sendRoomMessage).not.toHaveBeenCalled();
@@ -102,7 +102,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
       "@/app/api/rooms/[roomId]/messages/route"
     );
     const res = await POST(makePost("Hello world"), {
-      params: { roomId: "room-1" },
+      params: Promise.resolve({ roomId: "room-1" }),
     });
 
     expect(res.status).toBe(201);
@@ -130,7 +130,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
       "@/app/api/rooms/[roomId]/messages/route"
     );
     const res = await POST(makePost("<b>Hello</b>"), {
-      params: { roomId: "room-1" },
+      params: Promise.resolve({ roomId: "room-1" }),
     });
 
     expect(res.status).toBe(201);
@@ -160,7 +160,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
       "@/app/api/rooms/[roomId]/messages/route"
     );
     const res = await POST(makePost("<script>alert(1)</script>"), {
-      params: { roomId: "room-1" },
+      params: Promise.resolve({ roomId: "room-1" }),
     });
 
     expect(res.status).toBe(201);
@@ -187,7 +187,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
     );
     const res = await POST(
       makePost('<a href="javascript:void(0)">click here</a>'),
-      { params: { roomId: "room-1" } }
+      { params: Promise.resolve({ roomId: "room-1" }) }
     );
 
     expect(res.status).toBe(201);
@@ -211,7 +211,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       }),
-      { params: { roomId: "room-1" } }
+      { params: Promise.resolve({ roomId: "room-1" }) }
     );
     expect(res.status).toBe(400);
     expect(mocks.sendRoomMessage).not.toHaveBeenCalled();
@@ -221,7 +221,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
     const { POST } = await import(
       "@/app/api/rooms/[roomId]/messages/route"
     );
-    const res = await POST(makePost(""), { params: { roomId: "room-1" } });
+    const res = await POST(makePost(""), { params: Promise.resolve({ roomId: "room-1" }) });
     expect(res.status).toBe(400);
     expect(mocks.sendRoomMessage).not.toHaveBeenCalled();
   });
@@ -231,7 +231,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
       "@/app/api/rooms/[roomId]/messages/route"
     );
     const res = await POST(makePost("   \t\n  "), {
-      params: { roomId: "room-1" },
+      params: Promise.resolve({ roomId: "room-1" }),
     });
     expect(res.status).toBe(400);
     expect(mocks.sendRoomMessage).not.toHaveBeenCalled();
@@ -243,7 +243,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
     );
     // Tags only, no visible text
     const res = await POST(makePost("<div><span></span></div>"), {
-      params: { roomId: "room-1" },
+      params: Promise.resolve({ roomId: "room-1" }),
     });
     expect(res.status).toBe(400);
     expect(mocks.sendRoomMessage).not.toHaveBeenCalled();
@@ -256,7 +256,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
       "@/app/api/rooms/[roomId]/messages/route"
     );
     const res = await POST(makePost("x".repeat(4001)), {
-      params: { roomId: "room-1" },
+      params: Promise.resolve({ roomId: "room-1" }),
     });
     expect(res.status).toBe(400);
     expect(mocks.sendRoomMessage).not.toHaveBeenCalled();
@@ -277,7 +277,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
       "@/app/api/rooms/[roomId]/messages/route"
     );
     const res = await POST(makePost(longContent), {
-      params: { roomId: "room-1" },
+      params: Promise.resolve({ roomId: "room-1" }),
     });
     expect(res.status).toBe(201);
   });
@@ -298,7 +298,7 @@ describe("POST /api/rooms/[roomId]/messages — message sanitization", () => {
     const { POST } = await import(
       "@/app/api/rooms/[roomId]/messages/route"
     );
-    const res = await POST(makePost(raw), { params: { roomId: "room-1" } });
+    const res = await POST(makePost(raw), { params: Promise.resolve({ roomId: "room-1" }) });
     expect(res.status).toBe(201);
     expect(mocks.sendRoomMessage).toHaveBeenCalledWith(
       "room-1",

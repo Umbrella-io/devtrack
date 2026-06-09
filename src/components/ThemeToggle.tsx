@@ -180,7 +180,7 @@ function DefaultThemeToggle() {
   const currentDescription = themeDefinition?.description ?? "Customize the dashboard palette";
 
   return (
-    <label className="inline-flex min-h-12 w-full max-w-[260px] cursor-pointer items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-[var(--card-foreground)] shadow-sm transition-all duration-300 hover:bg-[var(--control)] focus-within:border-[var(--accent)]">
+    <label className="inline-flex min-h-12 w-full max-w-[220px] md:max-w-[260px] cursor-pointer items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-[var(--card-foreground)] shadow-sm transition-all duration-300 hover:bg-[var(--control)] focus-within:border-[var(--accent)]">
       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
         <PaletteIcon className="h-4 w-4" aria-hidden="true" />
       </span>

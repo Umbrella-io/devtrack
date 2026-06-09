@@ -5,16 +5,17 @@ import { NextResponse } from 'next/server';
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { roomId: string; username: string } }
+  { params }: { params: Promise<{ roomId: string; username: string }> }
 ) {
+  const { roomId, username } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.githubLogin)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const room = await getRoomById(params.roomId, session.githubLogin);
+  const room = await getRoomById(roomId, session.githubLogin);
   if (!room) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const targetUsername = params.username.trim().toLowerCase();
+  const targetUsername = username.trim().toLowerCase();
   const currentUser = session.githubLogin.toLowerCase();
 
   if (!targetUsername)
@@ -33,7 +34,7 @@ export async function DELETE(
     );
 
   try {
-    await removeRoomMember(params.roomId, params.username.trim());
+    await removeRoomMember(roomId, username.trim());
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';

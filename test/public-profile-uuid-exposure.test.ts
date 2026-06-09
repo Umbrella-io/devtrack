@@ -18,7 +18,17 @@ const mocks = vi.hoisted(() => ({
 // the real implementation with mocked dependencies.
 vi.mock("@/lib/supabase", () => ({
   getUserByUsername: mocks.getUserByUsername,
-  supabaseAdmin: { from: vi.fn() },
+  supabaseAdmin: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(() => ({
+            limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
+          })),
+        })),
+      })),
+    })),
+  },
   isSupabaseAdminAvailable: true,
   SUPABASE_ADMIN_UNAVAILABLE_MESSAGE: "",
   getUserByGithubId: vi.fn(),

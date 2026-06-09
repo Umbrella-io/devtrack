@@ -15,6 +15,7 @@ export type UserSettings = {
   timezone: string;
   webhook_url: string | null;
   discord_muted_until: string | null;
+  preferred_locale: string;
 };
 
 export type UseUserSettingsResult<TData extends UserSettings = UserSettings> = {
@@ -51,4 +52,3 @@ export function useUserSettings(): UseUserSettingsResult {
 
   return { data, loading, error, refetch };
 }
-

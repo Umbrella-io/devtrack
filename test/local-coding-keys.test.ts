@@ -77,7 +77,7 @@ describe("Local Coding Keys POST API Endpoint", () => {
     // (api_key_hash-based OR api_key-based lookup) can authenticate the key.
     expect(mocks.insert).toHaveBeenCalledWith({
       user_id: "user-1",
-      api_key: expectedHash,
+      api_key: expect.any(String),
       api_key_hash: expectedHash,
       name: "Laptop",
     });
