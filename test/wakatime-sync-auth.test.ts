@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "@/app/api/wakatime/sync/route";
 
-// ─── hoisted mocks ──────────────────────────────────────────────────────────
+// --- hoisted mocks ---
 
 const mocks = vi.hoisted(() => ({
   supabaseFrom: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock("@/lib/crypto", () => ({
 
 vi.stubGlobal("fetch", mocks.wakatimeFetch);
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+// --- helpers ---
 
 function makeRequest(authHeader?: string): Request {
   return new Request("http://localhost/api/wakatime/sync", {
@@ -38,19 +38,18 @@ function stubEmptySync() {
   });
 }
 
-// ─── tests ───────────────────────────────────────────────────────────────────
+// --- tests ---
 
-describe("GET /api/wakatime/sync — authentication hardening (#1746)", () => {
+describe("GET /api/wakatime/sync - authentication hardening (#1746 #1657)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.unstubAllEnvs();
   });
 
-  // ── missing CRON_SECRET — fail closed ────────────────────────────────────
+  // -- missing CRON_SECRET - fail closed --
 
-  it("returns 500 when CRON_SECRET is not set — regression for #1746", async () => {
+  it("returns 500 when CRON_SECRET is not set - regression for #1746", async () => {
     vi.stubEnv("CRON_SECRET", "");
-    vi.stubEnv("NODE_ENV", "production");
 
     const res = await GET(makeRequest("Bearer anything"));
     expect(res.status).toBe(500);
@@ -60,12 +59,8 @@ describe("GET /api/wakatime/sync — authentication hardening (#1746)", () => {
     expect(mocks.supabaseFrom).not.toHaveBeenCalled();
   });
 
-  it("rejects Authorization: Bearer undefined when CRON_SECRET is absent — regression for #1746", async () => {
-    // This is the specific bypass described in the issue: when CRON_SECRET is
-    // undefined, `Bearer ${undefined}` evaluates to "Bearer undefined", so a
-    // caller who sends that literal string would previously pass the check.
+  it("rejects Authorization: Bearer undefined when CRON_SECRET is absent - regression for #1746", async () => {
     vi.stubEnv("CRON_SECRET", "");
-    vi.stubEnv("NODE_ENV", "production");
 
     const res = await GET(makeRequest("Bearer undefined"));
     // Must NOT return 200; must not execute the sync.
@@ -73,11 +68,10 @@ describe("GET /api/wakatime/sync — authentication hardening (#1746)", () => {
     expect(mocks.supabaseFrom).not.toHaveBeenCalled();
   });
 
-  // ── wrong secret — reject ─────────────────────────────────────────────────
+  // -- wrong secret - reject --
 
-  it("returns 401 in production when the secret is present but the header is wrong", async () => {
+  it("returns 401 when the secret is present but the header is wrong", async () => {
     vi.stubEnv("CRON_SECRET", "correct-secret");
-    vi.stubEnv("NODE_ENV", "production");
 
     const res = await GET(makeRequest("Bearer wrong-secret"));
     expect(res.status).toBe(401);
@@ -86,29 +80,26 @@ describe("GET /api/wakatime/sync — authentication hardening (#1746)", () => {
     expect(mocks.supabaseFrom).not.toHaveBeenCalled();
   });
 
-  it("returns 401 in production when no authorization header is provided", async () => {
+  it("returns 401 when no authorization header is provided", async () => {
     vi.stubEnv("CRON_SECRET", "correct-secret");
-    vi.stubEnv("NODE_ENV", "production");
 
     const res = await GET(makeRequest());
     expect(res.status).toBe(401);
     expect(mocks.supabaseFrom).not.toHaveBeenCalled();
   });
 
-  it("returns 401 in production for a plaintext secret without the Bearer prefix", async () => {
+  it("returns 401 for a plaintext secret without the Bearer prefix", async () => {
     vi.stubEnv("CRON_SECRET", "correct-secret");
-    vi.stubEnv("NODE_ENV", "production");
 
     const res = await GET(makeRequest("correct-secret"));
     expect(res.status).toBe(401);
     expect(mocks.supabaseFrom).not.toHaveBeenCalled();
   });
 
-  // ── correct secret — allow ────────────────────────────────────────────────
+  // -- correct secret - allow --
 
   it("proceeds with the sync when the correct Bearer token is supplied", async () => {
     vi.stubEnv("CRON_SECRET", "s3cr3t");
-    vi.stubEnv("NODE_ENV", "production");
     stubEmptySync();
 
     const res = await GET(makeRequest("Bearer s3cr3t"));
@@ -118,34 +109,51 @@ describe("GET /api/wakatime/sync — authentication hardening (#1746)", () => {
     expect(body).toHaveProperty("failure");
   });
 
-  // ── development mode — intentional bypass for local testing ──────────────
+  // -- development environment - no bypass (#1657) --
+  // Authentication must be enforced in every environment. NODE_ENV must not
+  // be used as a gate - any process running locally, or an attacker who can
+  // control that variable, could otherwise trigger a bulk sync freely.
 
-  it("allows any header in development mode (intentional bypass)", async () => {
+  it("rejects a wrong secret in development - no NODE_ENV bypass (#1657)", async () => {
     vi.stubEnv("CRON_SECRET", "s3cr3t");
     vi.stubEnv("NODE_ENV", "development");
-    stubEmptySync();
 
-    // Any auth value should pass in dev (existing intentional behavior).
     const res = await GET(makeRequest("Bearer totally-wrong"));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(401);
+    expect(mocks.supabaseFrom).not.toHaveBeenCalled();
   });
 
-  it("still returns 500 in development when CRON_SECRET is missing", async () => {
-    // CRON_SECRET must always be required — even in development we should
-    // not silently accept an absent secret configuration.
+  it("rejects a missing header in development - no NODE_ENV bypass (#1657)", async () => {
+    vi.stubEnv("CRON_SECRET", "s3cr3t");
+    vi.stubEnv("NODE_ENV", "development");
+
+    const res = await GET(makeRequest());
+    expect(res.status).toBe(401);
+    expect(mocks.supabaseFrom).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 in development when CRON_SECRET is missing (#1657)", async () => {
     vi.stubEnv("CRON_SECRET", "");
     vi.stubEnv("NODE_ENV", "development");
 
-    const res = await GET(makeRequest("Bearer undefined"));
+    const res = await GET(makeRequest("Bearer s3cr3t"));
     expect(res.status).toBe(500);
     expect(mocks.supabaseFrom).not.toHaveBeenCalled();
   });
 
-  // ── sync execution path ───────────────────────────────────────────────────
+  it("allows a correct secret in development (#1657)", async () => {
+    vi.stubEnv("CRON_SECRET", "s3cr3t");
+    vi.stubEnv("NODE_ENV", "development");
+    stubEmptySync();
+
+    const res = await GET(makeRequest("Bearer s3cr3t"));
+    expect(res.status).toBe(200);
+  });
+
+  // -- sync execution path --
 
   it("decrypts WakaTime keys and calls the WakaTime API for each user", async () => {
     vi.stubEnv("CRON_SECRET", "s3cr3t");
-    vi.stubEnv("NODE_ENV", "production");
 
     mocks.decryptToken.mockReturnValue("waka-api-key");
     mocks.wakatimeFetch.mockResolvedValue({
@@ -200,7 +208,6 @@ describe("GET /api/wakatime/sync — authentication hardening (#1746)", () => {
 
   it("counts a failure when WakaTime API key decryption fails", async () => {
     vi.stubEnv("CRON_SECRET", "s3cr3t");
-    vi.stubEnv("NODE_ENV", "production");
 
     mocks.decryptToken.mockReturnValue(null); // decryption failed
 

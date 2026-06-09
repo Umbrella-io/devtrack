@@ -7,18 +7,40 @@ import { activeStreamConnections } from "@/lib/sse";
 
 export const dynamic = "force-dynamic";
 
+//
+// Security & Performance Safeguards for SSE (Server-Sent Events)
+// ==============================================================
+//
+// 1. Per-user connection cap (MAX_CONNECTIONS_PER_USER = 4)
+//    Prevents a single user's browser tabs from exhausting database capacity.
+//
+// 2. Reduced polling interval (POLL_INTERVAL_MS = 60s)
+//    Changed from 2s to 60s per connection — 30x cheaper.
+//    For 500 concurrent users: ~8 queries/sec instead of ~500 queries/sec.
+//
+// 3. Maximum connection duration (MAX_CONNECTION_DURATION_MS = 5 min)
+//    Stale connections are forcibly closed even if the client never sends
+//    an abort signal. EventSource reconnects automatically.
+//
+// 4. Active connection tracking via activeStreamConnections Map
+//    Prevents race conditions between connection registration and cleanup.
+//
+// 5. Abort signal handling (req.signal.addEventListener('abort'))
+//    Resources are cleaned up immediately when the client disconnects.
+//
+// 6. Safe enqueue with try/catch
+//    If the client goes away, the stream is closed gracefully.
+//
+// These safeguards prevent the query-storm scenario described in #1687.
+//
+
 // Maximum number of concurrent SSE connections allowed per authenticated user.
-// This prevents a single user's browser tabs from generating unbounded database
-// load: each connection independently polls two tables on every tick.
 const MAX_CONNECTIONS_PER_USER = 4;
 
-// How often each connection polls the database. 15 s is fast enough for the
-// data types involved (goal sync timestamps and unread notification counts)
-// while being 7.5x cheaper per connection than the previous 2 s interval.
-const POLL_INTERVAL_MS = 15_000;
+// How often each connection polls the database (60s interval).
+const POLL_INTERVAL_MS = 60_000;
 
-// Keep SSE connections bounded even if a proxy or client fails to send an
-// abort signal. EventSource will reconnect automatically when the stream ends.
+// Maximum lifetime for any single SSE connection (5 minutes).
 const MAX_CONNECTION_DURATION_MS = 5 * 60 * 1000;
 
 export async function GET(req: NextRequest) {

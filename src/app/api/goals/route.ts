@@ -7,7 +7,7 @@ import { stripHtml } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 
-interface Goal {
+interface Goal {  
   id: string;
   user_id: string;
   title: string;
@@ -18,6 +18,8 @@ interface Goal {
   deadline: string | null;
   period_start: string | null;
   created_at: string;
+  goal_reset_version: number;
+  is_public: boolean;
 }
 
 interface GoalHistory {
@@ -94,6 +96,8 @@ export async function GET() {
         : new Date(0);
 
       if (storedPeriodStart < periodStart) {
+        const oldVersion = goal.goal_reset_version ?? 0;
+
         const { error: historyError } = await supabaseAdmin
           .from("goal_history")
           .insert({
@@ -105,27 +109,43 @@ export async function GET() {
             achieved: goal.current,
             completed: goal.current >= goal.target,
           });
-
+        
         if (historyError && historyError.code !== "23505") {
           console.error("Failed to persist goal history before reset:", historyError);
           return goal;
         }
-
-        const { data: updated } = await supabaseAdmin
+        
+        const { data: updated, error } = await supabaseAdmin
           .from("goals")
-          .update({ current: 0, period_start: periodStart.toISOString() })
+          .update({
+            current: 0,
+            period_start: periodStart.toISOString(),
+            goal_reset_version: oldVersion + 1,
+          })
           .eq("id", goal.id)
+          .eq("goal_reset_version", oldVersion)
           .or(`period_start.lt.${periodStart.toISOString()},period_start.is.null`)
           .select()
           .single();
-
-        if (updated) return updated;
-
+      
+        if (updated) {
+          return updated;
+        }
+      
+        if (error) {
+          console.warn("[GOAL_RESET_CONFLICT]", {
+            goalId: goal.id,
+            oldVersion,
+            error,
+          });
+        }
+      
         const { data: current } = await supabaseAdmin
           .from("goals")
           .select("*")
           .eq("id", goal.id)
           .single();
+      
         return current ?? goal;
       }
 
@@ -250,6 +270,7 @@ try {
       period_start: getPeriodStart(safeRecurrence),
       deadline: safeDeadline,
       current: 0,
+      goal_reset_version: 0,
     })
     .select()
     .single();

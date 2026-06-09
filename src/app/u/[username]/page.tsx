@@ -27,10 +27,88 @@ interface ExtendedPublicProfileData extends PublicProfileData {
   isEarlyBird: boolean;
 }
 
+function getVisualRegressionMockProfile(
+  username: string
+): ExtendedPublicProfileData | null {
+  if (
+    process.env.PLAYWRIGHT_TEST !== "true" ||
+    username !== "playwright-user"
+  ) {
+    return null;
+  }
+
+  return {
+    userId: "visual-regression-user",
+    username: "playwright-user",
+    bio: "Mock public profile used for deterministic visual regression coverage.",
+    isSponsor: true,
+    publicGists: 4,
+    repos: [
+      {
+        name: "playwright-user/devtrack-ui",
+        commits: 24,
+        url: "https://github.com/playwright-user/devtrack-ui",
+      },
+      {
+        name: "playwright-user/visual-tests",
+        commits: 16,
+        url: "https://github.com/playwright-user/visual-tests",
+      },
+      {
+        name: "playwright-user/productivity-dashboard",
+        commits: 9,
+        url: "https://github.com/playwright-user/productivity-dashboard",
+      },
+    ],
+    contributions: {
+      days: 30,
+      total: 58,
+      data: {
+        "2026-05-20": 3,
+        "2026-05-21": 5,
+        "2026-05-22": 2,
+        "2026-05-23": 7,
+        "2026-05-24": 4,
+        "2026-05-25": 8,
+        "2026-05-26": 6,
+        "2026-05-27": 5,
+        "2026-05-28": 3,
+        "2026-05-29": 6,
+        "2026-05-30": 4,
+        "2026-05-31": 5,
+      },
+    },
+    streak: {
+      current: 8,
+      longest: 21,
+      lastCommitDate: "2026-05-31",
+      totalActiveDays: 18,
+    },
+    topLanguages: [
+      { name: "TypeScript", count: 18, percentage: 60 },
+      { name: "JavaScript", count: 7, percentage: 23.3 },
+      { name: "CSS", count: 5, percentage: 16.7 },
+    ],
+    pullRequests: 14,
+    achievements: [],
+    achievementsError: null,
+    spotlightRepos: [],
+    weeklyGoalProgress: {
+      completed: 3,
+      total: 4,
+      percentage: 75,
+    },
+    isNightOwl: true,
+    isEarlyBird: false,
+  };
+}
+
 async function fetchPublicProfile(
   username: string,
   options: { includeAchievements?: boolean } = {}
 ): Promise<ExtendedPublicProfileData | null> {
+  const visualRegressionProfile = getVisualRegressionMockProfile(username);
+  if (visualRegressionProfile) return visualRegressionProfile;
   const user = await getUserByUsername(username);
 
   if (!user) return null;
@@ -95,6 +173,17 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
+
+  const visualRegressionProfile = getVisualRegressionMockProfile(username);
+
+  if (visualRegressionProfile) {
+    return {
+      title: "@playwright-user | DevTrack",
+      description:
+        "Mock public profile used for deterministic visual regression coverage.",
+    };
+  }
+
   const user = await getUserByUsername(username);
   const profileUrl = getProfileUrl(username);
 
@@ -110,14 +199,12 @@ export async function generateMetadata({
     process.env.NEXTAUTH_URL ||
     "http://localhost:3000";
 
-  // Build dynamic OG image URL
   const ogImageUrl = new URL(`${baseUrl}/api/og/user`);
-ogImageUrl.searchParams.set("username", username);
-ogImageUrl.searchParams.set("name", username);
-ogImageUrl.searchParams.set("avatar", `https://avatars.githubusercontent.com/${username}`);
-ogImageUrl.searchParams.set("topLang", "Code");
-ogImageUrl.searchParams.set("streak", "0");
-ogImageUrl.searchParams.set("commits", "0");
+  ogImageUrl.searchParams.set("username", username);
+  ogImageUrl.searchParams.set("name", username);
+  ogImageUrl.searchParams.set("topLang", "Code");
+  ogImageUrl.searchParams.set("streak", "0");
+  ogImageUrl.searchParams.set("commits", "0");
 
   const title = `${username}'s DevTrack Profile`;
   const description = `GitHub stats and coding activity for ${username}. View commits, streaks, and top repositories.`;
@@ -318,6 +405,13 @@ export default async function PublicProfilePage({
         </div>
       ) : null}
 
+      {/* Weekly Goal Progress */}
+      {profile.weeklyGoalProgress && (
+        <div className="mt-6">
+          <PublicWeeklyGoalProgress progress={profile.weeklyGoalProgress} />
+        </div>
+      )}
+
       {/* Row 2: Top repos */}
       <div className="mt-6">
         <PublicTopRepos repos={profile.repos} />
@@ -463,6 +557,40 @@ function PublicStreakTracker({ streak }: { streak: any }) {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function PublicWeeklyGoalProgress({
+  progress,
+}: {
+  progress: { completed: number; total: number; percentage: number };
+}) {
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
+        Weekly Goal Progress
+      </h2>
+      <div className="flex items-center gap-4">
+        <div className="relative h-20 w-20">
+          <svg className="h-20 w-20 -rotate-90" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="30" fill="none" stroke="var(--control)" strokeWidth="6" />
+            <circle
+              cx="36" cy="36" r="30"
+              fill="none" stroke="var(--accent)" strokeWidth="6"
+              strokeDasharray={2 * Math.PI * 30}
+              strokeDashoffset={2 * Math.PI * 30 * (1 - progress.percentage / 100)}
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[var(--card-foreground)]">
+            {progress.percentage}%
+          </span>
+        </div>
+        <div className="text-sm text-[var(--muted-foreground)]">
+          {progress.completed} of {progress.total} weekly goals completed
+        </div>
       </div>
     </div>
   );

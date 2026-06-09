@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getRoomById, getRoomMessages, sendRoomMessage } from '@/lib/supabase';
+import { getRoomById, getRoomMessages, sendRoomMessage } from '@/lib/supabase-rooms';
 import { validateTextInput } from '@/lib/sanitize';
 import { NextResponse } from 'next/server';
 
