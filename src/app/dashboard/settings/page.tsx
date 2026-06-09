@@ -24,6 +24,7 @@ interface UserSettings {
   is_public: boolean;
   public_since?: string | null;
   show_weekly_goals?: boolean;
+  public_widgets?: string[];
   leaderboard_opt_in: boolean;
   weekly_digest_opt_in: boolean;
   has_wakatime_key?: boolean;
@@ -192,6 +193,8 @@ function SettingsPageContent() {
   const [orgsConfig, setOrgsConfig] = useState<Record<string, boolean>>({});
   const [loadingOrgs, setLoadingOrgs] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
+  const [publicWidgets, setPublicWidgets] = useState<string[]>(["streak", "contributions"]);
+  const [savingWidgets, setSavingWidgets] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
@@ -299,6 +302,7 @@ function SettingsPageContent() {
           setTimezone(data.timezone || "UTC");
           setDiscordMutedUntil(data.discord_muted_until ?? null);
           setWebhookUrl(data.webhook_url ?? null);
+          setPublicWidgets(data.public_widgets ?? ["streak", "contributions"]);
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -529,6 +533,45 @@ function SettingsPageContent() {
       console.error("Error updating weekly digest setting:", error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const WIDGET_OPTIONS = [
+    { key: "streak", label: "Streak stats", description: "Current streak, longest streak, active days" },
+    { key: "contributions", label: "Contribution graph", description: "30-day commit activity heatmap" },
+    { key: "languages", label: "Top languages", description: "Language breakdown from recent repos" },
+    { key: "prs", label: "Pull requests", description: "Total PRs authored" },
+  ] as const;
+
+  const handleToggleWidget = (key: string, checked: boolean) => {
+    setPublicWidgets((prev) =>
+      checked ? [...prev, key] : prev.filter((w) => w !== key)
+    );
+    setIsDirty(true);
+  };
+
+  const handleSaveWidgets = async () => {
+    if (!settings) return;
+    setSavingWidgets(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ public_widgets: publicWidgets }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setPublicWidgets(updated.public_widgets ?? ["streak", "contributions"]);
+        setIsDirty(false);
+        toast.success("Widget visibility saved!");
+      } else {
+        toast.error("Failed to save widget settings.");
+      }
+    } catch {
+      toast.error("Failed to save widget settings.");
+    } finally {
+      setSavingWidgets(false);
     }
   };
 
@@ -958,6 +1001,47 @@ function SettingsPageContent() {
                   </div>
                 </label>
               </div>
+            </div>
+          )}
+
+          {/* ── Public Widget Selector ────────────────────────────────── */}
+          {settings.is_public && (
+            <div className="mt-6 pt-6 border-t border-[var(--border)]">
+              <div className="mb-3">
+                <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+                  Visible Widgets
+                </h3>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  Choose which stats are shown on your public profile.
+                </p>
+              </div>
+              <div className="space-y-3">
+                {WIDGET_OPTIONS.map(({ key, label, description }) => (
+                  <label
+                    key={key}
+                    className="flex items-start gap-3 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 transition-colors hover:bg-[var(--control)]/80"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={publicWidgets.includes(key)}
+                      onChange={(e) => handleToggleWidget(key, e.target.checked)}
+                      className="mt-0.5 accent-[var(--accent)]"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--card-foreground)]">{label}</div>
+                      <div className="text-xs text-[var(--muted-foreground)]">{description}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveWidgets}
+                disabled={savingWidgets}
+                className="mt-4 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {savingWidgets ? "Saving..." : "Save Widget Settings"}
+              </button>
             </div>
           )}
 
