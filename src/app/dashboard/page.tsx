@@ -10,6 +10,7 @@ import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import ThrottleBanner from "@/components/ThrottleBanner";
 import CustomizableDashboard from "@/components/dashboard/CustomizableDashboard";
+import MilestonePlanner from "@/components/MilestonePlanner";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -85,7 +86,9 @@ export default async function DashboardPage() {
             </Link>
           </div>
         </section>
-
+        <section className="mt-8">
+          <MilestonePlanner />
+        </section>
         <CustomizableDashboard />
       </div>
     </DashboardSSEProvider>
