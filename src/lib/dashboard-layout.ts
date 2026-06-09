@@ -16,9 +16,11 @@ export type DashboardWidgetId =
   | "activity-ring"
   | "coding-activity-insights"
   | "streak-tracker"
+  | "consistency-score"
   | "local-coding-time"
   | "coding-time"
   | "commit-time"
+  | "commit-heatmap-time"
   | "productive-hours"
   | "repo-analytics"
   | "pr-metrics"
@@ -35,7 +37,8 @@ export type DashboardWidgetId =
   | "recent-activity"
   | "ci-analytics"
   | "language-breakdown"
-  | "friend-comparison";
+  | "friend-comparison"
+  | "achievement-progress";
 
 export interface DashboardLayoutPreference {
   version: 1;
@@ -68,9 +71,11 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   "activity-ring": "Activity Ring",
   "coding-activity-insights": "Coding Activity Insights",
   "streak-tracker": "Streak Tracker",
+  "consistency-score": "Consistency Score",
   "local-coding-time": "Local Coding Time",
   "coding-time": "Coding Time",
   "commit-time": "Commit Time",
+  "commit-heatmap-time": "Commit Time Heatmap",
   "productive-hours": "Productive Hours",
   "repo-analytics": "Repository Analytics",
   "pr-metrics": "PR Metrics",
@@ -88,6 +93,7 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   "ci-analytics": "CI Analytics",
   "language-breakdown": "Language Breakdown",
   "friend-comparison": "Friend Comparison",
+  "achievement-progress": "Achievement Progress",
 };
 
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
@@ -102,9 +108,11 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
       "activity-ring",
       "coding-activity-insights",
       "streak-tracker",
+      "consistency-score",
       "local-coding-time",
       "coding-time",
       "commit-time",
+      "commit-heatmap-time",
       "productive-hours",
     ],
     analytics: [
@@ -126,6 +134,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
       "ci-analytics",
       "language-breakdown",
       "friend-comparison",
+      "achievement-progress",
     ],
   },
   hidden: [],

@@ -1,5 +1,6 @@
 export function stripHtml(value: string): string {
   return value
+    .normalize("NFKC")
     .replace(/<[^>]*>/g, "")
     .replace(/&(?:lt|gt|amp|quot|#x27|#39);/gi, (m) => {
       const map: Record<string, string> = {

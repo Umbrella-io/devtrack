@@ -47,6 +47,8 @@ describe("User Settings API Endpoints", () => {
         id: "user-uuid-123",
         github_login: "test-user",
         is_public: true,
+        public_since: null,
+        show_weekly_goals: false,
         leaderboard_opt_in: true,
         pinned_repos: ["repo-1"],
         wakatime_api_key_encrypted: "encrypted-key",
@@ -54,6 +56,7 @@ describe("User Settings API Endpoints", () => {
         weekly_digest_opt_in: false,
         discord_webhook_url: null,
         timezone: "UTC",
+        preferred_locale: "en",
       },
       error: null,
     });
@@ -82,6 +85,9 @@ describe("User Settings API Endpoints", () => {
                 weekly_digest_opt_in: updatesObj.weekly_digest_opt_in !== undefined ? updatesObj.weekly_digest_opt_in : false,
                 discord_webhook_url: updatesObj.discord_webhook_url !== undefined ? updatesObj.discord_webhook_url : null,
                 timezone: updatesObj.timezone !== undefined ? updatesObj.timezone : "UTC",
+                public_since: updatesObj.public_since !== undefined ? updatesObj.public_since : null,
+                show_weekly_goals: updatesObj.show_weekly_goals !== undefined ? updatesObj.show_weekly_goals : false,
+                preferred_locale: updatesObj.preferred_locale !== undefined ? updatesObj.preferred_locale : "en",
               },
               error: null,
             }),
@@ -139,6 +145,8 @@ describe("User Settings API Endpoints", () => {
         id: "user-uuid-123",
         github_login: "test-user",
         is_public: true,
+        public_since: null,
+        show_weekly_goals: false,
         leaderboard_opt_in: true,
         weekly_digest_opt_in: false,
         pinned_repos: ["repo-1"],
@@ -148,6 +156,7 @@ describe("User Settings API Endpoints", () => {
         timezone: "UTC",
         bio: "",
         discord_muted_until: null,
+        preferred_locale: "en",
       });
     });
   });
@@ -226,6 +235,8 @@ describe("User Settings API Endpoints", () => {
         id: "user-uuid-123",
         github_login: "test-user",
         is_public: true,
+        public_since: null,
+        show_weekly_goals: false,
         leaderboard_opt_in: true,
         weekly_digest_opt_in: false,
         pinned_repos: ["repo-1"],
@@ -235,6 +246,7 @@ describe("User Settings API Endpoints", () => {
         timezone: "UTC",
         bio: "",
         discord_muted_until: null,
+        preferred_locale: "en",
       });
       
       // Verify that no database updates were triggered (mockUpdate not called because updates is empty)
@@ -255,6 +267,8 @@ describe("User Settings API Endpoints", () => {
         id: "user-uuid-123",
         github_login: "test-user",
         is_public: false,
+        public_since: null,
+        show_weekly_goals: false,
         leaderboard_opt_in: true,
         weekly_digest_opt_in: false,
         pinned_repos: ["repo-2", "repo-3"],
@@ -264,13 +278,38 @@ describe("User Settings API Endpoints", () => {
         timezone: "UTC",
         bio: "",
         discord_muted_until: null,
+        preferred_locale: "en",
       });
       
-      // Verify update database query was called with the updates object
       expect(mockUpdate).toHaveBeenCalledWith({
         is_public: false,
+        public_since: null,
         pinned_repos: ["repo-2", "repo-3"],
       });
+    });
+
+    it("persists preferred locale and sets the locale cookie", async () => {
+      const req = new NextRequest("http://localhost/api/user/settings", {
+        method: "PATCH",
+        body: JSON.stringify({ preferred_locale: "es" }),
+      });
+      const res = await PATCH(req);
+
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ preferred_locale: "es" });
+      expect(res.headers.get("set-cookie")).toContain("devtrack-locale=es");
+      expect(mockUpdate).toHaveBeenCalledWith({ preferred_locale: "es" });
+    });
+
+    it("rejects unsupported locales", async () => {
+      const req = new NextRequest("http://localhost/api/user/settings", {
+        method: "PATCH",
+        body: JSON.stringify({ preferred_locale: "fr" }),
+      });
+      const res = await PATCH(req);
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: "Unsupported locale" });
     });
   });
 });

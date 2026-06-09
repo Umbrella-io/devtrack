@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { submitGoalWithRefresh } from "@/lib/goal-tracker";
-import ConfirmModal from "@/components/ConfirmModal"; // 🎯 Imported the native project confirmation layout
+import ConfirmModal from "@/components/ConfirmModal";
 import { buildPublicGoalShareUrl } from "@/lib/goals/share";
+import GoalHistory from "@/components/GoalHistory";
 
 type Recurrence = "none" | "weekly" | "monthly";
 
@@ -56,9 +57,6 @@ export function useGoalTracker() {
   const prevGoalsRef = useRef<Map<string, boolean>>(new Map());
   const initialLoadDoneRef = useRef<boolean>(false);
 
-  // Find the goal title that matches the confirmingId to display inside the modal confirmation dialog
-  const activeConfirmingGoal = goals.find((g) => g.id === confirmingId);
-
   const loadGoals = useCallback(async () => {
     const response = await fetch("/api/goals");
     const data: { goals: Goal[] } = await response.json();
@@ -67,7 +65,6 @@ export function useGoalTracker() {
     return fetchedGoals;
   }, []);
 
-  /** Sync commit-based goals from GitHub, then reload */
   const handleSync = useCallback(async () => {
     setSyncing(true);
     setSyncError(null);
@@ -104,7 +101,6 @@ export function useGoalTracker() {
     }
   }, [loadGoals]);
 
-  // On mount: load goals then auto-sync if stale
   useEffect(() => {
     loadGoals()
       .then(async (fetchedGoals) => {
@@ -112,7 +108,7 @@ export function useGoalTracker() {
           if (g.unit !== "commits") return false;
           if (!g.last_synced_at) return true;
           const syncedAt = new Date(g.last_synced_at).getTime();
-          return Date.now() - syncedAt > 15 * 60 * 1000; // > 15 mins
+          return Date.now() - syncedAt > 15 * 60 * 1000;
         });
         if (needsSync) {
           await handleSync();
@@ -144,6 +140,12 @@ export function useGoalTracker() {
     setCreating(true);
     setCreateError(null);
 
+    if (target <= 0) {
+      setCreateError("Target must be greater than 0.");
+      setCreating(false);
+      return;
+    }
+
     try {
       const result = await submitGoalWithRefresh({
         payload: { title, target, unit, recurrence, deadline: deadline || null },
@@ -162,16 +164,15 @@ export function useGoalTracker() {
       setRecurrence("none");
       setDeadline("");
 
-      // Immediately sync if it was a commit-based goal or prs
       if (unit === "commits" || unit === "prs") {
         await handleSync();
       } else {
-        await loadGoals().catch(() => { });
+        await loadGoals().catch(() => {});
       }
     } catch (e) {
       setCreateError("Failed to create goal. Please try again.");
     } finally {
-      setCreating(false);  
+      setCreating(false);
     }
   }
 
@@ -202,7 +203,7 @@ export function useGoalTracker() {
       if (goal.recurrence === "monthly") return "Completed this month ✓";
       return "Completed ✓";
     }
-    
+
     if (goal.deadline) {
       const msLeft = new Date(goal.deadline).getTime() - Date.now();
       const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
@@ -210,7 +211,7 @@ export function useGoalTracker() {
       if (daysLeft === 0) return "Due today ⏳";
       return `${daysLeft}d left`;
     }
-    
+
     return "";
   }
 
@@ -232,7 +233,11 @@ export function useGoalTracker() {
       const wasCompleted = prevGoalsRef.current.get(g.id);
 
       if (wasCompleted === false && isCompleted) {
-        if (typeof window !== "undefined" && typeof window.matchMedia === "function" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        if (
+          typeof window !== "undefined" &&
+          typeof window.matchMedia === "function" &&
+          !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ) {
           setActiveConfettiGoalId(g.id);
           setTimeout(() => {
             setActiveConfettiGoalId((curr) => (curr === g.id ? null : curr));
@@ -328,11 +333,10 @@ export default function GoalTracker() {
     typeof (session as { githubLogin?: unknown } | null)?.githubLogin === "string"
       ? (session as { githubLogin: string }).githubLogin
       : null;
-  
+
   const [copiedGoalId, setCopiedGoalId] = useState<string | null>(null);
   const [sharingGoalId, setSharingGoalId] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
-
 
   const toggleGoalSharing = async (goalId: string, nextValue: boolean) => {
     setSharingGoalId(goalId);
@@ -363,29 +367,29 @@ export default function GoalTracker() {
   };
 
   const copyGoalShareLink = async (goalId: string) => {
-  if (!githubLogin) {
-    setShareError("Unable to build share link for this account.");
-    return;
-  }
+    if (!githubLogin) {
+      setShareError("Unable to build share link for this account.");
+      return;
+    }
 
-  const shareUrl = buildPublicGoalShareUrl(
-    window.location.origin,
-    githubLogin,
-    goalId
-  );
+    const shareUrl = buildPublicGoalShareUrl(
+      window.location.origin,
+      githubLogin,
+      goalId
+    );
 
-  try {
-    await navigator.clipboard.writeText(shareUrl);
-    setCopiedGoalId(goalId);
-    window.setTimeout(() => {
-      setCopiedGoalId((currentGoalId) =>
-        currentGoalId === goalId ? null : currentGoalId
-      );
-    }, 2000);
-  } catch {
-    setShareError("Failed to copy share link. Please copy it manually.");
-  }
-};
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedGoalId(goalId);
+      window.setTimeout(() => {
+        setCopiedGoalId((currentGoalId) =>
+          currentGoalId === goalId ? null : currentGoalId
+        );
+      }, 2000);
+    } catch {
+      setShareError("Failed to copy share link. Please copy it manually.");
+    }
+  };
 
   const activeConfirmingGoal = goals.find((g) => g.id === confirmingId);
 
@@ -457,23 +461,30 @@ export default function GoalTracker() {
       {deleteError && (
         <div className="mb-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-3 text-sm text-[var(--destructive)] flex justify-between items-center">
           <p>{deleteError}</p>
-          <button onClick={() => setDeleteError(null)} className="text-[var(--destructive)] hover:opacity-80 ml-2" aria-label="Dismiss error">✕</button>
+          <button
+            onClick={() => setDeleteError(null)}
+            className="text-[var(--destructive)] hover:opacity-80 ml-2"
+            aria-label="Dismiss error"
+          >
+            ✕
+          </button>
         </div>
       )}
 
+      {/* Share Error */}
       {shareError && (
-  <div className="mb-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-3 text-sm text-[var(--destructive)] flex justify-between items-center">
-    <p>{shareError}</p>
-    <button
-      type="button"
-      onClick={() => setShareError(null)}
-      className="text-[var(--destructive)] hover:opacity-80 ml-2"
-      aria-label="Dismiss sharing error"
-    >
-      ✕
-    </button>
-  </div>
-)}
+        <div className="mb-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-3 text-sm text-[var(--destructive)] flex justify-between items-center">
+          <p>{shareError}</p>
+          <button
+            type="button"
+            onClick={() => setShareError(null)}
+            className="text-[var(--destructive)] hover:opacity-80 ml-2"
+            aria-label="Dismiss sharing error"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
@@ -482,7 +493,10 @@ export default function GoalTracker() {
       ) : (
         <ul className="space-y-4">
           {goals.map((goal) => {
-        const pct = goal.current > 0 ? Math.max(1, Math.min(Math.round((goal.current / goal.target) * 100), 100)) : 0;
+            const pct =
+              goal.current > 0
+                ? Math.max(1, Math.min(Math.round((goal.current / goal.target) * 100), 100))
+                : 0;
             const isDeleting = deletingId === goal.id;
             const completed = goal.current >= goal.target;
             const completionLabel = getCompletionLabel(goal);
@@ -496,11 +510,13 @@ export default function GoalTracker() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[var(--card-foreground)]">{goal.title}</span>
                       {goal.recurrence !== "none" && (
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
-                          goal.recurrence === "weekly"
-                            ? "bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/30"
-                            : "bg-[var(--card-muted)] text-[var(--muted-foreground)] border-[var(--border)]"
-                        }`}>
+                        <span
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
+                            goal.recurrence === "weekly"
+                              ? "bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/30"
+                              : "bg-[var(--card-muted)] text-[var(--muted-foreground)] border-[var(--border)]"
+                          }`}
+                        >
                           {RECURRENCE_LABELS[goal.recurrence]}
                         </span>
                       )}
@@ -531,16 +547,24 @@ export default function GoalTracker() {
                         {completionLabel}
                       </span>
                     ) : completionLabel ? (
-                      <span className={`text-xs font-medium ${completionLabel.includes('Overdue') ? 'text-red-500' : 'text-orange-500'}`}>
+                      <span
+                        className={`text-xs font-medium ${
+                          completionLabel.includes("Overdue") ? "text-red-500" : "text-orange-500"
+                        }`}
+                      >
                         {completionLabel}
                       </span>
                     ) : null}
                     {goal.last_period && (
                       <span
                         className={`text-xs font-medium ${
-                          goal.last_period.completed ? "text-emerald-500" : "text-[var(--muted-foreground)]"
+                          goal.last_period.completed
+                            ? "text-emerald-500"
+                            : "text-[var(--muted-foreground)]"
                         }`}
-                        title={`Previous period ended ${new Date(goal.last_period.period_end).toLocaleDateString()}`}
+                        title={`Previous period ended ${new Date(
+                          goal.last_period.period_end
+                        ).toLocaleDateString()}`}
                       >
                         Last period: {goal.last_period.completed ? "✓" : "○"}{" "}
                         {goal.last_period.achieved}/{goal.last_period.target} {goal.unit}
@@ -553,7 +577,6 @@ export default function GoalTracker() {
                       {goal.current}/{goal.target} {goal.unit}
                     </span>
 
-                    {/* Manual +1 only for non-auto-synced goals */}
                     {!isAutoSynced && (
                       <button
                         onClick={async () => {
@@ -580,7 +603,6 @@ export default function GoalTracker() {
                       </button>
                     )}
 
-                    {/* 🎯 Clean interception: Clicking trash icon sets confirmingId instead of trigger-deleting */}
                     <button
                       type="button"
                       onClick={() => setConfirmingId(goal.id)}
@@ -589,8 +611,18 @@ export default function GoalTracker() {
                       aria-label={`Delete goal: ${goal.title}`}
                       title="Delete goal"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
-                        <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="w-4 h-4"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -598,46 +630,48 @@ export default function GoalTracker() {
 
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
-                    className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
+                    className={`h-full rounded-full transition-all ${
+                      completed ? "bg-emerald-500" : "bg-[var(--accent)]"
+                    }`}
                     style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
-                    
                   />
                 </div>
-              <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--control)] p-3">
-  <div className="flex flex-wrap items-center justify-between gap-3">
-    <div>
-      <p className="text-sm font-medium text-[var(--card-foreground)]">
-        Share this goal
-      </p>
-      <p className="text-xs text-[var(--muted-foreground)]">
-        Make this goal visible on a public share page.
-      </p>
-    </div>
 
-    <label className="inline-flex items-center gap-2 text-sm text-[var(--card-foreground)]">
-      <input
-        type="checkbox"
-        checked={Boolean(goal.is_public)}
-        disabled={sharingGoalId === goal.id}
-        onChange={(event) =>
-          toggleGoalSharing(goal.id, event.currentTarget.checked)
-        }
-        aria-label={`Make "${goal.title}" public`}
-      />
-      Public
-    </label>
-  </div>
+                <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--control)] p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--card-foreground)]">
+                        Share this goal
+                      </p>
+                      <p className="text-xs text-[var(--muted-foreground)]">
+                        Make this goal visible on a public share page.
+                      </p>
+                    </div>
 
-  {goal.is_public && (
-    <button
-      type="button"
-      onClick={() => copyGoalShareLink(goal.id)}
-      className="secondary-button mt-3 rounded-lg px-3 py-1.5 text-sm"
-    >
-      {copiedGoalId === goal.id ? "Copied!" : "Copy share link"}
-    </button>
-  )}
-</div>
+                    <label className="inline-flex items-center gap-2 text-sm text-[var(--card-foreground)]">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(goal.is_public)}
+                        disabled={sharingGoalId === goal.id}
+                        onChange={(event) =>
+                          toggleGoalSharing(goal.id, event.currentTarget.checked)
+                        }
+                        aria-label={`Make "${goal.title}" public`}
+                      />
+                      Public
+                    </label>
+                  </div>
+
+                  {goal.is_public && (
+                    <button
+                      type="button"
+                      onClick={() => copyGoalShareLink(goal.id)}
+                      className="secondary-button mt-3 rounded-lg px-3 py-1.5 text-sm"
+                    >
+                      {copiedGoalId === goal.id ? "Copied!" : "Copy share link"}
+                    </button>
+                  )}
+                </div>
               </li>
             );
           })}
@@ -653,7 +687,10 @@ export default function GoalTracker() {
       {/* Goal Creation Form */}
       <form onSubmit={handleCreate} className="mt-6 space-y-3 border-t border-[var(--border)] pt-4">
         <div>
-          <label htmlFor="goal-title" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+          <label
+            htmlFor="goal-title"
+            className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
+          >
             Goal title
           </label>
           <input
@@ -670,7 +707,10 @@ export default function GoalTracker() {
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label htmlFor="goal-target" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+            <label
+              htmlFor="goal-target"
+              className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
+            >
               Target
             </label>
             <input
@@ -685,7 +725,10 @@ export default function GoalTracker() {
             />
           </div>
           <div className="flex-1">
-            <label htmlFor="goal-unit" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+            <label
+              htmlFor="goal-unit"
+              className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
+            >
               Unit
             </label>
             <select
@@ -704,10 +747,12 @@ export default function GoalTracker() {
           </div>
         </div>
 
-        {/* Deadline Picker for one-time goals */}
         {recurrence === "none" && (
           <div>
-            <label htmlFor="goal-deadline" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+            <label
+              htmlFor="goal-deadline"
+              className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
+            >
               Deadline (Optional)
             </label>
             <input
@@ -722,9 +767,11 @@ export default function GoalTracker() {
           </div>
         )}
 
-        {/* Recurrence Picker */}
         <div role="group" aria-labelledby="recurrence-label">
-          <span id="recurrence-label" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+          <span
+            id="recurrence-label"
+            className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
+          >
             Recurrence
           </span>
           <div className="flex gap-2">
@@ -751,7 +798,6 @@ export default function GoalTracker() {
           )}
         </div>
 
-        {/* GitHub Warning */}
         {(unit === "commits" || unit === "prs") && (
           <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--accent)]/10 px-3 py-2">
             ⚡ This goal will auto-update from your GitHub activity.
@@ -781,7 +827,7 @@ export default function GoalTracker() {
       <ConfirmModal
         isOpen={confirmingId !== null}
         title="Delete Tracking Goal"
-        message={`Are you sure you want to permanently remove your "${activeConfirmingGoal?.title || 'active coding'}" goal? This will erase all gathered progress history numbers parameters.`}
+        message={`Are you sure you want to permanently remove your "${activeConfirmingGoal?.title || "active coding"}" goal? This will erase all gathered progress history numbers parameters.`}
         confirmLabel={deletingId ? "Deleting..." : "Permanently Delete"}
         cancelLabel="Keep Goal"
         onConfirm={() => {
@@ -789,16 +835,35 @@ export default function GoalTracker() {
         }}
         onCancel={() => setConfirmingId(null)}
       />
+
+      {/* Goal History & Analytics */}
+      <GoalHistory />
     </div>
   );
 }
 
 function ConfettiBurst() {
-  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; color: string; rot: number; scale: number; speed: number }>>([]);
+  const [particles, setParticles] = useState<Array<{
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+  rot: number;
+  scale: number;
+  speed: number;
+}>>([]);
 
   useEffect(() => {
     const colors = ["var(--accent)", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
-    const newParticles: Array<{ id: number; x: number; y: number; color: string; rot: number; scale: number; speed: number }> = [];
+    const newParticles: Array<{
+      id: number;
+      x: number;
+      y: number;
+      color: string;
+      rot: number;
+      scale: number;
+      speed: number;
+    }> = [];
     for (let i = 0; i < 35; i++) {
       const angle = Math.random() * Math.PI * 2;
       const distance = 30 + Math.random() * 140;

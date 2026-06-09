@@ -18,6 +18,7 @@ import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import { Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -266,21 +267,19 @@ export default function DashboardHeader() {
 
         {/* Right Section */}
         {/* Right Section */}
-      
-      {!isMobile && 
-         <div className="w-full min-w-0 md:w-auto">
-         <div className="flex w-full min-w-0 items-center gap-3 overflow-x-auto pb-1 md:w-auto md:justify-end md:overflow-visible md:pb-0">
-           {isPublic === true && session?.githubLogin && (
-             <a
-               href={`/u/${session.githubLogin}`}
-               target="_blank"
-               rel="noopener noreferrer"
-               className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
-               title="View your public profile"
-             >
-               Share Profile
-             </a>
-           )}
+        <div className="w-full min-w-0 md:w-auto">
+          <div className="flex w-full min-w-0 items-center gap-3 overflow-x-auto pb-1 md:w-auto md:justify-end md:overflow-visible md:pb-0">
+            {isPublic === true && session?.githubLogin && (
+              <a
+                href={`/u/${session.githubLogin}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants({ variant: "default" })}
+                title="View your public profile"
+              >
+                Share Profile
+              </a>
+            )}
 
 
            <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
@@ -321,47 +320,48 @@ export default function DashboardHeader() {
           <NotificationBell />
         </div>
 
-        <button
-        type="button"
-        className="inline-flex items-center justify-center self-start rounded-xl border border-[var(--border)] bg-[var(--card-muted)]/70 p-2 text-[var(--card-foreground)] shadow-sm transition-all duration-200 hover:border-[var(--accent)] hover:text-[var(--accent)]  "
-        onClick={() => setMenuOpen((v) => !v)}
-        aria-label="Toggle menu"
-        aria-expanded={menuOpen}
-      >
-        {menuOpen ? (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-5 w-5"
-            aria-hidden="true"
-          >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        ) : (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-5 w-5"
-            aria-hidden="true"
-          >
-            <path d="M4 6h16" />
-            <path d="M4 12h16" />
-            <path d="M4 18h16" />
-          </svg>
-        )}
-      </button>
-
+        {/* Mobile hamburger button */}
+        <Button
+          variant="outline"
+          size="icon"
+          className="self-start sm:hidden"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label="Toggle menu"
+          aria-expanded={menuOpen}
+        >
+          {menuOpen ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5"
+              aria-hidden="true"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5"
+              aria-hidden="true"
+            >
+              <path d="M4 6h16" />
+              <path d="M4 12h16" />
+              <path d="M4 18h16" />
+            </svg>
+          )}
+        </Button>
       </div>
      
      
@@ -397,7 +397,7 @@ export default function DashboardHeader() {
               href={`/u/${session.githubLogin}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="primary-button inline-flex w-full items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
+              className={buttonVariants({ variant: "default", className: "w-full" })}
               title="View your public profile"
               onClick={() => setMenuOpen(false)}
             >

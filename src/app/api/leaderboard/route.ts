@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
 import { cacheGet, cacheSet, isMetricsCacheBypassed } from "@/lib/metrics-cache";
 import {
@@ -7,7 +6,9 @@ import {
   getLeaderboardData,
   isFresh,
   LEADERBOARD_BUILD_LOCK_KEY,
+  type LeaderboardEntry,
   type LeaderboardPayload,
+  type LeaderboardMetric,
   type LeaderboardPeriod,
 } from "@/lib/leaderboard";
 import {
@@ -20,7 +21,7 @@ import {
   upstashTryAcquireLock,
 } from "@/lib/upstash-rest";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 const RATE_LIMIT_REQUESTS = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -30,9 +31,9 @@ const memoryRateLimits = new Map<string, RateLimitEntry>();
 
 // In-process build promise to dedupe concurrent builds in the same Node
 // process when an external cache/lock (Upstash) is not configured.
-let _inProcessLeaderboardBuild: Promise<import("@/lib/leaderboard").LeaderboardPayload | null> | null = null;
+let _inProcessLeaderboardBuild: Promise<LeaderboardPayload | null> | null = null;
 function getRateLimitKey(req: NextRequest): string {
-  return req.ip ?? req.headers.get("x-real-ip") ?? "unknown";
+  return req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
 }
 
 function checkMemoryRateLimit(
@@ -156,7 +157,7 @@ async function filterLeaderboardByLanguage(
   }
 
   const filterEntries = async (
-    entries: LeaderboardPayload["leaders"]["streak"]
+    entries: LeaderboardEntry[]
   ) => {
     const matches = await Promise.all(
       entries.map(async (entry) => {
@@ -169,8 +170,7 @@ async function filterLeaderboardByLanguage(
     );
 
     return matches.filter(
-      (entry): entry is LeaderboardPayload["leaders"]["streak"][number] =>
-        entry !== null
+      (entry): entry is LeaderboardEntry => entry !== null
     );
   };
 

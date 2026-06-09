@@ -1,12 +1,13 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
-import { cacheGet, cacheSet, cacheDelete } from "@/lib/metrics-cache";
+import { cacheGet, cacheSet, cacheDelete, invalidateLeaderboardCache } from "@/lib/metrics-cache";
 import {
   pruneExpiredLeaderboardCache,
   type LeaderboardCacheEntry,
 } from "@/lib/leaderboard-cache";
+import { unstable_cache, revalidateTag } from "next/cache";
 
-export const CACHE_REFRESH_SECONDS = 60 * 60; // 1 hour
+export const CACHE_REFRESH_SECONDS = 3600; // 1 hour
 export const CACHE_STALE_SECONDS = 6 * 60 * 60; // 6 hours
 export const LEADERBOARD_CACHE_KEY = "leaderboard:v1";
 export const LEADERBOARD_BUILD_LOCK_KEY = "leaderboard:build-lock:v1";
@@ -134,10 +135,11 @@ export async function clearLeaderboardCache(): Promise<void> {
   // 1. Drop the module-level in-process cache.
   _memoryCache.clear();
 
-  // 2. Drop the shared key from the metrics memory map and from Redis/Upstash
-  //    so that other serverless instances also see a cache miss on their next
-  //    leaderboard request.
-  await cacheDelete(LEADERBOARD_CACHE_KEY);
+  // 2. Drop all leaderboard shared keys in metrics memory map and Redis/Upstash.
+  await invalidateLeaderboardCache();
+
+  // 3. Invalidate Next.js unstable_cache
+  revalidateTag("leaderboard", {});
 }
 
 async function mapWithConcurrency<T, R>(
@@ -336,15 +338,43 @@ export async function refreshLeaderboardCache(
   const cacheKey = getLeaderboardCacheKey(period);
   await cacheSet(cacheKey, payload, CACHE_STALE_SECONDS);
   setMemoryCachedLeaderboard(payload, period);
+  revalidateTag("leaderboard", {});
   return payload;
 }
+
+export const getCachedLeaderboard = (filters: LeaderboardFilters = {}) => {
+  const period = filters.period ?? DEFAULT_PERIOD;
+  return unstable_cache(
+    async () => buildLeaderboard(filters),
+    ["leaderboard", period],
+    { revalidate: CACHE_REFRESH_SECONDS }
+  )();
+};
 
 export async function getLeaderboardData(
   bypass = false,
   filters: LeaderboardFilters = {}
 ): Promise<LeaderboardPayload | null> {
   const period = filters.period ?? DEFAULT_PERIOD;
-  if (!bypass) {
+  
+  if (bypass) {
+    try {
+      const payload = await buildLeaderboard(filters);
+      const cacheKey = getLeaderboardCacheKey(period);
+      await cacheSet(cacheKey, payload, CACHE_STALE_SECONDS);
+      setMemoryCachedLeaderboard(payload, period);
+      return payload;
+    } catch (err) {
+      console.error("[Leaderboard] Build failed:", err);
+      return null;
+    }
+  }
+
+  try {
+    return await getCachedLeaderboard(filters);
+  } catch (err) {
+    console.error("[Leaderboard] unstable_cache failed, falling back to custom cache:", err);
+
     const mem = getMemoryCachedLeaderboard(period);
     if (mem) return mem;
 
@@ -353,17 +383,17 @@ export async function getLeaderboardData(
       setMemoryCachedLeaderboard(cached, period);
       return cached;
     }
-  }
 
-  try {
-    const payload = await buildLeaderboard(filters);
-    const cacheKey = getLeaderboardCacheKey(period);
-    await cacheSet(cacheKey, payload, CACHE_STALE_SECONDS);
-    setMemoryCachedLeaderboard(payload, period);
-    return payload;
-  } catch (err) {
-    console.error("[Leaderboard] Build failed:", err);
-    const stale = await cacheGet<LeaderboardPayload>(getLeaderboardCacheKey(period));
-    return stale ?? null;
+    try {
+      const payload = await buildLeaderboard(filters);
+      const cacheKey = getLeaderboardCacheKey(period);
+      await cacheSet(cacheKey, payload, CACHE_STALE_SECONDS);
+      setMemoryCachedLeaderboard(payload, period);
+      return payload;
+    } catch (buildErr) {
+      console.error("[Leaderboard] Fallback build failed:", buildErr);
+      const stale = await cacheGet<LeaderboardPayload>(getLeaderboardCacheKey(period));
+      return stale ?? null;
+    }
   }
 }

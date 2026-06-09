@@ -132,6 +132,15 @@ export async function GET(req: NextRequest) {
 
       const health = computeHealthScore(repoData.name, healthSignals);
 
+      // Fetch PR activity for this repo (Issue 1: top repos by PR activity)
+      const prRes = await fetch(`${GITHUB_API}/repos/${safeRepoPath}/pulls?state=all&per_page=1`, {
+        headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      });
+      const prLinkHeader = prRes.headers.get("link") ?? "";
+      const prLastMatch = prLinkHeader.match(/page=(\d+)>; rel="last"/);
+      const totalPrs = prLastMatch ? parseInt(prLastMatch[1], 10) : (prRes.ok ? 1 : 0);
+
       const result: RepoAnalyticsResponse = {
         overview: {
           description: repoData.description,
@@ -153,6 +162,7 @@ export async function GET(req: NextRequest) {
         health,
         primaryStack,
         languageBreakdown,
+        prActivity: { total: totalPrs },
         ...(statsBuilding ? { statsBuilding: true } : {}),
       };
 

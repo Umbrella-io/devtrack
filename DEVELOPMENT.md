@@ -8,7 +8,7 @@ Everything you need to run DevTrack locally from scratch in under 10 minutes.
 
 | Tool | Version | Check |
 |------|---------|-------|
-| Node.js | >= 18 | `node -v` |
+| Node.js | >= 20 | `node -v` |
 | npm | >= 9 | `npm -v` |
 | Git | any | `git --version` |
 
@@ -41,7 +41,17 @@ npm install
    - **anon / public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - **service_role** secret → `SUPABASE_SERVICE_ROLE_KEY`
 
-> The `service_role` key has admin access. Never expose it client-side. DevTrack uses it only in server-side API routes.
+### ⚠️ Security: SUPABASE_SERVICE_ROLE_KEY
+
+The `service_role` key is a **database superkey** — it completely bypasses all Supabase Row Level Security (RLS) policies. Handle it with extreme care:
+
+- **NEVER** use this key in client-side code (React components, browser scripts, or `NEXT_PUBLIC_` environment variables)
+- **NEVER** commit it to version control or expose it publicly
+- **ONLY** use it in server-side API routes (`/src/app/api/*`)
+- **Store it only in `.env.local`** which is always in `.gitignore`
+- **If compromised**, rotate it immediately in the Supabase dashboard — an attacker gains full read/write/delete access to all user data
+
+DevTrack uses this key only in server-side API routes. See `.env.example` for detailed security requirements.
 
 ---
 

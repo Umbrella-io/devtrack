@@ -9,7 +9,9 @@ import {
   metricsCacheKey,
   withMetricsCache,
 } from "@/lib/metrics-cache";
-import { resolveAppUser } from "@/lib/resolve-user";
+import { resolveAppUser, type AppUser } from "@/lib/resolve-user";
+import { supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseAdminAvailable } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -155,9 +157,22 @@ async function getAverageFirstReviewHours(
   return Math.round(average * 10) / 10;
 }
 
-async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
+async function fetchPRMetrics(
+  token: string,
+  githubLogin?: string,
+  orgName?: string | null,
+  excludedOrgs: string[] = []
+): Promise<PRMetricsBase> {
+  const authorQ = githubLogin ? githubLogin : "@me";
+  let q = `type:pr+author:${authorQ}`;
+  if (orgName) {
+    q += `+org:${orgName}`;
+  } else if (excludedOrgs.length > 0) {
+    q += excludedOrgs.map((org) => `+-org:${org}`).join("");
+  }
+
   const searchRes = await fetch(
-    `${GITHUB_API}/search/issues?q=type:pr+author:@me&sort=updated&order=desc&per_page=100`,
+    `${GITHUB_API}/search/issues?q=${q}&sort=updated&order=desc&per_page=100`,
     {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
@@ -188,9 +203,18 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
   const since = ninetyDaysAgo.toISOString().split("T")[0];
 
+  const gqlAuthorQ = githubLogin ? githubLogin : "@me";
+  let gqlSearchQ = `type:pr reviewed-by:${gqlAuthorQ}`;
+  if (orgName) {
+    gqlSearchQ += ` org:${orgName}`;
+  } else if (excludedOrgs.length > 0) {
+    gqlSearchQ += excludedOrgs.map((org) => ` -org:${org}`).join("");
+  }
+  gqlSearchQ += ` created:>${since}`;
+
   const query = `
     query {
-      search(query: "type:pr reviewed-by:@me created:>${since}", type: ISSUE, first: 100) {
+      search(query: "${gqlSearchQ}", type: ISSUE, first: 100) {
         nodes {
           ... on PullRequest {
             createdAt
@@ -356,15 +380,21 @@ async function fetchGitLabMRMetrics(token: string): Promise<PRMetricsBase> {
 
 async function fetchCachedPRMetrics(
   token: string,
-  cacheContext: { bypass: boolean; userId: string; staleThresholdDays?: number }
+  cacheContext: { bypass: boolean; userId: string; staleThresholdDays?: number },
+  githubLogin?: string,
+  orgName?: string | null,
+  excludedOrgs: string[] = []
 ): Promise<PRMetricsBase> {
   const key = metricsCacheKey(cacheContext.userId, "prs", {
     staleThresholdDays: cacheContext.staleThresholdDays ?? 14,
+    githubLogin,
+    orgName: orgName || undefined,
+    excludedOrgs: excludedOrgs.length > 0 ? excludedOrgs.join(",") : undefined,
   });
 
   return withMetricsCache(
     { bypass: cacheContext.bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.prs },
-    () => fetchPRMetrics(token)
+    () => fetchPRMetrics(token, githubLogin, orgName, excludedOrgs)
   );
 }
 
@@ -486,12 +516,50 @@ export async function GET(req: NextRequest) {
     userId: session.githubId ?? session.githubLogin ?? "primary",
   };
 
-  if (!accountId) {
+  let orgName: string | null = null;
+  let targetAccountId: string | null = accountId;
+
+  if (accountId && accountId.startsWith("org:")) {
+    const parts = accountId.split(":");
+    targetAccountId = parts[1];
+    orgName = parts[2];
+  }
+
+  // Load excluded organizations config
+  let excludedOrgs: string[] = [];
+  let userRow: AppUser | null = null;
+  if (isSupabaseAdminAvailable && session.githubId) {
+    userRow = await resolveAppUser(session.githubId, session.githubLogin);
+    if (userRow) {
+      try {
+        const { data: dbUser } = await supabaseAdmin
+          .from("users")
+          .select("organizations_config")
+          .eq("id", userRow.id)
+          .single();
+
+        const orgsConfig = (dbUser?.organizations_config || {}) as Record<string, boolean>;
+        excludedOrgs = Object.entries(orgsConfig)
+          .filter(([_, enabled]) => enabled === false)
+          .map(([org]) => org);
+      } catch (err) {
+        console.error("Failed to load excluded orgs config:", err);
+      }
+    }
+  }
+
+  if (!targetAccountId) {
     try {
-      const result = await fetchCachedPRMetrics(session.accessToken, {
-        bypass,
-        userId: session.githubId ?? session.githubLogin ?? "primary",
-      });
+      const result = await fetchCachedPRMetrics(
+        session.accessToken,
+        {
+          bypass,
+          userId: session.githubId ?? session.githubLogin ?? "primary",
+        },
+        session.githubLogin,
+        orgName,
+        excludedOrgs
+      );
       
       const [gitlab, reviews] = await Promise.all([
         getGitLabMetrics(gitlabToken, gitlabCacheContext),
@@ -510,12 +578,11 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
   if (!userRow) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (accountId === "combined") {
+  if (targetAccountId === "combined") {
     try {
       const allAccounts = await getAllAccounts(
         { token: session.accessToken!, githubId: session.githubId, githubLogin: session.githubLogin },
@@ -527,7 +594,7 @@ export async function GET(req: NextRequest) {
           ? session.accessToken
           : await getAccountToken(userRow.id, acc.githubId);
         if (!token) return null;
-        return fetchCachedPRMetrics(token, { bypass, userId: acc.githubId });
+        return fetchCachedPRMetrics(token, { bypass, userId: acc.githubId }, acc.githubLogin, orgName, excludedOrgs);
       });
 
       const resultsRaw = await Promise.allSettled(metricsPromises);
@@ -599,17 +666,36 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const token = !accountId || accountId === session.githubId
+  const token = !targetAccountId || targetAccountId === session.githubId
       ? session.accessToken
-      : await getAccountToken(userRow.id, accountId);
+      : await getAccountToken(userRow.id, targetAccountId);
 
   if (!token) return Response.json({ error: "Account not found" }, { status: 404 });
 
+  const { data: accountRow } = await supabaseAdmin
+    .from("user_github_accounts")
+    .select("github_login")
+    .eq("user_id", userRow.id)
+    .eq("github_id", targetAccountId)
+    .single();
+
+  const githubLogin = targetAccountId === session.githubId ? session.githubLogin : accountRow?.github_login;
+
+  if (!githubLogin) {
+    return Response.json({ error: "Account not found" }, { status: 404 });
+  }
+
   try {
-    const result = await fetchCachedPRMetrics(token, {
-      bypass,
-      userId: accountId === session.githubId ? session.githubId : accountId,
-    });
+    const result = await fetchCachedPRMetrics(
+      token,
+      {
+        bypass,
+        userId: targetAccountId === session.githubId ? session.githubId : targetAccountId,
+      },
+      githubLogin,
+      orgName,
+      excludedOrgs
+    );
     
     const [gitlab, reviews] = await Promise.all([
       getGitLabMetrics(gitlabToken, gitlabCacheContext),

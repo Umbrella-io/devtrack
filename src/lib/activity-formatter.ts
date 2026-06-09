@@ -6,7 +6,7 @@
  * only permits the HTTP-verb exports GET/POST/etc. from route files).
  */
 
-export type ActivityType = "push" | "pull_request" | "issue" | "release" | "discussion" | "other";
+export type ActivityType = "push" | "pull_request" | "issue" | "release" | "discussion" | "star" | "review" | "create" | "other";
 
 export interface ActivityItem {
   id: string;
@@ -24,6 +24,7 @@ export interface RawEvent {
   created_at: string;
   repo?: { name?: string };
   payload?: {
+    ref_type?: string;
     ref?: string;
     head?: string;
     action?: string;
@@ -59,6 +60,9 @@ export const SUPPORTED_EVENT_TYPES = new Set([
   "ReleaseEvent",
   "DiscussionEvent",
   "DiscussionCommentEvent",
+  "WatchEvent",
+  "PullRequestReviewEvent",
+  "CreateEvent",
 ]);
 
 function getRepoUrl(repoName: string): string {
@@ -175,6 +179,46 @@ export function formatActivity(event: RawEvent): ActivityItem | null {
       subtitle: discussion?.title ?? repoName,
       repo: repoName,
       url: discussion?.html_url ?? getRepoUrl(repoName),
+    };
+  }
+
+  if (event.type === "WatchEvent") {
+    return {
+      id: event.id,
+      type: "star",
+      createdAt: event.created_at,
+      title: `Starred ${repoName}`,
+      subtitle: repoName,
+      repo: repoName,
+      url: getRepoUrl(repoName),
+    };
+  }
+
+  if (event.type === "PullRequestReviewEvent") {
+    const pr = event.payload?.pull_request;
+    const number = pr?.number ? `#${pr.number}` : "a PR";
+    return {
+      id: event.id,
+      type: "review",
+      createdAt: event.created_at,
+      title: `Reviewed PR ${number}`,
+      subtitle: pr?.title ?? repoName,
+      repo: repoName,
+      url: pr?.html_url ?? getRepoUrl(repoName),
+    };
+  }
+
+  if (event.type === "CreateEvent") {
+    const refType = event.payload?.ref_type ?? "branch";
+    const ref = event.payload?.ref ? ` "${event.payload.ref}"` : "";
+    return {
+      id: event.id,
+      type: "create",
+      createdAt: event.created_at,
+      title: `Created ${refType}${ref}`,
+      subtitle: repoName,
+      repo: repoName,
+      url: getRepoUrl(repoName),
     };
   }
 

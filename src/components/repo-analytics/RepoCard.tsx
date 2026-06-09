@@ -13,6 +13,7 @@ import {
   formatRelativeDate,
   formatDate,
 } from "@/lib/repoAnalyticsUtils";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 interface RepoCardProps {
   repo: ExplorerRepoCardData;
@@ -140,18 +141,17 @@ export default function RepoCard({
             href={repo.htmlUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm font-medium text-[var(--card-foreground)] transition hover:bg-[color:color-mix(in_srgb,var(--card)_80%,var(--accent)_20%)]"
+            className={buttonVariants({ variant: "outline" })}
           >
             Repo
           </a>
 
-          <button
-            type="button"
+          <Button
+            variant="outline"
             onClick={() => onViewAnalytics(repo)}
-            className="flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm font-medium text-[var(--card-foreground)] transition hover:bg-[color:color-mix(in_srgb,var(--card)_80%,var(--accent)_20%)]"
           >
             View
-          </button>
+          </Button>
         </div>
       </div>
     </article>

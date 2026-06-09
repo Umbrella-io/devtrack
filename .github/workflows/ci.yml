@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: hashFiles('coverage/lcov.info') != ''
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage/lcov.info
           flags: unit
@@ -127,10 +127,19 @@ jobs:
       - name: Check all imports exist in package.json
         run: node scripts/check-deps.js
 
+  env-security:
+    name: Environment security check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check SERVICE_ROLE_KEY exposure
+        run: bash scripts/check-env-security.sh
+
   ci-pass:
     name: CI passed
     runs-on: ubuntu-latest
-    needs: [typecheck, lint, build, dep-check]
+    needs: [typecheck, lint, build, dep-check, env-security]
     if: always()
     steps:
       - name: Check all jobs passed
@@ -138,7 +147,8 @@ jobs:
           if [[ "${{ needs.typecheck.result }}" != "success" ||
                 "${{ needs.lint.result }}" != "success" ||
                 "${{ needs.build.result }}" != "success" ||
-                "${{ needs.dep-check.result }}" != "success" ]]; then
+                "${{ needs.dep-check.result }}" != "success" ||
+                "${{ needs.env-security.result }}" != "success" ]]; then
             echo "One or more CI jobs failed."
             exit 1
           fi

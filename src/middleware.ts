@@ -28,8 +28,36 @@ const WINDOW_SECONDS = 60;
    limits apply during local testing only.
    ==========================================
    ============================================================ */
-const AUTHENTICATED_LIMIT = isDev ? 5000 : 60;
-const ANONYMOUS_LIMIT = isDev ? 1000 : 10;
+const isTest = isDev || process.env.CI === "true" || process.env.NODE_ENV === "test";
+const AUTHENTICATED_LIMIT = isTest ? 5000 : 60;
+const ANONYMOUS_LIMIT = isTest ? 1000 : 10;
+
+/**
+ * Configuration constants for API rate limits and window sizes.
+ * Values are scaled in development mode (scaled auth: 1000, authenticated metrics: 5000, anonymous metrics: 1000)
+ * to prevent developer/testing workflow interruptions under rapid mock API loading.
+ */
+const RATE_LIMIT_CONFIG = {
+  /**
+   * The sliding rate limit window size in seconds.
+   */
+  WINDOW_SECONDS: 60,
+
+  /**
+   * Maximum allowed API metrics requests for authenticated users in the window.
+   */
+  AUTHENTICATED_LIMIT: isDev ? 5000 : 60,
+
+  /**
+   * Maximum allowed API metrics requests for anonymous users in the window.
+   */
+  ANONYMOUS_LIMIT: isDev ? 1000 : 10,
+
+  /**
+   * Maximum allowed sign-in attempts for authentication routes in the window.
+   */
+  AUTH_LIMIT: isDev ? 1000 : AUTH_LIMIT,
+} as const;
 
 const memoryBuckets = new Map<string, number[]>();
 
@@ -42,7 +70,7 @@ type RateLimitResult = {
 
 function getIp(req: NextRequest) {
   return (
-    req.ip ??
+    req.headers.get("cf-connecting-ip") ??
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     req.headers.get("x-real-ip") ??
     "unknown"
@@ -70,7 +98,7 @@ function pruneMemoryBuckets(now: number) {
     return;
   }
 
-  const cutoff = now - WINDOW_SECONDS * 1000;
+  const cutoff = now - RATE_LIMIT_CONFIG.WINDOW_SECONDS * 1000;
   for (const [key, values] of Array.from(memoryBuckets.entries())) {
     const active = values.filter((timestamp: number) => timestamp > cutoff);
     if (active.length === 0) {
@@ -88,11 +116,11 @@ function checkMemoryLimit(
 ): RateLimitResult {
   pruneMemoryBuckets(now);
 
-  const cutoff = now - WINDOW_SECONDS * 1000;
+  const cutoff = now - RATE_LIMIT_CONFIG.WINDOW_SECONDS * 1000;
   const active = (memoryBuckets.get(key) ?? []).filter(
     (timestamp) => timestamp > cutoff
   );
-  const reset = Math.ceil(((active[0] ?? now) + WINDOW_SECONDS * 1000) / 1000);
+  const reset = Math.ceil(((active[0] ?? now) + RATE_LIMIT_CONFIG.WINDOW_SECONDS * 1000) / 1000);
 
   if (active.length >= limit) {
     memoryBuckets.set(key, active);
@@ -125,8 +153,8 @@ async function checkUpstashLimit(
     return null;
   }
 
-  const cutoff = now - WINDOW_SECONDS * 1000;
-  const reset = Math.ceil((now + WINDOW_SECONDS * 1000) / 1000);
+  const cutoff = now - RATE_LIMIT_CONFIG.WINDOW_SECONDS * 1000;
+  const reset = Math.ceil((now + RATE_LIMIT_CONFIG.WINDOW_SECONDS * 1000) / 1000);
   const memberToken = `${now}:${Math.random().toString(36).slice(2)}`;
 
   const luaScript = `
@@ -157,7 +185,7 @@ async function checkUpstashLimit(
       body: JSON.stringify({
         script: luaScript,
         keys: [key],
-        args: [String(cutoff), String(now), String(limit), String(WINDOW_SECONDS), memberToken],
+        args: [String(cutoff), String(now), String(limit), String(RATE_LIMIT_CONFIG.WINDOW_SECONDS), memberToken],
       }),
       cache: "no-store",
     });
@@ -190,19 +218,32 @@ async function checkRateLimit(identifier: string, limit: number) {
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
+  // In production (HTTPS), NextAuth.js writes the session to the
+  // __Secure-next-auth.session-token cookie (Secure flag set).
+  // We must try the secure cookie first; the plain cookie is only
+  // present in local development (HTTP, no Secure flag).
+  const isProduction = process.env.NODE_ENV === "production";
+
   let token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
-    secureCookie: false,
-    cookieName: "next-auth.session-token",
+    secureCookie: isProduction,
+    cookieName: isProduction
+      ? "__Secure-next-auth.session-token"
+      : "next-auth.session-token",
   });
 
   if (!token) {
+    // Fallback: try the opposite cookie name to handle edge cases such as
+    // a production build served over HTTP (e.g. a staging environment without TLS)
+    // or a dev build that somehow received a Secure cookie.
     token = await getToken({
       req,
       secret: process.env.NEXTAUTH_SECRET,
-      secureCookie: true,
-      cookieName: "__Secure-next-auth.session-token",
+      secureCookie: !isProduction,
+      cookieName: !isProduction
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
     });
   }
 
@@ -249,7 +290,7 @@ export async function middleware(req: NextRequest) {
 
   if (isAuthSensitivePath(pathname)) {
     const ip = getIp(req);
-    const authLimit = isDev ? 1000 : AUTH_LIMIT;
+    const authLimit = RATE_LIMIT_CONFIG.AUTH_LIMIT;
     const authResult = checkAuthRateLimit(ip, authLimit);
 
     if (!authResult.allowed) {
@@ -273,7 +314,7 @@ export async function middleware(req: NextRequest) {
 
   const githubId = typeof token?.githubId === "string" ? token.githubId : null;
   const identifier = githubId ? `user:${githubId}` : `ip:${getIp(req)}`;
-  const limit = githubId ? AUTHENTICATED_LIMIT : ANONYMOUS_LIMIT;
+  const limit = githubId ? RATE_LIMIT_CONFIG.AUTHENTICATED_LIMIT : RATE_LIMIT_CONFIG.ANONYMOUS_LIMIT;
 
   const result = await checkRateLimit(identifier, limit);
   const headers = buildHeaders(result);

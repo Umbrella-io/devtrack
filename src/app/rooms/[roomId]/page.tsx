@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
-import { getRoomById, getRoomMembers, getRoomMessages } from '@/lib/supabase';
+import { getRoomById, getRoomMembers, getRoomMessages } from '@/lib/supabase-rooms';
 import RoomClient from './RoomClient';
 
 interface Props {

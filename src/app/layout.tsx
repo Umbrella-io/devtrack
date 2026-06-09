@@ -8,6 +8,10 @@ import Providers from "./providers";
 import OfflineBanner from "@/components/OfflineBanner";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocaleDirection } from "@/i18n/config";
+import { getRequestLocale } from "@/i18n/locale";
+import { getMessagesForLocale } from "@/i18n/messages";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 const syne = Syne({
@@ -57,8 +61,11 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getRequestLocale();
+  const messages = await getMessagesForLocale(locale);
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} dir={getLocaleDirection(locale)} suppressHydrationWarning>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <script
@@ -89,10 +96,12 @@ export default async function RootLayout({
 
         <div className="flex min-h-screen flex-col">
           <div className="flex-1">
-            <Providers>
-              <AppNavbar />
-              {children}
-            </Providers>
+            <NextIntlClientProvider locale={locale} messages={messages}>
+              <Providers>
+                <AppNavbar />
+                {children}
+              </Providers>
+            </NextIntlClientProvider>
           </div>
 
           <Footer />
