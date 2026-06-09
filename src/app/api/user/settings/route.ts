@@ -230,6 +230,7 @@ async function fetchUserSettings(userId: string) {
       wakatime_api_key_iv: null,
       discord_webhook_url: null,
       timezone: "UTC",
+      webhook_url: null,
       discord_muted_until: null,
       public_widgets: ["streak", "contributions"] as WidgetKey[],
     };
@@ -308,6 +309,7 @@ async function fetchUserSettings(userId: string) {
     wakatime_api_key_iv: null,
     discord_webhook_url: null,
     timezone: "UTC",
+    webhook_url: null,
     discord_muted_until: null,
     public_widgets: ["streak", "contributions"] as WidgetKey[],
   };
@@ -322,14 +324,11 @@ export async function GET(req: NextRequest) {
 
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) {
-    return NextResponse.json(
-      { error: "Failed to fetch user settings" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch user settings" }, { status: 500 });
   }
 
   const cacheKey = `settings:${user.id}`;
-  const SETTINGS_TTL = 5 * 60; // 5 minutes
+  const SETTINGS_TTL = 5 * 60;
 
   const cached = await cacheGet<Record<string, unknown>>(cacheKey, SETTINGS_TTL);
   if (cached) {
@@ -365,7 +364,6 @@ export async function GET(req: NextRequest) {
   return settingsResponse(response);
 }
 
-
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
@@ -375,10 +373,7 @@ export async function PATCH(req: NextRequest) {
 
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) {
-    return NextResponse.json(
-      { error: "User not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
   let body: {
@@ -403,7 +398,6 @@ export async function PATCH(req: NextRequest) {
 
   const { is_public, show_weekly_goals, leaderboard_opt_in, weekly_digest_opt_in, pinned_repos, wakatime_api_key, discord_webhook_url, timezone, bio, webhook_url, discord_muted_until, public_widgets } = body;
 
-  // Retrieve supported columns first
   const settingsResult = await fetchUserSettings(user.id);
   if (settingsResult.error || !settingsResult.data) {
     console.error("Error fetching settings during PATCH:", settingsResult.error);
@@ -437,17 +431,13 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  if (
-    hasLeaderboardOptIn &&
-    leaderboard_opt_in !== undefined &&
-    leaderboard_opt_in !== null &&
-    typeof leaderboard_opt_in === "boolean"
-  ) {
+  if (hasLeaderboardOptIn && leaderboard_opt_in !== undefined && leaderboard_opt_in !== null && typeof leaderboard_opt_in === "boolean") {
     updates.leaderboard_opt_in = leaderboard_opt_in;
     if (leaderboard_opt_in) {
       updates.is_public = true;
     }
   }
+
   if (show_weekly_goals !== undefined && show_weekly_goals !== null && typeof show_weekly_goals === "boolean") {
     updates.show_weekly_goals = show_weekly_goals;
   }
@@ -456,12 +446,7 @@ export async function PATCH(req: NextRequest) {
     updates.webhook_url = webhook_url;
   }
 
-  if (
-    hasWeeklyDigestOptIn &&
-    weekly_digest_opt_in !== undefined &&
-    weekly_digest_opt_in !== null &&
-    typeof weekly_digest_opt_in === "boolean"
-  ) {
+  if (hasWeeklyDigestOptIn && weekly_digest_opt_in !== undefined && weekly_digest_opt_in !== null && typeof weekly_digest_opt_in === "boolean") {
     updates.weekly_digest_opt_in = weekly_digest_opt_in;
   }
 
@@ -472,23 +457,19 @@ export async function PATCH(req: NextRequest) {
     updates.pinned_repos = pinned_repos;
   }
 
+  if (typeof seen_onboarding === "boolean") {
+    updates.seen_onboarding = seen_onboarding;
+  }
+
   if (!hasBio && bio !== undefined) {
-    return NextResponse.json(
-      { error: "Bio settings are not available until the latest database migration is applied" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Bio settings are not available until the latest database migration is applied" }, { status: 400 });
   }
 
   if (hasBio && bio !== undefined) {
     const result = validateTextInput(bio, "Bio", 500);
-  
     if (!result.ok) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
-  
     updates.bio = result.value;
   }
 
@@ -513,7 +494,6 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  // Handle Discord settings (only if the discord columns exist in the schema)
   if (hasDiscordSettings && discord_webhook_url !== undefined) {
     if (discord_webhook_url === "") {
       updates.discord_webhook_url = null;
@@ -567,7 +547,6 @@ export async function PATCH(req: NextRequest) {
     });
   }
 
-  // Query only supported columns in the returning select statement
   const selectCols = ["id", "github_login", "is_public", "public_since", "show_weekly_goals"];
   if (hasBio) selectCols.push("bio");
   if (hasLeaderboardOptIn) selectCols.push("leaderboard_opt_in");
@@ -604,8 +583,6 @@ export async function PATCH(req: NextRequest) {
     try {
       await clearLeaderboardCache();
     } catch {
-      // Cache invalidation is best-effort — a failure must not prevent the
-      // settings response from reaching the client.
       console.error("[settings] Failed to invalidate leaderboard cache after visibility change");
     }
   }

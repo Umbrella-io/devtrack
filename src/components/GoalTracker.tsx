@@ -140,6 +140,11 @@ export function useGoalTracker() {
     if (e) e.preventDefault();
     setCreating(true);
     setCreateError(null);
+    if (target <= 0) {
+      setCreateError("Target must be greater than 0.");
+      setCreating(false);
+      return;
+    }
 
     if (target <= 0) {
       setCreateError("Target must be greater than 0.");
