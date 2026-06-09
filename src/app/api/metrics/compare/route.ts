@@ -2,9 +2,9 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { toDateStr } from "@/lib/dateUtils";
+import { calculateCurrentStreak } from "@/lib/streak";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 import { supabaseAdmin } from "@/lib/supabase";
-import { calculateStreak } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +35,14 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Invalid GitHub username" }, { status: 400 });
   }
 
-  // Check Supabase cache first (keyed by username + UTC date)
+  // Check Supabase cache first (keyed by viewer identity + target username + UTC date)
+  // Viewer identity must be part of the key because GitHub API results are token-scoped
+  // (private/org repos can differ per viewer), so one user's cached payload must not
+  // be served to a different authenticated user.
+  // Use githubId (stable numeric ID) with githubLogin as fallback.
   const today = toDateStr(new Date());
-  const cacheKey = `${normalizedUsername}::${today}`;
+  const viewerId = session.githubId ?? session.githubLogin;
+  const cacheKey = `${viewerId}::${normalizedUsername}::${today}`;
 
   const { data: cached } = await supabaseAdmin
     .from("comparison_cache")
@@ -119,11 +124,7 @@ export async function GET(req: NextRequest) {
       weeklyMap[weekKey] = (weeklyMap[weekKey] ?? 0) + 1;
     }
 
-    const commitDays = Object.keys(daySet).sort();
-
-    if (commitDays.length > 0) {
-      streak = calculateStreak(commitDays.map((day) => new Date(day))).currentStreak;
-    }
+    streak = calculateCurrentStreak(Object.keys(daySet));
   }
 
   // Build ordered weekly array (last 8 weeks) for the chart

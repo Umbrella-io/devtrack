@@ -152,6 +152,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
+  const format = req.nextUrl.searchParams.get("format"); // "csv" | null (default: json)
+
   // --- Rate limiting ---------------------------------------------------
   const lastExport = await getRecentExport(user.id);
   if (lastExport) {
@@ -200,6 +202,13 @@ export async function GET(req: NextRequest) {
     .select("id, user_id, title, description, status, created_at, updated_at")
     .eq("user_id", user.id);
   sections.goals = goals || [];
+
+  const { data: goalHistory } = await supabaseAdmin
+    .from("goal_history")
+    .select("id, goal_id, user_id, period_start, period_end, target, achieved, completed, created_at")
+    .eq("user_id", user.id)
+    .order("period_end", { ascending: false });
+  sections.goalHistory = goalHistory || [];
 
   const { data: snapshots } = await supabaseAdmin
     .from("metric_snapshots")
@@ -262,12 +271,30 @@ export async function GET(req: NextRequest) {
   // --- Redact any sensitive fields that slipped through the column selects --
   const redactedSections = redactSensitiveFields(sections) as Record<string, unknown>;
 
-  return NextResponse.json({
+  const exportPayload = {
     exportedAt: new Date().toISOString(),
     userId: user.id,
     githubLogin: session.githubLogin,
     sections: redactedSections,
-  });
+  };
+
+  if (format === "csv") {
+    // Flatten goals section to CSV
+    const goals = (redactedSections as any)?.goals ?? [];
+    const headers = ["id", "title", "target", "current", "unit", "recurrence", "deadline", "created_at"];
+    const rows = goals.map((g: Record<string, unknown>) =>
+      headers.map((h) => JSON.stringify(g[h] ?? "")).join(",")
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv",
+        "Content-Disposition": `attachment; filename="devtrack-export-${session.githubLogin}.csv"`,
+      },
+    });
+  }
+
+  return NextResponse.json(exportPayload);
 }
 
 // ---------------------------------------------------------------------------
@@ -319,6 +346,10 @@ export async function DELETE(req: NextRequest) {
 
   // Tables with a direct user_id foreign key, ordered to respect any
   // potential FK constraints (children before parents).
+  // ai_insights is included explicitly here even though ON DELETE CASCADE on
+  // the foreign key would remove those rows when the users row is deleted.
+  // The explicit delete is a defense-in-depth measure that works regardless
+  // of whether the FK migration has been applied to a given environment.
   const tablesToDelete = [
     "notifications",
     "ai_insights",
@@ -330,6 +361,7 @@ export async function DELETE(req: NextRequest) {
     "jira_credentials",
     "webhook_configs",
     "user_github_accounts",
+    "goal_history",
     "goals",
     "metric_snapshots",
   ];

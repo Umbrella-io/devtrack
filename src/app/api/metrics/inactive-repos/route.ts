@@ -2,7 +2,8 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { getAccountToken, getAllAccounts, mergeMetrics } from "@/lib/github-accounts";
-import { fetchUserRepos, type GitHubRepo } from "@/lib/github";
+import { fetchUserRepos, GitHubAuthError, type GitHubRepo } from "@/lib/github";
+import { githubAuthErrorResponse } from "@/lib/github-fetch";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -131,6 +132,9 @@ export async function GET(req: NextRequest) {
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
+  }
 
   const thresholdDays = parseThreshold(req.nextUrl.searchParams.get("days"));
   const accountId = req.nextUrl.searchParams.get("accountId");
@@ -146,7 +150,8 @@ export async function GET(req: NextRequest) {
       );
 
       return Response.json(result);
-    } catch {
+    } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -202,7 +207,8 @@ export async function GET(req: NextRequest) {
       );
 
       return Response.json(result);
-    } catch {
+    } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -233,7 +239,8 @@ export async function GET(req: NextRequest) {
     );
 
     return Response.json(result);
-  } catch {
+  } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

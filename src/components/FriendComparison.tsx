@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 
@@ -24,7 +29,7 @@ interface SuggestedUser {
 const STORAGE_KEY = "devtrack:compare_username";
 const SUGGEST_DEBOUNCE_MS = 300;
 
-export default function FriendComparison() {
+function FriendComparison() {
   const [friendUsername, setFriendUsername] = useState(() => {
     if (typeof window === "undefined") return "";
     return localStorage.getItem(STORAGE_KEY) ?? "";
@@ -159,7 +164,7 @@ export default function FriendComparison() {
           })
         );
       }
-    } catch {
+    } catch (e) {
       setError("An error occurred");
     } finally {
       setLoading(false);
@@ -242,7 +247,7 @@ export default function FriendComparison() {
               aria-autocomplete="list"
               aria-expanded={suggestOpen}
               aria-controls="friend-compare-suggestions"
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+              className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus-visible:border-[var(--accent)]"
             />
 
             {suggestOpen && suggestions.length > 0 && (
@@ -448,3 +453,5 @@ function ComparisonRow({
     </div>
   );
 }
+
+export default React.memo(FriendComparison);

@@ -1,3 +1,7 @@
+import {
+  githubRateLimitResponse,
+  throwIfGitHubRateLimited,
+} from "@/lib/github-rate-limit";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
@@ -6,6 +10,7 @@ import {
   getAllAccounts,
   mergeMetrics,
 } from "@/lib/github-accounts";
+import { orgSearchSegment } from "@/lib/github-orgs";
 import { GITHUB_API, GitHubCommitSearchItem, CommitItem } from "@/lib/github";
 import {
   isMetricsCacheBypassed,
@@ -17,6 +22,19 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
+// ─── GitHub API Rate Limiting ──────────────────────────────────────────────────
+// Unauthenticated requests: 60 req/hr (shared per IP).
+// Authenticated requests (OAuth token or PAT): 5,000 req/hr per user.
+// GitHub Search API has an extra secondary limit: ~30 req/min when authenticated.
+//
+// This route always sends the user's GitHub OAuth token in the Authorization
+// header (from NextAuth session), ensuring the 5,000 req/hr limit applies.
+// Users can also add a PAT in settings for the same higher limit.
+//
+// Rate limit errors: GitHub returns HTTP 403 (primary limit) or HTTP 429
+// (secondary/search limit). The X-RateLimit-Remaining: 0 response header
+// confirms quota exhaustion. The user sees "GitHub API error" in the dashboard.
+// ──────────────────────────────────────────────────────────────────────────────
 export const dynamic = "force-dynamic";
 
 interface TimeBlocks {
@@ -83,6 +101,16 @@ function sumContributionDays(data: Record<string, number>): number {
   return Object.values(data).reduce((total, count) => total + count, 0);
 }
 
+function githubApiErrorResponse(error: unknown): Response {
+  const rateLimitResponse = githubRateLimitResponse(error);
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
+  return Response.json({ error: "GitHub API error" }, { status: 502 });
+}
+
 async function fetchContributionsForAccount(
   token: string,
   githubLogin: string,
@@ -90,16 +118,18 @@ async function fetchContributionsForAccount(
   cacheContext: { bypass: boolean; userId: string },
   timezone: string,
   fromDate?: string,
-  repo?: string | null
-
+  repo?: string | null,
+  orgLogin?: string | null,
 ): Promise<ContributionResponse> {
   const repoFilter = repo ? ` repo:${repo}` : "";
+  const orgFilter = orgSearchSegment(orgLogin);
 
   const key = metricsCacheKey(cacheContext.userId, "contributions", {
     days,
     githubLogin,
     from: fromDate ?? undefined,
     repo,
+    org: orgLogin ?? undefined,
   });
 
   return withMetricsCache(
@@ -125,13 +155,20 @@ async function fetchContributionsForAccount(
         const searchUrl = new URL(`${GITHUB_API}/search/commits`);
         searchUrl.searchParams.set(
           "q",
-          `author:${githubLogin} author-date:>=${sinceStr}${repoFilter}`
+          `author:${githubLogin} author-date:>=${sinceStr}${repoFilter}${orgFilter}`
         );
         searchUrl.searchParams.set("per_page", "100");
         searchUrl.searchParams.set("page", String(page));
         searchUrl.searchParams.set("sort", "author-date");
         searchUrl.searchParams.set("order", "desc");
 
+        // The Authorization header upgrades the rate limit from 60 req/hr
+        // (unauthenticated, shared per IP) to 5,000 req/hr (per user).
+        // Without it, multiple users on the same server IP would exhaust
+        // the shared quota almost immediately.
+        // Authorization header raises the rate limit from 60 req/hr (unauthenticated,
+        // shared per IP) to 5,000 req/hr per user. Without it, shared server IPs
+        // would exhaust the unauthenticated quota almost immediately.
         const searchRes = await fetch(
           searchUrl.toString(),
           {
@@ -144,19 +181,18 @@ async function fetchContributionsForAccount(
         );
 
         if (!searchRes.ok) {
-          // If we're being rate limited or hit a secondary rate limit/permission error,
-          // return partial results collected so far instead of failing the whole request.
-          if (searchRes.status === 429 || searchRes.status === 403) {
-            if (allItems.length === 0) {
-              // If no items were retrieved at all, surface the error so callers know
-              // the request could not be fulfilled.
-              throw new Error(`GitHub API error: ${searchRes.status}`);
-            }
-            break;
-          }
+  throwIfGitHubRateLimited(searchRes);
 
-          throw new Error("GitHub API error");
-        }
+  if (searchRes.status === 429 || searchRes.status === 403) {
+    if (allItems.length === 0) {
+      throw new Error(`GitHub API error: ${searchRes.status}`);
+    }
+
+    break;
+  }
+
+  throw new Error(`GitHub API error: ${searchRes.status}`);
+}
 
         const data = (await searchRes.json()) as {
           total_count: number;
@@ -367,9 +403,9 @@ export async function GET(req: NextRequest) {
         repoParam
       );
       return Response.json(result);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
-    }
+  } catch (error) {
+    return githubApiErrorResponse(error);
+  }
   }
 
   if (!accountId) {
@@ -394,8 +430,8 @@ export async function GET(req: NextRequest) {
       });
 
       return Response.json(merged);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return githubApiErrorResponse(error);
     }
   }
 
@@ -409,6 +445,30 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // org: prefix — filter contributions to a specific GitHub organization.
+  // Uses the primary account's token; no additional account lookup is needed.
+  if (accountId?.startsWith("org:")) {
+    const orgLogin = accountId.slice(4).trim();
+    if (!orgLogin) {
+      return Response.json({ error: "Invalid org identifier" }, { status: 400 });
+    }
+    try {
+      const result = await fetchContributionsForAccount(
+        session.accessToken,
+        session.githubLogin,
+        days,
+        { bypass, userId: session.githubId ?? session.githubLogin },
+        timezone,
+        fromDate,
+        repoParam,
+        orgLogin,
+      );
+      return Response.json(result);
+    } catch {
+      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    }
+  }
+
   if (accountId === "combined") {
     const accounts = await getAllAccounts(
       {
@@ -420,14 +480,32 @@ export async function GET(req: NextRequest) {
     );
 
     const results = await Promise.allSettled(
-      accounts.map((account) =>
-        fetchContributionsForAccount(account.token, account.githubLogin, days, {
-          bypass,
-          userId: account.githubId,
+  accounts.map((account) =>
+    fetchContributionsForAccount(
+      account.token,
+      account.githubLogin,
+      days,
+      {
+        bypass,
+        userId: account.githubId,
+      },
+      timezone,
+      fromDate,
+      repoParam
+    )
+  )
+);
 
-        }, timezone, fromDate, repoParam)
-      )
-    );
+
+    const rateLimitedResult = results.find(
+  (result): result is PromiseRejectedResult =>
+    result.status === "rejected" &&
+    githubRateLimitResponse(result.reason) !== null
+);
+
+if (rateLimitedResult) {
+  return githubApiErrorResponse(rateLimitedResult.reason);
+}
 
     const merged = mergeMetrics(results, (a, b) => ({
       days: a.days,
@@ -481,8 +559,8 @@ export async function GET(req: NextRequest) {
       });
 
       return Response.json(merged);
-    } catch {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return githubApiErrorResponse(error);
     }
   }
 
@@ -513,7 +591,7 @@ export async function GET(req: NextRequest) {
       fromDate
     );
     return Response.json(result);
-  } catch {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  } catch (error) {
+    return githubApiErrorResponse(error);
   }
 }

@@ -11,8 +11,10 @@ const mockGoals = [
     unit: 'commits',
     recurrence: 'none' as const,
     deadline: null,
+    is_public: false,
     period_start: '2026-05-30T00:00:00.000Z',
     last_synced_at: null,
+    last_period: null,
   },
   {
     id: '2',
@@ -22,8 +24,10 @@ const mockGoals = [
     unit: 'commits',
     recurrence: 'weekly' as const,
     deadline: null,
+    is_public: false,
     period_start: '2026-05-30T00:00:00.000Z',
     last_synced_at: '2026-05-30T00:00:00.000Z',
+    last_period: null,
   }
 ];
 
@@ -262,8 +266,10 @@ describe('GoalTracker - useGoalTracker Hook', () => {
           unit: 'commits',
           recurrence: 'none',
           deadline: null,
+          is_public: false,
           period_start: '2026-05-30T00:00:00.000Z',
           last_synced_at: null,
+          last_period: null,
         }
       ]);
     });

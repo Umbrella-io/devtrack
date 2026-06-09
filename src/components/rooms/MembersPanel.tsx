@@ -33,6 +33,7 @@ export default function MembersPanel({ roomId, members, isOwner, onMemberAdded }
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {members.map((m) => (
           <div key={m.id} className="flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`https://github.com/${m.github_username}.png?size=32`}
               alt={m.github_username}

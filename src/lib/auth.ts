@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GITHUB_ID ?? "",
       clientSecret: process.env.GITHUB_SECRET ?? "",
       authorization: {
-        params: { scope: "read:user user:email repo read:discussion" },
+        params: { scope: "read:user user:email repo read:discussion read:org" },
       },
     }),
   ],
@@ -160,7 +160,7 @@ export const authOptions: NextAuthOptions = {
           }
           // Non-401 non-ok responses (rate limit, server error) are intentionally
           // left without updating accessTokenValidatedAt so the next request retries.
-        } catch {
+        } catch (e) {
           // Network failures during validation are not treated as revocation.
           // The check will be retried on the next request.
         }

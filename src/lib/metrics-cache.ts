@@ -2,20 +2,23 @@ import { Redis } from "@upstash/redis";
 import type { NextRequest } from "next/server";
 
 export const METRICS_CACHE_TTL_SECONDS = {
-  contributions: 5 * 60,
-  discussions: 10 * 60,
-  repos: 10 * 60,
-  "inactive-repos": 10 * 60,
-  prs: 10 * 60,
-  "pr-review-time": 10 * 60,
-  insights: 10 * 60,
-  streak: 2 * 60,
-  streak_freeze: 2 * 60,
-  activity: 5 * 60,
-  issues: 10 * 60,
+  contributions: 30 * 60,
+  "productive-hours": 30 * 60,
+  discussions: 60 * 60,
+  repos: 60 * 60,
+  "inactive-repos": 60 * 60,
+  prs: 30 * 60,
+  "pr-review-time": 30 * 60,
+  insights: 60 * 60,
+  streak: 30 * 60,
+  streak_freeze: 30 * 60,
+  activity: 30 * 60,
+  issues: 30 * 60,
   languages: 21600,
-  "coding-activity-insights": 5 * 60,
-  compare: 10 * 60,
+  "coding-activity-insights": 30 * 60,
+  compare: 30 * 60,
+  "weekly-summary": 30 * 60,
+  "commit-times": 30 * 60,
 } as const;
 
 type MetricsCacheEndpoint = keyof typeof METRICS_CACHE_TTL_SECONDS;
@@ -152,7 +155,7 @@ export async function cacheGet<T>(
         setMemoryCacheValue(key, redisValue, ttlSeconds);
       }
       return redisValue;
-    } catch {
+    } catch (e) {
       return null;
     }
   }
@@ -174,7 +177,7 @@ export async function cacheSet<T>(
   if (redis) {
     try {
       await redis.set(key, value, { ex: ttlSeconds });
-    } catch {
+    } catch (e) {
       // Cache failures must not break dashboard metrics.
     }
   }
@@ -241,7 +244,33 @@ export async function invalidateUserMetricsCache(userId: string): Promise<void> 
       }
       cursor = Number(nextCursor);
     } while (cursor !== 0);
-  } catch {
+  } catch (e) {
     // Invalidation failures must not break the webhook response.
+  }
+}
+
+export async function invalidateLeaderboardCache(): Promise<void> {
+  const prefix = `leaderboard:`;
+
+  for (const key of memoryCache.keys()) {
+    if (key.startsWith(prefix)) {
+      memoryCache.delete(key);
+    }
+  }
+
+  const redis = getRedisClient();
+  if (!redis) return;
+
+  try {
+    let cursor = 0;
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, { match: `${prefix}*`, count: 100 });
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+      cursor = Number(nextCursor);
+    } while (cursor !== 0);
+  } catch (e) {
+    // Invalidation failures must not break the settings/webhook response.
   }
 }

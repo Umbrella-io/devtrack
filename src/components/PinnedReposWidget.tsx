@@ -52,8 +52,16 @@ export default function PinnedReposWidget({
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-32 rounded-xl skeleton-shimmer border border-[var(--border)]"
-            />
+              className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--card-muted)] p-5"
+            >
+              <div className="h-5 w-3/4 bg-[var(--border)] rounded animate-pulse" />
+              <div className="h-3 w-1/2 bg-[var(--border)] rounded animate-pulse" />
+              <div className="h-8 w-full bg-[var(--border)] rounded animate-pulse mt-2" />
+              <div className="border-t border-[var(--border)]/60 pt-3 mt-1 flex justify-between">
+                <div className="h-8 w-1/3 bg-[var(--border)] rounded animate-pulse" />
+                <div className="h-8 w-1/3 bg-[var(--border)] rounded animate-pulse" />
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -124,13 +132,13 @@ export default function PinnedReposWidget({
         {repos.map((repo) => {
           const shortName = repo.name.split("/")[1] ?? repo.name;
           const owner = repo.name.split("/")[0] ?? "";
-          
+
           // Generate Area Sparkline points
           const sparkline = repo.sparkline || Array(30).fill(0);
           const width = 140;
           const height = 34;
           const maxVal = Math.max(...sparkline, 1);
-          
+
           const points = sparkline.map((val, idx) => {
             const x = (idx / (sparkline.length - 1)) * width;
             const y = height - 2 - ((val / maxVal) * (height - 4));
@@ -166,6 +174,17 @@ export default function PinnedReposWidget({
               <p className="text-xs text-[var(--muted-foreground)] line-clamp-2 min-h-[32px] leading-relaxed">
                 {repo.description ?? "No description provided."}
               </p>
+
+              <a
+                href={repo.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open in GitHub"
+                className="inline-flex items-center gap-1 text-xs font-medium text-[var(--accent)] hover:underline"
+              >
+                <ExternalLink size={12} />
+                Open in GitHub
+              </a>
 
               {/* Sparkline Graph */}
               <div className="flex items-center justify-between border-t border-[var(--border)]/60 pt-3 mt-1">

@@ -9,6 +9,11 @@ import { toast } from "sonner";
 import { toPng } from "html-to-image";
 import { Flame, Trophy, Calendar, Zap, Copy, CheckCircle, Medal, Star, Sparkles } from "lucide-react";
 
+
+const DATA_WINDOW_DAYS = 90;
+const dataWindowLabel = `Last ${DATA_WINDOW_DAYS} days`;
+
+
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
 
 interface StreakData {
@@ -151,7 +156,7 @@ export function useStreakTracker() {
     if (stored) {
       try {
         setDismissedMilestones(JSON.parse(stored));
-      } catch {
+      } catch (e) {
         // ignore invalid localStorage data
       }
     }
@@ -397,7 +402,7 @@ export default function StreakTracker() {
 
   if (loading) {
     return (
-      <div className="bg-[var(--card)] rounded-xl p-6">
+      <div className="bg-[var(--card)] rounded-xl p-6 min-h-[700px]">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading streak tracker</span>
           <div
@@ -491,12 +496,12 @@ export default function StreakTracker() {
         tooltip: "Your longest streak ever",
       },
       {
-        label: "Active Days (90d)",
+        label: `Active Days (${DATA_WINDOW_DAYS}d)`,
         value: animatedActiveDays,
         unit: "days",
         highlight: false,
         icon: Calendar,
-        tooltip: "Days you made commits in the last 90 days",
+        tooltip: `Days you made commits in the ${dataWindowLabel.toLowerCase()}`,
       },
       {
         label: "Last Commit",
@@ -532,7 +537,7 @@ export default function StreakTracker() {
             <button
               type="button"
               onClick={handleCopy}
-              className="cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
+              className="cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-colors"
               aria-label="Copy streak stats to clipboard"
             >
               {copied ? (
@@ -545,7 +550,7 @@ export default function StreakTracker() {
               type="button"
               onClick={handleDownload}
               disabled={isDownloading}
-              className="cursor-pointer flex h-8 items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-70 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors gap-1.5 shadow-sm"
+              className="cursor-pointer flex h-8 items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-70 transition-colors gap-1.5 shadow-sm"
               aria-label="Download streak stats as image"
             >
               {isDownloading ? (
@@ -592,7 +597,7 @@ export default function StreakTracker() {
                   <button
                     type="button"
                     aria-label={stat.tooltip}
-                    className="text-[var(--muted-foreground)] hover:text-[var(--accent)] focus:outline-none"
+                    className="text-[var(--muted-foreground)] hover:text-[var(--accent)]"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"

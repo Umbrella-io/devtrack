@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
   try {
     payload = (await request.json()) as ContactPayload;
-  } catch {
+  } catch (e) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 

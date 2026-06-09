@@ -89,7 +89,7 @@ export default function ActivityRingChart() {
         <select
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
-          className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-1 text-sm text-[var(--card-foreground)] focus-visible:outline-none focus:border-[var(--accent)]"
+          className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-1 text-sm text-[var(--card-foreground)]"
         >
           <option value={7}>Last 7d</option>
           <option value={30}>Last 30d</option>
@@ -104,7 +104,7 @@ export default function ActivityRingChart() {
 
       <div className="flex-1 flex items-center justify-center min-h-[300px]">
         {loading ? (
-          <div className="h-48 w-48 animate-pulse rounded-full bg-[var(--card-muted)]" />
+          <div className="h-[300px] w-[300px] animate-pulse rounded-full bg-[var(--card-muted)]" />
         ) : error ? (
           <p className="text-sm text-[var(--destructive)]">{error}</p>
         ) : data.every((d) => d.commits === 0) ? (

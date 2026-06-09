@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { submitGoalWithRefresh } from "@/lib/goal-tracker";
 import ConfirmModal from "@/components/ConfirmModal"; // 🎯 Imported the native project confirmation layout
+import { buildPublicGoalShareUrl } from "@/lib/goals/share";
 
 type Recurrence = "none" | "weekly" | "monthly";
 
@@ -14,8 +16,16 @@ interface Goal {
   unit: string;
   recurrence: Recurrence;
   deadline: string | null;
+  is_public: boolean;
   period_start: string;
   last_synced_at: string | null;
+  last_period: {
+    period_start: string;
+    period_end: string;
+    target: number;
+    achieved: number;
+    completed: boolean;
+  } | null;
 }
 
 const RECURRENCE_LABELS: Record<Recurrence, string> = {
@@ -64,30 +74,27 @@ export function useGoalTracker() {
     try {
       const res = await fetch("/api/goals/sync", { method: "POST" });
       if (!res.ok) {
-        let msg = "Sync failed. Please try again.";
+        // Read the body once — the Fetch API only allows a single read per response.
+        let errData: { error?: string } = {};
         try {
-          const errData = await res.json();
-          if (errData && errData.error) {
-            msg = errData.error;
-          }
-        } catch {}
-        if (res.status === 401) {
-          msg = "Unauthorized. Please log in again.";
-        } else if (res.status === 502) {
-          msg = "GitHub sync failed: Expired token or missing repo scope.";
-        }
+          errData = await res.json();
+        } catch (e) {}
+
         if (res.status === 429) {
-          const data = await res.json();
-          setSyncError(data.error ?? "GitHub rate limit reached. Please try again later.");
+          setSyncError(errData.error ?? "GitHub rate limit reached. Please try again later.");
+        } else if (res.status === 401) {
+          setSyncError("Unauthorized. Please log in again.");
+        } else if (res.status === 502) {
+          setSyncError("GitHub sync failed: Expired token or missing repo scope.");
         } else {
-          setSyncError("Failed to sync goals. Please try again.");
+          setSyncError(errData.error ?? "Sync failed. Please try again.");
         }
         return;
       }
       await loadGoals();
       setLastUpdated(new Date());
       setMinutesAgo(0);
-    } catch {
+    } catch (e) {
       setSyncError("Network error. Failed to sync goals.");
     } finally {
       setSyncing(false);
@@ -158,7 +165,7 @@ export function useGoalTracker() {
       } else {
         await loadGoals().catch(() => { });
       }
-    } catch {
+    } catch (e) {
       setCreateError("Failed to create goal. Please try again.");
     } finally {
       setCreating(false);  
@@ -178,7 +185,7 @@ export function useGoalTracker() {
         setGoals(previousGoals);
         setDeleteError("Failed to delete goal. Please try again.");
       }
-    } catch {
+    } catch (e) {
       setGoals(previousGoals);
       setDeleteError("Failed to delete goal. Please check your connection.");
     } finally {
@@ -312,6 +319,71 @@ export default function GoalTracker() {
     getCompletionLabel,
   } = useGoalTracker();
 
+  const { data: session } = useSession();
+
+  const githubLogin =
+    typeof (session as { githubLogin?: unknown } | null)?.githubLogin === "string"
+      ? (session as { githubLogin: string }).githubLogin
+      : null;
+  
+  const [copiedGoalId, setCopiedGoalId] = useState<string | null>(null);
+  const [sharingGoalId, setSharingGoalId] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+
+
+  const toggleGoalSharing = async (goalId: string, nextValue: boolean) => {
+    setSharingGoalId(goalId);
+    setShareError(null);
+
+    try {
+      const response = await fetch(`/api/goals/${goalId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_public: nextValue }),
+      });
+
+      if (!response.ok) {
+        setShareError("Failed to update goal sharing. Please try again.");
+        return;
+      }
+
+      const data: { goal: Goal } = await response.json();
+
+      setGoals((currentGoals) =>
+        currentGoals.map((goal) => (goal.id === data.goal.id ? data.goal : goal))
+      );
+    } catch {
+      setShareError("Failed to update goal sharing. Please check your connection.");
+    } finally {
+      setSharingGoalId(null);
+    }
+  };
+
+  const copyGoalShareLink = async (goalId: string) => {
+  if (!githubLogin) {
+    setShareError("Unable to build share link for this account.");
+    return;
+  }
+
+  const shareUrl = buildPublicGoalShareUrl(
+    window.location.origin,
+    githubLogin,
+    goalId
+  );
+
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopiedGoalId(goalId);
+    window.setTimeout(() => {
+      setCopiedGoalId((currentGoalId) =>
+        currentGoalId === goalId ? null : currentGoalId
+      );
+    }, 2000);
+  } catch {
+    setShareError("Failed to copy share link. Please copy it manually.");
+  }
+};
+
   const activeConfirmingGoal = goals.find((g) => g.id === confirmingId);
 
   if (loading) {
@@ -386,6 +458,20 @@ export default function GoalTracker() {
         </div>
       )}
 
+      {shareError && (
+  <div className="mb-4 rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-3 text-sm text-[var(--destructive)] flex justify-between items-center">
+    <p>{shareError}</p>
+    <button
+      type="button"
+      onClick={() => setShareError(null)}
+      className="text-[var(--destructive)] hover:opacity-80 ml-2"
+      aria-label="Dismiss sharing error"
+    >
+      ✕
+    </button>
+  </div>
+)}
+
       {goals.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           No goals yet. Create one below.
@@ -393,11 +479,11 @@ export default function GoalTracker() {
       ) : (
         <ul className="space-y-4">
           {goals.map((goal) => {
-            const pct = Math.min((goal.current / goal.target) * 100, 100);
+        const pct = goal.current > 0 ? Math.max(1, Math.min(Math.round((goal.current / goal.target) * 100), 100)) : 0;
             const isDeleting = deletingId === goal.id;
             const completed = goal.current >= goal.target;
             const completionLabel = getCompletionLabel(goal);
-            const isAutoSynced = goal.unit === "commits" || goal.unit === "prs";
+            const isAutoSynced = ["commits", "prs", "reviews", "issues_closed", "issues_opened", "open_source_prs"].includes(goal.unit);
 
             return (
               <li key={goal.id} className="relative">
@@ -446,6 +532,17 @@ export default function GoalTracker() {
                         {completionLabel}
                       </span>
                     ) : null}
+                    {goal.last_period && (
+                      <span
+                        className={`text-xs font-medium ${
+                          goal.last_period.completed ? "text-emerald-500" : "text-[var(--muted-foreground)]"
+                        }`}
+                        title={`Previous period ended ${new Date(goal.last_period.period_end).toLocaleDateString()}`}
+                      >
+                        Last period: {goal.last_period.completed ? "✓" : "○"}{" "}
+                        {goal.last_period.achieved}/{goal.last_period.target} {goal.unit}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -498,11 +595,50 @@ export default function GoalTracker() {
 
                 <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
                   <div
+                    role="progressbar"
+                    aria-valuenow={Math.max(0, Math.min(Math.round(pct), 100))}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`${goal.title}: ${goal.current} of ${goal.target} ${goal.unit}`}
                     className={`h-full rounded-full transition-all ${completed ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
                     style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
-                    
                   />
                 </div>
+              <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--control)] p-3">
+  <div className="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <p className="text-sm font-medium text-[var(--card-foreground)]">
+        Share this goal
+      </p>
+      <p className="text-xs text-[var(--muted-foreground)]">
+        Make this goal visible on a public share page.
+      </p>
+    </div>
+
+    <label className="inline-flex items-center gap-2 text-sm text-[var(--card-foreground)]">
+      <input
+        type="checkbox"
+        checked={Boolean(goal.is_public)}
+        disabled={sharingGoalId === goal.id}
+        onChange={(event) =>
+          toggleGoalSharing(goal.id, event.currentTarget.checked)
+        }
+        aria-label={`Make "${goal.title}" public`}
+      />
+      Public
+    </label>
+  </div>
+
+  {goal.is_public && (
+    <button
+      type="button"
+      onClick={() => copyGoalShareLink(goal.id)}
+      className="secondary-button mt-3 rounded-lg px-3 py-1.5 text-sm"
+    >
+      {copiedGoalId === goal.id ? "Copied!" : "Copy share link"}
+    </button>
+  )}
+</div>
               </li>
             );
           })}
@@ -529,7 +665,7 @@ export default function GoalTracker() {
             placeholder="Make 10 commits"
             required
             disabled={creating}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)]"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] transition placeholder:text-[var(--muted-foreground)] focus-visible:border-[var(--accent)]"
           />
         </div>
 
@@ -546,7 +682,7 @@ export default function GoalTracker() {
               value={target}
               onChange={(e) => setTarget(Number(e.target.value))}
               disabled={creating}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] transition focus-visible:border-[var(--accent)]"
             />
           </div>
           <div className="flex-1">
@@ -558,13 +694,17 @@ export default function GoalTracker() {
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               disabled={creating}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] transition focus-visible:border-[var(--accent)]"
             >
               <option value="commits">Commits ⚡</option>
               <option value="prs">PRs ⚡</option>
+              <option value="reviews">Code Reviews</option>
+              <option value="issues_closed">Issues Closed</option>
+              <option value="issues_opened">Issues Opened</option>
+              <option value="open_source_prs">Open Source PRs</option>
+              <option value="milestones">Milestones</option>
               <option value="hours">Hours</option>
               <option value="streak">Streak (days)</option>
-              <option value="language">Lines of Code</option>
             </select>
           </div>
         </div>
@@ -582,7 +722,7 @@ export default function GoalTracker() {
               onChange={(e) => setDeadline(e.target.value)}
               disabled={creating}
               min={new Date().toISOString().split("T")[0]}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] transition focus-visible:border-[var(--accent)]"
             />
           </div>
         )}
@@ -617,9 +757,14 @@ export default function GoalTracker() {
         </div>
 
         {/* GitHub Warning */}
-        {(unit === "commits" || unit === "prs") && (
+        {["commits", "prs", "reviews", "issues_closed", "issues_opened", "open_source_prs"].includes(unit) && (
           <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--accent)]/10 px-3 py-2">
             ⚡ This goal will auto-update from your GitHub activity.
+          </p>
+        )}
+        {unit === "milestones" && (
+          <p className="text-xs text-[var(--muted-foreground)] rounded-lg bg-[var(--card-muted)] px-3 py-2">
+            🏁 Track custom milestones manually using the +1 button.
           </p>
         )}
 

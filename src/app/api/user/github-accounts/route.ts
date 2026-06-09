@@ -38,8 +38,15 @@ export async function GET() {
       .order("added_at", { ascending: true });
 
     if (error) {
-      // Table may not exist in all deployments — return empty accounts
-      return NextResponse.json({ accounts: [] });
+      if (error.code === "42P01") {
+        // Table may not exist in all deployments — return empty accounts
+        return NextResponse.json({ accounts: [] });
+      }
+      console.error("Error fetching GitHub accounts:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch accounts" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({

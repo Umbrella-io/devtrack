@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from "next/image";
+import Link from 'next/link';
+import { Activity, GitPullRequest, Goal, Share2, type LucideIcon } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
@@ -13,6 +15,8 @@ export type RepoStats = {
   contributorCount: number;
   goodFirstIssues: number;
   contributors: Array<{ login: string; avatar_url: string; html_url: string }>;
+  totalCommits: number;
+  mergedPRs: number;
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -60,6 +64,33 @@ const COMMITS = [
   'fix: timezone-aware streak calculation',
   'docs: update README with setup guide',
   'feat(leaderboard): weekly ranking system',
+];
+
+const ABOUT_HIGHLIGHTS: Array<{
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+}> = [
+  {
+    icon: Activity,
+    title: 'Live GitHub Signals',
+    desc: 'Turn commits, streaks, reviews, and repository activity into a focused dashboard that updates around real developer work.',
+  },
+  {
+    icon: GitPullRequest,
+    title: 'PR Momentum',
+    desc: 'Understand merge rate, review velocity, and open work so teams can spot bottlenecks before they slow shipping down.',
+  },
+  {
+    icon: Goal,
+    title: 'Goal Tracking',
+    desc: 'Set weekly coding targets and see progress move automatically as GitHub activity lands across your repositories.',
+  },
+  {
+    icon: Share2,
+    title: 'Shareable Profile',
+    desc: 'Create a public snapshot of your coding consistency for contributors, collaborators, and portfolio visitors.',
+  },
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -338,7 +369,7 @@ function HeroSection() {
         gap: 'clamp(32px,5vw,80px)',
         flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
-        overflow: 'hidden',
+        overflow: 'clip',
       }}
     >
       {/* Ambient Animated Background Glow */}
@@ -422,7 +453,7 @@ function HeroSection() {
 
         {/* CTAs */}
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary" style={{
+          <Link href="/api/auth/signin/github?callbackUrl=/dashboard" prefetch={false} className="lnd-cta-primary" style={{
             boxShadow: '0 8px 24px rgba(129,140,248,0.3)',
             transition: 'transform 0.3s, box-shadow 0.3s',
             transform: 'translateY(0)',
@@ -439,7 +470,7 @@ function HeroSection() {
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
             </svg>
             Sign in with GitHub
-          </a>
+          </Link>
           <a
             href="https://github.com/Priyanshu-byte-coder/devtrack"
             target="_blank"
@@ -500,6 +531,116 @@ function CommitTicker() {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   ABOUT SECTION
+   ═══════════════════════════════════════════════════════════ */
+function AboutHighlightCard({
+  item,
+  index,
+  visible,
+}: {
+  item: typeof ABOUT_HIGHLIGHTS[0];
+  index: number;
+  visible: boolean;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <article
+      className="lnd-about-card"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(18px)',
+        transition: `opacity 0.55s ease ${index * 80}ms, transform 0.55s ease ${index * 80}ms, border-color 0.25s ease, background 0.25s ease`,
+      }}
+    >
+      <div style={{
+        width: 42, height: 42, borderRadius: 8,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(129,140,248,0.12)',
+        border: '1px solid rgba(129,140,248,0.28)',
+        color: A, marginBottom: 18,
+      }}>
+        <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+      </div>
+      <h3 style={{
+        fontFamily: DISP, fontWeight: 700,
+        fontSize: 19, color: TEXT, margin: '0 0 10px',
+        letterSpacing: 0,
+      }}>
+        {item.title}
+      </h3>
+      <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.65, margin: 0 }}>
+        {item.desc}
+      </p>
+    </article>
+  );
+}
+
+function AboutSection() {
+  const [ref, vis] = useScrollReveal(0.12);
+
+  return (
+    <section
+      id="about"
+      ref={ref}
+      aria-labelledby="about-heading"
+      style={{
+        padding: '88px clamp(20px,4vw,48px)',
+        borderTop: `1px solid ${BORDER}`,
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: 'clamp(28px,5vw,64px)',
+        alignItems: 'start',
+        maxWidth: 1120,
+        margin: '0 auto',
+      }}>
+        <div style={{
+          opacity: vis ? 1 : 0,
+          transform: vis ? 'translateY(0)' : 'translateY(18px)',
+          transition: 'opacity 0.6s ease, transform 0.6s ease',
+        }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
+            ABOUT DEVTRACK
+          </div>
+          <h2
+            id="about-heading"
+            style={{
+              fontFamily: DISP, fontWeight: 800,
+              fontSize: 42,
+              color: TEXT, letterSpacing: 0,
+              lineHeight: 1.05, margin: '0 0 20px',
+            }}
+          >
+            A clearer home for your developer progress.
+          </h2>
+          <p style={{ color: MUTED, fontSize: 16, lineHeight: 1.75, margin: '0 0 28px', maxWidth: 580 }}>
+            DevTrack helps developers, open-source contributors, and teams understand how their GitHub work is moving. It brings activity, pull requests, streaks, goals, and public profile insights into one calm dashboard so new users can quickly see what the platform is for.
+          </p>
+          <a href="#features" className="lnd-cta-secondary">
+            Explore features
+          </a>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 14,
+        }}>
+          {ABOUT_HIGHLIGHTS.map((item, index) => (
+            <AboutHighlightCard key={item.title} item={item} index={index} visible={vis} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    HEATMAP SECTION
    ═══════════════════════════════════════════════════════════ */
 function HeatmapSection() {
@@ -544,12 +685,6 @@ function HeatmapSection() {
 /* ═══════════════════════════════════════════════════════════
    STATS ROW
    ═══════════════════════════════════════════════════════════ */
-const STATS = [
-  { value: 847, label: 'COMMITS TRACKED' },
-  { value: 43,  label: 'PRS MERGED' },
-  { value: 89,  label: 'DAY BEST STREAK' },
-  { value: 67,  label: 'REVIEWS GIVEN' },
-];
 
 function StatItem({ value, label, delay }: { value: number; label: string; delay: number }) {
   const [ref, vis] = useScrollReveal(0.2);
@@ -577,14 +712,20 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
   );
 }
 
-function StatsSection() {
+function StatsSection({ stats }: { stats: RepoStats }) {
+  const items = [
+    { value: stats.totalCommits,    label: 'COMMITS IN REPO' },
+    { value: stats.mergedPRs,       label: 'PRS MERGED' },
+    { value: stats.contributorCount,label: 'CONTRIBUTORS' },
+    { value: stats.stars,           label: 'GITHUB STARS' },
+  ];
   return (
     <section id="features" style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
         gap: 24, borderTop: `1px solid ${BORDER}`,
     }}>
-      {STATS.map((s, i) => (
+      {items.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
       ))}
     </section>
@@ -612,12 +753,20 @@ const FEATURES = [
     desc: 'Full-year visualization of your coding consistency. See patterns emerge across weeks and months.',
   },
   {
-    num: '05', title: 'LANGUAGE BREAKDOWN',
-    desc: 'See which languages dominate your contributions. TypeScript, Python, Go — tracked across all repos.',
+    num: '05', title: 'AI WEEKLY INSIGHTS',
+    desc: 'AI-powered analysis of your coding patterns. Get personalized recommendations to improve your workflow.',
   },
   {
-    num: '06', title: 'PUBLIC PROFILE',
-    desc: 'Share your developer stats with the world. Your coding story, visible to anyone.',
+    num: '06', title: 'RESUME GENERATOR',
+    desc: 'Generate an ATS-friendly CV backed by your real GitHub contributions, merged PRs, and lines changed.',
+  },
+  {
+    num: '07', title: 'PUBLIC LEADERBOARD',
+    desc: 'Opt-in leaderboard ranked by streaks, commits, and PRs. See how you compare with the community.',
+  },
+  {
+    num: '08', title: 'PUBLIC PROFILE',
+    desc: 'Shareable stats page with badges, pinned repos, and achievements. Your coding story, visible to anyone.',
   },
 ];
 
@@ -645,8 +794,7 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         }}>
           {f.title}
         </h3>
-        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>   {/* was '#444' */}
-          {f.desc}
+        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>          {f.desc}
         </p>
       </div>
     </div>
@@ -704,12 +852,12 @@ function SetupSection() {
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981' }} />
         </div>
-        <div style={{ color: '#10b981', fontWeight: 500 }}># start tracking in 30 seconds</div>
+        <div style={{ color: 'var(--success)', fontWeight: 500 }}># start tracking in 30 seconds</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>→</span> sign in at{' '}
           <span style={{ color: A }}>devtrack.vercel.app</span>
         </div>
-        <div style={{ color: '#10b981', marginTop: 8, fontWeight: 500 }}># or self-host</div>
+        <div style={{ color: 'var(--success)', marginTop: 8, fontWeight: 500 }}># or self-host</div>
         <div style={{ color: TEXT }}>
           <span style={{ color: A }}>$</span> git clone github.com/…/devtrack
         </div>
@@ -719,9 +867,9 @@ function SetupSection() {
       </div>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <a href="/api/auth/signin/github?callbackUrl=/dashboard" className="lnd-cta-primary">
+        <Link href="/api/auth/signin/github?callbackUrl=/dashboard" prefetch={false} className="lnd-cta-primary">
           Sign in with GitHub
-        </a>
+        </Link>
         <a
           href="https://github.com/Priyanshu-byte-coder/devtrack"
           target="_blank"
@@ -778,7 +926,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#94a3b8', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: '0.1em', marginBottom: 10 }}>
               {s.icon} {s.label}
             </div>
             <div style={{
@@ -804,8 +952,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           BUILT IN PUBLIC.<br />
           <span style={{ color: A }}>SHIP WITH US.</span>
         </h2>
-        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>   {/* was '#555' */}
-          DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
+        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>          DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
           who actually use it. Every widget, every metric, every API was contributed by
           someone in this list. {stats.goodFirstIssues > 0 && (
             <span style={{ color: TEXT }}>
@@ -858,10 +1005,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           {stats.contributorCount > stats.contributors.length && (
             <div style={{
               width: 38, height: 38, borderRadius: '50%',
-              border: `2px solid #000000`,
-              background: '#1e293b', marginLeft: -11,
+              border: `2px solid var(--background)`,
+              background: 'var(--card)', marginLeft: -11,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: MONO, fontSize: 10, color: '#cbd5e1', flexShrink: 0,
+              fontFamily: MONO, fontSize: 10, color: MUTED, flexShrink: 0,
             }}>
               +{stats.contributorCount - stats.contributors.length}
             </div>
@@ -909,13 +1056,14 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
   return (
     <div
       className="lnd-root"
-      style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}
+      style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'clip' }}
     >
       <MouseSpotlight />
       <HeroSection />
       <CommitTicker />
+      <AboutSection />
       <HeatmapSection />
-      <StatsSection />
+      <StatsSection stats={repoStats} />
       <FeaturesSection />
       <ContributeSection stats={repoStats} />
       <SetupSection />

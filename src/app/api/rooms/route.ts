@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { createRoom, getRoomsForUser } from '@/lib/supabase';
+import { createRoom, getRoomsForUser } from '@/lib/supabase-rooms';
 import { NextResponse } from 'next/server';
 import type { CreateRoomPayload } from '@/types/rooms';
 

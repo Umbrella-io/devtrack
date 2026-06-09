@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "types": ["node"],
+    "types": ["node", "vitest"],
     "lib": [
       "dom",
       "dom.iterable",
@@ -28,7 +28,7 @@
         "./src/*"
       ]
     },
-    "target": "ES2017"
+    "target": "ES2022"
   },
   "include": [
     "next-env.d.ts",
