@@ -180,6 +180,27 @@ test.beforeEach(async ({ page }) => {
       body: "data: {}\n\n",
     });
   });
+
+  await page.route("**/api/user/dashboard-layout**", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ layout: null }),
+      });
+    } else {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      });
+    }
+  });
+
+  await page.route("**/api/daily-note**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ note: null }),
+    });
+  });
 });
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
@@ -310,6 +331,14 @@ function mockMetricResponse(url) {
         thisWeek: 5,
         lastWeek: 4,
       },
+      issues: {
+        thisWeek: 2,
+        lastWeek: 1,
+      },
+      productivityScore: {
+        current: 85,
+        previous: 80,
+      },
       streak: 3,
       topRepo: "demo/repo",
     };
@@ -330,7 +359,7 @@ function mockMetricResponse(url) {
     };
   }
   if (url.includes("/api/streak/freeze")) {
-    return { freezes: [] };
+    return { hasFreeze: false, freezeDate: null };
   }
   if (url.includes("/api/integrations/jira")) {
     return null;

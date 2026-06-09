@@ -42,6 +42,8 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
   const [greeting, setGreeting] = useState<"morning" | "afternoon" | "evening">("morning");
   const [todayKey, setTodayKey] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   const greetingLabel = useMemo(() => {
     const base =
@@ -105,6 +107,7 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
     const trimmedGoal = inputValue.trim();
     if (!trimmedGoal || !todayKey) return;
 
+    setIsSaving(true);
     try {
       window.localStorage.setItem(todayKey, trimmedGoal);
     } catch (e) {}
@@ -122,12 +125,15 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
       });
     } catch (err) {
       console.error("Failed to save daily focus", err);
+    } finally {
+      setIsSaving(false);
     }
   }
 
   async function handleClear() {
     if (!todayKey) return;
 
+    setIsClearing(true);
     try {
       window.localStorage.removeItem(todayKey);
     } catch (e) {}
@@ -143,6 +149,8 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
       });
     } catch (err) {
       console.error("Failed to clear daily focus", err);
+    } finally {
+      setIsClearing(false);
     }
   }
 
@@ -219,9 +227,10 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] px-4 py-3 text-sm font-medium text-[var(--destructive)] transition hover:opacity-90 sm:w-auto"
+                  disabled={isClearing || isSaving}
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-[var(--destructive-muted-border)] bg-[var(--destructive-muted)] px-4 py-3 text-sm font-medium text-[var(--destructive)] transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto"
                 >
-                  Clear
+                  {isClearing ? "Clearing..." : "Clear"}
                 </button>
               </div>
             </div>
@@ -242,8 +251,9 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
                   <input
                     value={inputValue}
                     onChange={(event) => setInputValue(event.target.value)}
+                    disabled={isSaving || isClearing}
                     placeholder="Write your main dev goal for today..."
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] shadow-sm transition placeholder:text-[var(--muted-foreground)]"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] shadow-sm transition placeholder:text-[var(--muted-foreground)] disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </label>
 
@@ -251,18 +261,19 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
                   <button
                     type="button"
                     onClick={handleSave}
-                    disabled={!inputValue.trim()}
+                    disabled={!inputValue.trim() || isSaving || isClearing}
                     className="primary-button inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto lg:w-full xl:w-auto"
                   >
-                    Save
+                    {isSaving ? "Saving..." : "Save"}
                   </button>
                   {goal ? (
                     <button
                       type="button"
                       onClick={handleClear}
-                      className="secondary-button inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium sm:w-auto lg:w-full xl:w-auto"
+                      disabled={isSaving || isClearing}
+                      className="secondary-button inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto lg:w-full xl:w-auto"
                     >
-                      Clear
+                      {isClearing ? "Clearing..." : "Clear"}
                     </button>
                   ) : null}
                 </div>
