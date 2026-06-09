@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin, isSupabaseAdminAvailable } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  if (!isSupabaseAdminAvailable) {
+    return NextResponse.json({ hasData: false, not_configured: true });
+  }
+
   const session = await getServerSession(authOptions);
 
   if (!session?.githubId) {

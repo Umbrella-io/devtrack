@@ -48,23 +48,23 @@ function makePostRequest(body: unknown): [Request] {
   ];
 }
 
-function makePatchRequest(body: unknown, goalId = "goal-1"): [Request, { params: { id: string } }] {
+function makePatchRequest(body: unknown, goalId = "goal-1"): [Request, { params: Promise<{ id: string }> }] {
   return [
     new Request(`http://localhost/api/goals/${goalId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
-    { params: { id: goalId } },
+    { params: Promise.resolve({ id: goalId }) },
   ];
 }
 
-function makeDeleteRequest(goalId = "goal-1"): [Request, { params: { id: string } }] {
+function makeDeleteRequest(goalId = "goal-1"): [Request, { params: Promise<{ id: string }> }] {
   return [
     new Request(`http://localhost/api/goals/${goalId}`, {
       method: "DELETE",
     }),
-    { params: { id: goalId } },
+    { params: Promise.resolve({ id: goalId }) },
   ];
 }
 
@@ -249,7 +249,7 @@ describe("PATCH /api/goals/[id]", () => {
       headers: { "Content-Type": "application/json" },
       body: "not-json",
     });
-    const res = await PATCH(req, { params: { id: "goal-1" } });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "goal-1" }) });
     expect(res.status).toBe(400);
   });
 });
