@@ -70,6 +70,7 @@ export default function MessageFeed({ roomId, currentUser, messages, onNewMessag
           <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
             {/* eslint-disable @next/next/no-img-element */}
             {msg.sender_avatar ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={msg.sender_avatar}
                 alt={msg.sender_username}

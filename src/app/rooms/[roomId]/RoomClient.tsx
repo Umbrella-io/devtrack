@@ -22,6 +22,7 @@ export default function RoomClient({
   const router = useRouter();
   const [messages, setMessages] = useState<RoomMessage[]>(initialMessages);
   const [members, setMembers] = useState<RoomMember[]>(initialMembers);
+  const [deleting, setDeleting] = useState(false);
 
   // Optimistic update: immediately show the message the current user just sent.
   function handleSent(msg: RoomMessage) {
@@ -54,14 +55,52 @@ export default function RoomClient({
     ]);
   }
 
+  function handleMemberRemoved(username: string) {
+    setMembers((prev) => prev.filter((m) => m.github_username !== username));
+  }
+
   async function handleDeleteRoom() {
     if (!confirm('Are you sure you want to delete this room? This cannot be undone.')) return;
-    const res = await fetch(`/api/rooms/${room.id}`, { method: 'DELETE' });
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/rooms/${room.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        router.push('/rooms');
+      } else {
+        const data = await res.json();
+        alert(data.error ?? 'Failed to delete room');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to delete room. Please check your connection.');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function handleLeaveRoom() {
+    if (!confirm('Are you sure you want to leave this room?')) return;
+    const res = await fetch(`/api/rooms/${room.id}/members/${encodeURIComponent(currentUser)}`, {
+      method: 'DELETE',
+    });
     if (res.ok) {
       router.push('/rooms');
     } else {
       const data = await res.json();
-      alert(data.error ?? 'Failed to delete room');
+      alert(data.error ?? 'Failed to leave room');
+    }
+  }
+
+  async function handleLeaveRoom() {
+    if (!confirm('Are you sure you want to leave this room?')) return;
+    const res = await fetch(`/api/rooms/${room.id}/members/${encodeURIComponent(currentUser)}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) {
+      router.push('/rooms');
+    } else {
+      const data = await res.json();
+      alert(data.error ?? 'Failed to leave room');
     }
   }
 
@@ -86,12 +125,27 @@ export default function RoomClient({
           </div>
         </div>
 
-        {room.is_owner && (
+        {room.is_owner ? (
           <button
             onClick={handleDeleteRoom}
-            className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            disabled={deleting}
+            className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Delete Room
+            {deleting ? 'Deleting...' : 'Delete Room'}
+          </button>
+        ) : (
+          <button
+            onClick={handleLeaveRoom}
+            className="text-xs px-3 py-1.5 border border-red-400 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30"
+          >
+            Leave Room
+          </button>
+        ) : (
+          <button
+            onClick={handleLeaveRoom}
+            className="text-xs px-3 py-1.5 border border-red-400 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30"
+          >
+            Leave Room
           </button>
         )}
       </header>
@@ -111,6 +165,7 @@ export default function RoomClient({
           members={members}
           isOwner={room.is_owner}
           onMemberAdded={handleMemberAdded}
+          onMemberRemoved={handleMemberRemoved}
         />
       </div>
     </div>

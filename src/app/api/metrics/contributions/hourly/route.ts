@@ -17,7 +17,9 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const days = Number(req.nextUrl.searchParams.get("days")) || 30;
+  const daysParam = req.nextUrl.searchParams.get("days");
+  const parsedDays = daysParam ? parseInt(daysParam, 10) : NaN;
+  const days = isNaN(parsedDays) ? 30 : Math.max(1, Math.min(365, parsedDays));
   const bypass = isMetricsCacheBypassed(req);
   const key = metricsCacheKey(
     session.githubId ?? session.githubLogin,

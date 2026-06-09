@@ -138,7 +138,10 @@ export interface IssuesMetrics {
 }
 
 export async function fetchIssuesMetrics(
-  token: string
+  token: string,
+  githubLogin?: string,
+  orgName?: string | null,
+  excludedOrgs: string[] = []
 ): Promise<IssuesMetrics> {
   const headers = {
     Authorization: `Bearer ${token}`,
@@ -151,10 +154,16 @@ export async function fetchIssuesMetrics(
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const since30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
+  const authorQ = githubLogin ? githubLogin : "@me";
+  let q = `type:issue+author:${authorQ}`;
+  if (orgName) {
+    q += `+org:${orgName}`;
+  } else if (excludedOrgs.length > 0) {
+    q += excludedOrgs.map((org) => `+-org:${org}`).join("");
+  }
+
   const searchRes = await githubFetch(
-    `${GITHUB_API}/search/issues?q=type:issue+author:@me+created:>=${since30d
-      .toISOString()
-      .slice(0, 10)}&per_page=100`,
+    `https://api.github.com/search/issues?q=${q}+created:>=${since30d.toISOString().slice(0, 10)}&per_page=100`,
     { headers, cache: "no-store" }
   );
 
@@ -188,16 +197,12 @@ export async function fetchIssuesMetrics(
       : 0;
 
   const thisMonthRes = await githubFetch(
-    `${GITHUB_API}/search/issues?q=type:issue+author:@me+created:>=${thisMonthStart
-      .toISOString()
-      .slice(0, 10)}&per_page=1`,
+    `https://api.github.com/search/issues?q=${q}+created:>=${thisMonthStart.toISOString().slice(0, 10)}&per_page=1`,
     { headers, cache: "no-store" }
   );
 
   const lastMonthRes = await githubFetch(
-    `${GITHUB_API}/search/issues?q=type:issue+author:@me+created:${lastMonthStart
-      .toISOString()
-      .slice(0, 10)}..${lastMonthEnd.toISOString().slice(0, 10)}&per_page=1`,
+    `https://api.github.com/search/issues?q=${q}+created:${lastMonthStart.toISOString().slice(0, 10)}..${lastMonthEnd.toISOString().slice(0, 10)}&per_page=1`,
     { headers, cache: "no-store" }
   );
 
