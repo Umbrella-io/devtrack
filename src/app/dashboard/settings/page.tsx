@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import WebhookManager from "@/components/webhook/WebhookManager";
+import { useLocale, useTranslations } from "next-intl";
+import { localeMetadata, locales, type AppLocale } from "@/i18n/config";
 
 // ── Max length for the profile bio ──────────────────────────────────────────
 const BIO_MAX = 160;
@@ -32,6 +34,7 @@ interface UserSettings {
   timezone?: string;
   pinned_repos?: string[];
   discord_muted_until?: string | null;
+  preferred_locale?: AppLocale;
 }
 
 interface LinkedAccount {
@@ -160,6 +163,9 @@ function SettingsPageFallback() {
 }
 
 function SettingsPageContent() {
+  const t = useTranslations("settings");
+  const common = useTranslations("common");
+  const activeLocale = useLocale() as AppLocale;
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -184,6 +190,8 @@ function SettingsPageContent() {
   const [discordWebhook, setDiscordWebhook] = useState("");
   const [timezone, setTimezone] = useState("");
   const [savingDiscord, setSavingDiscord] = useState(false);
+  const [preferredLocale, setPreferredLocale] = useState<AppLocale>(activeLocale);
+  const [savingLanguage, setSavingLanguage] = useState(false);
   const [testingDiscord, setTestingDiscord] = useState(false);
   const [discordMutedUntil, setDiscordMutedUntil] = useState<string | null>(null);
   const [muteDuration, setMuteDuration] = useState<number>(1);
@@ -312,7 +320,37 @@ function SettingsPageContent() {
     }
 
     loadSettings();
-  }, [session, status]);
+  }, [activeLocale, session, status]);
+
+  const handleSaveLanguage = async (value: AppLocale) => {
+    if (!settings) return;
+
+    setPreferredLocale(value);
+    setSavingLanguage(true);
+
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preferred_locale: value }),
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setPreferredLocale(updated.preferred_locale || value);
+        toast.success(t("languageSaved"));
+        router.refresh();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || t("languageSaveFailed"));
+      }
+    } catch {
+      toast.error(t("languageSaveFailed"));
+    } finally {
+      setSavingLanguage(false);
+    }
+  };
 
   // Load organizations on mount
   useEffect(() => {
@@ -1166,14 +1204,53 @@ function SettingsPageContent() {
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-            Application Theme
+            {t("appearanceTitle")}
           </h2>
 
           <p className="mt-1 text-sm text-[var(--muted-foreground)] mb-6">
-            Choose a theme for the DevTrack interface.
+            {t("appearanceDescription")}
           </p>
 
           <ThemePresetPicker />
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                {t("languageTitle")}
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                {t("languageDescription")}
+              </p>
+            </div>
+            <div className="w-full md:w-64">
+              <label
+                htmlFor="preferred-locale"
+                className="block text-sm font-medium text-[var(--card-foreground)]"
+              >
+                {t("languageSelectLabel")}
+              </label>
+              <select
+                id="preferred-locale"
+                value={preferredLocale}
+                disabled={savingLanguage}
+                onChange={(event) => handleSaveLanguage(event.target.value as AppLocale)}
+                className="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-60"
+              >
+                {locales.map((locale) => (
+                  <option key={locale} value={locale}>
+                    {localeMetadata[locale].nativeLabel}
+                  </option>
+                ))}
+              </select>
+              {savingLanguage && (
+                <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+                  {common("saving")}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -1356,10 +1433,10 @@ function SettingsPageContent() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Weekly Email Digest
+                {t("weeklyDigestTitle")}
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Receive an optional weekly email digest every Monday morning summarizing your coding habits.
+                {t("weeklyDigestDescription")}
               </p>
             </div>
 
@@ -1392,17 +1469,17 @@ function SettingsPageContent() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Notifications
+                {t("notificationsTitle")}
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Send a weekly summary of your activity to Slack or Discord via webhook.
+                {t("notificationsDescription")}
               </p>
             </div>
           </div>
 
           <div className="mt-4">
             <label className="text-sm font-medium text-[var(--card-foreground)]">
-              Webhook URL
+              {t("webhookUrl")}
             </label>
             <input
               type="text"
@@ -1440,7 +1517,7 @@ function SettingsPageContent() {
                 disabled={webhookSaving}
                 className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity disabled:opacity-60"
               >
-                {webhookSaving ? "Saving..." : "Save"}
+                {webhookSaving ? common("saving") : common("save")}
               </button>
 
               <button
@@ -1450,7 +1527,7 @@ function SettingsPageContent() {
                 }}
                 className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)]"
               >
-                Reset
+                {common("reset")}
               </button>
             </div>
           </div>
@@ -1460,11 +1537,10 @@ function SettingsPageContent() {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Connected Accounts
+                {t("connectedAccountsTitle")}
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Link additional GitHub accounts and switch between them on the
-                dashboard.
+                {t("connectedAccountsDescription")}
               </p>
             </div>
 
@@ -1473,7 +1549,7 @@ function SettingsPageContent() {
               prefetch={false}
               className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
             >
-              Add GitHub Account
+              {t("addGitHubAccount")}
             </Link>
           </div>
 
@@ -1496,11 +1572,11 @@ function SettingsPageContent() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Loading linked accounts...
+                {t("loadingLinkedAccounts")}
               </div>
             ) : linkedAccounts.length === 0 ? (
               <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)]">
-                No linked GitHub accounts yet.
+                {t("noLinkedAccounts")}
               </div>
             ) : (
               <div className="space-y-3">
@@ -1636,7 +1712,7 @@ function SettingsPageContent() {
                 Wakatime Integration
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Connect your Wakatime account to display accurate coding time and language usage.
+                {t("wakatimeDescription")}
               </p>
             </div>
           </div>
@@ -1644,7 +1720,7 @@ function SettingsPageContent() {
           <div className="space-y-4">
             <div>
               <label htmlFor="wakatime-key" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                API Key
+                {t("apiKey")}
               </label>
               <div className="flex gap-2">
                 <input
@@ -1665,7 +1741,7 @@ function SettingsPageContent() {
                   disabled={savingWakatime}
                   className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60 min-w-[80px]"
                 >
-                  {savingWakatime ? "Saving..." : "Save"}
+                  {savingWakatime ? common("saving") : common("save")}
                 </button>
               </div>
               <p className="mt-2 text-xs text-[var(--muted-foreground)]">
@@ -1679,10 +1755,10 @@ function SettingsPageContent() {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Discord Integration
+                {t("discordTitle")}
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Receive streak reminders and milestone alerts in your Discord server.
+                {t("discordDescription")}
               </p>
             </div>
           </div>
@@ -1690,7 +1766,7 @@ function SettingsPageContent() {
           <div className="space-y-4">
             <div>
               <label htmlFor="discord-webhook" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                Webhook URL
+                {t("webhookUrl")}
               </label>
               <div className="flex gap-2">
                 <input
@@ -1709,7 +1785,7 @@ function SettingsPageContent() {
 
             <div>
               <label htmlFor="timezone-select" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                Timezone (For 8 PM reminders)
+                {t("timezoneLabel")}
               </label>
               <select
                 id="timezone-select"
@@ -1744,7 +1820,7 @@ function SettingsPageContent() {
                 disabled={savingDiscord}
                 className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
               >
-                {savingDiscord ? "Saving..." : "Save Discord Settings"}
+                {savingDiscord ? common("saving") : t("saveDiscord")}
               </button>
               <button
                 type="button"
@@ -1752,7 +1828,7 @@ function SettingsPageContent() {
                 disabled={testingDiscord || !discordWebhook}
                 className="px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--card-muted)] transition-colors disabled:opacity-60"
               >
-                {testingDiscord ? "Testing..." : "Test Notification"}
+                {testingDiscord ? t("testing") : t("testNotification")}
               </button>
             </div>
             <p className="mt-2 text-xs text-[var(--muted-foreground)]">
@@ -1762,7 +1838,7 @@ function SettingsPageContent() {
             {discordWebhook && (
               <div className="border-t border-[var(--border)]/60 pt-4 mt-4">
                 <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
-                  Mute Notifications
+                  {t("muteNotifications")}
                 </h3>
                 {discordMutedUntil && new Date(discordMutedUntil).getTime() > Date.now() ? (
                   <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4">
@@ -1781,7 +1857,7 @@ function SettingsPageContent() {
                       disabled={savingDiscord}
                       className="px-4 py-2 rounded-lg border border-[var(--destructive-muted-border)] text-[var(--destructive)] text-sm font-medium hover:bg-[var(--destructive-muted)] transition-colors disabled:opacity-60"
                     >
-                      {savingDiscord ? "Unmuting..." : "Unmute Now"}
+                      {savingDiscord ? common("saving") : t("unmuteNow")}
                     </button>
                   </div>
                 ) : (
@@ -1801,7 +1877,7 @@ function SettingsPageContent() {
                       disabled={savingDiscord}
                       className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
                     >
-                      {savingDiscord ? "Muting..." : "Mute Notifications"}
+                      {savingDiscord ? common("saving") : t("muteNotifications")}
                     </button>
                   </div>
                 )}
@@ -1817,7 +1893,7 @@ function SettingsPageContent() {
               <span className="mr-2 transition-transform duration-200 group-hover:-translate-x-1.5">
                 ←
               </span>
-              Back to Dashboard
+              {common("backToDashboard")}
             </button>
           </Link>
         </div>
@@ -1826,10 +1902,10 @@ function SettingsPageContent() {
 
         <ConfirmModal
           isOpen={showConfirmModal}
-          title="Unsaved Changes"
-          message="You have unsaved changes in your settings. If you leave now, your progress will be lost."
-          confirmLabel="Leave Anyway"
-          cancelLabel="Stay and Save"
+          title={t("unsavedTitle")}
+          message={t("unsavedMessage")}
+          confirmLabel={t("leaveAnyway")}
+          cancelLabel={t("stayAndSave")}
           onConfirm={handleConfirmLeave}
           onCancel={handleCancelLeave}
         />

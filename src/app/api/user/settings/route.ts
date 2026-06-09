@@ -7,6 +7,12 @@ import { encryptToken } from "@/lib/crypto";
 import { validateTextInput } from "@/lib/sanitize";
 import { clearLeaderboardCache } from "@/lib/leaderboard";
 import { cacheGet, cacheSet, cacheDelete } from "@/lib/metrics-cache";
+import {
+  defaultLocale,
+  isValidLocale,
+  localeCookieMaxAge,
+  localeCookieName,
+} from "@/i18n/config";
 
 export const dynamic = "force-dynamic";
 
@@ -327,7 +333,7 @@ export async function GET(req: NextRequest) {
 
   const cached = await cacheGet<Record<string, unknown>>(cacheKey, SETTINGS_TTL);
   if (cached) {
-    return NextResponse.json(cached);
+    return settingsResponse(cached);
   }
 
   const result = await fetchUserSettings(user.id);
@@ -356,7 +362,7 @@ export async function GET(req: NextRequest) {
   };
 
   await cacheSet(cacheKey, response, SETTINGS_TTL);
-  return NextResponse.json(response);
+  return settingsResponse(response);
 }
 
 
@@ -542,7 +548,7 @@ export async function PATCH(req: NextRequest) {
 
   // If there are no updates (or none that are supported by the schema)
   if (Object.keys(updates).length === 0) {
-    return NextResponse.json({
+    return settingsResponse({
       id: (settingsResult.data as any).id,
       github_login: (settingsResult.data as any).github_login,
       bio: (settingsResult.data as any).bio ?? "",
@@ -607,7 +613,7 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({
+  return settingsResponse({
     id: (updated as any).id,
     github_login: (updated as any).github_login,
     bio: (updated as any).bio ?? "",

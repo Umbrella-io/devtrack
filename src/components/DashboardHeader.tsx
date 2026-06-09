@@ -96,9 +96,10 @@ function useDashboardSync() {
 }
 
 export default function DashboardHeader() {
+  const t = useTranslations("dashboard");
   const { data: session } = useSession();
   const [isPublic, setIsPublic] = useState<boolean | null>(null);
-  const [greeting, setGreeting] = useState<string>("Welcome back");
+  const [greeting, setGreeting] = useState<string>(t("welcomeBack"));
 
   const [isNightOwl, setIsNightOwl] = useState<boolean>(false);
   const [isEarlyBird, setIsEarlyBird] = useState<boolean>(false);
@@ -108,13 +109,13 @@ export default function DashboardHeader() {
   useEffect(() => {
     const computeCurrentGreeting = () => {
       const currentHour = new Date().getHours();
-      if (currentHour >= 5 && currentHour < 12) return "Good morning ☀️";
-      if (currentHour >= 12 && currentHour < 17) return "Good afternoon 🌤️";
-      if (currentHour >= 17 && currentHour < 22) return "Good evening 🌙";
-      return "Burning the midnight oil 🦉";
+      if (currentHour >= 5 && currentHour < 12) return t("goodMorning");
+      if (currentHour >= 12 && currentHour < 17) return t("goodAfternoon");
+      if (currentHour >= 17 && currentHour < 22) return t("goodEvening");
+      return t("midnightOil");
     };
     setGreeting(computeCurrentGreeting());
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!session?.githubLogin) return;
@@ -215,20 +216,20 @@ export default function DashboardHeader() {
             </div>
             {isNightOwl && (
               <div
-                title="Night Owl Milestone: You push code between Midnight and 4 AM!"
+                title={t("nightOwlTitle")}
                 className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 px-2 py-0.5 text-[11px] font-bold text-indigo-400 transition-all duration-300 hover:bg-indigo-500/20 cursor-help"
               >
                 <Moon className="h-3 w-3 shrink-0 text-indigo-400" />
-                <span>Night Owl</span>
+                <span>{t("nightOwl")}</span>
               </div>
             )}
             {isEarlyBird && (
               <div
-                title="Early Bird Milestone: You push code between 5 AM and 8 AM!"
+                title={t("earlyBirdTitle")}
                 className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[11px] font-bold text-amber-400 transition-all duration-300 hover:bg-amber-500/20 cursor-help"
               >
                 <Sun className="h-3 w-3 shrink-0 text-amber-400" />
-                <span>Early Bird</span>
+                <span>{t("earlyBird")}</span>
               </div>
             )}
           </div>
@@ -237,20 +238,20 @@ export default function DashboardHeader() {
               className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted-foreground)]"
               style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)" }}
             >
-              Dashboard overview
+              {t("overviewEyebrow")}
             </p>
             <h1 className="mt-2 bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-2xl font-extrabold text-transparent sm:text-3xl md:text-4xl">
-              Dashboard
+              {t("title")}
             </h1>
             <p
               className="mt-2 max-w-xl text-sm leading-6 text-[var(--muted-foreground)]"
               style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", letterSpacing: "0.06em" }}
             >
-              coding activity at a glance
+              {t("subtitle")}
             </p>
             {minutesAgo !== null && (
               <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                {minutesAgo <= 0 ? "Synced just now" : `Synced ${minutesAgo} min ago`}
+                {minutesAgo <= 0 ? t("syncedJustNow") : t("syncedMinutesAgo", { minutes: minutesAgo })}
               </p>
             )}
           </div>
@@ -268,7 +269,7 @@ export default function DashboardHeader() {
                 className={buttonVariants({ variant: "default" })}
                 title="View your public profile"
               >
-                Share Profile
+                {t("shareProfile")}
               </a>
             )}
 
@@ -392,7 +393,7 @@ export default function DashboardHeader() {
               title="View your public profile"
               onClick={() => setMenuOpen(false)}
             >
-              Share Profile
+              {t("shareProfile")}
             </a>
           )}
         </div>

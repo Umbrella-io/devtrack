@@ -15,6 +15,8 @@ import MilestonePlanner from "@/components/MilestonePlanner";
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/");
+  const t = await getTranslations("dashboard");
+  const common = await getTranslations("common");
 
   return (
     <DashboardSSEProvider>
@@ -29,14 +31,14 @@ export default async function DashboardPage() {
               href="/wrapped"
               className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg border border-[var(--accent)] bg-[var(--accent)]/10 px-5 py-2.5 text-sm font-semibold text-[var(--accent)] shadow-sm shadow-[var(--accent)]/20 transition-all hover:bg-[var(--accent)]/20 hover:shadow-md hover:scale-[1.02] active:scale-95"
             >
-              Year in Code
+              {t("yearInCode")}
             </Link>
 
             <Link
               href="/dashboard/settings"
               className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)]/60 px-5 py-2.5 text-sm font-medium transition-all hover:bg-[var(--card)]/80 hover:shadow-sm hover:scale-[1.02] active:scale-95"
             >
-              Settings
+              {common("settings")}
             </Link>
           </div>
 
