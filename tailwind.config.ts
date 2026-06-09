@@ -10,6 +10,32 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      colors: {
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        muted: "var(--muted)",
+        "muted-foreground": "var(--muted-foreground)",
+        card: "var(--card)",
+        "card-foreground": "var(--card-foreground)",
+        "card-muted": "var(--card-muted)",
+        border: "var(--border)",
+        accent: {
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
+          secondary: "var(--accent-secondary)",
+          soft: "var(--accent-soft)",
+        },
+        control: "var(--control)",
+        "control-hover": "var(--control-hover)",
+        ring: "var(--ring)",
+        success: "var(--success)",
+        warning: "var(--warning)",
+        destructive: {
+          DEFAULT: "var(--destructive)",
+          foreground: "var(--destructive-foreground)",
+          muted: "var(--destructive-muted)",
+        },
+      },
       keyframes: {
         "fade-in-up": {
           "0%": { opacity: "0", transform: "translateY(12px)" },

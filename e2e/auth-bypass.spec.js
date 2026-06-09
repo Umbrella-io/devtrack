@@ -28,7 +28,7 @@ test("dashboard heading is not visible without a valid session", async ({
 }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
   await expect(
-    page.getByRole("heading", { name: /dashboard/i })
+    page.getByRole("heading", { name: "Dashboard", exact: true })
   ).not.toBeVisible({ timeout: 5_000 });
 });
 
@@ -53,7 +53,7 @@ test("setting playwright-dashboard-auth=1 cookie does not bypass authentication"
   // The cookie alone must never grant dashboard access.
   await expect(page).toHaveURL(/\/$/, { timeout: 10_000 });
   await expect(
-    page.getByRole("heading", { name: /dashboard/i })
+    page.getByRole("heading", { name: "Dashboard", exact: true })
   ).not.toBeVisible({ timeout: 5_000 });
 });
 

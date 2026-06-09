@@ -16,11 +16,13 @@ import { dispatchToAllWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
 
+const STREAK_LOOKBACK_DAYS = 365;
+
 async function fetchActiveDates(
   githubLogin: string,
   token: string,
-  cacheContext: { bypass: boolean; userId: string }
-  , timeZone = "UTC"
+  cacheContext: { bypass: boolean; userId: string },
+  timeZone = "UTC"
 ): Promise<Set<string>> {
   // Cache key is scoped per user + githubLogin so multi-account "combined" view
   // stores each account's dates separately and merges them in the GET handler.
@@ -36,10 +38,10 @@ async function fetchActiveDates(
       ttlSeconds: METRICS_CACHE_TTL_SECONDS.streak,
     },
     async () => {
-      // Look back 90 days — the maximum window GitHub's Commit Search supports.
-      // Requesting beyond 90 days will silently return fewer results.
+      // Look back far enough to correctly compute long streaks.
+      // GitHub Commit Search supports date ranges up to ~1 year.
       const since = new Date();
-      since.setDate(since.getDate() - 90);
+      since.setDate(since.getDate() - STREAK_LOOKBACK_DAYS);
       const sinceStr = since.toISOString().slice(0, 10); // "YYYY-MM-DD"
 
       const activeDates = new Set<string>();
@@ -49,8 +51,8 @@ async function fetchActiveDates(
       //   • Authenticated (OAuth token / PAT): 30 requests/minute
       //   • Unauthenticated:                   10 requests/minute
       //
-      // This loop pages through up to 10 pages (1,000 commits max) to cover
-      // the full 90-day window. Each page = 1 request against the 30 req/min quota.
+      // This loop pages through up to 10 pages (1,000 commits max).
+      // Each page = 1 request against the 30 req/min quota.
       // Most users need only 1–2 pages; the cap of 10 prevents runaway API usage
       // for extremely active accounts.
       while (true) {
@@ -115,7 +117,6 @@ async function fetchActiveDates(
   return new Set(dates);
 }
 
-
 async function checkAndRecordMilestone(
   userId: string,
   currentStreak: number
@@ -159,11 +160,11 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Fetch streak freeze dates from Supabase for the past 90 days.
+  // Fetch streak freeze dates from Supabase for the past STREAK_LOOKBACK_DAYS.
   // These are merged with commit dates so a freeze day doesn't break the streak.
   // Only fetched when the user has a Supabase row (appUserId is non-null).
   const since = new Date();
-  since.setDate(since.getDate() - 90);
+  since.setDate(since.getDate() - STREAK_LOOKBACK_DAYS);
   const sinceStr = since.toISOString().slice(0, 10);
 
   const freezeDates = new Set<string>();

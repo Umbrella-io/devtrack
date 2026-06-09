@@ -152,6 +152,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
+  const format = req.nextUrl.searchParams.get("format"); // "csv" | null (default: json)
+
   // --- Rate limiting ---------------------------------------------------
   const lastExport = await getRecentExport(user.id);
   if (lastExport) {
@@ -269,12 +271,30 @@ export async function GET(req: NextRequest) {
   // --- Redact any sensitive fields that slipped through the column selects --
   const redactedSections = redactSensitiveFields(sections) as Record<string, unknown>;
 
-  return NextResponse.json({
+  const exportPayload = {
     exportedAt: new Date().toISOString(),
     userId: user.id,
     githubLogin: session.githubLogin,
     sections: redactedSections,
-  });
+  };
+
+  if (format === "csv") {
+    // Flatten goals section to CSV
+    const goals = (redactedSections as any)?.goals ?? [];
+    const headers = ["id", "title", "target", "current", "unit", "recurrence", "deadline", "created_at"];
+    const rows = goals.map((g: Record<string, unknown>) =>
+      headers.map((h) => JSON.stringify(g[h] ?? "")).join(",")
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv",
+        "Content-Disposition": `attachment; filename="devtrack-export-${session.githubLogin}.csv"`,
+      },
+    });
+  }
+
+  return NextResponse.json(exportPayload);
 }
 
 // ---------------------------------------------------------------------------

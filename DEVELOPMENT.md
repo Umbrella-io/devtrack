@@ -41,7 +41,17 @@ npm install
    - **anon / public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - **service_role** secret → `SUPABASE_SERVICE_ROLE_KEY`
 
-> The `service_role` key has admin access. Never expose it client-side. DevTrack uses it only in server-side API routes.
+### ⚠️ Security: SUPABASE_SERVICE_ROLE_KEY
+
+The `service_role` key is a **database superkey** — it completely bypasses all Supabase Row Level Security (RLS) policies. Handle it with extreme care:
+
+- **NEVER** use this key in client-side code (React components, browser scripts, or `NEXT_PUBLIC_` environment variables)
+- **NEVER** commit it to version control or expose it publicly
+- **ONLY** use it in server-side API routes (`/src/app/api/*`)
+- **Store it only in `.env.local`** which is always in `.gitignore`
+- **If compromised**, rotate it immediately in the Supabase dashboard — an attacker gains full read/write/delete access to all user data
+
+DevTrack uses this key only in server-side API routes. See `.env.example` for detailed security requirements.
 
 ---
 
@@ -370,9 +380,18 @@ You hit the 30 requests/minute search API limit. Wait 1 minute. In production th
 
 ---
 
+## Schema synchronization (important)
+
+When you add a new Supabase migration under `supabase/migrations/`, you must also update `supabase/schema.sql` so that fresh local setups work without manually running every migration.
+
+A simple rule: append the new migration SQL into `supabase/schema.sql` (including any new columns, tables, indexes, functions, and RLS policies).
+
+---
+
 ## Questions?
 
 Open a [GitHub Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions) — not an issue.
+
 
 
 ### Husky Hooks Troubleshooting Guide

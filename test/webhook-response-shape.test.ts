@@ -55,6 +55,7 @@ function createRequest(body: string, event = "push", signature?: string): Reques
       "content-type": "application/json",
       "x-hub-signature-256": signature ?? signPayload(body),
       "x-github-event": event,
+      "x-github-delivery": crypto.randomUUID(),
     },
     body,
   });

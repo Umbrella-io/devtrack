@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart, Bar, LineChart, Line, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import { BarChart, Bar, LineChart, Line, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
 import { TimelinePoint } from "@/lib/repoAnalytics";
 
 export default function RepoTimelineChart({ timeline }: { timeline: TimelinePoint[] }) {
@@ -29,34 +29,12 @@ export default function RepoTimelineChart({ timeline }: { timeline: TimelinePoin
                 color: "var(--card-foreground)",
               }}
             />
-            <Legend 
-              wrapperStyle={{ 
-                color: "var(--foreground)",
-                paddingTop: "10px"
-              }}
-              formatter={(value) => (
-                <span style={{ color: "var(--foreground)" }}>{value}</span>
-              )}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="commits" 
-              stroke="var(--accent)" 
-              strokeWidth={2} 
-              dot={false}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="prs" 
-              stroke="var(--accent-secondary)" 
-              strokeWidth={2} 
-              dot={false}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="issues" 
-              stroke="var(--warning)" 
-              strokeWidth={2} 
+            <Line
+              type="monotone"
+              dataKey="events"
+              name="Commits"
+              stroke="var(--accent)"
+              strokeWidth={2}
               dot={false}
             />
           </LineChart>
@@ -86,9 +64,10 @@ export default function RepoTimelineChart({ timeline }: { timeline: TimelinePoin
                 color: "var(--card-foreground)",
               }}
             />
-            <Bar 
-              dataKey="commits" 
-              fill="var(--accent)" 
+            <Bar
+              dataKey="events"
+              name="Commits"
+              fill="var(--accent)"
               radius={[4, 4, 0, 0]}
             />
           </BarChart>

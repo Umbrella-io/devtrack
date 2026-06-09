@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser, AppUser } from "@/lib/resolve-user";
 import { generateSecretKey, encryptSecretKey } from "@/lib/webhooks";
 import { isSafeUrl } from "@/lib/ssrf-protection";
+import { validateTextInput } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -66,8 +67,13 @@ export async function POST(req: NextRequest) {
 
   const { name, url, events } = body;
 
-  if (!name || !name.trim()) {
-    return Response.json({ error: "Webhook name is required" }, { status: 400 });
+  const validatedName = validateTextInput(name, "Webhook name", 100);
+
+  if (!validatedName.ok) {
+    return Response.json(
+      { error: validatedName.error },
+      { status: 400 }
+    );
   }
 
   if (!url) {
@@ -128,7 +134,7 @@ export async function POST(req: NextRequest) {
     .from("webhook_configs")
     .insert({
       user_id: result.user.id,
-      name: name.trim(),
+      name: validatedName.value,
       url,
       events,
       secret_key: encrypted,

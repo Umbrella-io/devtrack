@@ -60,11 +60,12 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
     setGreeting(getGreeting(now.getHours()));
     setPrompt(getDailyPrompt(now));
 
+    let localGoal = "";
     try {
-      const storedGoal = window.localStorage.getItem(nextKey)?.trim() ?? "";
-      setGoal(storedGoal);
-      setInputValue(storedGoal);
-      setIsEditing(storedGoal.length === 0);
+      localGoal = window.localStorage.getItem(nextKey)?.trim() ?? "";
+      setGoal(localGoal);
+      setInputValue(localGoal);
+      setIsEditing(localGoal.length === 0);
     } catch (e) {
       setGoal("");
       setInputValue("");
@@ -72,9 +73,35 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
     }
 
     setIsMounted(true);
+
+    async function fetchGoal() {
+      try {
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        const todayStr = `${year}-${month}-${day}`;
+
+        const res = await fetch(`/api/daily-focus?date=${todayStr}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.goal) {
+            setGoal(data.goal);
+            setInputValue(data.goal);
+            setIsEditing(false);
+            try {
+              window.localStorage.setItem(nextKey, data.goal);
+            } catch (e) {}
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch daily focus", err);
+      }
+    }
+    
+    fetchGoal();
   }, []);
 
-  function handleSave() {
+  async function handleSave() {
     const trimmedGoal = inputValue.trim();
     if (!trimmedGoal || !todayKey) return;
 
@@ -85,9 +112,20 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
     setGoal(trimmedGoal);
     setInputValue(trimmedGoal);
     setIsEditing(false);
+
+    try {
+      const todayStr = todayKey.replace(STORAGE_PREFIX, "");
+      await fetch("/api/daily-focus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal_text: trimmedGoal, date: todayStr }),
+      });
+    } catch (err) {
+      console.error("Failed to save daily focus", err);
+    }
   }
 
-  function handleClear() {
+  async function handleClear() {
     if (!todayKey) return;
 
     try {
@@ -97,6 +135,15 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
     setGoal("");
     setInputValue("");
     setIsEditing(true);
+
+    try {
+      const todayStr = todayKey.replace(STORAGE_PREFIX, "");
+      await fetch(`/api/daily-focus?date=${todayStr}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Failed to clear daily focus", err);
+    }
   }
 
   function handleEdit() {
