@@ -91,6 +91,19 @@ export default function RoomClient({
     }
   }
 
+  async function handleLeaveRoom() {
+    if (!confirm('Are you sure you want to leave this room?')) return;
+    const res = await fetch(`/api/rooms/${room.id}/members/${encodeURIComponent(currentUser)}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) {
+      router.push('/rooms');
+    } else {
+      const data = await res.json();
+      alert(data.error ?? 'Failed to leave room');
+    }
+  }
+
   return (
     <div className="flex flex-col h-screen bg-[var(--background)] text-[var(--foreground)]">
       <header className="border-b border-[var(--border)] px-4 py-3 flex items-center justify-between shrink-0">
@@ -119,6 +132,13 @@ export default function RoomClient({
             className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {deleting ? 'Deleting...' : 'Delete Room'}
+          </button>
+        ) : (
+          <button
+            onClick={handleLeaveRoom}
+            className="text-xs px-3 py-1.5 border border-red-400 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30"
+          >
+            Leave Room
           </button>
         ) : (
           <button
