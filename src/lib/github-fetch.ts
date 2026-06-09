@@ -23,9 +23,22 @@ export class GitHubApiError extends Error {
   }
 }
 
+function isGitHubRateLimited(res: Response): boolean {
+  if (res.status === 429) {
+    return true;
+  }
+
+  if (res.status !== 403) {
+    return false;
+  }
+
+  return res.headers.get("X-RateLimit-Remaining") === "0";
+}
+
 /**
  * Fetch a GitHub API endpoint with standard headers.
- * Throws GitHubRateLimitError on 403/429, GitHubApiError on other non-ok responses.
+ * Throws GitHubRateLimitError when GitHub indicates rate-limit exhaustion.
+ * Throws GitHubApiError on other non-ok responses.
  */
 export async function githubFetch<T>(
   url: string,
@@ -42,7 +55,7 @@ export async function githubFetch<T>(
     cache: (options.cache as RequestCache) ?? "no-store",
   });
 
-  if (res.status === 403 || res.status === 429) {
+  if (isGitHubRateLimited(res)) {
     const resetHeader = res.headers.get("X-RateLimit-Reset");
     const resetAt = resetHeader ? new Date(Number(resetHeader) * 1000) : null;
     throw new GitHubRateLimitError(resetAt);
@@ -72,7 +85,7 @@ export async function githubGraphQL<T>(
     cache: "no-store",
   });
 
-  if (res.status === 403 || res.status === 429) {
+  if (isGitHubRateLimited(res)) {
     const resetHeader = res.headers.get("X-RateLimit-Reset");
     const resetAt = resetHeader ? new Date(Number(resetHeader) * 1000) : null;
     throw new GitHubRateLimitError(resetAt);
