@@ -65,3 +65,12 @@ export async function sendRoomMessage(roomId: string, senderUsername: string, se
   if (error) throw error;
   return data;
 }
+
+export async function removeRoomMember(roomId: string, githubUsername: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("room_members")
+    .delete()
+    .eq("room_id", roomId)
+    .eq("github_username", githubUsername);
+  if (error) throw error;
+}
