@@ -241,6 +241,28 @@ async function injectMockSession(page: import("@playwright/test").Page) {
     })
   );
 
+  // ── Supabase-dependent routes (placeholder env disables admin client) ────
+  await page.route("**/api/user/github-orgs**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ orgs: [], hasReadOrgScope: true }),
+    })
+  );
+
+  await page.route("**/api/daily-focus**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ goal: "" }),
+    })
+  );
+
+  await page.route("**/api/user/dashboard-layout**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ layout: null, source: "default" }),
+    })
+  );
+
   // ── Remaining metric routes (stub to empty) ──────────────────────────────
   const stubRoutes = [
     "**/api/metrics/repos**",

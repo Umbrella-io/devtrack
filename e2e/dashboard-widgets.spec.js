@@ -179,6 +179,27 @@ test.beforeEach(async ({ page }) => {
       body: "data: {}\n\n",
     });
   });
+
+  await page.route("**/api/user/github-orgs**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ orgs: [], hasReadOrgScope: true }),
+    });
+  });
+
+  await page.route("**/api/daily-focus**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ goal: "" }),
+    });
+  });
+
+  await page.route("**/api/user/dashboard-layout**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ layout: null, source: "default" }),
+    });
+  });
 });
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });

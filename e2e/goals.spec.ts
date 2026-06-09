@@ -116,6 +116,27 @@ async function setupGoalsMocks(page: import("@playwright/test").Page) {
       route.fulfill({ contentType: "application/json", body: JSON.stringify({}) })
     );
   }
+
+  await page.route("**/api/user/github-orgs**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ orgs: [], hasReadOrgScope: true }),
+    })
+  );
+
+  await page.route("**/api/daily-focus**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ goal: "" }),
+    })
+  );
+
+  await page.route("**/api/user/dashboard-layout**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ layout: null, source: "default" }),
+    })
+  );
 }
 
 test("[Goals E2E] goals widget renders on dashboard", async ({ page }) => {
