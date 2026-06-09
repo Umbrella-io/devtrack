@@ -15,10 +15,10 @@ const GITHUB_REPO_RE = /^[a-zA-Z0-9._-]{1,100}$/;
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.name)
+  if (!session?.githubLogin)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
-    const rooms = await getRoomsForUser(session.user.name);
+    const rooms = await getRoomsForUser(session.githubLogin);
     return NextResponse.json(rooms);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
@@ -28,7 +28,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.name)
+  if (!session?.githubLogin)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: CreateRoomPayload;
