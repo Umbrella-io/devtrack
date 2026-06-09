@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { CollaborationRoom, RoomMember, RoomMessage } from '@/types/rooms';
@@ -24,9 +24,23 @@ export default function RoomClient({
   const [members, setMembers] = useState<RoomMember[]>(initialMembers);
   const [deleting, setDeleting] = useState(false);
 
+  // Optimistic update: immediately show the message the current user just sent.
   function handleSent(msg: RoomMessage) {
-    setMessages((prev) => [...prev, msg]);
+    setMessages((prev) => {
+      if (prev.some((m) => m.id === msg.id)) return prev;
+      return [...prev, msg];
+    });
   }
+
+  // Called by MessageFeed's polling loop with messages from other participants.
+  // useCallback prevents the effect in MessageFeed from restarting on every render.
+  const handleNewMessages = useCallback((incoming: RoomMessage[]) => {
+    setMessages((prev) => {
+      const existingIds = new Set(prev.map((m) => m.id));
+      const novel = incoming.filter((m) => !existingIds.has(m.id));
+      return novel.length > 0 ? [...prev, ...novel] : prev;
+    });
+  }, []);
 
   function handleMemberAdded(username: string) {
     setMembers((prev) => [
@@ -39,6 +53,10 @@ export default function RoomClient({
         joined_at: new Date().toISOString(),
       },
     ]);
+  }
+
+  function handleMemberRemoved(username: string) {
+    setMembers((prev) => prev.filter((m) => m.github_username !== username));
   }
 
   async function handleDeleteRoom() {
@@ -57,6 +75,19 @@ export default function RoomClient({
       alert('Failed to delete room. Please check your connection.');
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleLeaveRoom() {
+    if (!confirm('Are you sure you want to leave this room?')) return;
+    const res = await fetch(`/api/rooms/${room.id}/members/${encodeURIComponent(currentUser)}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) {
+      router.push('/rooms');
+    } else {
+      const data = await res.json();
+      alert(data.error ?? 'Failed to leave room');
     }
   }
 
@@ -81,13 +112,20 @@ export default function RoomClient({
           </div>
         </div>
 
-        {room.is_owner && (
+        {room.is_owner ? (
           <button
             onClick={handleDeleteRoom}
             disabled={deleting}
             className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {deleting ? 'Deleting...' : 'Delete Room'}
+          </button>
+        ) : (
+          <button
+            onClick={handleLeaveRoom}
+            className="text-xs px-3 py-1.5 border border-red-400 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30"
+          >
+            Leave Room
           </button>
         )}
       </header>
@@ -97,7 +135,8 @@ export default function RoomClient({
           <MessageFeed
             roomId={room.id}
             currentUser={currentUser}
-            initialMessages={messages}
+            messages={messages}
+            onNewMessages={handleNewMessages}
           />
           <MessageInput roomId={room.id} onSent={handleSent} />
         </div>
@@ -106,6 +145,7 @@ export default function RoomClient({
           members={members}
           isOwner={room.is_owner}
           onMemberAdded={handleMemberAdded}
+          onMemberRemoved={handleMemberRemoved}
         />
       </div>
     </div>

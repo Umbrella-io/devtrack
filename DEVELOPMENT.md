@@ -8,7 +8,7 @@ Everything you need to run DevTrack locally from scratch in under 10 minutes.
 
 | Tool | Version | Check |
 |------|---------|-------|
-| Node.js | >= 18 | `node -v` |
+| Node.js | >= 20 | `node -v` |
 | npm | >= 9 | `npm -v` |
 | Git | any | `git --version` |
 

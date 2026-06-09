@@ -20,8 +20,9 @@ type Recurrence = (typeof VALID_RECURRENCES)[number];
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -112,7 +113,7 @@ export async function PATCH(
   const { data: existingGoal } = await supabaseAdmin
     .from("goals")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .single();
 
@@ -148,7 +149,7 @@ export async function PATCH(
   const { data: updatedGoal, error } = await supabaseAdmin
     .from("goals")
     .update(updates)
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .select()
     .single();
@@ -178,8 +179,9 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.githubId) {
@@ -198,7 +200,7 @@ export async function DELETE(
     const { error } = await supabaseAdmin
       .from("goals")
       .delete()
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id);
 
     if (error) {

@@ -9,11 +9,21 @@ import {
   computeTrends,
   DeveloperMetrics,
 } from "@/lib/ai-mentor";
+import {
+  upstashRateLimitFixedWindow,
+  getUpstashConfig,
+} from "@/lib/upstash-rest";
+import { createMemoryFixedWindowRateLimiter } from "@/lib/rate-limit";
 
-const aiInsightsRateLimit = new Map<
-  string,
-  { count: number; resetTime: number }
->();
+const AI_INSIGHTS_LIMIT = 5;
+const AI_INSIGHTS_WINDOW_SECONDS = 60 * 60; // 1 hour
+
+// In-memory fallback used only when Upstash Redis is not configured.
+const memoryLimiter = createMemoryFixedWindowRateLimiter({
+  windowMs: AI_INSIGHTS_WINDOW_SECONDS * 1000,
+  pruneIntervalMs: AI_INSIGHTS_WINDOW_SECONDS * 1000,
+  maxEntries: 10_000,
+});
 
 export const dynamic = "force-dynamic";
 
@@ -71,10 +81,6 @@ export async function GET(request: Request) {
 
   const userId = user.id;
 
-  const currentTime = Date.now();
-  const WINDOW_MS = 60 * 60 * 1000;
-  const MAX_REQUESTS = 5;
-
   const { searchParams } = new URL(request.url);
   const rawType = searchParams.get("type") ?? "weekly_summary";
 
@@ -105,26 +111,38 @@ export async function GET(request: Request) {
   }
 
   // No valid cache — enforce the rate limit only when a fresh generation is needed.
-  let existing = aiInsightsRateLimit.get(userId);
-  if (!existing || currentTime > existing.resetTime) {
-    existing = { count: 0, resetTime: currentTime + WINDOW_MS };
-    aiInsightsRateLimit.set(userId, existing);
+  // Use Upstash Redis when configured (durable across serverless cold starts);
+  // fall back to an in-memory limiter for local development without Redis.
+  let rateLimitDenied = false;
+  let retryAfterSeconds = AI_INSIGHTS_WINDOW_SECONDS;
+
+  if (getUpstashConfig()) {
+    const result = await upstashRateLimitFixedWindow({
+      key: `ai-insights:${userId}`,
+      limit: AI_INSIGHTS_LIMIT,
+      windowSeconds: AI_INSIGHTS_WINDOW_SECONDS,
+    });
+    if (!result.allowed) {
+      rateLimitDenied = true;
+      retryAfterSeconds = result.retryAfter ?? AI_INSIGHTS_WINDOW_SECONDS;
+    }
+  } else {
+    const result = memoryLimiter.check(`ai-insights:${userId}`, AI_INSIGHTS_LIMIT);
+    if (!result.allowed) {
+      rateLimitDenied = true;
+      retryAfterSeconds = Math.max(result.reset - Math.floor(Date.now() / 1000), 1);
+    }
   }
 
-  if (existing.count >= MAX_REQUESTS) {
+  if (rateLimitDenied) {
     return NextResponse.json(
-      { error: "Rate limit exceeded" },
+      { error: "Rate limit exceeded. Try again later." },
       {
         status: 429,
-        headers: {
-          "Retry-After": String(
-            Math.ceil((existing.resetTime - currentTime) / 1000)
-          ),
-        },
+        headers: { "Retry-After": String(retryAfterSeconds) },
       }
     );
   }
-  existing.count += 1;
 
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
   const cookie = request.headers.get("cookie") ?? "";
