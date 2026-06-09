@@ -43,7 +43,10 @@ function mockMetricResponse(url) {
       longest: 9,
       lastCommitDate: "2026-05-18",
       totalActiveDays: 12,
+      freezeDates: [],
     };
+  if (url.includes("/api/streak/freeze"))
+    return { hasFreeze: false, freezeDate: null };
   if (url.includes("/api/metrics/weekly-summary"))
     return {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
@@ -99,7 +102,11 @@ function mockMetricResponse(url) {
       timezone: "UTC",
     };
   if (url.includes("/api/metrics/contributions"))
-    return { data: { "2026-05-16": 3, "2026-05-17": 5, "2026-05-18": 2 } };
+    return {
+      days: 365,
+      total: 10,
+      data: { "2026-05-16": 3, "2026-05-17": 5, "2026-05-18": 2 },
+    };
   if (url.includes("/api/metrics/productive-hours"))
     return { grid: [], peak: null, total: 0, days: 0, timezone: "UTC" };
   if (url.includes("/api/user/pinned-repos/details"))

@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
-
-/**
- * streak.spec.ts
- * Covers: streak widget shows numeric values; freeze button is present.
- */
+import {
+  installDashboardApiMocks,
+  scrollToWidget,
+  streakSection,
+} from "./helpers/dashboard-mocks";
 
 const AUTH_SECRET =
   process.env.NEXTAUTH_SECRET ?? "test-nextauth-secret-for-playwright-tests";
@@ -163,20 +163,18 @@ test.beforeEach(async ({ page }) => {
 test("[Streak E2E] streak widget section is rendered on dashboard", async ({
   page,
 }) => {
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });
-  // The streak section may use "Streak", "Current Streak", or similar heading.
-  await expect(
-    page.getByRole("heading", { name: /streak/i }).first()
-  ).toBeVisible({ timeout: 10_000 });
+
+  await scrollToWidget(page, "Commit Streaks");
 });
 
 test("[Streak E2E] streak widget shows the mocked current streak value", async ({
   page,
 }) => {
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });
@@ -195,19 +193,25 @@ test("[Streak E2E] streak widget shows the mocked current streak value", async (
 test("[Streak E2E] streak widget shows the mocked longest streak value", async ({
   page,
 }) => {
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });
 
-  // The mock returns longest: 21.
-  await expect(page.getByText(/21/).first()).toBeVisible({ timeout: 10_000 });
+  const section = streakSection(page);
+  await section.scrollIntoViewIfNeeded();
+  await expect(section.getByText("Longest Streak")).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(section.getByText("21", { exact: true })).toBeVisible({
+    timeout: 10_000,
+  });
 });
 
 test("[Streak E2E] freeze button is present in the streak widget", async ({
   page,
 }) => {
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });
@@ -240,18 +244,18 @@ test("[Streak E2E] streak freeze API is called when freeze button is clicked", a
     });
   });
 
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });
 
-  const freezeBtn = page
-    .getByRole("button", { name: /freeze|protect/i })
-    .first();
-  await expect(freezeBtn).toBeVisible({ timeout: 10_000 });
-  await freezeBtn.click();
+  const freezeButton = streakSection(page).getByRole("button", {
+    name: "Freeze Streak",
+  });
+  await freezeButton.scrollIntoViewIfNeeded();
+  await expect(freezeButton).toBeVisible({ timeout: 15_000 });
+  await freezeButton.click();
 
-  // Give the network request time to fire.
   await expect
     .poll(() => freezeRequests.length, { timeout: 8_000 })
     .toBeGreaterThan(0);

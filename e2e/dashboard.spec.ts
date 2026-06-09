@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
+import { scrollToWidget } from "./helpers/dashboard-mocks";
 
 /**
  * dashboard.spec.ts
@@ -141,7 +142,7 @@ async function injectMockSession(page: import("@playwright/test").Page) {
   await page.route("**/api/streak/freeze**", (route) =>
     route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ freezes: [] }),
+      body: JSON.stringify({ hasFreeze: false, freezeDate: null }),
     })
   );
 
@@ -316,35 +317,29 @@ test("[Dashboard E2E] dashboard heading is visible after mock login", async ({
 });
 
 test("[Dashboard E2E] Commits widget renders", async ({ page }) => {
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });
-  await expect(
-    page.getByRole("heading", { name: "Your Commits" })
-  ).toBeVisible({ timeout: 10_000 });
+  await scrollToWidget(page, "Your Commits");
 });
 
 test("[Dashboard E2E] PR Analytics widget renders", async ({ page }) => {
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });
-  await expect(
-    page.getByRole("heading", { name: "PR Analytics" })
-  ).toBeVisible({ timeout: 10_000 });
+  await scrollToWidget(page, "PR Analytics");
 });
 
 test("[Dashboard E2E] Goals widget renders with mocked goal", async ({
   page,
 }) => {
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });
-  await expect(
-    page.getByRole("heading", { name: "Goals", exact: true })
-  ).toBeVisible({ timeout: 10_000 });
+  await scrollToWidget(page, "Goals");
   await expect(page.getByText("Make 10 commits")).toBeVisible({
     timeout: 10_000,
   });
@@ -388,7 +383,7 @@ test("[Dashboard E2E] no uncaught console errors on dashboard load", async ({
 });
 
 test("[Dashboard E2E] weekly summary widget renders", async ({ page }) => {
-  await page.goto("/dashboard", { waitUntil: "load" });
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30_000 });

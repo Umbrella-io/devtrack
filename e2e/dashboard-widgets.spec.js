@@ -316,6 +316,7 @@ function mockMetricResponse(url) {
       longest: 9,
       lastCommitDate: "2026-05-18",
       totalActiveDays: 12,
+      freezeDates: [],
     };
   }
   if (url.includes("/api/metrics/weekly-summary")) {

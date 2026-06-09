@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
+import {
+  installDashboardApiMocks,
+  scrollToWidget,
+} from "./helpers/dashboard-mocks";
 
 /**
  * goals.spec.ts
@@ -79,43 +83,15 @@ async function setupGoalsMocks(page: import("@playwright/test").Page) {
     })
   );
 
-  // Stub remaining metric routes so the page loads without errors.
-  const stubs = [
-    "**/api/metrics/contributions**",
-    "**/api/metrics/streak**",
-    "**/api/streak/freeze**",
-    "**/api/metrics/prs**",
-    "**/api/metrics/pr-breakdown**",
-    "**/api/metrics/pr-review-trend**",
-    "**/api/metrics/issues**",
-    "**/api/metrics/languages**",
-    "**/api/metrics/weekly-summary**",
-    "**/api/ai-insights**",
-    "**/api/metrics/repos**",
-    "**/api/metrics/pinned-repos**",
-    "**/api/metrics/compare**",
-    "**/api/metrics/repo-health**",
-    "**/api/metrics/ci**",
-    "**/api/user/github-accounts**",
-    "**/api/integrations/jira**",
-    "**/api/metrics/activity**",
-    "**/api/metrics/commit-time**",
-    "**/api/metrics/personal-records**",
-    "**/api/metrics/discussions**",
-    "**/api/metrics/inactive-repos**",
-    "**/api/local-coding/stats**",
-    "**/api/metrics/coding-time**",
-    "**/api/metrics/coding-activity-insights**",
-    "**/api/wakatime**",
-    "**/api/metrics/productive-hours**",
-    "**/api/user/pinned-repos/details**",
-    "**/api/metrics/repo-explorer**",
-  ];
-  for (const pattern of stubs) {
-    await page.route(pattern, (route) =>
-      route.fulfill({ contentType: "application/json", body: JSON.stringify({}) })
-    );
-  }
+  await installDashboardApiMocks(page);
+}
+
+async function openGoalsWidget(page: import("@playwright/test").Page) {
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByRole("heading", { name: "Dashboard", exact: true })
+  ).toBeVisible({ timeout: 30_000 });
+  await scrollToWidget(page, "Goals");
 }
 
 test("[Goals E2E] goals widget renders on dashboard", async ({ page }) => {
@@ -132,13 +108,7 @@ test("[Goals E2E] goals widget renders on dashboard", async ({ page }) => {
     });
   });
 
-  await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true })
-  ).toBeVisible({ timeout: 30_000 });
-  await expect(
-    page.getByRole("heading", { name: "Goals", exact: true })
-  ).toBeVisible({ timeout: 10_000 });
+  await openGoalsWidget(page);
 });
 
 test("[Goals E2E] creating a goal sends POST /api/goals with correct payload", async ({
@@ -164,10 +134,7 @@ test("[Goals E2E] creating a goal sends POST /api/goals with correct payload", a
     });
   });
 
-  await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true })
-  ).toBeVisible({ timeout: 30_000 });
+  await openGoalsWidget(page);
 
   // Scroll the goal form into view and wait for it to be interactive.
   const titleInput = page.getByLabel("Goal title");
@@ -231,12 +198,8 @@ test("[Goals E2E] newly created goal appears in the goals list", async ({
     });
   });
 
-  await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true })
-  ).toBeVisible({ timeout: 30_000 });
+  await openGoalsWidget(page);
 
-  // Existing goal should be present.
   await expect(page.getByText("Existing Goal")).toBeVisible({ timeout: 10_000 });
 
   // Scroll goal form into view and wait for it to be interactive.
@@ -303,10 +266,7 @@ test("[Goals E2E] deleting a goal removes it from the list", async ({
     return route.fulfill({ status: 204, body: "" });
   });
 
-  await page.goto("/dashboard", { waitUntil: "load" });
-  await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true })
-  ).toBeVisible({ timeout: 30_000 });
+  await openGoalsWidget(page);
   await expect(page.getByText("Goal to Delete")).toBeVisible({ timeout: 10_000 });
 
   // Click the delete button (trash icon) next to this goal.

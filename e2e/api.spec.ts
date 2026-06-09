@@ -51,8 +51,7 @@ test("[API E2E] /api/metrics/streak returns 401 without a session", async ({
   expect([401, 302, 403]).toContain(res.status());
 });
 
-test("[API E2E] /api/metrics/contributions returns 200 with valid session cookie", async ({
-  page,
+test("[API E2E] /api/metrics/contributions accepts valid session cookie", async ({
   request,
 }) => {
   const sessionToken = await buildSessionCookie();
@@ -117,20 +116,13 @@ test("[API E2E] /api/goals POST without session returns 401 or 403", async ({
 });
 
 test("[API E2E] /api/metrics/contributions with days param returns valid JSON when authenticated", async ({
-  page,
+  request,
 }) => {
   const sessionToken = await buildSessionCookie();
 
-  await page.context().addCookies([
-    {
-      name: "next-auth.session-token",
-      value: sessionToken,
-      domain: "127.0.0.1",
-      path: "/",
-      httpOnly: true,
-      sameSite: "Lax",
-      secure: false,
-      expires: Math.floor(Date.now() / 1000) + 60 * 60,
+  const res = await request.get("/api/metrics/contributions?days=30", {
+    headers: {
+      Cookie: `next-auth.session-token=${sessionToken}`,
     },
   ]);
 
