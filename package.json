@@ -32,7 +32,7 @@
     "driver.js": "^1.4.0",
     "fflate": "^0.8.3",
     "html-to-image": "^1.11.13",
-    "idb-keyval": "^6.2.4",
+    "idb-keyval": "^6.2.5",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.475.0",
