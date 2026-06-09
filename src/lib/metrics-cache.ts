@@ -19,6 +19,7 @@ export const METRICS_CACHE_TTL_SECONDS = {
   compare: 30 * 60,
   "weekly-summary": 30 * 60,
   "commit-times": 30 * 60,
+  "achievement-progress": 10 * 60,
 } as const;
 
 type MetricsCacheEndpoint = keyof typeof METRICS_CACHE_TTL_SECONDS;

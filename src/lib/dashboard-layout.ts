@@ -36,7 +36,8 @@ export type DashboardWidgetId =
   | "recent-activity"
   | "ci-analytics"
   | "language-breakdown"
-  | "friend-comparison";
+  | "friend-comparison"
+  | "achievement-progress";
 
 export interface DashboardLayoutPreference {
   version: 1;
@@ -90,6 +91,7 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   "ci-analytics": "CI Analytics",
   "language-breakdown": "Language Breakdown",
   "friend-comparison": "Friend Comparison",
+  "achievement-progress": "Achievement Progress",
 };
 
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
@@ -129,6 +131,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
       "ci-analytics",
       "language-breakdown",
       "friend-comparison",
+      "achievement-progress",
     ],
   },
   hidden: [],

@@ -151,6 +151,11 @@ const FriendComparison = dynamic(() => import("@/components/FriendComparison"), 
   loading: () => <RepoWidgetSkeleton />,
 });
 
+const GitHubAchievementProgress = dynamic(
+  () => import("@/components/GitHubAchievementProgress"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
 const ActivityRingChart = dynamic(
   () => import("@/components/ActivityRingChart"),
   { ssr: false, loading: () => <ChartSkeleton /> },
@@ -418,6 +423,13 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
       return (
         <LazyWidget fallback={<RepoWidgetSkeleton />}>
           <FriendComparison />
+        </LazyWidget>
+      );
+
+    case "achievement-progress":
+      return (
+        <LazyWidget fallback={<SkeletonCard />}>
+          <GitHubAchievementProgress />
         </LazyWidget>
       );
 
