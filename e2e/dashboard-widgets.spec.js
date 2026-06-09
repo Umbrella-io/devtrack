@@ -331,6 +331,14 @@ function mockMetricResponse(url) {
         thisWeek: 5,
         lastWeek: 4,
       },
+      issues: {
+        thisWeek: 2,
+        lastWeek: 1,
+      },
+      productivityScore: {
+        current: 85,
+        previous: 80,
+      },
       streak: 3,
       topRepo: "demo/repo",
     };

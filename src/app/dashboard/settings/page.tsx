@@ -13,8 +13,6 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import WebhookManager from "@/components/webhook/WebhookManager";
-import { useLocale, useTranslations } from "next-intl";
-import { localeMetadata, locales, type AppLocale } from "@/i18n/config";
 
 // ── Max length for the profile bio ──────────────────────────────────────────
 const BIO_MAX = 160;
@@ -33,7 +31,6 @@ interface UserSettings {
   timezone?: string;
   pinned_repos?: string[];
   discord_muted_until?: string | null;
-  preferred_locale?: AppLocale;
 }
 
 interface LinkedAccount {
@@ -162,9 +159,6 @@ function SettingsPageFallback() {
 }
 
 function SettingsPageContent() {
-  const t = useTranslations("settings");
-  const common = useTranslations("common");
-  const activeLocale = useLocale() as AppLocale;
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -189,11 +183,14 @@ function SettingsPageContent() {
   const [discordWebhook, setDiscordWebhook] = useState("");
   const [timezone, setTimezone] = useState("");
   const [savingDiscord, setSavingDiscord] = useState(false);
-  const [preferredLocale, setPreferredLocale] = useState<AppLocale>(activeLocale);
-  const [savingLanguage, setSavingLanguage] = useState(false);
   const [testingDiscord, setTestingDiscord] = useState(false);
   const [discordMutedUntil, setDiscordMutedUntil] = useState<string | null>(null);
   const [muteDuration, setMuteDuration] = useState<number>(1);
+
+  // GitHub Orgs States
+  const [orgAccounts, setOrgAccounts] = useState<any[]>([]);
+  const [orgsConfig, setOrgsConfig] = useState<Record<string, boolean>>({});
+  const [loadingOrgs, setLoadingOrgs] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
@@ -302,7 +299,6 @@ function SettingsPageContent() {
           setTimezone(data.timezone || "UTC");
           setDiscordMutedUntil(data.discord_muted_until ?? null);
           setWebhookUrl(data.webhook_url ?? null);
-          setPreferredLocale(data.preferred_locale || activeLocale);
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -312,35 +308,46 @@ function SettingsPageContent() {
     }
 
     loadSettings();
-  }, [activeLocale, session, status]);
+  }, [session, status]);
 
-  const handleSaveLanguage = async (value: AppLocale) => {
-    if (!settings) return;
-
-    setPreferredLocale(value);
-    setSavingLanguage(true);
-
-    try {
-      const res = await fetch("/api/user/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ preferred_locale: value }),
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setSettings(updated);
-        setPreferredLocale(updated.preferred_locale || value);
-        toast.success(t("languageSaved"));
-        router.refresh();
-      } else {
-        const err = await res.json();
-        toast.error(err.error || t("languageSaveFailed"));
+  // Load organizations on mount
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    async function loadOrgs() {
+      try {
+        setLoadingOrgs(true);
+        const res = await fetch("/api/user/orgs");
+        if (res.ok) {
+          const data = await res.json();
+          setOrgAccounts(data.accounts || []);
+          setOrgsConfig(data.config || {});
+        }
+      } catch (err) {
+        console.error("Failed to load organizations:", err);
+      } finally {
+        setLoadingOrgs(false);
       }
-    } catch {
-      toast.error(t("languageSaveFailed"));
-    } finally {
-      setSavingLanguage(false);
+    }
+    loadOrgs();
+  }, [status]);
+
+  const handleToggleOrg = async (orgLogin: string, enabled: boolean) => {
+    const newConfig = { ...orgsConfig, [orgLogin]: enabled };
+    setOrgsConfig(newConfig);
+    try {
+      const res = await fetch("/api/user/orgs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config: newConfig }),
+      });
+      if (res.ok) {
+        toast.success(`Organization ${orgLogin} sync ${enabled ? "enabled" : "disabled"}.`);
+      } else {
+        toast.error("Failed to update organization sync settings.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error updating organization settings.");
     }
   };
 
@@ -753,9 +760,44 @@ function SettingsPageContent() {
     return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
         <div className="max-w-2xl mx-auto">
-          <p className="text-[var(--muted-foreground)]">
-            Failed to load settings.
-          </p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-8 text-center">
+            <div className="text-3xl mb-4">⚠️</div>
+            <h2 className="text-lg font-semibold text-[var(--card-foreground)] mb-2">
+              Failed to load settings
+            </h2>
+            <p className="text-sm text-[var(--muted-foreground)] mb-6">
+              This usually happens when the database is temporarily throttled. Try again in a moment.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setLoading(true);
+                  fetch("/api/user/settings")
+                    .then((r) => r.ok ? r.json() : Promise.reject())
+                    .then((data) => {
+                      setSettings(data);
+                      setBioDraft(data.bio ?? "");
+                      setDiscordWebhook(data.discord_webhook_url || "");
+                      setTimezone(data.timezone || "UTC");
+                      setDiscordMutedUntil(data.discord_muted_until ?? null);
+                      setWebhookUrl(data.webhook_url ?? null);
+                    })
+                    .catch(() => toast.error("Still unable to load settings"))
+                    .finally(() => setLoading(false));
+                }}
+                className="rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+              >
+                Try again
+              </button>
+              <Link
+                href="/dashboard"
+                className="rounded-lg border border-[var(--border)] px-5 py-2.5 text-sm font-medium text-[var(--card-foreground)] hover:bg-[var(--control)] transition-colors"
+              >
+                Back to Dashboard
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -919,57 +961,7 @@ function SettingsPageContent() {
             </div>
           )}
 
-          {/* ── Bio field with character counter ── NEW ─────────────────────── */}
-          <div className="mt-6 pt-6 border-t border-[var(--border)]">
-            <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-1">
-              Bio
-            </h3>
-            <p className="text-sm text-[var(--muted-foreground)] mb-3">
-              Write a short bio shown on your public profile.
-            </p>
-
-            <textarea
-              id="bio"
-              value={bioDraft}
-              onChange={(e) => {
-                setBioDraft(e.target.value.slice(0, BIO_MAX));
-                setIsDirty(true);
-              }}
-              placeholder="Tell others about yourself..."
-              rows={3}
-              maxLength={BIO_MAX}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] resize-none"
-            />
-
-            {/* Character counter */}
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-xs text-[var(--muted-foreground)]">
-                {bioDraft.length === 0 && "Shown on your public /u/ page."}
-              </p>
-              <p
-                className={`text-xs font-medium tabular-nums transition-colors ${bioDraft.length >= BIO_MAX
-                  ? "text-[var(--destructive)]"
-                  : bioDraft.length >= Math.floor(BIO_MAX * 0.9)
-                    ? "text-yellow-500"
-                    : "text-[var(--muted-foreground)]"
-                  }`}
-              >
-                {bioDraft.length} / {BIO_MAX}
-              </p>
-            </div>
-
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={handleSaveBio}
-                disabled={savingBio}
-                className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {savingBio ? "Saving..." : "Save Bio"}
-              </button>
-            </div>
-          </div>
-
+          {/* ── Profile Bio with Markdown preview ─────────────────────── */}
           <div className="mt-6 pt-6 border-t border-[var(--border)]">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -1057,7 +1049,6 @@ function SettingsPageContent() {
                   checked={theme === "default"}
                   onChange={() => {
                     setTheme("default");
-                    setIsDirty(true);
                   }}
                   className="accent-[var(--accent)] focus-visible:ring-[var(--accent)]"
                 />
@@ -1071,7 +1062,6 @@ function SettingsPageContent() {
                   checked={theme === "colour-blind-friendly"}
                   onChange={() => {
                     setTheme("colour-blind-friendly");
-                    setIsDirty(true);
                   }}
                   className="accent-[var(--accent)] focus-visible:ring-[var(--accent)]"
                 />
@@ -1088,75 +1078,18 @@ function SettingsPageContent() {
             </div>
           )}
 
-          {isDirty && (
-            <div className="mt-6 pt-6 border-t border-[var(--border)] flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  // The toggles themselves already call the API,
-                  // but for the heatmap theme which is local only,
-                  // or to clear the dirty state after a manual change,
-                  // we provide this clear feedback.
-                  setIsDirty(false);
-                  toast.success("Settings saved successfully!");
-                }}
-                className="px-6 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
-              >
-                Save Changes
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-            {t("appearanceTitle")}
+            Application Theme
           </h2>
 
           <p className="mt-1 text-sm text-[var(--muted-foreground)] mb-6">
-            {t("appearanceDescription")}
+            Choose a theme for the DevTrack interface.
           </p>
 
           <ThemePresetPicker />
-        </div>
-
-        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                {t("languageTitle")}
-              </h2>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                {t("languageDescription")}
-              </p>
-            </div>
-            <div className="w-full md:w-64">
-              <label
-                htmlFor="preferred-locale"
-                className="block text-sm font-medium text-[var(--card-foreground)]"
-              >
-                {t("languageSelectLabel")}
-              </label>
-              <select
-                id="preferred-locale"
-                value={preferredLocale}
-                disabled={savingLanguage}
-                onChange={(event) => handleSaveLanguage(event.target.value as AppLocale)}
-                className="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-60"
-              >
-                {locales.map((locale) => (
-                  <option key={locale} value={locale}>
-                    {localeMetadata[locale].nativeLabel}
-                  </option>
-                ))}
-              </select>
-              {savingLanguage && (
-                <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-                  {common("saving")}
-                </p>
-              )}
-            </div>
-          </div>
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -1240,20 +1173,20 @@ function SettingsPageContent() {
                       <button
                         type="button"
                         onClick={() => handleMovePin(index, "up")}
-                        disabled={index === 0 || saving}
+                        disabled={index === 0}
                         title="Move Up"
                         aria-label={`Move ${repoName} up`}
-                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
                       >
                         ↑
                       </button>
                       <button
                         type="button"
                         onClick={() => handleMovePin(index, "down")}
-                        disabled={index === (settings.pinned_repos || []).length - 1 || saving}
+                        disabled={index === (settings.pinned_repos || []).length - 1}
                         title="Move Down"
                         aria-label={`Move ${repoName} down`}
-                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
                       >
                         ↓
                       </button>
@@ -1262,9 +1195,8 @@ function SettingsPageContent() {
                       <button
                         type="button"
                         onClick={() => handleUnpinRepo(repoName)}
-                        disabled={saving}
                         aria-label={`Unpin ${repoName}`}
-                        className="ml-2 rounded-lg border border-[var(--destructive-muted-border)] hover:bg-[var(--destructive-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--destructive)] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="ml-2 rounded-lg border border-[var(--destructive-muted-border)] hover:bg-[var(--destructive-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--destructive)]"
                       >
                         Unpin
                       </button>
@@ -1285,10 +1217,9 @@ function SettingsPageContent() {
                 type="text"
                 value={repoSearchQuery}
                 onChange={(e) => setRepoSearchQuery(e.target.value)}
-                disabled={saving}
                 placeholder="Type to search your repositories..."
                 aria-label="Search repositories to pin"
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] mb-4"
               />
 
               {loadingRepos ? (
@@ -1315,9 +1246,8 @@ function SettingsPageContent() {
                         <button
                           type="button"
                           onClick={() => handlePinRepo(repoName)}
-                          disabled={saving}
                           aria-label={`Pin ${repoName}`}
-                          className="rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity"
                         >
                           Pin
                         </button>
@@ -1342,10 +1272,10 @@ function SettingsPageContent() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                {t("weeklyDigestTitle")}
+                Weekly Email Digest
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                {t("weeklyDigestDescription")}
+                Receive an optional weekly email digest every Monday morning summarizing your coding habits.
               </p>
             </div>
 
@@ -1378,17 +1308,17 @@ function SettingsPageContent() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                {t("notificationsTitle")}
+                Notifications
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                {t("notificationsDescription")}
+                Send a weekly summary of your activity to Slack or Discord via webhook.
               </p>
             </div>
           </div>
 
           <div className="mt-4">
             <label className="text-sm font-medium text-[var(--card-foreground)]">
-              {t("webhookUrl")}
+              Webhook URL
             </label>
             <input
               type="text"
@@ -1426,7 +1356,7 @@ function SettingsPageContent() {
                 disabled={webhookSaving}
                 className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity disabled:opacity-60"
               >
-                {webhookSaving ? common("saving") : common("save")}
+                {webhookSaving ? "Saving..." : "Save"}
               </button>
 
               <button
@@ -1436,7 +1366,7 @@ function SettingsPageContent() {
                 }}
                 className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)]"
               >
-                {common("reset")}
+                Reset
               </button>
             </div>
           </div>
@@ -1446,10 +1376,11 @@ function SettingsPageContent() {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                {t("connectedAccountsTitle")}
+                Connected Accounts
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                {t("connectedAccountsDescription")}
+                Link additional GitHub accounts and switch between them on the
+                dashboard.
               </p>
             </div>
 
@@ -1458,7 +1389,7 @@ function SettingsPageContent() {
               prefetch={false}
               className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
             >
-              {t("addGitHubAccount")}
+              Add GitHub Account
             </Link>
           </div>
 
@@ -1481,11 +1412,11 @@ function SettingsPageContent() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                {t("loadingLinkedAccounts")}
+                Loading linked accounts...
               </div>
             ) : linkedAccounts.length === 0 ? (
               <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)]">
-                {t("noLinkedAccounts")}
+                No linked GitHub accounts yet.
               </div>
             ) : (
               <div className="space-y-3">
@@ -1525,10 +1456,103 @@ function SettingsPageContent() {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                {t("wakatimeTitle")}
+                GitHub Organizations
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                {t("wakatimeDescription")}
+                Choose which organizations to include or exclude from your dashboard metrics.
+              </p>
+            </div>
+          </div>
+
+          {loadingOrgs ? (
+            <div className="space-y-3">
+              <div className="h-10 bg-[var(--card-muted)] rounded animate-pulse" />
+              <div className="h-10 bg-[var(--card-muted)] rounded animate-pulse" />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {orgAccounts.some((acc) => !acc.hasOrgScope) && (
+                <div className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-4">
+                  <p className="text-sm text-amber-200">
+                    <strong>Action Required:</strong> Organization access is not fully authorized. To display private organization contributions, please sign out and sign back in to grant organization permission (enable the &quot;read:org&quot; scope when prompted).
+                  </p>
+                </div>
+              )}
+
+              {orgAccounts.length === 0 ? (
+                <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)] text-center">
+                  No organizations found.
+                </div>
+              ) : (
+                orgAccounts.map((acc) => (
+                  <div key={acc.githubId} className="space-y-3">
+                    <h3 className="text-sm font-semibold text-[var(--card-foreground)] border-b border-[var(--border)] pb-2">
+                      Organizations ({acc.githubLogin})
+                    </h3>
+                    {acc.orgs.length === 0 ? (
+                      <p className="text-xs text-[var(--muted-foreground)] py-2">
+                        No organization memberships found for this account.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {acc.orgs.map((org: any) => {
+                          const isEnabled = orgsConfig[org.login] !== false; // default to true
+                          return (
+                            <div
+                              key={org.id}
+                              className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] p-3"
+                            >
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={org.avatarUrl}
+                                  alt={org.login}
+                                  className="w-8 h-8 rounded"
+                                />
+                                <span className="text-sm font-semibold text-[var(--card-foreground)]">
+                                  {org.login}
+                                </span>
+                              </div>
+                              <label className="flex items-center cursor-pointer select-none">
+                                <span className="sr-only">Toggle {org.login}</span>
+                                <div className="relative">
+                                  <input
+                                    type="checkbox"
+                                    checked={isEnabled}
+                                    onChange={(e) => handleToggleOrg(org.login, e.target.checked)}
+                                    className="sr-only"
+                                  />
+                                  <div
+                                    className={`block h-6 w-10 rounded-full transition-colors ${
+                                      isEnabled ? "bg-[var(--accent)]" : "bg-[var(--control)]"
+                                    }`}
+                                  />
+                                  <div
+                                    className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
+                                      isEnabled ? "translate-x-4" : ""
+                                    }`}
+                                  />
+                                </div>
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                Wakatime Integration
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                Connect your Wakatime account to display accurate coding time and language usage.
               </p>
             </div>
           </div>
@@ -1536,7 +1560,7 @@ function SettingsPageContent() {
           <div className="space-y-4">
             <div>
               <label htmlFor="wakatime-key" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                {t("apiKey")}
+                API Key
               </label>
               <div className="flex gap-2">
                 <input
@@ -1557,7 +1581,7 @@ function SettingsPageContent() {
                   disabled={savingWakatime}
                   className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60 min-w-[80px]"
                 >
-                  {savingWakatime ? common("saving") : common("save")}
+                  {savingWakatime ? "Saving..." : "Save"}
                 </button>
               </div>
               <p className="mt-2 text-xs text-[var(--muted-foreground)]">
@@ -1571,10 +1595,10 @@ function SettingsPageContent() {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                {t("discordTitle")}
+                Discord Integration
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                {t("discordDescription")}
+                Receive streak reminders and milestone alerts in your Discord server.
               </p>
             </div>
           </div>
@@ -1582,7 +1606,7 @@ function SettingsPageContent() {
           <div className="space-y-4">
             <div>
               <label htmlFor="discord-webhook" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                {t("webhookUrl")}
+                Webhook URL
               </label>
               <div className="flex gap-2">
                 <input
@@ -1601,7 +1625,7 @@ function SettingsPageContent() {
 
             <div>
               <label htmlFor="timezone-select" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                {t("timezoneLabel")}
+                Timezone (For 8 PM reminders)
               </label>
               <select
                 id="timezone-select"
@@ -1636,7 +1660,7 @@ function SettingsPageContent() {
                 disabled={savingDiscord}
                 className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
               >
-                {savingDiscord ? common("saving") : t("saveDiscord")}
+                {savingDiscord ? "Saving..." : "Save Discord Settings"}
               </button>
               <button
                 type="button"
@@ -1644,7 +1668,7 @@ function SettingsPageContent() {
                 disabled={testingDiscord || !discordWebhook}
                 className="px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--card-muted)] transition-colors disabled:opacity-60"
               >
-                {testingDiscord ? t("testing") : t("testNotification")}
+                {testingDiscord ? "Testing..." : "Test Notification"}
               </button>
             </div>
             <p className="mt-2 text-xs text-[var(--muted-foreground)]">
@@ -1654,7 +1678,7 @@ function SettingsPageContent() {
             {discordWebhook && (
               <div className="border-t border-[var(--border)]/60 pt-4 mt-4">
                 <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
-                  {t("muteNotifications")}
+                  Mute Notifications
                 </h3>
                 {discordMutedUntil && new Date(discordMutedUntil).getTime() > Date.now() ? (
                   <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4">
@@ -1673,7 +1697,7 @@ function SettingsPageContent() {
                       disabled={savingDiscord}
                       className="px-4 py-2 rounded-lg border border-[var(--destructive-muted-border)] text-[var(--destructive)] text-sm font-medium hover:bg-[var(--destructive-muted)] transition-colors disabled:opacity-60"
                     >
-                      {savingDiscord ? common("saving") : t("unmuteNow")}
+                      {savingDiscord ? "Unmuting..." : "Unmute Now"}
                     </button>
                   </div>
                 ) : (
@@ -1693,7 +1717,7 @@ function SettingsPageContent() {
                       disabled={savingDiscord}
                       className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
                     >
-                      {savingDiscord ? common("saving") : t("muteNotifications")}
+                      {savingDiscord ? "Muting..." : "Mute Notifications"}
                     </button>
                   </div>
                 )}
@@ -1709,7 +1733,7 @@ function SettingsPageContent() {
               <span className="mr-2 transition-transform duration-200 group-hover:-translate-x-1.5">
                 ←
               </span>
-              {common("backToDashboard")}
+              Back to Dashboard
             </button>
           </Link>
         </div>
@@ -1718,10 +1742,10 @@ function SettingsPageContent() {
 
         <ConfirmModal
           isOpen={showConfirmModal}
-          title={t("unsavedTitle")}
-          message={t("unsavedMessage")}
-          confirmLabel={t("leaveAnyway")}
-          cancelLabel={t("stayAndSave")}
+          title="Unsaved Changes"
+          message="You have unsaved changes in your settings. If you leave now, your progress will be lost."
+          confirmLabel="Leave Anyway"
+          cancelLabel="Stay and Save"
           onConfirm={handleConfirmLeave}
           onCancel={handleCancelLeave}
         />

@@ -321,7 +321,6 @@ export async function PATCH(req: NextRequest) {
   }
 
   const user = await resolveAppUser(session.githubId, session.githubLogin);
-
   if (!user) {
     return NextResponse.json(
       { error: "User not found" },

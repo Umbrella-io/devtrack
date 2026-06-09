@@ -129,6 +129,7 @@ export async function githubFetch<T>(
   token: string,
   options: RequestInit = {}
 ): Promise<T> {
+
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -153,6 +154,7 @@ export async function githubGraphQL<T>(
   query: string,
   token: string
 ): Promise<T> {
+
   const MAX_RETRIES = 2;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {

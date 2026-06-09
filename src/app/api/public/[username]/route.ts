@@ -18,7 +18,6 @@ const GITHUB_USERNAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/
  * Maps IP -> { count: number, resetAt: number }
  * This resets on server restart. For production, use Redis.
  */
-
 const RATE_LIMIT_REQUESTS = 30;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const MEMORY_MAX_ENTRIES = Number(process.env.MEMORY_RATE_LIMIT_MAX_ENTRIES ?? 10_000);
