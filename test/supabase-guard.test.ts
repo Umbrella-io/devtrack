@@ -48,6 +48,19 @@ describe("supabase admin guard", () => {
 
     expect(isSupabaseAdminAvailable).toBe(false);
   });
+
+  it("treats malformed admin URLs as unavailable instead of crashing at import time", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "not-a-url");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-role-key");
+
+    const { isSupabaseAdminAvailable, supabaseAdmin, SUPABASE_ADMIN_UNAVAILABLE_MESSAGE } =
+      await import("@/lib/supabase-admin");
+
+    expect(isSupabaseAdminAvailable).toBe(false);
+    expect(() => supabaseAdmin.from("users")).toThrow(
+      SUPABASE_ADMIN_UNAVAILABLE_MESSAGE
+    );
+  });
 });
 
 describe("supabase browser client guard", () => {
@@ -78,5 +91,18 @@ describe("supabase browser client guard", () => {
     const { isBrowserClientAvailable } = await import("@/lib/supabase-browser");
 
     expect(isBrowserClientAvailable).toBe(false);
+  });
+
+  it("treats malformed browser URLs as unavailable instead of crashing at import time", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "not-a-url");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon-key");
+
+    const { isBrowserClientAvailable, supabaseBrowser, BROWSER_CLIENT_UNAVAILABLE_MESSAGE } =
+      await import("@/lib/supabase-browser");
+
+    expect(isBrowserClientAvailable).toBe(false);
+    expect(() => supabaseBrowser.from("users")).toThrow(
+      BROWSER_CLIENT_UNAVAILABLE_MESSAGE
+    );
   });
 });

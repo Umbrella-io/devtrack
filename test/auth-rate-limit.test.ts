@@ -6,9 +6,8 @@
  * can be flooded to exhaust GitHub's token-exchange quota or to probe for
  * valid OAuth codes:
  *
- *   POST /api/auth/signin/*      — OAuth initiation
- *   GET  /api/auth/callback/*    — OAuth code exchange
- *   GET  /api/auth/link-github/* — Secondary account link flow
+ *   GET /api/auth/callback/*           — OAuth code exchange
+ *   GET /api/auth/link-github/callback — Secondary account link code exchange
  *
  * The module under test is src/lib/auth-rate-limit.ts, which wraps the shared
  * createMemoryFixedWindowRateLimiter factory with an auth-specific namespace
@@ -39,22 +38,26 @@ async function freshLimiter() {
 // ─── isAuthSensitivePath ─────────────────────────────────────────────────────
 
 describe("isAuthSensitivePath", () => {
-  it("returns true for /api/auth/signin/github", () => {
-    expect(isAuthSensitivePath("/api/auth/signin/github")).toBe(true);
+  it("returns false for /api/auth/signin/github so cancelled OAuth starts can be retried", () => {
+    expect(isAuthSensitivePath("/api/auth/signin/github")).toBe(false);
   });
 
-  it("returns true for /api/auth/signin and sub-paths", () => {
-    expect(isAuthSensitivePath("/api/auth/signin")).toBe(true);
-    expect(isAuthSensitivePath("/api/auth/signin/email")).toBe(true);
+  it("returns false for /api/auth/signin and sub-paths", () => {
+    expect(isAuthSensitivePath("/api/auth/signin")).toBe(false);
+    expect(isAuthSensitivePath("/api/auth/signin/email")).toBe(false);
   });
 
   it("returns true for /api/auth/callback/github", () => {
     expect(isAuthSensitivePath("/api/auth/callback/github")).toBe(true);
   });
 
-  it("returns true for /api/auth/link-github and sub-paths", () => {
-    expect(isAuthSensitivePath("/api/auth/link-github")).toBe(true);
+  it("returns false for /api/auth/link-github initiation", () => {
+    expect(isAuthSensitivePath("/api/auth/link-github")).toBe(false);
+  });
+
+  it("returns true for /api/auth/link-github/callback and sub-paths", () => {
     expect(isAuthSensitivePath("/api/auth/link-github/callback")).toBe(true);
+    expect(isAuthSensitivePath("/api/auth/link-github/callback/extra")).toBe(true);
   });
 
   it("returns false for /api/auth/session (called on every page render)", () => {

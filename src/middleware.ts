@@ -93,6 +93,14 @@ function buildHeaders(result: RateLimitResult) {
   return headers;
 }
 
+function authRateLimitRedirect(req: NextRequest, headers: Headers) {
+  const url = req.nextUrl.clone();
+  url.pathname = "/auth/signin";
+  url.search = "";
+  url.searchParams.set("error", "RateLimit");
+  return NextResponse.redirect(url, { status: 302, headers });
+}
+
 function pruneMemoryBuckets(now: number) {
   if (memoryBuckets.size < 500) {
     return;
@@ -296,10 +304,7 @@ export async function middleware(req: NextRequest) {
     if (!authResult.allowed) {
       console.warn("auth_rate_limit_hit", { ip, path: pathname });
       const headers = buildHeaders({ ...authResult, limit: authLimit });
-      return NextResponse.json(
-        { error: "Too many authentication attempts. Please try again later." },
-        { status: 429, headers }
-      );
+      return authRateLimitRedirect(req, headers);
     }
 
     return NextResponse.next();

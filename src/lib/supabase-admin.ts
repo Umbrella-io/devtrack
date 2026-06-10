@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { isConfiguredSupabaseKey, isValidSupabaseUrl } from "@/lib/supabase-env";
 
 /**
  * Server-only Supabase admin client using the service role key.
@@ -19,16 +20,11 @@ function getValidatedAdminEnv(): { url: string; serviceRoleKey: string } | null 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (
-    !url ||
-    url.includes("placeholder") ||
-    !serviceRoleKey ||
-    serviceRoleKey.includes("placeholder")
-  ) {
+  if (!isValidSupabaseUrl(url) || !isConfiguredSupabaseKey(serviceRoleKey)) {
     return null;
   }
 
-  return { url, serviceRoleKey };
+  return { url: url.trim(), serviceRoleKey: serviceRoleKey.trim() };
 }
 
 export const isSupabaseAdminAvailable = !!getValidatedAdminEnv();
