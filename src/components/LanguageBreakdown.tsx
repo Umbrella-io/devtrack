@@ -190,8 +190,8 @@ export default function LanguageBreakdown() {
                 className="flex items-center gap-2 text-sm"
               >
                 <svg
-                  width="10"
-                  height="10"
+                  width="12"
+                  height="12"
                   viewBox="0 0 10 10"
                   className="shrink-0"
                   role="img"
