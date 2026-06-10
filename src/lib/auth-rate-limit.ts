@@ -2,8 +2,8 @@
  * Authentication rate limiter.
  *
  * Applies a strict per-IP fixed-window limit to authentication-sensitive
- * endpoints (OAuth initiation and callback routes) to prevent brute-force
- * and credential-stuffing attacks.
+ * endpoints (OAuth callback/code exchange routes) to prevent brute-force
+ * and credential-stuffing attacks without penalizing cancelled OAuth starts.
  *
  * Uses the shared createMemoryFixedWindowRateLimiter factory so behaviour
  * is consistent with the rest of the project's rate-limiting infrastructure.
@@ -11,12 +11,11 @@
  * and contact namespaces so the counters never interfere with each other.
  *
  * Protected paths (see AUTH_SENSITIVE_PREFIXES):
- *   POST /api/auth/signin/*      — OAuth initiation
- *   GET  /api/auth/callback/*    — OAuth callback / code exchange
- *   GET  /api/auth/link-github   — Secondary account link initiation
- *   GET  /api/auth/link-github/* — Secondary account link callback
+ *   GET /api/auth/callback/*            — OAuth callback / code exchange
+ *   GET /api/auth/link-github/callback  — Secondary account link callback
  *
  * Deliberately NOT rate-limited by this module:
+ *   GET/POST /api/auth/signin/* — OAuth initiation, safe to retry after cancel
  *   GET /api/auth/session        — called on every page render
  *   GET /api/auth/csrf           — CSRF token fetch, not an attack surface
  *   GET /api/auth/signout        — termination, not initiation
@@ -37,14 +36,13 @@ export const AUTH_LIMIT = 5;
 
 /**
  * Path prefixes whose requests count toward the authentication rate limit.
- * Only the OAuth initiation and callback routes are included; session and
- * CSRF endpoints are excluded because they are called on every page render
- * and blocking them would lock users out of the UI.
+ * Only OAuth callback/code-exchange routes are included. Initiation routes are
+ * intentionally excluded so an interrupted GitHub redirect can be retried
+ * without tripping the limiter before any code exchange has occurred.
  */
 export const AUTH_SENSITIVE_PREFIXES = [
-  "/api/auth/signin",
   "/api/auth/callback",
-  "/api/auth/link-github",
+  "/api/auth/link-github/callback",
 ] as const;
 
 const authLimiter = createMemoryFixedWindowRateLimiter({

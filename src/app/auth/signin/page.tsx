@@ -25,6 +25,8 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
     "Access was denied. You may have cancelled the GitHub authorization.",
   Verification:
     "The sign-in link has expired or has already been used.",
+  RateLimit:
+    "Too many sign-in attempts. Please wait a moment, then try GitHub sign-in again.",
   Default:
     "An unexpected authentication error occurred. Please try again.",
 };
@@ -117,6 +119,7 @@ function SignInContent() {
   // from a previous sign-in attempt.
   useEffect(() => {
     if (error && typeof window !== "undefined") {
+      toast.error(getErrorMessage(error));
       const url = new URL(window.location.href);
       url.searchParams.delete("error");
       window.history.replaceState({}, "", url.toString());

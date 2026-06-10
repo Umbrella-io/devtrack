@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { isConfiguredSupabaseKey, isValidSupabaseUrl } from "@/lib/supabase-env";
 
 /**
  * Browser-safe Supabase client using the public anon key.
@@ -12,11 +13,11 @@ function getValidatedBrowserEnv(): { url: string; anonKey: string } | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!url || url.includes("placeholder") || !anonKey || anonKey.includes("placeholder")) {
+  if (!isValidSupabaseUrl(url) || !isConfiguredSupabaseKey(anonKey)) {
     return null;
   }
 
-  return { url, anonKey };
+  return { url: url.trim(), anonKey: anonKey.trim() };
 }
 
 export const isBrowserClientAvailable = !!getValidatedBrowserEnv();
