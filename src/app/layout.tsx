@@ -84,14 +84,23 @@ export default async function RootLayout({
       <body
         className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
+      {/* Skip to main content link for keyboard/screen reader users (WCAG 2.4.1) */}
+        
+          <a href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[9999] focus:rounded-md focus:bg-[var(--background)] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[var(--foreground)] focus:ring-2 focus:ring-[var(--primary)] focus:outline-none"
+        >
+          Skip to main content
+        </a>
         <CustomCursor />
         <OfflineBanner />
 
         <div className="flex min-h-screen flex-col">
           <div className="flex-1">
             <Providers>
-              <AppNavbar />
-              {children}
+             <AppNavbar />
+              <main id="main-content" tabIndex={-1} className="outline-none">
+                {children}
+              </main>
             </Providers>
           </div>
 
