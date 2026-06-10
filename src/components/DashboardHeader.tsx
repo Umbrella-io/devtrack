@@ -18,6 +18,7 @@ import SignOutButton from "@/components/SignOutButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
+import OnboardingTour from "@/components/OnboardingTour";
 import { Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
@@ -205,6 +206,7 @@ function useDashboardSync() {
 export default function DashboardHeader() {
   const { data: session } = useSession();
   const [isPublic, setIsPublic] = useState<boolean | null>(null);
+  const [seenOnboarding, setSeenOnboarding] = useState<boolean>(true);
   const [greeting, setGreeting] = useState<string>("Welcome back");
 
   const [isNightOwl, setIsNightOwl] = useState<boolean>(false);
@@ -232,6 +234,7 @@ export default function DashboardHeader() {
       if (res.ok) {
         const data = await res.json();
         setIsPublic(data.is_public === true);
+        setSeenOnboarding(data.seen_onboarding === true);
       } else {
         setIsPublic(false);
       }
@@ -492,6 +495,8 @@ export default function DashboardHeader() {
       <div className="mt-5">
         <AccountToggle />
       </div>
+
+      {!seenOnboarding && <OnboardingTour />}
     </header>
   );
 }
