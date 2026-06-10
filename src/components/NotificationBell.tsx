@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 
 import { useNotifications } from "@/hooks/useNotifications";
+import { toast } from "sonner";
 
 const EMPTY_NOTIFICATIONS: any[] = [];
 
@@ -72,24 +73,27 @@ export default function NotificationBell() {
 
       if (!prev && unreadCount > 0) {
         const previousUnreadCount = unreadCount;
-        const previousNotifications = notifications;
 
         setUnreadCount(0);
         if (typeof window !== "undefined") {
           localStorage.setItem("devtrack:unread-notification-count", "0");
         }
-        fetch("/api/notifications", { method: "PATCH" }).catch(() => {
-          setUnreadCount(previousUnreadCount);
-          // data will be revalidated by the hook
-          if (typeof window !== "undefined") {
-            localStorage.setItem(
-              "devtrack:unread-notification-count",
-              previousUnreadCount.toString()
-            );
-          }
-        }).finally(() => {
-          void refetch();
-        });
+       fetch("/api/notifications", { method: "PATCH" })
+  .catch(() => {
+    setUnreadCount(previousUnreadCount);
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "devtrack:unread-notification-count",
+        previousUnreadCount.toString()
+      );
+    }
+
+    toast.error("Failed to mark notifications as read");
+  })
+  .finally(() => {
+    void refetch();
+  });
 
       }
 
@@ -192,9 +196,23 @@ export default function NotificationBell() {
                 Loading notifications…
               </li>
             ) : error ? (
-              <li className="px-4 py-6 text-center text-sm text-[var(--destructive)]">
-                {error.message}
-              </li>
+              <li className="px-4 py-6 text-center">
+  <p className="text-sm text-[var(--destructive)]">
+    Failed to load notifications
+  </p>
+
+  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+    {error.message}
+  </p>
+
+  <button
+    type="button"
+    onClick={() => void refetch()}
+    className="mt-2 text-xs underline"
+  >
+    Retry
+  </button>
+</li>
             ) : notifications.length === 0 ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
                 No notifications yet
