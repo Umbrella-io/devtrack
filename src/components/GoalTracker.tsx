@@ -495,7 +495,7 @@ export default function GoalTracker() {
           {goals.map((goal) => {
             const pct =
               goal.current > 0
-                ? Math.max(1, Math.min(Math.round((goal.current / goal.target) * 100), 100))
+                ? (() => { if (!goal.target || goal.target <= 0) return 0; const raw = (goal.current / goal.target) * 100; if (raw <= 0) return 0; if (raw < 1) return 1; return Math.min(Math.round(raw), 100); })()
                 : 0;
             const isDeleting = deletingId === goal.id;
             const completed = goal.current >= goal.target;
