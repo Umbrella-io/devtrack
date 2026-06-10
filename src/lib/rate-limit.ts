@@ -11,6 +11,12 @@ function normalizeIp(value: string | null | undefined): string | null {
   return ip.length > 0 ? ip : null;
 }
 
+/**
+ * Resolves the client IP address from the request headers.
+ * Respects cf-connecting-ip, x-real-ip, and x-forwarded-for headers.
+ * @param req - A request object containing headers.
+ * @returns The resolved client IP address, or "unknown".
+ */
 export function getClientIp(
   req: Pick<NextRequest, "headers">
 ): string {
@@ -24,6 +30,14 @@ export function getClientIp(
 
 type Bucket = { count: number; resetAt: number };
 
+/**
+ * Creates an in-memory fixed-window rate limiter instance.
+ * @param options - Configuration options for the rate limiter.
+ * @param options.windowMs - The size of the rate limit window in milliseconds.
+ * @param options.pruneIntervalMs - How often to prune expired buckets in milliseconds. Defaults to windowMs.
+ * @param options.maxEntries - Maximum number of entries allowed in memory. Defaults to 10,000.
+ * @returns An object with a `check` method to evaluate requests and an `_unsafeBuckets` map.
+ */
 export function createMemoryFixedWindowRateLimiter(options: {
   windowMs: number;
   pruneIntervalMs?: number;

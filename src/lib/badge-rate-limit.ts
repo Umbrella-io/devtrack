@@ -26,6 +26,11 @@ function pruneStore(now: number): void {
   }
 }
 
+/**
+ * Evaluates the rate limit for badge requests from a specific IP using a sliding window algorithm.
+ * @param ip - The client's IP address.
+ * @returns A result object detailing if the request is allowed, remaining requests, and reset epoch timestamp in seconds.
+ */
 export function checkBadgeRateLimit(ip: string): BadgeRateLimitResult {
   const now = Date.now();
   pruneStore(now);
@@ -60,6 +65,12 @@ export function checkBadgeRateLimit(ip: string): BadgeRateLimitResult {
   return { allowed: true, remaining, reset };
 }
 
+/**
+ * Extracts the client's IP address from the request headers or request object.
+ * Checks x-forwarded-for, x-real-ip, and other connection details.
+ * @param req - The incoming Next.js request.
+ * @returns The client IP address, or "unknown".
+ */
 export function getBadgeClientIp(req: NextRequest): string {
   return (
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??

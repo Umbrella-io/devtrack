@@ -48,6 +48,10 @@ function todayAndYesterday(timeZone: string): {
  * Canonical streak calculation shared across all endpoints.
  * Freeze dates count as active days so they do not break the streak.
  * The streak is alive when the last active day is today or yesterday.
+ * @param activeDates - Set of ISO date strings (YYYY-MM-DD) representing active days.
+ * @param freezeDates - Set of ISO date strings (YYYY-MM-DD) representing streak freeze days. Defaults to empty set.
+ * @param timeZone - The IANA time zone string to determine "today" and "yesterday". Defaults to "UTC".
+ * @returns The calculated streak result details.
  */
 export function calculateStreakFromDates(
   activeDates: Set<string>,
@@ -113,8 +117,12 @@ export function calculateStreakFromDates(
   };
 }
 
-// Lightweight wrapper for callers that only need the current streak number.
-// Accepts raw ISO timestamp strings or pre-deduplicated YYYY-MM-DD strings.
+/**
+ * Lightweight wrapper for callers that only need the current streak number.
+ * Accepts raw ISO timestamp strings or pre-deduplicated YYYY-MM-DD strings.
+ * @param dates - A set or array of date strings.
+ * @returns The current streak length in days.
+ */
 export function calculateCurrentStreak(dates: Set<string> | string[]): number {
   const dateSet = Array.isArray(dates)
     ? new Set(dates.map((d) => d.slice(0, 10)))
@@ -122,7 +130,11 @@ export function calculateCurrentStreak(dates: Set<string> | string[]): number {
   return calculateStreakFromDates(dateSet).current;
 }
 
-// Adapter for callers that pass Date objects.
+/**
+ * Adapter for callers that pass Date objects to calculate streak metrics.
+ * @param commitDates - Array of JavaScript Date objects representing commit times.
+ * @returns An object containing the current and longest streaks.
+ */
 export function calculateStreak(commitDates: Date[]): DateStreakResult {
   const dateSet = new Set(commitDates.map((d) => toDateStr(d)));
   const result = calculateStreakFromDates(dateSet);

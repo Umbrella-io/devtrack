@@ -57,8 +57,9 @@ const authLimiter = createMemoryFixedWindowRateLimiter({
 /**
  * Check whether the given IP has exceeded the authentication rate limit.
  *
- * @param ip     - The client IP address (typically from getClientIp()).
- * @param limit  - Override the production limit (used in tests / dev).
+ * @param ip - The client IP address (typically from getClientIp()).
+ * @param limit - Override the production limit (used in tests / dev).
+ * @returns A result object indicating if the request is allowed, remaining requests, and reset timestamp in seconds.
  */
 export function checkAuthRateLimit(
   ip: string,
@@ -70,6 +71,8 @@ export function checkAuthRateLimit(
 /**
  * Returns true when the pathname belongs to an authentication-sensitive route
  * that should be subject to auth rate limiting.
+ * @param pathname - The URL pathname.
+ * @returns True if the path is authentication-sensitive, false otherwise.
  */
 export function isAuthSensitivePath(pathname: string): boolean {
   return AUTH_SENSITIVE_PREFIXES.some((prefix) => pathname.startsWith(prefix));

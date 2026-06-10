@@ -1,5 +1,9 @@
 type UpstashConfig = { url: string; token: string };
 
+/**
+ * Retrieves the Upstash Redis REST configuration credentials from environment variables.
+ * @returns The Upstash Redis configuration object, or null if credentials are not configured.
+ */
 export function getUpstashConfig(): UpstashConfig | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -9,6 +13,11 @@ export function getUpstashConfig(): UpstashConfig | null {
   return { url, token };
 }
 
+/**
+ * Sends a pipeline of multiple commands to Upstash Redis in a single HTTP request.
+ * @param commands - An array of Redis commands, where each command is an array of strings or numbers.
+ * @returns A promise resolving to an array of command results and errors.
+ */
 export async function upstashPipeline(
   commands: Array<Array<string | number>>
 ): Promise<Array<{ result?: unknown; error?: string }>> {
@@ -34,6 +43,15 @@ export async function upstashPipeline(
   return (await res.json()) as Array<{ result?: unknown; error?: string }>;
 }
 
+/**
+ * Implements a fixed-window rate limiter using Upstash Redis pipeline operations.
+ * Increments the request counter and applies expiration/TTL if needed.
+ * @param options - Configuration options for rate limiting.
+ * @param options.key - The unique rate limit key (e.g. based on IP or action).
+ * @param options.limit - The maximum number of allowed requests in the window.
+ * @param options.windowSeconds - The duration of the rate limit window in seconds.
+ * @returns A promise resolving to an object indicating if the request is allowed and when to retry.
+ */
 export async function upstashRateLimitFixedWindow(options: {
   key: string;
   limit: number;
@@ -72,6 +90,14 @@ export async function upstashRateLimitFixedWindow(options: {
   return { allowed: true };
 }
 
+/**
+ * Attempts to acquire a distributed lock using Upstash Redis SET NX EX command.
+ * @param options - Lock acquisition options.
+ * @param options.key - The unique lock key.
+ * @param options.ttlSeconds - Time-to-live for the lock in seconds.
+ * @param options.value - Optional value to identify the lock owner. Defaults to a timestamp-random string.
+ * @returns A promise resolving to true if the lock was successfully acquired, false otherwise.
+ */
 export async function upstashTryAcquireLock(options: {
   key: string;
   ttlSeconds: number;

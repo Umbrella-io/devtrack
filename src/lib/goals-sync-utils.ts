@@ -19,6 +19,8 @@ export interface ActivityGoal {
  *
  * Returns a safe "owner/repo" string when the stored value is a valid GitHub
  * repository identifier, or null when it is absent, empty, or malformed.
+ * @param goal - The activity goal object.
+ * @returns A safe "owner/repo" string or null if absent, empty, or malformed.
  */
 export function extractValidRepoFromGoal(goal: ActivityGoal): string | null {
   const raw = goal.repo ?? goal.repository ?? goal.repo_name;

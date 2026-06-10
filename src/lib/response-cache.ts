@@ -12,8 +12,9 @@
 
 /**
  * Returns Cache-Control headers for user-specific (authenticated) responses.
- * @param maxAgeSeconds   How long the browser may serve cached data (default 5 min)
- * @param swrSeconds      Extra stale-while-revalidate window (default 2× maxAge)
+ * @param maxAgeSeconds - How long the browser may serve cached data (default 5 min).
+ * @param swrSeconds - Extra stale-while-revalidate window (default 2× maxAge).
+ * @returns Headers configuration object for responses.
  */
 export function privateCacheHeaders(
   maxAgeSeconds = 300,
@@ -27,6 +28,9 @@ export function privateCacheHeaders(
 /**
  * Returns Cache-Control headers for fully public, unauthenticated responses.
  * These can also be cached by a CDN.
+ * @param maxAgeSeconds - How long the CDN or browser may serve cached data (default 5 min).
+ * @param swrSeconds - Extra stale-while-revalidate window (default 2× maxAge).
+ * @returns Headers configuration object for responses.
  */
 export function publicCacheHeaders(
   maxAgeSeconds = 300,

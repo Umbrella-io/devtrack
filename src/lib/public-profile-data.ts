@@ -67,6 +67,12 @@ async function ghFetch(url: string, token?: string): Promise<Response> {
   return fetch(url, { headers, cache: "no-store" });
 }
 
+/**
+ * Fetches the count of public gists for a given GitHub user.
+ * @param username - The GitHub username.
+ * @param token - Optional GitHub personal access token or installation token.
+ * @returns A promise resolving to the number of public gists.
+ */
 export async function fetchPublicGists(
   username: string,
   token?: string
@@ -79,6 +85,13 @@ export async function fetchPublicGists(
   return data.public_gists ?? 0;
 }
 
+/**
+ * Fetches the top repositories where the user has contributed within the specified number of days.
+ * @param username - The GitHub username.
+ * @param token - Optional GitHub personal access token or installation token.
+ * @param days - The number of days to look back for commits. Defaults to 30.
+ * @returns A promise resolving to an array of top repositories.
+ */
 export async function fetchPublicTopRepos(
   username: string,
   token?: string,
@@ -112,6 +125,13 @@ export async function fetchPublicTopRepos(
     .slice(0, 6);
 }
 
+/**
+ * Fetches commit contributions for a given user within the specified number of days.
+ * @param username - The GitHub username.
+ * @param token - Optional GitHub personal access token or installation token.
+ * @param days - The number of days to look back for contributions. Defaults to 30.
+ * @returns A promise resolving to the contribution details.
+ */
 export async function fetchPublicContributions(
   username: string,
   token?: string,
@@ -142,6 +162,12 @@ export async function fetchPublicContributions(
   return { days, total: data.total_count, data: commitsByDay };
 }
 
+/**
+ * Calculates a user's commit streak details using commit data from the past year.
+ * @param username - The GitHub username.
+ * @param token - Optional GitHub personal access token or installation token.
+ * @returns A promise resolving to the user's streak details.
+ */
 export async function fetchPublicStreak(
   username: string,
   token?: string
@@ -178,6 +204,9 @@ export async function fetchPublicStreak(
 /**
  * Calculates the top language by sampling the user's 30 most recently updated
  * repositories and counting which primary language appears most frequently.
+ * @param username - The GitHub username.
+ * @param token - Optional GitHub personal access token or installation token.
+ * @returns A promise resolving to the name of the top language, or null if none.
  */
 export async function fetchTopLanguage(
   username: string,
@@ -211,6 +240,12 @@ export async function fetchTopLanguage(
   return topLang;
 }
 
+/**
+ * Fetches the top languages used by a user based on their 30 most recently updated repositories.
+ * @param username - The GitHub username.
+ * @param token - Optional GitHub personal access token or installation token.
+ * @returns A promise resolving to an array of top languages with percentages.
+ */
 export async function fetchPublicTopLanguages(
   username: string,
   token?: string
@@ -244,6 +279,12 @@ export async function fetchPublicTopLanguages(
     .slice(0, 5);
 }
 
+/**
+ * Fetches the total count of pull requests opened by a user.
+ * @param username - The GitHub username.
+ * @param token - Optional GitHub personal access token or installation token.
+ * @returns A promise resolving to the number of pull requests.
+ */
 export async function fetchPublicPullRequests(
   username: string,
   token?: string
@@ -286,6 +327,13 @@ async function fetchPublicWeeklyGoalProgress(
   }
 }
 
+/**
+ * Fetches the complete public profile data for a user by their DevTrack username.
+ * @param username - The DevTrack username.
+ * @param options - Additional options for fetching.
+ * @param options.includeAchievements - Whether to sync and include GitHub achievements.
+ * @returns A promise resolving to the public profile data, or null if the user doesn't exist.
+ */
 export async function fetchPublicProfile(
   username: string,
   options: { includeAchievements?: boolean } = {}

@@ -42,14 +42,30 @@ function isRateLimitRoute(pathname: string): boolean {
   return RATE_LIMIT_API_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
+/**
+ * Checks whether an HTTP method is state-changing (POST, PUT, PATCH, DELETE).
+ * @param method - The HTTP method string (e.g. "GET", "POST").
+ * @returns True if the method changes state, false otherwise.
+ */
 export function isStateChangingMethod(method: string): boolean {
   return STATE_METHODS.has(method);
 }
 
+/**
+ * Determines whether a route pathname is exempt from CSRF protection (e.g. webhooks or rate-limited APIs).
+ * @param pathname - The URL pathname.
+ * @returns True if the path is exempt, false otherwise.
+ */
 export function isCsrfExempt(pathname: string): boolean {
   return isWebhookRoute(pathname) || isRateLimitRoute(pathname);
 }
 
+/**
+ * Validates the request Origin or Referer header against allowed origins to protect against CSRF.
+ * If neither header is present, the request is considered valid.
+ * @param req - The incoming Next.js request.
+ * @returns An object indicating whether the request is valid and a reason if not.
+ */
 export function validateCsrf(req: NextRequest): {
   valid: boolean;
   reason?: string;

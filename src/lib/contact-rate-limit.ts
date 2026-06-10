@@ -23,6 +23,11 @@ function pruneBuckets(now: number) {
   }
 }
 
+/**
+ * Evaluates the rate limit for contact form submissions from a specific IP using a sliding log algorithm.
+ * @param ip - The client's IP address.
+ * @returns A result object detailing if the submission is allowed, remaining requests, and reset epoch timestamp in seconds.
+ */
 export function checkContactRateLimit(ip: string): ContactRateLimitResult {
   const now = Date.now();
   pruneBuckets(now);
@@ -42,6 +47,12 @@ export function checkContactRateLimit(ip: string): ContactRateLimitResult {
   return { allowed: true, remaining: CONTACT_LIMIT - active.length, reset };
 }
 
+/**
+ * Extracts the client's IP address from request information for the contact endpoint.
+ * Checks connection IP, x-forwarded-for, and x-real-ip headers.
+ * @param req - The incoming Next.js request.
+ * @returns The client IP address, or "unknown".
+ */
 export function getContactClientIp(req: NextRequest): string {
   return (
     (req as any).ip ??

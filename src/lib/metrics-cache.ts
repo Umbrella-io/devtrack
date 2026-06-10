@@ -96,6 +96,10 @@ function isTruthyCacheBypass(value: string | null): boolean {
   return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }
 
+/**
+ * Initializes and returns the Redis client instance if configured.
+ * @returns The Redis client instance, or null if connection details are missing.
+ */
 export function getRedisClient(): Redis | null {
   if (redisClient !== undefined) {
     return redisClient;
@@ -113,6 +117,11 @@ export function getRedisClient(): Redis | null {
   return redisClient;
 }
 
+/**
+ * Checks if a cache bypass is requested via query parameters (refresh, bypassCache, sync) or headers.
+ * @param req - The incoming Next.js request.
+ * @returns True if the cache should be bypassed, false otherwise.
+ */
 export function isMetricsCacheBypassed(req: NextRequest): boolean {
   const bypassParam =
     req.nextUrl.searchParams.get("refresh") ??
@@ -123,6 +132,13 @@ export function isMetricsCacheBypassed(req: NextRequest): boolean {
   return isTruthyCacheBypass(bypassParam) || isTruthyCacheBypass(bypassHeader);
 }
 
+/**
+ * Generates a structured Redis/memory cache key for a given user, endpoint, and set of parameters.
+ * @param userId - The unique identifier of the user.
+ * @param endpoint - The metrics endpoint slug name.
+ * @param params - Optional parameters to include in the cache key.
+ * @returns The formatted cache key string.
+ */
 export function metricsCacheKey(
   userId: string,
   endpoint: MetricsCacheEndpoint,
@@ -138,6 +154,14 @@ export function metricsCacheKey(
   return `metrics:${userId}:${endpoint}:${cacheParams.toString() || "default"}`;
 }
 
+/**
+ * Retrieves a value from the memory cache or Redis cache.
+ * If retrieved from Redis, it caches the value back to local memory if a TTL is provided.
+ * @template T - The expected type of the cached data.
+ * @param key - The unique cache key.
+ * @param ttlSeconds - Optional time-to-live in seconds to apply when writing to memory.
+ * @returns A promise resolving to the cached value of type T, or null if not found.
+ */
 export async function cacheGet<T>(
   key: string,
   ttlSeconds?: number
@@ -164,6 +188,14 @@ export async function cacheGet<T>(
   return null;
 }
 
+/**
+ * Stores a value in both the Redis cache (if configured) and the in-process memory cache.
+ * @template T - The type of the value to cache.
+ * @param key - The unique cache key.
+ * @param value - The value to store.
+ * @param ttlSeconds - The time-to-live in seconds.
+ * @returns A promise that resolves when the cache operations are complete.
+ */
 export async function cacheSet<T>(
   key: string,
   value: T,
@@ -186,6 +218,16 @@ export async function cacheSet<T>(
   setMemoryCacheValue(key, value, ttlSeconds);
 }
 
+/**
+ * Wraps a data loader function with caching logic, pulling from cache or fetching fresh data and caching it.
+ * @template T - The type of the loaded data.
+ * @param options - Cache control options.
+ * @param options.bypass - If true, bypasses cache lookup and fetches fresh data.
+ * @param options.key - The cache key.
+ * @param options.ttlSeconds - Time-to-live in seconds.
+ * @param loadFresh - A function to load fresh data if it is not cached.
+ * @returns A promise resolving to the requested data.
+ */
 export async function withMetricsCache<T>(
   options: {
     bypass: boolean;
@@ -210,6 +252,8 @@ export async function withMetricsCache<T>(
  * Removes a single cache key from both the in-process memory store and Redis.
  * Used to evict a specific entry (e.g. the shared leaderboard key) without
  * scanning all keys the way invalidateUserMetricsCache does for per-user data.
+ * @param key - The cache key to delete.
+ * @returns A promise resolving when deletion is complete.
  */
 export async function cacheDelete(key: string): Promise<void> {
   memoryCache.delete(key);
@@ -224,6 +268,11 @@ export async function cacheDelete(key: string): Promise<void> {
   }
 }
 
+/**
+ * Invalidates all cache entries for a specific user from both the memory cache and Redis.
+ * @param userId - The unique identifier of the user.
+ * @returns A promise resolving when invalidation is complete.
+ */
 export async function invalidateUserMetricsCache(userId: string): Promise<void> {
   const prefix = `metrics:${userId}:`;
 
@@ -250,6 +299,10 @@ export async function invalidateUserMetricsCache(userId: string): Promise<void> 
   }
 }
 
+/**
+ * Invalidates all leaderboard-related cache entries from both the memory cache and Redis.
+ * @returns A promise resolving when invalidation is complete.
+ */
 export async function invalidateLeaderboardCache(): Promise<void> {
   const prefix = `leaderboard:`;
 

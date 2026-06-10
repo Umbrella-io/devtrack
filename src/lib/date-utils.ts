@@ -4,6 +4,8 @@
 
 /**
  * Formats a date into a standard format: "MMM D, YYYY" (e.g. "May 15, 2026").
+ * @param date - The input date as Date object, string, or milliseconds number
+ * @returns The formatted date string
  * @throws {Error} If the date is invalid.
  */
 export function formatDate(date: Date | string | number): string {
@@ -21,6 +23,8 @@ export function formatDate(date: Date | string | number): string {
 /**
  * Returns a relative time string (e.g. "Today", "Yesterday", "5 days ago") 
  * or the absolute formatted date if it is 30 or more days ago.
+ * @param date - The input date as Date object, string, or milliseconds number
+ * @returns The relative time description or the absolute formatted date
  * @throws {Error} If the date is invalid.
  */
 export function formatRelativeDate(date: Date | string | number): string {
@@ -43,6 +47,9 @@ export function formatRelativeDate(date: Date | string | number): string {
 /**
  * Calculates the number of calendar days between two dates.
  * Handles DST boundaries and timezone transitions correctly by using UTC calendar calculations.
+ * @param a - The starting date as Date object, string, or milliseconds number
+ * @param b - The ending date as Date object, string, or milliseconds number
+ * @returns The number of calendar days between a and b
  * @throws {Error} If either date is invalid.
  */
 export function daysBetween(a: Date | string | number, b: Date | string | number): number {
@@ -62,6 +69,8 @@ export function daysBetween(a: Date | string | number, b: Date | string | number
 
 /**
  * Returns true if the given date is the current calendar day.
+ * @param date - The date to check as Date object, string, or milliseconds number
+ * @returns True if the date represents today in local time, false otherwise
  */
 export function isToday(date: Date | string | number): boolean {
   const d = new Date(date);
@@ -75,6 +84,8 @@ export function isToday(date: Date | string | number): boolean {
 
 /**
  * Returns true if the given date is the previous calendar day.
+ * @param date - The date to check as Date object, string, or milliseconds number
+ * @returns True if the date represents yesterday in local time, false otherwise
  */
 export function isYesterday(date: Date | string | number): boolean {
   const d = new Date(date);

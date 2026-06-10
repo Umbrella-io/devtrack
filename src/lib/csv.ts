@@ -9,7 +9,13 @@
  *   - Numbers and booleans are coerced to string without quoting.
  */
 
-/** Escape and optionally quote a single CSV cell value. */
+/**
+ * Escapes and optionally quotes a single CSV cell value according to CSV rules.
+ * Values with commas, double-quotes, or newlines are wrapped in double-quotes,
+ * and double-quotes within the value are escaped by doubling them.
+ * @param value - The cell value to format.
+ * @returns The escaped CSV cell string.
+ */
 export function csvCell(value: unknown): string {
   if (value === null || value === undefined) return "";
   const str = String(value);
@@ -20,11 +26,10 @@ export function csvCell(value: unknown): string {
 }
 
 /**
- * Serialise an array of objects to CSV text.
- *
- * The column order is determined by the keys of the first row.  Subsequent
- * rows that are missing a key emit an empty cell; extra keys are ignored so
- * the header is stable.
+ * Serializes an array of objects to a CSV formatted string.
+ * The column headers are determined by the keys of the first object in the array.
+ * @param rows - An array of objects to convert to CSV.
+ * @returns The CSV formatted string, or an empty string if rows is empty.
  */
 export function toCsv(rows: Record<string, unknown>[]): string {
   if (rows.length === 0) return "";
