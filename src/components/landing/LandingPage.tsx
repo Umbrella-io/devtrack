@@ -98,8 +98,16 @@ const ABOUT_HIGHLIGHTS: Array<{
    ═══════════════════════════════════════════════════════════ */
 function useScrollReveal(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
-  const [vis, setVis] = useState(false);
+  const [vis, setVis] = useState(() => {
+    if (typeof window !== 'undefined' && (window as any).PLAYWRIGHT_TEST) {
+      return true;
+    }
+    return false;
+  });
   useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).PLAYWRIGHT_TEST) {
+      return;
+    }
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver(
@@ -120,7 +128,7 @@ function Counter({ end, active }: { end: number; active: boolean }) {
     if (!active) return;
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduceMotion) {
+    if (reduceMotion || (typeof window !== 'undefined' && (window as any).PLAYWRIGHT_TEST)) {
       setVal(end);
       return;
     }

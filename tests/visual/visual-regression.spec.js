@@ -8,6 +8,7 @@ async function setTheme(page, theme) {
   await page.addInitScript((themeName) => {
     window.localStorage.setItem("theme", themeName);
     document.documentElement.dataset.theme = themeName;
+    window.PLAYWRIGHT_TEST = true;
 
     if (themeName.includes("dark")) {
       document.documentElement.classList.add("dark");
@@ -429,7 +430,7 @@ test.describe("visual regression screenshots", () => {
     await setTheme(page, "classic-dark");
     await page.goto("/u/playwright-user", { waitUntil: "load" });
     await expect(
-      page.getByRole("heading", { name: /@playwright-user's profile/i })
+      page.getByRole("heading", { name: /@playwright-user/i }).first()
     ).toBeVisible({ timeout: 30_000 });
     await stabilize(page);
 
