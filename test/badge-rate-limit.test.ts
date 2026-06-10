@@ -23,6 +23,23 @@ describe('badge-rate-limit', () => {
       expect(result.remaining).toBe(0);
     });
 
+    it('resets counter after window expires', () => {
+      const ip = 'reset-test';
+    
+      for (let i = 0; i < 20; i++) {
+        checkBadgeRateLimit(ip);
+      }
+    
+      expect(checkBadgeRateLimit(ip).allowed).toBe(false);
+    
+      vi.advanceTimersByTime(120000);
+    
+      const result = checkBadgeRateLimit(ip);
+    
+      expect(result.allowed).toBe(true);
+      expect(result.remaining).toBe(19);
+    });
+
     it('verify remaining count decrements correctly', () => {
       const ip = '2.3.4.5';
       const r1 = checkBadgeRateLimit(ip);

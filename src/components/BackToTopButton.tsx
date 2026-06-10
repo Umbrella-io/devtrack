@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
 
 export default function BackToTopButton() {
@@ -75,9 +75,15 @@ export default function BackToTopButton() {
             </svg>
             <button
               onClick={scrollToTop}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  scrollToTop();
+                }
+              }}
               type="button"
-              aria-label="Scroll to top"
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 backdrop-blur-md text-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:bg-black/70"
+              aria-label="Back to top"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 backdrop-blur-md text-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               <ArrowUp size={24} aria-hidden="true" className="text-white/90" />
             </button>

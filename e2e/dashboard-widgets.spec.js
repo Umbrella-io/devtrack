@@ -2,8 +2,7 @@ import { expect, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
 const authSecret =
-  process.env.NEXTAUTH_SECRET ||
-  "test-nextauth-secret-for-playwright-tests";
+  process.env.NEXTAUTH_SECRET || "test-nextauth-secret-for-playwright-tests";
 
 test.beforeEach(async ({ page }) => {
   const sessionToken = await encode({
@@ -60,7 +59,8 @@ test.beforeEach(async ({ page }) => {
             },
           ],
           trend: { direction: "up", percentage: 15 },
-          aiSummary: "Great job shipping features this week. Keep up the high standard!",
+          aiSummary:
+            "Great job shipping features this week. Keep up the high standard!",
           generatedAt: "2026-05-18T12:00:00.000Z",
         },
       }),
@@ -161,6 +161,7 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/productive-hours**",
     "**/api/user/pinned-repos/details**",
     "**/api/metrics/repo-explorer**",
+    "**/api/metrics/pr-review-time**",
   ];
 
   for (const pattern of metricRoutes) {
@@ -179,19 +180,50 @@ test.beforeEach(async ({ page }) => {
       body: "data: {}\n\n",
     });
   });
+
+  await page.route("**/api/user/dashboard-layout**", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ layout: null }),
+      });
+    } else {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      });
+    }
+  });
+
+  await page.route("**/api/daily-note**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ note: null }),
+    });
+  });
 });
 test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30000 });
-  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("heading", { name: "Goals", exact: true })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByText("Make 10 commits")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible(
+    { timeout: 10000 }
+  );
+  await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible(
+    { timeout: 10000 }
+  );
+  await expect(
+    page.getByRole("heading", { name: "Goals", exact: true })
+  ).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText("Make 10 commits")).toBeVisible({
+    timeout: 10000,
+  });
 });
 
-test("contribution graph range buttons request a new range", async ({ page }) => {
+test("contribution graph range buttons request a new range", async ({
+  page,
+}) => {
   const contributionRequests = [];
   page.on("request", (request) => {
     if (request.url().includes("/api/metrics/contributions")) {
@@ -209,7 +241,11 @@ test("contribution graph range buttons request a new range", async ({ page }) =>
     .getByRole("button", { name: "Show 90-day range" })
     .click();
 
-  await expect.poll(() => contributionRequests.some((url) => url.includes("days=90")), { timeout: 15000 }).toBe(true);
+  await expect
+    .poll(() => contributionRequests.some((url) => url.includes("days=90")), {
+      timeout: 15000,
+    })
+    .toBe(true);
 });
 
 test("goal form posts a new goal", async ({ page }) => {
@@ -261,14 +297,27 @@ function mockMetricResponse(url) {
       mostActiveRepo: "demo/repo",
     };
   }
-  if (url.includes("/api/metrics/repos") || url.includes("/api/metrics/pinned-repos")) {
-    return { repos: [{ name: "demo/repo", commits: 12, url: "https://github.com/demo/repo" }] };
+  if (
+    url.includes("/api/metrics/repos") ||
+    url.includes("/api/metrics/pinned-repos")
+  ) {
+    return {
+      repos: [
+        { name: "demo/repo", commits: 12, url: "https://github.com/demo/repo" },
+      ],
+    };
   }
   if (url.includes("/api/metrics/languages")) {
     return { languages: [{ language: "TypeScript", count: 12 }] };
   }
   if (url.includes("/api/metrics/streak")) {
-    return { current: 3, longest: 9, lastCommitDate: "2026-05-18", totalActiveDays: 12 };
+    return {
+      current: 3,
+      longest: 9,
+      lastCommitDate: "2026-05-18",
+      totalActiveDays: 12,
+      freezeDates: [],
+    };
   }
   if (url.includes("/api/metrics/weekly-summary")) {
     return {
@@ -283,6 +332,14 @@ function mockMetricResponse(url) {
         thisWeek: 5,
         lastWeek: 4,
       },
+      issues: {
+        thisWeek: 2,
+        lastWeek: 1,
+      },
+      productivityScore: {
+        current: 85,
+        previous: 80,
+      },
       streak: 3,
       topRepo: "demo/repo",
     };
@@ -294,10 +351,16 @@ function mockMetricResponse(url) {
     return { repositories: [] };
   }
   if (url.includes("/api/metrics/ci")) {
-    return { successRate: 95, averageDurationMinutes: 3, flakiestWorkflow: null, totalRuns: 42, reposChecked: 5 };
+    return {
+      successRate: 95,
+      averageDurationMinutes: 3,
+      flakiestWorkflow: null,
+      totalRuns: 42,
+      reposChecked: 5,
+    };
   }
   if (url.includes("/api/streak/freeze")) {
-    return { freezes: [] };
+    return { hasFreeze: false, freezeDate: null };
   }
   if (url.includes("/api/integrations/jira")) {
     return null;
@@ -312,7 +375,10 @@ function mockMetricResponse(url) {
       hasData: false,
     };
   }
-  if (url.includes("/api/metrics/coding-time") || url.includes("/api/wakatime")) {
+  if (
+    url.includes("/api/metrics/coding-time") ||
+    url.includes("/api/wakatime")
+  ) {
     return {
       hasData: false,
       not_configured: true,
@@ -344,15 +410,14 @@ function mockMetricResponse(url) {
       timezone: "UTC",
     };
   }
-  if (url.includes("/api/user/pinned-repos/details")) {
-    return {
-      pinnedRepos: [],
-    };
-  }
   if (url.includes("/api/metrics/repo-explorer")) {
-    return {
-      repos: [],
-    };
+    return { repos: [] };
+  }
+  if (url.includes("/api/user/pinned-repos/details")) {
+    return { pinnedRepos: [], repos: [] };
+  }
+  if (url.includes("/api/metrics/pr-review-time")) {
+    return { avgReviewHours: 0, avgFirstReviewHours: 0 };
   }
   return {};
 }
