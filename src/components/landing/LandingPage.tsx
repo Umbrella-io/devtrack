@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from "next/image";
 import Link from 'next/link';
-import { Activity, GitPullRequest, Goal, Share2, Flame, FolderGit2, LogIn, LayoutDashboard, Target, type LucideIcon } from "lucide-react";
+import { Activity, GitPullRequest, Goal, Share2, Flame, FolderGit2, LogIn, LayoutDashboard, Target, Menu, X, type LucideIcon } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
@@ -456,19 +456,142 @@ function BentoGrid() {
 
 
 /* ═══════════════════════════════════════════════════════════
+   NAVBAR
+   ═══════════════════════════════════════════════════════════ */
+function NavBar() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
+
+  const navLinks = [
+    { label: 'Home', href: '#home', id: 'home' },
+    { label: 'Features', href: '#features', id: 'features' },
+    { label: 'About DevTrack', href: '#about', id: 'about' },
+    { label: 'Open Source', href: '#open-source', id: 'open-source' },
+    { label: 'GitHub Repository', href: 'https://github.com/Priyanshu-byte-coder/devtrack', external: true, id: '' },
+  ];
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      // Using threshold 0 to ensure elements taller than the viewport/margin can still trigger the observer
+      { threshold: 0, rootMargin: "-20% 0px -50% 0px" }
+    );
+
+    navLinks.forEach((link) => {
+      if (!link.external && link.id) {
+        const el = document.getElementById(link.id);
+        if (el) observer.observe(el);
+      }
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <nav style={{
+      position: 'sticky', top: 0, zIndex: 50,
+      background: 'rgba(5, 8, 22, 0.75)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      borderBottom: `1px solid ${BORDER}`,
+      padding: '16px clamp(20px, 4vw, 48px)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 1200, margin: '0 auto' }}>
+        {/* Brand */}
+        <div style={{ fontFamily: 'var(--font-dm-sans, system-ui, sans-serif)', fontWeight: 900, fontSize: 22, color: '#ffffff', letterSpacing: '-0.03em' }}>
+          DevTrack
+        </div>
+        
+        {/* Desktop Nav */}
+        <div className="hidden md:flex" style={{ gap: 32, alignItems: 'center' }}>
+          {navLinks.map(link => {
+            const isActive = activeSection === link.id && !link.external;
+            return (
+              <a 
+                key={link.label} 
+                href={link.href} 
+                target={link.external ? '_blank' : undefined} 
+                rel={link.external ? 'noopener noreferrer' : undefined} 
+                style={{ 
+                  color: isActive ? '#818cf8' : MUTED, 
+                  fontSize: 13, fontFamily: MONO, textTransform: 'uppercase', letterSpacing: '0.05em', 
+                  transition: 'color 0.3s',
+                  position: 'relative'
+                }} 
+                className="group hover:text-indigo-400"
+              >
+                {link.label}
+                {!link.external && (
+                  <span style={{
+                    position: 'absolute', bottom: -6, left: 0, height: 2, background: '#818cf8',
+                    width: isActive ? '100%' : '0%',
+                    transition: 'width 0.3s ease-out'
+                  }} />
+                )}
+              </a>
+            );
+          })}
+        </div>
+
+        {/* Mobile Toggle */}
+        <div className="md:hidden">
+          <button onClick={() => setIsOpen(!isOpen)} style={{ color: TEXT, display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Toggle menu">
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isOpen && (
+        <div className="md:hidden" style={{
+          position: 'absolute', top: '100%', left: 0, right: 0,
+          background: 'rgba(5, 8, 22, 0.95)',
+          backdropFilter: 'blur(16px)',
+          borderBottom: `1px solid ${BORDER}`,
+          padding: '24px clamp(20px, 4vw, 48px)', display: 'flex', flexDirection: 'column', gap: 20,
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+        }}>
+          {navLinks.map(link => {
+            const isActive = activeSection === link.id && !link.external;
+            return (
+              <a 
+                key={link.label} 
+                href={link.href} 
+                onClick={() => setIsOpen(false)} 
+                target={link.external ? '_blank' : undefined} 
+                rel={link.external ? 'noopener noreferrer' : undefined} 
+                style={{ color: isActive ? '#818cf8' : TEXT, fontSize: 14, fontFamily: MONO, textTransform: 'uppercase', letterSpacing: '0.05em', transition: 'color 0.3s' }}
+              >
+                {link.label}
+              </a>
+            );
+          })}
+        </div>
+      )}
+    </nav>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    HERO
    ═══════════════════════════════════════════════════════════ */
 function HeroSection() {
   return (
     <section
+      id="home"
+      className="scroll-mt-24 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center"
       style={{
         minHeight: '100vh',
-        display: 'flex', alignItems: 'center',
         padding: '80px clamp(24px,5vw,64px) 40px',
-        gap: 'clamp(32px,5vw,80px)',
-        flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
         overflow: 'clip',
+        maxWidth: 1400, margin: '0 auto',
       }}
     >
       {/* Engineering Grid Texture */}
@@ -527,7 +650,7 @@ function HeroSection() {
       `}} />
 
       {/* Left: text */}
-      <div style={{ flex: '1 1 340px', maxWidth: 500, position: 'relative', zIndex: 2 }}>
+      <div style={{ width: '100%', maxWidth: 580, position: 'relative', zIndex: 2, justifySelf: 'start' }}>
         {/* Badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -537,41 +660,37 @@ function HeroSection() {
         }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }} />
           <span style={{ fontFamily: MONO, fontSize: 11, color: A, letterSpacing: '0.08em', fontWeight: 600 }}>
-            OPEN SOURCE · FREE FOREVER
+            OPEN SOURCE • BUILT IN PUBLIC
           </span>
         </div>
 
         {/* Headline */}
         <h1
           style={{
-            fontFamily: DISP, fontWeight: 800,
-            fontSize: 'clamp(44px,7vw,82px)', lineHeight: 0.95,
-            letterSpacing: '-0.04em', margin: '0 0 24px',
+            fontFamily: 'var(--font-dm-sans, system-ui, sans-serif)', fontWeight: 900,
+            fontSize: 'clamp(44px,6vw,64px)', lineHeight: 1.05,
+            letterSpacing: '-0.05em', margin: '0 0 24px',
             animation: 'lndHeroIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both',
-            background: 'linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
+            background: 'linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            textShadow: '0 4px 24px rgba(0,0,0,0.8)',
           }}
         >
-          YOUR<br />CODE<br />HAS A<br />
+          Developer Analytics<br />
           <span style={{ 
-            background: 'linear-gradient(135deg, #818cf8 0%, #c084fc 100%)',
+            background: 'linear-gradient(135deg, #a5b4fc 0%, #c084fc 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            textShadow: '0 0 30px rgba(129,140,248,0.4)',
-          }}>PULSE</span>
-          <span style={{ color: 'var(--foreground)' }}>.</span>
+          }}>Built for Builders</span>
         </h1>
 
         {/* Tagline */}
         <p style={{
-          fontSize: 'clamp(16px,2vw,18px)', color: MUTED,
-          lineHeight: 1.6, maxWidth: 420, margin: '0 0 40px',
+          fontSize: 'clamp(15px,2vw,17px)', color: MUTED,
+          lineHeight: 1.6, maxWidth: 500, margin: '0 0 40px',
           fontWeight: 400, letterSpacing: '0.01em',
         }}>
-          Open-source developer productivity dashboard. Track GitHub streaks,
-          PR velocity, and coding goals — automatically.
+          Monitor GitHub activity, contribution streaks, pull request velocity, coding goals, and open-source impact from one powerful dashboard.
         </p>
 
         {/* CTAs */}
@@ -618,7 +737,7 @@ function HeroSection() {
       </div>
 
       {/* Right: bento window frame */}
-      <div style={{ flex: '1 1 340px', display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 2, justifySelf: 'center' }}>
         <div style={{
           background: 'rgba(255,255,255,0.02)',
           border: '1px solid rgba(255,255,255,0.05)',
@@ -753,6 +872,7 @@ function AboutSection() {
   return (
     <section
       id="about"
+      className="scroll-mt-24"
       ref={ref}
       aria-labelledby="about-heading"
       style={{
@@ -781,13 +901,14 @@ function AboutSection() {
           <h2
             id="about-heading"
             style={{
-              fontFamily: DISP, fontWeight: 800,
-              fontSize: 42,
-              color: TEXT, letterSpacing: 0,
-              lineHeight: 1.05, margin: '0 0 20px',
+              fontFamily: 'var(--font-dm-sans, system-ui, sans-serif)', fontWeight: 800,
+              fontSize: 'clamp(32px, 4vw, 42px)',
+              color: '#ffffff', letterSpacing: '-0.04em',
+              lineHeight: 1.15, margin: '0 0 20px',
+              textWrap: 'balance',
             }}
           >
-            A clearer home for your developer progress.
+            Everything You Need to Understand Your Development Journey
           </h2>
           <p style={{ color: MUTED, fontSize: 16, lineHeight: 1.75, margin: '0 0 28px', maxWidth: 580 }}>
             DevTrack helps developers, open-source contributors, and teams understand how their GitHub work is moving. It brings activity, pull requests, streaks, goals, and public profile insights into one calm dashboard so new users can quickly see what the platform is for.
@@ -891,7 +1012,7 @@ function StatsSection({ stats }: { stats: RepoStats }) {
     { value: stats.stars,           label: 'GITHUB STARS' },
   ];
   return (
-    <section id="features" style={{
+    <section id="features" className="scroll-mt-24" style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
         gap: 24, borderTop: `1px solid ${BORDER}`,
@@ -1095,6 +1216,8 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
 
   return (
     <section
+      id="open-source"
+      className="scroll-mt-24"
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
@@ -1139,13 +1262,17 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
       {/* Headline + tagline */}
       <div style={{ maxWidth: 680, marginBottom: 40 }}>
         <h2 style={{
-          fontFamily: DISP, fontWeight: 800,
-          fontSize: 'clamp(28px,4vw,52px)', color: TEXT,
-          letterSpacing: '-0.03em', lineHeight: 1.05,
+          fontFamily: 'var(--font-dm-sans, system-ui, sans-serif)', fontWeight: 800,
+          fontSize: 'clamp(32px, 4vw, 44px)', color: '#ffffff',
+          letterSpacing: '-0.04em', lineHeight: 1.15,
           margin: '0 0 16px',
         }}>
-          BUILT IN PUBLIC.<br />
-          <span style={{ color: A }}>SHIP WITH US.</span>
+          Built by Developers.<br />
+          <span style={{ 
+            background: 'linear-gradient(to right, #818cf8, #a5b4fc)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>Improved by the Community.</span>
         </h2>
         <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>   {/* was '#555' */}
           DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
@@ -1286,6 +1413,7 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'clip' }}
     >
       <MouseSpotlight />
+      <NavBar />
       <HeroSection />
       <CommitTicker />
       <AboutSection />
