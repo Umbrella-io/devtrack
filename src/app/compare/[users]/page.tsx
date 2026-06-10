@@ -70,7 +70,6 @@ export async function generateMetadata({
 export default async function PublicProfileComparePage({
   params,
 }: { params: Promise<{ users: string }> }) {
-  const { users } = await params;
   const parsed = await parseUsers(params);
 
   if (!parsed) {
