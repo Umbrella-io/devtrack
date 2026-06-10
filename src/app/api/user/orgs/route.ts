@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -15,7 +15,7 @@ interface GitHubOrg {
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerAuthSession();
 
     if (!session?.githubId || !session?.accessToken) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -136,7 +136,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerAuthSession();
 
     if (!session?.githubId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

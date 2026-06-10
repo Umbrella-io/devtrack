@@ -1,10 +1,10 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
 
   if (!session?.githubId) {
     return NextResponse.json(

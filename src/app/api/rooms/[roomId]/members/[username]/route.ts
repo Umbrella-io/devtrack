@@ -1,4 +1,4 @@
-import { getServerSession } from 'next-auth';
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from '@/lib/auth';
 import { getRoomById, removeRoomMember } from '@/lib/supabase-rooms';
 import { NextResponse } from 'next/server';
@@ -8,7 +8,7 @@ export async function DELETE(
   { params }: { params: Promise<{ roomId: string; username: string }> }
 ) {
   const { roomId, username } = await params;
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubLogin)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

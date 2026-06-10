@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { fetchPinnedRepoDetails } from "@/lib/pinned-repos";
@@ -6,7 +6,7 @@ import { fetchPinnedRepoDetails } from "@/lib/pinned-repos";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.accessToken || !session.githubLogin || !session.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

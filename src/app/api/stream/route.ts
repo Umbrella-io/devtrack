@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
@@ -44,7 +44,7 @@ const POLL_INTERVAL_MS = 60_000;
 const MAX_CONNECTION_DURATION_MS = 5 * 60 * 1000;
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId || !session.githubLogin) {
     return new Response("Unauthorized", { status: 401 });
   }

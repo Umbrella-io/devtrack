@@ -4,7 +4,7 @@ import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { authOptions } from "@/lib/auth";
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
@@ -13,7 +13,7 @@ import CustomizableDashboard from "@/components/dashboard/CustomizableDashboard"
 import MilestonePlanner from "@/components/MilestonePlanner";
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session) redirect("/");
 
   return (

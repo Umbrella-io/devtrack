@@ -5,7 +5,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import BadgeSection from "@/components/BadgeSection";
 import GitHubAchievements from "@/components/GitHubAchievements";
 import StatsCard from "@/components/StatsCard";
@@ -75,7 +75,7 @@ async function fetchPublicProfile(
 }
 
 async function getLoggedInGitHubUsername() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
 
   if (typeof session?.githubLogin === "string" && session.githubLogin.trim()) {
     return session.githubLogin;

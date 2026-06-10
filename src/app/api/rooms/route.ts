@@ -1,4 +1,4 @@
-import { getServerSession } from 'next-auth';
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from '@/lib/auth';
 import { createRoom, getRoomsForUser } from '@/lib/supabase-rooms';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -14,7 +14,7 @@ const GITHUB_USERNAME_RE = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$|^[a-zA
 const GITHUB_REPO_RE = /^[a-zA-Z0-9._-]{1,100}$/;
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.user?.name)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
@@ -27,7 +27,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.user?.name)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
 
   if (!session?.githubId) {
     return NextResponse.redirect(

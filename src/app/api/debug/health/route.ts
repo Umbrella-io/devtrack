@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
     // Session check — return only a boolean; never expose account identifiers
     // (githubId, githubLogin) because this endpoint is reachable by anyone
     // who holds the DEBUG_SECRET, which may differ from the account owner.
-    const session = await getServerSession(authOptions);
+    const session = await getServerAuthSession();
 
     return NextResponse.json({
       status: "ok",

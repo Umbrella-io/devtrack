@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -40,7 +40,7 @@ async function testJiraConnection(
 }
 
 async function requireUser(): Promise<{ user: AppUser } | { error: Response }> {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
 
   if (!session?.githubId || !session?.githubLogin) {
     return { error: Response.json({ error: "Unauthorized" }, { status: 401 }) };
