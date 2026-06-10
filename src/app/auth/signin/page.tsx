@@ -5,6 +5,7 @@ import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 const A = "#818cf8";
 const ERR = "#f87171";
@@ -217,7 +218,7 @@ function SignInContent() {
               const res = await signIn("github", { callbackUrl: "/dashboard", redirect: false });
               
               if (res?.error) {
-                toast.error(getErrorMessage(res.error));
+                toast.error(t(getErrorMessageKey(res.error)));
                 return;
               }
 

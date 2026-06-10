@@ -157,6 +157,7 @@ describe("User Settings API Endpoints", () => {
         bio: "",
         discord_muted_until: null,
         preferred_locale: "en",
+        public_widgets: ["streak", "contributions"],
       });
     });
   });
@@ -247,6 +248,7 @@ describe("User Settings API Endpoints", () => {
         bio: "",
         discord_muted_until: null,
         preferred_locale: "en",
+        public_widgets: ["streak", "contributions"],
       });
       
       // Verify that no database updates were triggered (mockUpdate not called because updates is empty)
@@ -279,6 +281,7 @@ describe("User Settings API Endpoints", () => {
         bio: "",
         discord_muted_until: null,
         preferred_locale: "en",
+        public_widgets: ["streak", "contributions"],
       });
       
       expect(mockUpdate).toHaveBeenCalledWith({

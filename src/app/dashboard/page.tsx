@@ -3,6 +3,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";

@@ -1,4 +1,5 @@
-import { startOfWeek, subWeeks } from "date-fns";
+import { startOfWeek } from "date-fns/startOfWeek";
+import { subWeeks } from "date-fns/subWeeks";
 
 /**
  * Converts a Date object to a pseudo-UTC Date object where the UTC time fields

@@ -6,6 +6,7 @@ import { submitGoalWithRefresh } from "@/lib/goal-tracker";
 import ConfirmModal from "@/components/ConfirmModal";
 import { buildPublicGoalShareUrl } from "@/lib/goals/share";
 import GoalHistory from "@/components/GoalHistory";
+import { Button } from "@/components/ui/button";
 
 type Recurrence = "none" | "weekly" | "monthly";
 
@@ -641,7 +642,7 @@ export default function GoalTracker() {
                           clipRule="evenodd"
                         />
                       </svg>
-                    </Button>
+                    </button>
                   </div>
                 </div>
 

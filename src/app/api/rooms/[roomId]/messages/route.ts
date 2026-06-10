@@ -12,7 +12,7 @@ export async function GET(
   const session = await getServerSession(authOptions);
   if (!session?.githubLogin)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const room = await getRoomById(roomId, session.user.name);
+  const room = await getRoomById(roomId, session.githubLogin);
   if (!room) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const url = new URL(req.url);
   const before = url.searchParams.get('before') ?? undefined;
@@ -28,7 +28,7 @@ export async function POST(
   const session = await getServerSession(authOptions);
   if (!session?.githubLogin)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const room = await getRoomById(roomId, session.user.name);
+  const room = await getRoomById(roomId, session.githubLogin);
   if (!room) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const body = await req.json();
   const validation = validateTextInput(body?.content, 'content', 4000);
@@ -36,8 +36,8 @@ export async function POST(
     return NextResponse.json({ error: validation.error }, { status: 400 });
   const message = await sendRoomMessage(
     roomId,
-    session.user.name,
-    session.user.image ?? null,
+    session.githubLogin,
+    session.user?.image ?? null,
     validation.value
   );
   return NextResponse.json(message, { status: 201 });

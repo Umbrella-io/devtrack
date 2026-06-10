@@ -12,7 +12,7 @@ export async function GET(
   const session = await getServerSession(authOptions);
   if (!session?.githubLogin)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const room = await getRoomById(roomId, session.user.name);
+  const room = await getRoomById(roomId, session.githubLogin);
   if (!room) return NextResponse.json({ error: 'Not found or not a member' }, { status: 404 });
   const members = await getRoomMembers(roomId);
   return NextResponse.json({ ...room, members });
@@ -27,7 +27,7 @@ export async function DELETE(
   if (!session?.githubLogin)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const room = await getRoomById(roomId, session.user.name);
+  const room = await getRoomById(roomId, session.githubLogin);
   if (!room) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!room.is_owner)
     return NextResponse.json({ error: 'Only the owner can delete this room' }, { status: 403 });

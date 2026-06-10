@@ -65,7 +65,7 @@ export async function POST(req: Request) {
   const { count, error: countError } = await supabaseAdmin
     .from('room_members')
     .select('*', { count: 'exact', head: true })
-    .eq('github_username', session.user.name)
+    .eq('github_username', session.githubLogin)
     .eq('role', 'owner');
 
   if (countError)
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
   try {
     const room = await createRoom(
       { name, repo_owner: repoOwner, repo_name: repoName, description: description || undefined },
-      session.user.name
+      session.githubLogin
     );
     return NextResponse.json(room, { status: 201 });
   } catch (err: unknown) {

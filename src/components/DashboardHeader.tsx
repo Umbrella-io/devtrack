@@ -19,6 +19,7 @@ import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import { Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -298,10 +299,10 @@ export default function DashboardHeader() {
          </div>
        </div>
       
-           }
+       
              {/* Mobile hamburger button */}
       
-{isMobile &&
+{isMobile && (
       <div className="flex flex-col md:flex-row justify-start items-start self-stretch">
 
         <div className="transition-transform duration-200 hover:scale-[1.05]">
@@ -359,7 +360,7 @@ export default function DashboardHeader() {
      
     </div>
 
-  }
+  )}
        
 </div>
 

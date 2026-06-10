@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
-    "types": ["node", "vitest"],
+    "types": [
+      "node",
+      "vitest"
+    ],
     "lib": [
       "dom",
       "dom.iterable",
@@ -16,7 +19,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -42,5 +45,4 @@
     "client",
     "server"
   ]
-
 }
