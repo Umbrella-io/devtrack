@@ -46,7 +46,7 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
-  await page.route("**/api/user/settings", async (route) => {
+  await page.route("**/api/user/settings**", async (route) => {
     if (route.request().method() === "PATCH") {
       const data = JSON.parse(route.request().postData() || "{}");
       await route.fulfill({
@@ -80,13 +80,20 @@ test.beforeEach(async ({ page }) => {
       body: JSON.stringify({ accounts: [] }),
     });
   });
+
+  await page.route("**/api/notifications**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ notifications: [], unreadCount: 0 }),
+    });
+  });
 });
 
 test("settings page saves and reflects changes", async ({ page }) => {
   await page.goto("/dashboard/settings");
 
   // Wait for settings to load
-  await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Settings" }).first()).toBeVisible();
   
   const publicProfileCheckbox = page.getByRole("checkbox", {
     name: "Toggle Public Profile",

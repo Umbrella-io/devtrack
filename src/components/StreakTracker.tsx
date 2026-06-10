@@ -584,7 +584,7 @@ export default function StreakTracker() {
                   className={`text-2xl font-bold ${stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
                     }`}
                 >
-                  {stat.value}
+                  <span>{stat.value}</span>
                   {stat.unit && (
                     <span className="ml-1 text-sm font-normal text-[var(--muted-foreground)]">
                       {stat.unit}
