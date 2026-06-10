@@ -1,10 +1,27 @@
-# Security Policy
+# Security Policy & Responsible Disclosure Policy
+
+Thank you for helping keep DevTrack secure. We value the work of security researchers and are committed to working with the community to resolve security vulnerabilities responsibly.
 
 ## Supported Versions
 
 | Version | Supported |
 |---------|-----------|
 | `main` branch | ✅ |
+
+## Responsible Disclosure Policy
+
+We expect security researchers to follow the principles of responsible disclosure:
+1. **Private Reporting**: Share vulnerability details privately with us first. Do not discuss them publicly or open public GitHub issues until we have resolved the issue.
+2. **Minimize Impact**: Avoid disruptive testing, volumetric attacks (DoS/DDoS), social engineering, or accessing/modifying data belonging to other users.
+3. **Patience**: Give us a reasonable amount of time to analyze and fix the vulnerability before disclosing it publicly.
+
+### Safe Harbor
+
+If you make a good faith effort to comply with this policy during your security research, we will:
+* Consider your research to be authorized and helpful.
+* Not pursue or recommend legal action against you.
+* Work with you to understand and resolve the issue quickly.
+* Recognize your contribution publicly (if desired) once the issue is fixed.
 
 ## Reporting a Vulnerability
 
@@ -23,7 +40,10 @@ Include in your report:
 - Potential impact
 - Suggested fix (optional but appreciated)
 
-**Response:** Acknowledgement within 48 hours. Fix timeline communicated within 5 business days.
+### Our Response Commitments
+* **Acknowledgement**: Within 48 hours of receipt.
+* **Triage & Status**: Status and severity assessment within 5 business days.
+* **Coordinated Patching**: Updates on our progress and target fix timeline.
 
 ---
 
