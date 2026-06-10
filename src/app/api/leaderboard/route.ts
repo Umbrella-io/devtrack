@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
 import { cacheGet, cacheSet, isMetricsCacheBypassed } from "@/lib/metrics-cache";
 import {
