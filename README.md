@@ -29,6 +29,7 @@
 - **[Demo](#demo)**
 - **[Features](#features)**
 - **[Getting Started](#getting-started)**
+- **[Architecture](./docs/architecture.md)**
 - **[Roadmap](#roadmap)**
 - **[Contributing](#contributing)**
 
@@ -66,6 +67,7 @@
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
+- [Architecture](#architecture)
 - [Getting Started](#getting-started)
 - [Docker Development Setup](#docker-development-setup)
 - [Roadmap](#roadmap)
@@ -158,6 +160,12 @@ devtrack/
     ├── workflows/ci.yml       # Type-check + lint on every PR
     └── ISSUE_TEMPLATE/        # Bug, feature, good-first-issue templates
 ```
+
+---
+
+## Architecture
+
+New contributors can start with the [architecture overview](./docs/architecture.md) for Mermaid diagrams covering the Next.js frontend, API routes, Supabase schema, external services, and GitHub activity sync flow.
 
 ---
 
@@ -443,59 +451,7 @@ Want to contribute? Pick an item below and open an issue or start a PR.
 ---
 
 
-## 📦 GSSoC Caching Guidelines Reference Manual
-
-Efficient caching improves performance, reduces server load, and enhances user experience in modern web applications.
-
----
-
-### API Response Caching
-
-Use caching for GET requests where data does not change frequently.
-
-Example:
-Cache-Control: public, max-age=300, stale-while-revalidate=600
-
-
----
-
-### Frontend Caching
-
-Use tools like React Query or SWR to cache API responses and reduce unnecessary network requests.
-
----
-
-### Server-Side Caching
-
-Use Redis or in-memory caching for:
-- expensive computations
-- repeated database queries
-- frequently accessed data
-
----
-
-### Static Asset Caching
-
-Enable long-term caching for static assets:
-Cache-Control: public, max-age=31536000, immutable
-
-
----
-
-### Cache Invalidation Strategy
-
-Always invalidate cache when underlying data changes using:
-- versioning
-- timestamps
-- manual invalidation
-
----
-
-### Best Practices
-
-- Do not cache sensitive data
-- Always define TTL (Time To Live)
-- Monitor cache hit/miss ratio for performance optimization
+For caching best practices used in this project, see [Caching Guidelines](docs/caching.md).
 
 ## Contributing
 

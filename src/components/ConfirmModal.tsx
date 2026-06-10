@@ -11,6 +11,7 @@ interface ConfirmModalProps {
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  disabled?: boolean;
 }
 
 export default function ConfirmModal({
@@ -21,6 +22,7 @@ export default function ConfirmModal({
   cancelLabel = "Cancel",
   onConfirm,
   onCancel,
+  disabled = false,
 }: ConfirmModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -28,7 +30,7 @@ export default function ConfirmModal({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && !disabled) {
         onCancel();
       }
     };
@@ -41,7 +43,7 @@ export default function ConfirmModal({
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, onCancel]);
+  }, [isOpen, onCancel, disabled]);
 
   if (!isOpen) return null;
 
@@ -50,7 +52,7 @@ export default function ConfirmModal({
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
-        onClick={onCancel}
+        onClick={disabled ? undefined : onCancel}
         aria-hidden="true"
       />
       
@@ -72,7 +74,6 @@ export default function ConfirmModal({
 
         <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button
-            type="button"
             variant="outline"
             onClick={onCancel}
             className="w-full sm:w-auto"
@@ -80,7 +81,6 @@ export default function ConfirmModal({
             {cancelLabel}
           </Button>
           <Button
-            type="button"
             variant="default"
             onClick={onConfirm}
             className="w-full sm:w-auto shadow-lg shadow-[var(--accent)]/20"

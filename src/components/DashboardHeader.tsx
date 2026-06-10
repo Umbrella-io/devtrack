@@ -4,6 +4,7 @@ import NotificationBell from "@/components/NotificationBell";
 import {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useLayoutEffect,
@@ -18,6 +19,7 @@ import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import { Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 type DashboardSyncContextValue = {
@@ -111,6 +113,42 @@ export default function DashboardHeader() {
     setGreeting(computeCurrentGreeting());
   }, []);
 
+  // Extracted to useCallback so useRealtimeSync can call it as a stable reference.
+  const loadSettings = useCallback(async () => {
+    if (!session) {
+      setIsPublic(null);
+      return;
+    }
+    try {
+      const res = await fetch("/api/user/settings");
+      if (res.ok) {
+        const data = await res.json();
+        setIsPublic(data.is_public === true);
+      } else {
+        setIsPublic(false);
+      }
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+      setIsPublic(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  // -------------------------------------------------------------------------
+  // Realtime: re-fetch user settings whenever the `users` row changes
+  // (e.g. is_public toggled in another tab). Falls back to 60-second polling.
+  // NOTE: enable Realtime for the `users` table in Supabase and ensure the
+  // anon role has a SELECT policy, or provide a user-scoped filter once a
+  // Supabase JWT is available in the session.
+  // -------------------------------------------------------------------------
+  const { isLive: isHeaderLive } = useRealtimeSync(
+    "users",
+    ["UPDATE"],
+    loadSettings,
+  );
   useEffect(() => {
     if (!session?.githubLogin) return;
 
@@ -159,31 +197,6 @@ export default function DashboardHeader() {
 
   const { lastSynced } = useDashboardSync();
   const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (!session) {
-      setIsPublic(null);
-      return;
-    }
-
-    async function loadSettings() {
-      try {
-        const res = await fetch("/api/user/settings");
-
-        if (res.ok) {
-          const data = await res.json();
-          setIsPublic(data.is_public === true);
-        } else {
-          setIsPublic(false);
-        }
-      } catch (error) {
-        console.error("Failed to load settings:", error);
-        setIsPublic(false);
-      }
-    }
-
-    loadSettings();
-  }, [session]);
 
   // Extract a fallback username parameter from active session data strings
   const displayName = session?.user?.name || session?.githubLogin || "Developer";
@@ -253,8 +266,20 @@ export default function DashboardHeader() {
               coding activity at a glance
             </p>
             {minutesAgo !== null && (
-              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
                 {minutesAgo <= 0 ? "Synced just now" : `Synced ${minutesAgo} min ago`}
+                {isHeaderLive && (
+                  <span
+                    title="Live — connected to Supabase Realtime"
+                    className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-500"
+                  >
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    </span>
+                    Live
+                  </span>
+                )}
               </p>
             )}
           </div>

@@ -114,7 +114,7 @@ export default function ShortcutsModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="shortcuts-title"
-      className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl"
+      className="absolute right-0 top-full z-[9999] mt-2 w-80 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl"
     >
       <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
         <h2

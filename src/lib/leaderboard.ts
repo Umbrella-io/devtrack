@@ -139,7 +139,7 @@ export async function clearLeaderboardCache(): Promise<void> {
   await invalidateLeaderboardCache();
 
   // 3. Invalidate Next.js unstable_cache
-  revalidateTag("leaderboard");
+  revalidateTag("leaderboard", {});
 }
 
 async function mapWithConcurrency<T, R>(
@@ -338,7 +338,7 @@ export async function refreshLeaderboardCache(
   const cacheKey = getLeaderboardCacheKey(period);
   await cacheSet(cacheKey, payload, CACHE_STALE_SECONDS);
   setMemoryCachedLeaderboard(payload, period);
-  revalidateTag("leaderboard");
+  revalidateTag("leaderboard", {});
   return payload;
 }
 
@@ -397,3 +397,60 @@ export async function getLeaderboardData(
     }
   }
 }
+
+export async function fetchLanguageRepositories(
+  username: string,
+  language: string
+): Promise<string[]> {
+  const LANGUAGE_REPO_LIMIT = 8;
+  const query = new URLSearchParams({
+    q: `user:${username} language:${language}`,
+    per_page: String(LANGUAGE_REPO_LIMIT),
+    sort: "updated",
+    order: "desc",
+  });
+
+  const data = await fetchGitHubJson<{
+    items: Array<{ full_name: string }>;
+  }>(`/search/repositories?${query.toString()}`);
+
+  return data?.items.map((repo) => repo.full_name) ?? [];
+}
+
+export async function filterLeaderboardByLanguage(
+  leaderboard: LeaderboardPayload,
+  language: string
+): Promise<LeaderboardPayload> {
+  const normalizedLanguage = language.trim().toLowerCase();
+  if (!normalizedLanguage) {
+    return leaderboard;
+  }
+
+  const filterEntries = async (
+    entries: LeaderboardEntry[]
+  ) => {
+    const matches = await Promise.all(
+      entries.map(async (entry) => {
+        const repos = await fetchLanguageRepositories(
+          entry.username,
+          normalizedLanguage
+        );
+        return repos.length > 0 ? entry : null;
+      })
+    );
+
+    return matches.filter(
+      (entry): entry is LeaderboardEntry => entry !== null
+    );
+  };
+
+  return {
+    ...leaderboard,
+    leaders: {
+      streak: await filterEntries(leaderboard.leaders.streak),
+      commits: await filterEntries(leaderboard.leaders.commits),
+      prs: await filterEntries(leaderboard.leaders.prs),
+    },
+  };
+}
+

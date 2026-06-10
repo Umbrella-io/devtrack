@@ -43,7 +43,10 @@ function mockMetricResponse(url) {
       longest: 9,
       lastCommitDate: "2026-05-18",
       totalActiveDays: 12,
+      freezeDates: [],
     };
+  if (url.includes("/api/streak/freeze"))
+    return { hasFreeze: false, freezeDate: null };
   if (url.includes("/api/metrics/weekly-summary"))
     return {
       commits: { current: 10, previous: 7, delta: 3, trend: "up" },
@@ -54,6 +57,8 @@ function mockMetricResponse(url) {
       issues: { thisWeek: 4, lastWeek: 3 },
       productivityScore: { current: 85, previous: 78 },
       activeDays: { thisWeek: 5, lastWeek: 4 },
+      issues: { thisWeek: 2, lastWeek: 1 },
+      productivityScore: { current: 85, previous: 80 },
       streak: 3,
       topRepo: "demo/repo",
     };
@@ -97,7 +102,11 @@ function mockMetricResponse(url) {
       timezone: "UTC",
     };
   if (url.includes("/api/metrics/contributions"))
-    return { data: { "2026-05-16": 3, "2026-05-17": 5, "2026-05-18": 2 } };
+    return {
+      days: 365,
+      total: 10,
+      data: { "2026-05-16": 3, "2026-05-17": 5, "2026-05-18": 2 },
+    };
   if (url.includes("/api/metrics/productive-hours"))
     return { grid: [], peak: null, total: 0, days: 0, timezone: "UTC" };
   if (url.includes("/api/user/pinned-repos/details"))
@@ -151,6 +160,10 @@ test.beforeEach(async ({ page }) => {
       contentType: "application/json",
       body: JSON.stringify({ is_public: true }),
     });
+  });
+
+  await page.route("**/api/notifications**", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ notifications: [], unreadCount: 0 }) });
   });
 
   await page.route("**/api/user/github-accounts", async (route) => {
@@ -255,12 +268,28 @@ test.beforeEach(async ({ page }) => {
     });
   }
 
+  await page.route("**/api/streak/freeze**", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ hasFreeze: false, freezeDate: null }) });
+  });
+
   await page.route("**/api/stream**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "text/event-stream",
       body: "data: {}\n\n",
     });
+  });
+
+  await page.route("**/api/user/dashboard-layout**", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({ contentType: "application/json", body: JSON.stringify({ layout: null }) });
+    } else {
+      await route.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: true }) });
+    }
+  });
+
+  await page.route("**/api/daily-note**", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ note: null }) });
   });
 });
 
@@ -286,9 +315,7 @@ test("notification bell opens and closes drawer", async ({ page }) => {
   await page.goto("/dashboard", { waitUntil: "load" });
 
   // Wait for the dashboard to fully render
-  await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true })
-  ).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible({ timeout: 30000 });
 
   // Find and click the notification bell
   const bellButton = page.getByRole("button", { name: /Notifications/ });

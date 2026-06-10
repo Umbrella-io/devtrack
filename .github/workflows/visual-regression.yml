@@ -49,7 +49,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || (npm cache clean --force && npm ci)
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
@@ -61,7 +61,7 @@ jobs:
         run: npx playwright test -c playwright.visual.config.mjs
 
       - name: Upload visual regression artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: visual-regression-artifacts

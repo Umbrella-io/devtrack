@@ -26,6 +26,7 @@ describe("useUserSettings", () => {
         timezone: "UTC",
         webhook_url: null,
         discord_muted_until: null,
+        preferred_locale: "en",
       }),
     } as any));
 
@@ -57,15 +58,17 @@ describe("useUserSettings", () => {
   it("refetch updates data", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: "u1", github_login: "gh1", bio: "", is_public: false, leaderboard_opt_in: false, weekly_digest_opt_in: false, pinned_repos: [], has_wakatime_key: false, discord_webhook_url: null, timezone: "UTC", webhook_url: null, discord_muted_until: null }) } as any)
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: "u2", github_login: "gh2", bio: "", is_public: true, leaderboard_opt_in: true, weekly_digest_opt_in: true, pinned_repos: [], has_wakatime_key: true, discord_webhook_url: null, timezone: "UTC", webhook_url: null, discord_muted_until: null }) } as any);
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: "initial", github_login: "gh0", bio: "", is_public: false, leaderboard_opt_in: false, weekly_digest_opt_in: false, pinned_repos: [], has_wakatime_key: false, discord_webhook_url: null, timezone: "UTC", webhook_url: null, discord_muted_until: null, preferred_locale: "en" }) } as any)
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: "u1", github_login: "gh1", bio: "", is_public: false, leaderboard_opt_in: false, weekly_digest_opt_in: false, pinned_repos: [], has_wakatime_key: false, discord_webhook_url: null, timezone: "UTC", webhook_url: null, discord_muted_until: null, preferred_locale: "en" }) } as any)
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: "u2", github_login: "gh2", bio: "", is_public: true, leaderboard_opt_in: true, weekly_digest_opt_in: true, pinned_repos: [], has_wakatime_key: true, discord_webhook_url: null, timezone: "UTC", webhook_url: null, discord_muted_until: null, preferred_locale: "es" }) } as any);
 
     vi.stubGlobal("fetch", fetchMock);
 
     const { result } = renderHook(() => useUserSettings());
 
+    // Wait for initial mount fetch
     await act(async () => {
-      await result.current.refetch();
+      await new Promise((r) => setTimeout(r, 0));
     });
     expect(result.current.data?.id).toBe("u1");
 
@@ -75,4 +78,3 @@ describe("useUserSettings", () => {
     expect(result.current.data?.id).toBe("u2");
   });
 });
-

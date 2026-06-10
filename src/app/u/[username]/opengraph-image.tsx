@@ -16,9 +16,9 @@ export const contentType = "image/png";
 export default async function Image({
   params,
 }: {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }) {
-  const { username } = params;
+  const { username } = await params;
 
   try {
     const user = await getUserByUsername(username);
