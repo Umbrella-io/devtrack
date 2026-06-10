@@ -7,7 +7,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   if (!isSupabaseAdminAvailable) {
-    return NextResponse.json({ hasData: false, not_configured: true });
+    return NextResponse.json(
+      { hasData: false, not_configured: true },
+      { status: 200 }
+    );
   }
 
   const session = await getServerSession(authOptions);
