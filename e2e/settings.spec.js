@@ -100,6 +100,6 @@ test("settings page saves and reflects changes", async ({ page }) => {
   });
 
   await expect(publicProfileCheckbox).not.toBeChecked();
-  await publicProfileCheckbox.check({ force: true });
+  await publicProfileCheckbox.evaluate(node => node.click());
   await expect(publicProfileCheckbox).toBeChecked();
 });
