@@ -18,9 +18,9 @@ import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import { Moon, Sun } from "lucide-react";
-import { toast } from "sonner";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { Button, buttonVariants } from "@/components/ui/button";
+import CopyLinkButton from "@/components/CopyLinkButton";
 
 type DashboardSyncContextValue = {
   lastSynced: Date | null;
@@ -180,20 +180,10 @@ export default function DashboardHeader() {
 
     evaluateCodingDistributionMilestones();
   }, [session]);
-  const [copied, setCopied] = useState(false);
-
-  const handleCopyLink = () => {
-    if (!session?.githubLogin) return;
-    const profileUrl = `${window.location.origin}/u/${session.githubLogin}`;
-    navigator.clipboard.writeText(profileUrl).then(() => {
-      setCopied(true);
-      toast.success("Profile link copied!");
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {
-      toast.error("Failed to copy link");
-    });
-  };
   const [menuOpen, setMenuOpen] = useState(false);
+  const profileUrl = session?.githubLogin
+    ? (typeof window !== "undefined" ? `${window.location.origin}/u/${session.githubLogin}` : `/u/${session.githubLogin}`)
+    : null;
 
   const { lastSynced } = useDashboardSync();
   const [now, setNow] = useState(() => Date.now());
@@ -290,15 +280,18 @@ export default function DashboardHeader() {
         <div className="w-full min-w-0 md:w-auto">
           <div className="flex w-full min-w-0 items-center gap-3 overflow-x-auto pb-1 md:w-auto md:justify-end md:overflow-visible md:pb-0">
             {isPublic === true && session?.githubLogin && (
-              <a
-                href={`/u/${session.githubLogin}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={buttonVariants({ variant: "default" })}
-                title="View your public profile"
-              >
-                Share Profile
-              </a>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`/u/${session.githubLogin}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonVariants({ variant: "default" })}
+                  title="View your public profile"
+                >
+                  Share Profile
+                </a>
+                {profileUrl && <CopyLinkButton url={profileUrl} label="Copy profile link" />}
+              </div>
             )}
 
             <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
@@ -395,16 +388,19 @@ export default function DashboardHeader() {
           </div>
 
           {isPublic === true && session?.githubLogin && (
-            <a
-              href={`/u/${session.githubLogin}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonVariants({ variant: "default", className: "w-full" })}
-              title="View your public profile"
-              onClick={() => setMenuOpen(false)}
-            >
-              Share Profile
-            </a>
+            <div className="flex flex-col gap-2">
+              <a
+                href={`/u/${session.githubLogin}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants({ variant: "default", className: "w-full" })}
+                title="View your public profile"
+                onClick={() => setMenuOpen(false)}
+              >
+                Share Profile
+              </a>
+              {profileUrl && <CopyLinkButton url={profileUrl} label="Copy profile link" />}
+            </div>
           )}
         </div>
       )}
