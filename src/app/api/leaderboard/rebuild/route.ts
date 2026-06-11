@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { NextRequest, NextResponse } from "next/server";
 import { buildLeaderboard, setMemoryCachedLeaderboard, CACHE_STALE_SECONDS, LEADERBOARD_CACHE_KEY } from "@/lib/leaderboard";
 import { cacheSet } from "@/lib/metrics-cache";
