@@ -18,7 +18,6 @@ import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import { Moon, Sun } from "lucide-react";
-import { toast } from "sonner";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { Button, buttonVariants } from "@/components/ui/button";
 
@@ -180,19 +179,6 @@ export default function DashboardHeader() {
 
     evaluateCodingDistributionMilestones();
   }, [session]);
-  const [copied, setCopied] = useState(false);
-
-  const handleCopyLink = () => {
-    if (!session?.githubLogin) return;
-    const profileUrl = `${window.location.origin}/u/${session.githubLogin}`;
-    navigator.clipboard.writeText(profileUrl).then(() => {
-      setCopied(true);
-      toast.success("Profile link copied!");
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {
-      toast.error("Failed to copy link");
-    });
-  };
   const [menuOpen, setMenuOpen] = useState(false);
 
   const { lastSynced } = useDashboardSync();

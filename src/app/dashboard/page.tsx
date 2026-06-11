@@ -11,6 +11,7 @@ import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import ThrottleBanner from "@/components/ThrottleBanner";
 import CustomizableDashboard from "@/components/dashboard/CustomizableDashboard";
 import MilestonePlanner from "@/components/MilestonePlanner";
+import ShareDashboardButton from "@/components/ShareDashboardButton";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -38,6 +39,8 @@ export default async function DashboardPage() {
             >
               Settings
             </Link>
+
+            <ShareDashboardButton />
           </div>
 
           <div className="w-full sm:w-auto">
