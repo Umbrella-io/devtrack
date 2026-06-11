@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-
 import { useNotifications } from "@/hooks/useNotifications";
 import { toast } from "sonner";
 
@@ -11,7 +10,6 @@ const EMPTY_NOTIFICATIONS: any[] = [];
 export default function NotificationBell() {
   const { data, loading, error, refetch } = useNotifications();
   const dropdownRef = useRef<HTMLDivElement>(null);
-
 
   const notifications = data?.notifications ?? EMPTY_NOTIFICATIONS;
   const unreadCountFromApi = data?.unreadCount ?? 0;
@@ -23,8 +21,6 @@ export default function NotificationBell() {
   }, [unreadCountFromApi]);
 
   const [open, setOpen] = useState(false);
-
-
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -50,7 +46,6 @@ export default function NotificationBell() {
       window.removeEventListener("devtrack:notifications", handleNotifications);
   }, [refetch]);
 
-
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -67,7 +62,6 @@ export default function NotificationBell() {
   }, []);
 
   const handleOpen = useCallback(async () => {
-
     setOpen((prev) => {
       const next = !prev;
 
@@ -78,23 +72,22 @@ export default function NotificationBell() {
         if (typeof window !== "undefined") {
           localStorage.setItem("devtrack:unread-notification-count", "0");
         }
-       fetch("/api/notifications", { method: "PATCH" })
-  .catch(() => {
-    setUnreadCount(previousUnreadCount);
+        fetch("/api/notifications", { method: "PATCH" })
+          .catch(() => {
+            setUnreadCount(previousUnreadCount);
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        "devtrack:unread-notification-count",
-        previousUnreadCount.toString()
-      );
-    }
+            if (typeof window !== "undefined") {
+              localStorage.setItem(
+                "devtrack:unread-notification-count",
+                previousUnreadCount.toString()
+              );
+            }
 
-    toast.error("Failed to mark notifications as read");
-  })
-  .finally(() => {
-    void refetch();
-  });
-
+            toast.error("Failed to mark notifications as read");
+          })
+          .finally(() => {
+            void refetch();
+          });
       }
 
       return next;
@@ -102,9 +95,7 @@ export default function NotificationBell() {
   }, [notifications, unreadCount, refetch]);
 
   function timeAgo(iso: string): string {
-    const mins = Math.floor(
-      (Date.now() - new Date(iso).getTime()) / 60000
-    );
+    const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
 
     if (mins < 1) return "just now";
     if (mins < 60) return `${mins}m ago`;
@@ -118,8 +109,15 @@ export default function NotificationBell() {
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Dynamic announcement live region */}
-      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {unreadCount > 0 ? `${unreadCount} unread notifications` : "No unread notifications"}
+      <div
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {unreadCount > 0
+          ? `${unreadCount} unread notifications`
+          : "No unread notifications"}
       </div>
 
       {/* Bell button */}
@@ -197,22 +195,22 @@ export default function NotificationBell() {
               </li>
             ) : error ? (
               <li className="px-4 py-6 text-center">
-  <p className="text-sm text-[var(--destructive)]">
-    Failed to load notifications
-  </p>
+                <p className="text-sm text-[var(--destructive)]">
+                  Failed to load notifications
+                </p>
 
-  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-    {error.message}
-  </p>
+                <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                  {error.message}
+                </p>
 
-  <button
-    type="button"
-    onClick={() => void refetch()}
-    className="mt-2 text-xs underline"
-  >
-    Retry
-  </button>
-</li>
+                <button
+                  type="button"
+                  onClick={() => void refetch()}
+                  className="mt-2 text-xs underline"
+                >
+                  Retry
+                </button>
+              </li>
             ) : notifications.length === 0 ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
                 No notifications yet
