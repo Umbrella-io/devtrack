@@ -218,10 +218,10 @@ export default function DashboardHeader() {
     <header className="relative mb-8 overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]/95 p-4 shadow-[var(--shadow-soft)] backdrop-blur-md transition-all duration-300 hover:shadow-[var(--shadow-medium)] sm:p-5 md:p-6">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/40 to-transparent" />
       <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[var(--accent)]/10 blur-3xl" />
-      <div className="relative flex min-w-0 flex-col gap-5 md:flex-row md:items-end md:justify-between">
+      <div className="relative z-10 flex min-w-0 flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 
         {/* Left Section */}
-        <div className="min-w-0 pr-12 md:pr-0">
+        <div className="min-w-0 pr-12 lg:pr-0">
           <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2">
             <div className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--accent)]/20 bg-[var(--accent)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)] transition-all duration-300">
               <span className="relative flex h-1.5 w-1.5">
@@ -287,8 +287,8 @@ export default function DashboardHeader() {
 
         {/* Right Section */}
         {/* Right Section */}
-        <div className="w-full min-w-0 md:w-auto">
-          <div className="flex w-full min-w-0 items-center gap-3 overflow-x-auto pb-1 md:w-auto md:justify-end md:overflow-visible md:pb-0">
+        <div className="w-full min-w-0 lg:w-auto">
+          <div className="flex w-full min-w-0 items-center gap-3 overflow-x-auto pb-1 lg:w-auto lg:justify-end lg:overflow-visible lg:pb-0">
             {isPublic === true && session?.githubLogin && (
               <a
                 href={`/u/${session.githubLogin}`}
