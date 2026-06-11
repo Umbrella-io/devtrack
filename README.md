@@ -4,34 +4,19 @@
 
 **Your developer productivity command center.**
 
-> Pull your GitHub activity, commit streaks, PR analytics, and coding goals into one clean, self-hostable dashboard — no enterprise plan, no vendor lock-in.
-
-**What you get:**
-
-- A real-time dashboard for your GitHub stats (streaks, PR analytics, activity)
-- Weekly goals with progress tracking
-- A shareable public profile (`/u/[username]`)
+> Track your GitHub activity, commit streaks, PR analytics, and coding goals in one clean, self-hostable dashboard — no enterprise plan, no vendor lock-in.
 
 [![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 [![GSSoC 2026](https://img.shields.io/badge/GSSoC-2026-orange.svg)](https://gssoc.girlscript.tech/)
-[![Stack](https://img.shields.io/badge/stack-Next.js%20%7C%20Supabase%20%7C%20TypeScript-blue)](./DEVELOPMENT.md)
+[![Stack](https://img.shields.io/badge/stack-Next.js%2016%20%7C%20Supabase%20%7C%20TypeScript-blue)](./DEVELOPMENT.md)
 [![Good First Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22)
 [![Contributors](https://img.shields.io/github/contributors/Priyanshu-byte-coder/devtrack?color=brightgreen)](https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors)
 [![Last Commit](https://img.shields.io/github/last-commit/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/commits/main)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/Priyanshu-byte-coder?label=sponsors&color=ea4aaa)](https://github.com/sponsors/Priyanshu-byte-coder)
 
-**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Community Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
-
-### Quick Links
-
-- **[Demo](#demo)**
-- **[Features](#features)**
-- **[Getting Started](#getting-started)**
-- **[Architecture](./docs/architecture.md)**
-- **[Roadmap](#roadmap)**
-- **[Contributing](#contributing)**
+**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
 
 </div>
 
@@ -52,6 +37,13 @@
       <img src="./public/assets/gifs/feature-hover-demo.gif" alt="DevTrack widget demo" width="100%" />
       <br />
       <em>Interactive widgets: real-time GitHub data in action</em>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="./public/assets/gifs/year_wrapped.gif" alt="DevTrack Year Wrapped" width="70%" />
+      <br />
+      <em>Year Wrapped: your annual coding journey, visualized</em>
     </td>
   </tr>
 </table>
@@ -113,6 +105,8 @@ Most developers track their work across multiple disconnected tools — GitHub f
 | **Data Export** | Download all your data in JSON format |
 | **AI Weekly Insights** | Groq-powered natural language summary of your weekly activity |
 | **Heatmap Themes** | Default and colour-blind-friendly heatmap colour schemes |
+| **Year Wrapped** | Annual coding journey recap with animated visualizations |
+| **Real-time Dashboard** | Live updates via Supabase Realtime with polling fallback |
 
 ---
 
@@ -120,7 +114,7 @@ Most developers track their work across multiple disconnected tools — GitHub f
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Frontend | Next.js 16 (App Router), TypeScript, Tailwind CSS |
 | Auth | GitHub OAuth via NextAuth.js v4 |
 | Database | Supabase (PostgreSQL) with Row Level Security |
 | API | Next.js Route Handlers (`/app/api/`) |
@@ -258,69 +252,49 @@ npm test
 # End-to-end tests (requires Chromium)
 npx playwright install --with-deps chromium
 npm run test:e2e
+```
 
 ### E2E Test Suite (Playwright)
 
-DevTrack ships a Playwright-based end-to-end suite that covers the full user journey — from OAuth sign-in through to dashboard rendering and API route correctness. **No real GitHub or Supabase credentials are needed**; all external calls are mocked inside the specs via `page.route()`.
+DevTrack ships a Playwright-based end-to-end suite covering the full user journey — OAuth sign-in, dashboard rendering, and API correctness. No real credentials needed; all external calls are mocked via `page.route()`.
 
-#### Spec files
-
-| File | What it covers |
-|------|----------------|
-| `e2e/auth.spec.ts` | Landing page loads, "Sign in with GitHub" button visible, OAuth redirect fires, unauthenticated dashboard redirects |
-| `e2e/dashboard.spec.ts` | Dashboard renders all 6 widgets after mock login, no uncaught console errors |
-| `e2e/goals.spec.ts` | Create goal → POST fires with correct payload → goal appears in list; delete goal → removed from list |
-| `e2e/streak.spec.ts` | Streak widget shows numeric current/longest values, freeze button visible and triggers API call |
-| `e2e/api.spec.ts` | `/api/metrics/contributions` returns 200 with valid session, 401 without; `/api/goals` POST returns 401 without session |
-
-The existing smoke specs (`e2e/landing.spec.js`, `e2e/auth-bypass.spec.js`, etc.) remain untouched.
-
-#### Running locally
+| Spec file | Coverage |
+|-----------|----------|
+| `e2e/auth.spec.ts` | Landing page, sign-in button, OAuth redirect, unauthenticated redirects |
+| `e2e/dashboard.spec.ts` | All 6 dashboard widgets render after mock login, no console errors |
+| `e2e/goals.spec.ts` | Goal create/delete lifecycle with API payload verification |
+| `e2e/streak.spec.ts` | Streak values display, freeze button triggers API call |
+| `e2e/api.spec.ts` | Auth-gated API routes return 200/401 correctly |
 
 ```bash
-# 1. Install Playwright browsers (one-time)
+# Install Playwright browsers (one-time)
 npx playwright install --with-deps chromium
 
-# 2. Run the full suite (dev server auto-starts on port 3002)
+# Run the full suite (dev server auto-starts on port 3002)
 npm run test:e2e
 
-# 3. Run a single spec file
+# Run a single spec
 npx playwright test e2e/goals.spec.ts
 
-# 4. Open the interactive UI runner
+# Interactive UI runner
 npx playwright test --ui
-
-# 5. View the HTML report after a run
-npx playwright show-report
-\```
-
-The test server is configured in `playwright.config.mjs`. It auto-starts `next dev` on `http://127.0.0.1:3002` with placeholder credentials so no `.env.local` is required for E2E runs.
-
-#### CI
-
-E2E tests run automatically on every pull request targeting `main` via `.github/workflows/e2e.yml`. The job builds the Next.js app in standalone mode, installs Chromium, runs the suite, and uploads the Playwright HTML report as an artifact retained for 7 days.
 ```
 
-4. Everything else in the README stays exactly as it is. The rest of the file — Docker setup, Roadmap, Contributing, Sponsors, etc. — don't touch.
-```
+The test server is configured in `playwright.config.mjs` and auto-starts on `http://127.0.0.1:3002` with placeholder credentials — no `.env.local` required. E2E tests also run on every PR via `.github/workflows/e2e.yml`.
 
-### Visual regression tests
+### Visual Regression Tests
 
-DevTrack uses Playwright screenshot assertions for visual regression coverage of the landing page, sign-in page, dashboard header, public profile, and 404 page.
-
-Run visual regression tests locally:
+Playwright screenshot assertions cover the landing page, sign-in page, dashboard header, public profile, and 404 page.
 
 ```bash
+# Run visual regression tests
 npx playwright test -c playwright.visual.config.mjs
-```
 
-Update visual baselines:
-
-```bash
+# Update baselines
 npx playwright test -c playwright.visual.config.mjs --update-snapshots
 ```
 
-Baselines are stored in `tests/snapshots/`. Generate and update baselines in the same Linux/Chromium environment used by CI to avoid OS-specific rendering differences. The visual suite uses a fixed `1280x720` viewport and fails when screenshot differences exceed `0.1%`.
+Baselines are stored in `tests/snapshots/`. Use the same Linux/Chromium environment as CI to avoid OS-specific rendering differences. The suite uses a `1280x720` viewport and fails at >0.1% pixel difference.
 
 ---
 
@@ -430,6 +404,8 @@ These features are live in the current version.
 | AI weekly insights | Groq-powered natural language summary |
 | Streak freeze | Protect streak during planned breaks |
 | RSS feed | Atom feed at `/u/[username]/feed.xml` |
+| Year Wrapped | Animated annual coding journey recap |
+| Real-time dashboard | Live Supabase Realtime sync with polling fallback |
 
 ### In Progress / Planned
 
@@ -450,8 +426,7 @@ Want to contribute? Pick an item below and open an issue or start a PR.
 
 ---
 
-
-For caching best practices used in this project, see [Caching Guidelines](docs/caching.md).
+> For caching best practices used in this project, see [Caching Guidelines](docs/caching.md).
 
 ## Contributing
 
