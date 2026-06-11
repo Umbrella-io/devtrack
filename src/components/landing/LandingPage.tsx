@@ -551,7 +551,7 @@ function HeroSection() {
             background: 'linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            textShadow: '0 4px 24px rgba(0,0,0,0.8)',
+            filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))',
           }}
         >
           YOUR<br />CODE<br />HAS A<br />
@@ -559,7 +559,7 @@ function HeroSection() {
             background: 'linear-gradient(135deg, #818cf8 0%, #c084fc 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            textShadow: '0 0 30px rgba(129,140,248,0.4)',
+            filter: 'drop-shadow(0 0 15px rgba(129,140,248,0.4))',
           }}>PULSE</span>
           <span style={{ color: 'var(--foreground)' }}>.</span>
         </h1>
@@ -757,7 +757,7 @@ function AboutSection() {
       aria-labelledby="about-heading"
       style={{
         padding: '88px clamp(20px,4vw,48px)',
-        borderTop: '1px solid #1e293b',
+        borderTop: '1px solid var(--border)',
         position: 'relative',
         zIndex: 1,
       }}
@@ -945,7 +945,7 @@ function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
       className="group relative overflow-hidden transition-all duration-300 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10"
       style={{
         display: 'flex', flexDirection: 'column', gap: 16,
-        padding: '32px 24px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b',
+        padding: '32px 24px', background: 'color-mix(in srgb, var(--card) 70%, transparent)', border: '1px solid var(--border)',
         borderRadius: 16, boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
         opacity: vis ? 1 : 0,
         transformStyle: 'preserve-3d',
@@ -992,7 +992,7 @@ function FeaturesSection() {
   return (
     <section style={{
       padding: '80px clamp(20px,4vw,48px)',
-      borderTop: '1px solid #1e293b',
+      borderTop: '1px solid var(--border)',
       maxWidth: 1200, margin: '0 auto',
     }}>
       <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 50, textAlign: 'center', background: 'linear-gradient(90deg, #818cf8, #2dd4bf)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', width: '100%' }}>
@@ -1028,7 +1028,7 @@ function HowItWorksSection() {
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(20px)',
         transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)',
-        borderTop: '1px solid #1e293b',
+        borderTop: '1px solid var(--border)',
         position: 'relative',
         overflow: 'hidden'
       }}
@@ -1046,8 +1046,8 @@ function HowItWorksSection() {
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           return (
-          <div key={i} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
-            <div className="group-hover:border-indigo-500/40 transition-colors duration-300" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, border: '1px solid #1e293b', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(129,140,248,0.05)' }}>
+          <div key={i} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'color-mix(in srgb, var(--card) 70%, transparent)', border: '1px solid var(--border)', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
+            <div className="group-hover:border-indigo-500/40 transition-colors duration-300" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, border: '1px solid var(--border)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(129,140,248,0.05)' }}>
               <Icon size={64} strokeWidth={1} color="#818cf8" className="group-hover:scale-110 transition-transform duration-700 ease-in-out opacity-90" />
             </div>
             <div className="group-hover:bg-indigo-500/20 group-hover:scale-110 transition-all duration-300 group-hover:border-indigo-500/40" style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.2)', color: A, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontFamily: MONO, fontSize: 18, fontWeight: 700 }}>
@@ -1201,10 +1201,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           {stats.contributorCount > stats.contributors.length && (
             <div style={{
               width: 38, height: 38, borderRadius: '50%',
-              border: `2px solid #000000`,
-              background: '#1e293b', marginLeft: -11,
+              border: `2px solid var(--background)`,
+              background: 'var(--border)', marginLeft: -11,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: MONO, fontSize: 10, color: '#cbd5e1', flexShrink: 0,
+              fontFamily: MONO, fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0,
             }}>
               +{stats.contributorCount - stats.contributors.length}
             </div>

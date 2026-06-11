@@ -69,7 +69,7 @@ export default function AppNavbar() {
   }, [isAuthenticated, t]);
 
   // Hide the global navbar on pages that have their own navigation structure
-  if (pathname === "/" || pathname === "/wrapped") return null;
+  if (pathname === "/wrapped") return null;
 
   const headerStyle: React.CSSProperties = {
     position: "sticky",
@@ -130,7 +130,7 @@ export default function AppNavbar() {
         {/* Desktop right */}
         <div className="hidden shrink-0 items-center gap-2 md:flex">
           {/* Show ThemeToggle in navbar except on dashboard, where DashboardHeader provides it */}
-          {!isDashboardRoute && <ThemeToggle variant="compact" />}
+          {!isDashboardRoute && <ThemeToggle variant="icon" />}
           {isAuthenticated ? (
             !isDashboardRoute && (
               <div className="flex items-center gap-4 border-l border-white/10 pl-4">
@@ -228,7 +228,7 @@ export default function AppNavbar() {
                   <span className="text-sm font-medium text-[var(--muted-foreground)]" style={{ fontFamily: MONO }}>
                     Theme
                   </span>
-                  <ThemeToggle variant="compact" />
+                  <ThemeToggle variant="icon" />
                 </div>
               )}
               {isAuthenticated ? (

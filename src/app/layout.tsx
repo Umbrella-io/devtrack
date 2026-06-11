@@ -73,10 +73,19 @@ export default async function RootLayout({
             __html: `
               (function() {
                 try {
-                  const stored = localStorage.getItem('theme');
-                  const validThemes = ['classic-dark', 'modern-light-blue', 'nordic-frost', 'cyberpunk-matrix'];
-                  const theme = validThemes.includes(stored || '') ? stored : 'classic-dark';
-                  const isDark = theme !== 'modern-light-blue';
+                  var stored = localStorage.getItem('theme');
+                  var validThemes = ['classic-dark', 'modern-light-blue', 'nordic-frost', 'cyberpunk-matrix'];
+                  var theme;
+                  if (validThemes.indexOf(stored) !== -1) {
+                    // User has a saved preference — honour it
+                    theme = stored;
+                  } else {
+                    // First visit: respect the OS prefers-color-scheme setting
+                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches
+                      ? 'classic-dark'
+                      : 'modern-light-blue';
+                  }
+                  var isDark = theme !== 'modern-light-blue';
 
                   document.documentElement.dataset.theme = theme;
                   document.documentElement.classList.toggle('dark', isDark);

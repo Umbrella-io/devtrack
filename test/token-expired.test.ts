@@ -52,6 +52,7 @@ vi.mock("@/lib/github-accounts", () => ({
 
 vi.mock("@/lib/supabase", () => ({
   supabaseAdmin: null,
+  isSupabaseAdminAvailable: false,
 }));
 
 import { getServerSession } from "next-auth";

@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
 :root {
   color-scheme: dark;
   --background: #050816;
@@ -629,8 +633,8 @@ body {
 }
 
 .lnd-about-card {
-  background: rgba(10, 10, 12, 0.72);
-  border: 1px solid #1e293b;
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 22px;
   min-height: 210px;
@@ -638,8 +642,8 @@ body {
 }
 
 .lnd-about-card:hover {
-  background: rgba(14, 14, 18, 0.92);
-  border-color: rgba(129, 140, 248, 0.48);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  border-color: var(--accent-secondary);
   transform: translateY(-3px) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
