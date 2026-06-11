@@ -91,9 +91,17 @@ export default function RepoHealthPanel({ health, isOpen, onClose }: Props) {
             </div>
           ))}
         </div>
-        <p className="mt-5 text-xs text-[var(--muted-foreground)] border-t border-[var(--border)] pt-4">
-          Score based on activity in the last 30 days. Updates on page refresh.
-        </p>
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--border)] pt-4">
+          <p className="text-xs text-[var(--muted-foreground)]">
+            Score based on activity in the last 30 days. Updates on page refresh.
+          </p>
+          <a
+            href={`/dashboard/repo-health`}
+            className="shrink-0 text-xs font-medium text-[var(--accent)] hover:underline underline-offset-2"
+          >
+            Full Analysis →
+          </a>
+        </div>
       </div>
     </div>
   );

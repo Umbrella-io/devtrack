@@ -11,6 +11,7 @@ const mockGoals = [
     unit: 'commits',
     recurrence: 'none' as const,
     deadline: null,
+    is_public: false,
     period_start: '2026-05-30T00:00:00.000Z',
     last_synced_at: null,
     last_period: null,
@@ -23,6 +24,7 @@ const mockGoals = [
     unit: 'commits',
     recurrence: 'weekly' as const,
     deadline: null,
+    is_public: false,
     period_start: '2026-05-30T00:00:00.000Z',
     last_synced_at: '2026-05-30T00:00:00.000Z',
     last_period: null,
@@ -141,7 +143,7 @@ describe('GoalTracker - useGoalTracker Hook', () => {
     });
 
     expect(result.current.syncing).toBe(false);
-    expect(result.current.syncError).toBe('Failed to sync goals. Please try again.');
+    expect(result.current.syncError).toBe('Sync failed. Please try again.');
   });
 
   it('handles creating a non-auto-synced goal successfully', async () => {
@@ -264,6 +266,7 @@ describe('GoalTracker - useGoalTracker Hook', () => {
           unit: 'commits',
           recurrence: 'none',
           deadline: null,
+          is_public: false,
           period_start: '2026-05-30T00:00:00.000Z',
           last_synced_at: null,
           last_period: null,

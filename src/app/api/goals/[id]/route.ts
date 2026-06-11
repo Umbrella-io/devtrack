@@ -11,10 +11,18 @@ export const dynamic = "force-dynamic";
 // client-supplied progress updates must be rejected to prevent fabrication.
 const ACTIVITY_DERIVED_UNITS = new Set(["commits", "prs"]);
 
+// Canonical recurrence values — must stay in sync with the POST route and
+// the GET period-reset logic, neither of which has a branch for "daily".
+// Accepting "daily" here would write an unrecognised value to the DB that
+// the reset logic silently ignores, leaving the goal stuck forever.
+const VALID_RECURRENCES = ["none", "weekly", "monthly"] as const;
+type Recurrence = (typeof VALID_RECURRENCES)[number];
+
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -36,7 +44,7 @@ export async function PATCH(
 
   const updates: Record<string, unknown> = {};
 
-  const { title, target, unit, recurrence, current } =
+  const { title, target, unit, recurrence, current, is_public } =
     body as Record<string, unknown>;
 
   if (title !== undefined) {
@@ -72,9 +80,9 @@ export async function PATCH(
   }
 
   if (recurrence !== undefined) {
-    if (recurrence !== "daily" && recurrence !== "weekly" && recurrence !== "monthly") {
+    if (!VALID_RECURRENCES.includes(recurrence as Recurrence)) {
       return Response.json(
-        { error: "recurrence must be 'daily', 'weekly', or 'monthly'" },
+        { error: "recurrence must be 'none', 'weekly', or 'monthly'" },
         { status: 400 }
       );
     }
@@ -82,19 +90,30 @@ export async function PATCH(
   }
 
   if (current !== undefined) {
-    if (typeof current !== "number" || current < 0) {
+    if (typeof current !== "number" || !Number.isInteger(current) || current < 0) {
       return Response.json(
-        { error: "Invalid current value" },
+        { error: "current must be a non-negative integer" },
         { status: 400 }
       );
     }
     updates.current = current;
   }
+  
+  if (is_public !== undefined) {
+    if (typeof is_public !== "boolean") {
+      return Response.json(
+        { error: "is_public must be a boolean" },
+        { status: 400 }
+      );
+    }
+
+    updates.is_public = is_public;
+  } 
 
   const { data: existingGoal } = await supabaseAdmin
     .from("goals")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .single();
 
@@ -130,7 +149,7 @@ export async function PATCH(
   const { data: updatedGoal, error } = await supabaseAdmin
     .from("goals")
     .update(updates)
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .select()
     .single();
@@ -160,8 +179,9 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.githubId) {
@@ -180,7 +200,7 @@ export async function DELETE(
     const { error } = await supabaseAdmin
       .from("goals")
       .delete()
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id);
 
     if (error) {

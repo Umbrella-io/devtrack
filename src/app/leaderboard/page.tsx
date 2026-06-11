@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import EmptyState from "@/components/EmptyState";
 import LeaderboardFilters from "@/components/leaderboard/LeaderboardFilters";
 import SponsorBadge from "@/components/SponsorBadge";
-import type { LeaderboardPayload } from "@/lib/leaderboard";
+import { getLeaderboardData, filterLeaderboardByLanguage, type LeaderboardPayload } from "@/lib/leaderboard";
 
 type LeaderboardTab = "streak" | "commits" | "prs";
 type LeaderboardPeriod = "week" | "month" | "all";
@@ -55,41 +55,6 @@ function leaderboardHref(
   return `/leaderboard?${params.toString()}`;
 }
 
-async function fetchLeaderboard(filters: {
-  lang?: string;
-  period: LeaderboardPeriod;
-}): Promise<LeaderboardPayload | null> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXTAUTH_URL ||
-    "http://localhost:3000";
-  const params = new URLSearchParams();
-
-  if (filters.lang) {
-    params.set("lang", filters.lang);
-  }
-
-  if (filters.period !== "all") {
-    params.set("period", filters.period);
-  }
-
-  const query = params.toString();
-
-  try {
-    const res = await fetch(`${baseUrl}/api/leaderboard${query ? `?${query}` : ""}`, {
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) {
-      return null;
-    }
-
-    return (await res.json()) as LeaderboardPayload;
-  } catch (error) {
-    console.error("Failed to fetch leaderboard:", error);
-    return null;
-  }
-}
 
 function getMetricValue(entry: LeaderboardEntry, tab: LeaderboardTab): number {
   if (tab === "streak") return entry.streak;
@@ -100,7 +65,7 @@ function getMetricValue(entry: LeaderboardEntry, tab: LeaderboardTab): number {
 export default async function LeaderboardPage({
   searchParams,
 }: {
-  searchParams: { tab?: string; lang?: string; period?: string };
+  searchParams: Promise<{ tab?: string; lang?: string; period?: string }>;
 }) {
   const resolvedSearchParams = await searchParams;
   const activeTab = tabs.some((tab) => tab.id === resolvedSearchParams.tab)
@@ -112,7 +77,10 @@ export default async function LeaderboardPage({
   const filters = { lang: resolvedSearchParams.lang, period };
   const hasFilters = Boolean(filters.lang) || period !== "all";
 
-  const leaderboard = await fetchLeaderboard(filters);
+  let leaderboard = await getLeaderboardData(false, { period });
+  if (leaderboard && filters.lang) {
+    leaderboard = await filterLeaderboardByLanguage(leaderboard, filters.lang);
+  }
   const activeMeta = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
   const rows = leaderboard?.leaders[activeTab] ?? [];
   const metricLabel = activeTab === "streak" ? activeMeta.metric : periods[period];

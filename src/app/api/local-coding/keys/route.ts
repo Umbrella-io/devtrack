@@ -75,11 +75,23 @@ export async function POST(req: NextRequest) {
   const apiKey = randomBytes(24).toString("base64url");
   const apiKeyHash = hashApiKey(apiKey);
 
+  const { count: latestCount } = await supabaseAdmin
+    .from("local_coding_api_keys")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+  
+  if ((latestCount || 0) >= MAX_KEYS_PER_USER) {
+    return Response.json(
+      { error: `API key limit reached. Maximum ${MAX_KEYS_PER_USER} keys per user.` },
+      { status: 400 }
+    );
+  }
+
   const { data: keyRecord, error } = await supabaseAdmin
     .from("local_coding_api_keys")
     .insert({
       user_id: user.id,
-      api_key: apiKeyHash,
+      api_key: apiKey.slice(0, 8),
       api_key_hash: apiKeyHash,
       name,
     })

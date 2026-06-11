@@ -1,3 +1,7 @@
+import {
+  githubRateLimitResponse,
+  throwIfGitHubRateLimited,
+} from "@/lib/github-rate-limit";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
@@ -6,6 +10,7 @@ import {
   getAllAccounts,
   mergeMetrics,
 } from "@/lib/github-accounts";
+import { orgSearchSegment } from "@/lib/github-orgs";
 import { GITHUB_API, GitHubCommitSearchItem, CommitItem } from "@/lib/github";
 import {
   isMetricsCacheBypassed,
@@ -14,6 +19,7 @@ import {
   withMetricsCache,
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseAdminAvailable } from "@/lib/supabase-admin";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
@@ -96,6 +102,16 @@ function sumContributionDays(data: Record<string, number>): number {
   return Object.values(data).reduce((total, count) => total + count, 0);
 }
 
+function githubApiErrorResponse(error: unknown): Response {
+  const rateLimitResponse = githubRateLimitResponse(error);
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
+  return Response.json({ error: "GitHub API error" }, { status: 502 });
+}
+
 async function fetchContributionsForAccount(
   token: string,
   githubLogin: string,
@@ -103,8 +119,9 @@ async function fetchContributionsForAccount(
   cacheContext: { bypass: boolean; userId: string },
   timezone: string,
   fromDate?: string,
-  repo?: string | null
-
+  repo?: string | null,
+  orgName?: string | null,
+  excludedOrgs: string[] = []
 ): Promise<ContributionResponse> {
   const repoFilter = repo ? ` repo:${repo}` : "";
 
@@ -113,6 +130,8 @@ async function fetchContributionsForAccount(
     githubLogin,
     from: fromDate ?? undefined,
     repo,
+    orgName: orgName || undefined,
+    excludedOrgs: excludedOrgs.length > 0 ? excludedOrgs.join(",") : undefined,
   });
 
   return withMetricsCache(
@@ -131,15 +150,19 @@ async function fetchContributionsForAccount(
       let totalCount = 0;
       let page = 1;
 
+      let q = `author:${githubLogin} author-date:>=${sinceStr}${repoFilter}`;
+      if (orgName) {
+        q += ` org:${orgName}`;
+      } else if (excludedOrgs.length > 0) {
+        q += excludedOrgs.map((org) => ` -org:${org}`).join("");
+      }
+
       // Note: this may issue up to 10 sequential GitHub Search API calls (max 1000 results).
       // Authenticated GitHub Search rate limits are low (~30 req/min). We handle 429/403
       // responses gracefully by returning partial results rather than failing the endpoint.
       while (page <= 10) {
         const searchUrl = new URL(`${GITHUB_API}/search/commits`);
-        searchUrl.searchParams.set(
-          "q",
-          `author:${githubLogin} author-date:>=${sinceStr}${repoFilter}`
-        );
+        searchUrl.searchParams.set("q", q);
         searchUrl.searchParams.set("per_page", "100");
         searchUrl.searchParams.set("page", String(page));
         searchUrl.searchParams.set("sort", "author-date");
@@ -164,19 +187,18 @@ async function fetchContributionsForAccount(
         );
 
         if (!searchRes.ok) {
-          // If we're being rate limited or hit a secondary rate limit/permission error,
-          // return partial results collected so far instead of failing the whole request.
-          if (searchRes.status === 429 || searchRes.status === 403) {
-            if (allItems.length === 0) {
-              // If no items were retrieved at all, surface the error so callers know
-              // the request could not be fulfilled.
-              throw new Error(`GitHub API error: ${searchRes.status}`);
-            }
-            break;
-          }
+  throwIfGitHubRateLimited(searchRes);
 
-          throw new Error("GitHub API error");
-        }
+  if (searchRes.status === 429 || searchRes.status === 403) {
+    if (allItems.length === 0) {
+      throw new Error(`GitHub API error: ${searchRes.status}`);
+    }
+
+    break;
+  }
+
+  throw new Error(`GitHub API error: ${searchRes.status}`);
+}
 
         const data = (await searchRes.json()) as {
           total_count: number;
@@ -375,6 +397,35 @@ export async function GET(req: NextRequest) {
   }
 
   // Compare mode path: explicitly fetch contributions for a target username.
+  let orgName: string | null = null;
+  let targetAccountId: string | null = accountId;
+
+  if (accountId && accountId.startsWith("org:")) {
+    const parts = accountId.split(":");
+    targetAccountId = parts[1];
+    orgName = parts[2];
+  }
+
+  // Load excluded organizations config
+  let excludedOrgs: string[] = [];
+  if (isSupabaseAdminAvailable && session.githubId) {
+    try {
+      const { data: dbUser } = await supabaseAdmin
+        .from("users")
+        .select("organizations_config")
+        .eq("github_id", session.githubId)
+        .single();
+
+      const orgsConfig = (dbUser?.organizations_config || {}) as Record<string, boolean>;
+      excludedOrgs = Object.entries(orgsConfig)
+        .filter(([_, enabled]) => enabled === false)
+        .map(([org]) => org);
+    } catch (err) {
+      console.error("Failed to load excluded orgs config:", err);
+    }
+  }
+
+  // Compare mode path: explicitly fetch contributions for a target username.
   if (username) {
     try {
       const result = await fetchContributionsForAccount(
@@ -384,15 +435,17 @@ export async function GET(req: NextRequest) {
         { bypass, userId: session.githubId ?? session.githubLogin },
         timezone,
         fromDate,
-        repoParam
+        repoParam,
+        orgName,
+        excludedOrgs
       );
       return Response.json(result);
-    } catch (e) {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
-    }
+  } catch (error) {
+    return githubApiErrorResponse(error);
+  }
   }
 
-  if (!accountId) {
+  if (!targetAccountId) {
     try {
       const result = await fetchContributionsForAccount(
         session.accessToken,
@@ -401,7 +454,9 @@ export async function GET(req: NextRequest) {
         { bypass, userId: session.githubId ?? session.githubLogin },
         timezone,
         fromDate,
-        repoParam
+        repoParam,
+        orgName,
+        excludedOrgs
       );
 
       if (!gitlabToken) {
@@ -414,8 +469,8 @@ export async function GET(req: NextRequest) {
       });
 
       return Response.json(merged);
-    } catch (e) {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return githubApiErrorResponse(error);
     }
   }
 
@@ -429,7 +484,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (accountId === "combined") {
+  if (targetAccountId === "combined") {
     const accounts = await getAllAccounts(
       {
         token: session.accessToken,
@@ -441,13 +496,30 @@ export async function GET(req: NextRequest) {
 
     const results = await Promise.allSettled(
       accounts.map((account) =>
-        fetchContributionsForAccount(account.token, account.githubLogin, days, {
-          bypass,
-          userId: account.githubId,
-
-        }, timezone, fromDate, repoParam)
+        fetchContributionsForAccount(
+          account.token,
+          account.githubLogin,
+          days,
+          { bypass, userId: account.githubId },
+          timezone,
+          fromDate,
+          repoParam,
+          orgName,
+          excludedOrgs
+        )
       )
     );
+
+
+    const rateLimitedResult = results.find(
+  (result): result is PromiseRejectedResult =>
+    result.status === "rejected" &&
+    githubRateLimitResponse(result.reason) !== null
+);
+
+if (rateLimitedResult) {
+  return githubApiErrorResponse(rateLimitedResult.reason);
+}
 
     const merged = mergeMetrics(results, (a, b) => ({
       days: a.days,
@@ -480,7 +552,7 @@ export async function GET(req: NextRequest) {
     return Response.json(combined);
   }
 
-  if (accountId === session.githubId) {
+  if (targetAccountId === session.githubId) {
     try {
       const result = await fetchContributionsForAccount(
         session.accessToken,
@@ -488,7 +560,10 @@ export async function GET(req: NextRequest) {
         days,
         { bypass, userId: session.githubId },
         timezone,
-        fromDate
+        fromDate,
+        repoParam,
+        orgName,
+        excludedOrgs
       );
 
       if (!gitlabToken) {
@@ -501,12 +576,12 @@ export async function GET(req: NextRequest) {
       });
 
       return Response.json(merged);
-    } catch (e) {
-      return Response.json({ error: "GitHub API error" }, { status: 502 });
+    } catch (error) {
+      return githubApiErrorResponse(error);
     }
   }
 
-  const accountToken = await getAccountToken(userRow.id, accountId);
+  const accountToken = await getAccountToken(userRow.id, targetAccountId);
 
   if (!accountToken) {
     return Response.json({ error: "Account not found" }, { status: 404 });
@@ -516,7 +591,7 @@ export async function GET(req: NextRequest) {
     .from("user_github_accounts")
     .select("github_login")
     .eq("user_id", userRow.id)
-    .eq("github_id", accountId)
+    .eq("github_id", targetAccountId)
     .single();
 
   if (!accountRow?.github_login) {
@@ -528,12 +603,15 @@ export async function GET(req: NextRequest) {
       accountToken,
       accountRow.github_login,
       days,
-      { bypass, userId: accountId },
+      { bypass, userId: targetAccountId },
       timezone,
-      fromDate
+      fromDate,
+      repoParam,
+      orgName,
+      excludedOrgs
     );
     return Response.json(result);
-  } catch (e) {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  } catch (error) {
+    return githubApiErrorResponse(error);
   }
 }

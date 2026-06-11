@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -8,7 +9,9 @@ import {
   withMetricsCache,
 } from "@/lib/metrics-cache";
 import { getAccountToken } from "@/lib/github-accounts";
-import { resolveAppUser } from "@/lib/resolve-user";
+import { resolveAppUser, type AppUser } from "@/lib/resolve-user";
+import { supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseAdminAvailable } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -27,42 +30,89 @@ export async function GET(request: NextRequest) {
   if (!session?.accessToken || !session.githubLogin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
+  }
 
   // 1. Core multi-account parameters from main branch
   const accountId = request.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(request);
 
+  let orgName: string | null = null;
+  let targetAccountId: string | null = accountId;
+
+  if (accountId && accountId.startsWith("org:")) {
+    const parts = accountId.split(":");
+    targetAccountId = parts[1];
+    orgName = parts[2];
+  }
+
+  // Load excluded organizations config
+  let excludedOrgs: string[] = [];
+  let userRow: AppUser | null = null;
+  if (isSupabaseAdminAvailable && session.githubId) {
+    userRow = await resolveAppUser(session.githubId, session.githubLogin);
+    if (userRow) {
+      try {
+        const { data: dbUser } = await supabaseAdmin
+          .from("users")
+          .select("organizations_config")
+          .eq("id", userRow.id)
+          .single();
+
+        const orgsConfig = (dbUser?.organizations_config || {}) as Record<string, boolean>;
+        excludedOrgs = Object.entries(orgsConfig)
+          .filter(([_, enabled]) => enabled === false)
+          .map(([org]) => org);
+      } catch (err) {
+        console.error("Failed to load excluded orgs config:", err);
+      }
+    }
+  }
+
   let token = session.accessToken;
   let userId = session.githubId ?? session.githubLogin;
-  let githubUsername = session.githubLogin; // Track the correct username for the API search string
+  let githubUsername = session.githubLogin;
 
   // 2. Main branch multi-account routing safety checks
-  if (accountId && accountId !== session.githubId) {
-    if (!session.githubId) {
+  if (targetAccountId && targetAccountId !== session.githubId) {
+    if (!session.githubId || !userRow) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userRow = await resolveAppUser(session.githubId, session.githubLogin);
-    if (!userRow) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const accountToken = await getAccountToken(userRow.id, accountId);
+
+    const accountToken = await getAccountToken(userRow.id, targetAccountId);
     if (!accountToken) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
     
     // Dynamically retrieve the correct account configuration
-    const targetAccount = userRow.accounts?.find((acc: any) => acc.accountId === accountId);
+    const targetAccount = userRow.accounts?.find((acc: any) => acc.accountId === targetAccountId);
     if (targetAccount?.username) {
       githubUsername = targetAccount.username;
     }
     
+    const { data: accountRow } = await supabaseAdmin
+      .from("user_github_accounts")
+      .select("github_login")
+      .eq("user_id", userRow.id)
+      .eq("github_id", targetAccountId)
+      .single();
+
+    if (!accountRow?.github_login) {
+      return NextResponse.json({ error: "Account not found" }, { status: 404 });
+    }
+
     token = accountToken;
-    userId = accountId;
+    userId = targetAccountId;
   }
 
-  // 3. Keep custom metrics logic cache setup using the verified userId
-  const key = metricsCacheKey(userId, "issues");
+  // 3. Cache setup utilizing targeted user metadata and excluded organizational parameters
+  const key = metricsCacheKey(userId, "issues", {
+    orgName: orgName || undefined,
+    excludedOrgs: excludedOrgs.length > 0 ? excludedOrgs.join(",") : undefined,
+  });
 
+  // 4. Custom issue calculation workflow protected by the cache wrapper
   try {
     const metrics = await withMetricsCache(
       { bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.issues },
@@ -75,7 +125,7 @@ export async function GET(request: NextRequest) {
         sinceDate.setDate(sinceDate.getDate() - daysLimit);
         const sinceIso = sinceDate.toISOString().split("T")[0];
 
-        // BUG FIX: Querying with githubUsername instead of hardcoded session profile configuration
+        // Fetching metrics matching the precise targeted user identifier
         const githubUrl = `https://api.github.com/search/issues?q=author:${githubUsername}+type:issue+created:>=${sinceIso}&per_page=100`;
 
         const res = await fetch(githubUrl, {
@@ -131,8 +181,7 @@ export async function GET(request: NextRequest) {
           stats: {
             totalOpen,
             openedThisWeek,
-            closedThisWeek,
-            avgDaysToClose: closedWithDurationCount > 0 ? Math.round(totalClosedDays / closedWithDurationCount) : 0,
+            closedWithDurationCount > 0 ? Math.round(totalClosedDays / closedWithDurationCount) : 0,
           },
           chartData,
         };
@@ -141,6 +190,9 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(metrics);
   } catch (error) {
+    if (error instanceof GitHubAuthError) {
+      return githubAuthErrorResponse();
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to load issue metrics" },
       { status: 502 }
