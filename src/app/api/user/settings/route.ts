@@ -7,8 +7,30 @@ import { encryptToken } from "@/lib/crypto";
 import { validateTextInput } from "@/lib/sanitize";
 import { clearLeaderboardCache } from "@/lib/leaderboard";
 import { cacheGet, cacheSet, cacheDelete } from "@/lib/metrics-cache";
+import {
+  defaultLocale,
+  isValidLocale,
+  localeCookieMaxAge,
+  localeCookieName,
+} from "@/i18n/config";
 
 export const dynamic = "force-dynamic";
+
+function settingsResponse(body: Record<string, any>, status = 200) {
+  const response = NextResponse.json(body, { status });
+  const preferredLocale =
+    typeof body.preferred_locale === "string" && isValidLocale(body.preferred_locale)
+      ? body.preferred_locale
+      : defaultLocale;
+
+  response.cookies.set(localeCookieName, preferredLocale, {
+    maxAge: localeCookieMaxAge,
+    path: "/",
+    sameSite: "lax",
+  });
+
+  return response;
+}
 
 const VALID_WIDGETS = ["streak", "contributions", "languages", "prs"] as const;
 type WidgetKey = (typeof VALID_WIDGETS)[number];
@@ -24,7 +46,7 @@ async function fetchUserSettings(userId: string) {
   // Tier 1: All columns (including public_widgets added by 20260608000000 migration)
   const res1 = await supabaseAdmin
     .from("users")
-    .select("id, github_login, bio, is_public, public_since, show_weekly_goals, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, weekly_digest_opt_in, discord_webhook_url, timezone, webhook_url, discord_muted_until, public_widgets")
+    .select("id, github_login, bio, is_public, public_since, show_weekly_goals, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, weekly_digest_opt_in, discord_webhook_url, timezone, webhook_url, discord_muted_until, public_widgets, preferred_locale")
     .eq("id", userId)
     .single();
 
@@ -41,6 +63,7 @@ async function fetchUserSettings(userId: string) {
       hasWebhookUrl: true,
       hasDiscordMutedUntil: true,
       hasPublicWidgets: true,
+      hasPreferredLocale: true,
       leaderboard_opt_in: (res1.data as any).leaderboard_opt_in ?? false,
       weekly_digest_opt_in: (res1.data as any).weekly_digest_opt_in ?? false,
       pinned_repos: (res1.data as any).pinned_repos || [],
@@ -51,6 +74,7 @@ async function fetchUserSettings(userId: string) {
       webhook_url: (res1.data as any).webhook_url || null,
       discord_muted_until: (res1.data as any).discord_muted_until || null,
       public_widgets: sanitizePublicWidgets((res1.data as any).public_widgets),
+      preferred_locale: (res1.data as any).preferred_locale || defaultLocale,
     };
   }
 
@@ -67,6 +91,7 @@ async function fetchUserSettings(userId: string) {
       hasWebhookUrl: false,
       hasDiscordMutedUntil: false,
       hasPublicWidgets: false,
+      hasPreferredLocale: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -77,13 +102,14 @@ async function fetchUserSettings(userId: string) {
       webhook_url: null,
       discord_muted_until: null,
       public_widgets: ["streak", "contributions"] as WidgetKey[],
+      preferred_locale: defaultLocale,
     };
   }
 
   // Tier 2: Without public_widgets (deployments that haven't run the latest migration yet)
   const res2 = await supabaseAdmin
     .from("users")
-    .select("id, github_login, bio, is_public, public_since, show_weekly_goals, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, weekly_digest_opt_in, discord_webhook_url, timezone, webhook_url, discord_muted_until")
+    .select("id, github_login, bio, is_public, public_since, show_weekly_goals, leaderboard_opt_in, pinned_repos, wakatime_api_key_encrypted, wakatime_api_key_iv, weekly_digest_opt_in, discord_webhook_url, timezone, webhook_url, discord_muted_until, preferred_locale")
     .eq("id", userId)
     .single();
 
@@ -100,6 +126,7 @@ async function fetchUserSettings(userId: string) {
       hasWebhookUrl: true,
       hasDiscordMutedUntil: true,
       hasPublicWidgets: false,
+      hasPreferredLocale: true,
       leaderboard_opt_in: (res2.data as any).leaderboard_opt_in ?? false,
       weekly_digest_opt_in: (res2.data as any).weekly_digest_opt_in ?? false,
       pinned_repos: (res2.data as any).pinned_repos || [],
@@ -110,6 +137,7 @@ async function fetchUserSettings(userId: string) {
       webhook_url: (res2.data as any).webhook_url || null,
       discord_muted_until: (res2.data as any).discord_muted_until || null,
       public_widgets: ["streak", "contributions"] as WidgetKey[],
+      preferred_locale: (res2.data as any).preferred_locale || defaultLocale,
     };
   }
 
@@ -126,6 +154,7 @@ async function fetchUserSettings(userId: string) {
       hasWebhookUrl: false,
       hasDiscordMutedUntil: false,
       hasPublicWidgets: false,
+      hasPreferredLocale: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -136,6 +165,7 @@ async function fetchUserSettings(userId: string) {
       webhook_url: null,
       discord_muted_until: null,
       public_widgets: ["streak", "contributions"] as WidgetKey[],
+      preferred_locale: defaultLocale,
     };
   }
 
@@ -169,6 +199,7 @@ async function fetchUserSettings(userId: string) {
       webhook_url: (res3.data as any).webhook_url || null,
       discord_muted_until: null,
       public_widgets: ["streak", "contributions"] as WidgetKey[],
+      preferred_locale: defaultLocale,
     };
   }
 
@@ -185,6 +216,7 @@ async function fetchUserSettings(userId: string) {
       hasWebhookUrl: false,
       hasDiscordMutedUntil: false,
       hasPublicWidgets: false,
+      hasPreferredLocale: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -195,6 +227,7 @@ async function fetchUserSettings(userId: string) {
       webhook_url: null,
       discord_muted_until: null,
       public_widgets: ["streak", "contributions"] as WidgetKey[],
+      preferred_locale: defaultLocale,
     };
   }
 
@@ -217,6 +250,7 @@ async function fetchUserSettings(userId: string) {
       hasBio: false,
       hasDiscordMutedUntil: false,
       hasPublicWidgets: false,
+      hasPreferredLocale: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -224,8 +258,10 @@ async function fetchUserSettings(userId: string) {
       wakatime_api_key_iv: null,
       discord_webhook_url: null,
       timezone: "UTC",
+      webhook_url: null,
       discord_muted_until: null,
       public_widgets: ["streak", "contributions"] as WidgetKey[],
+      preferred_locale: defaultLocale,
     };
   }
 
@@ -241,6 +277,7 @@ async function fetchUserSettings(userId: string) {
       hasBio: false,
       hasDiscordMutedUntil: false,
       hasPublicWidgets: false,
+      hasPreferredLocale: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -250,6 +287,7 @@ async function fetchUserSettings(userId: string) {
       timezone: "UTC",
       discord_muted_until: null,
       public_widgets: ["streak", "contributions"] as WidgetKey[],
+      preferred_locale: defaultLocale,
     };
   }
 
@@ -272,6 +310,7 @@ async function fetchUserSettings(userId: string) {
       hasBio: false,
       hasDiscordMutedUntil: false,
       hasPublicWidgets: false,
+      hasPreferredLocale: false,
       leaderboard_opt_in: false,
       weekly_digest_opt_in: false,
       pinned_repos: [] as string[],
@@ -281,6 +320,7 @@ async function fetchUserSettings(userId: string) {
       timezone: "UTC",
       discord_muted_until: null,
       public_widgets: ["streak", "contributions"] as WidgetKey[],
+      preferred_locale: defaultLocale,
     };
   }
 
@@ -295,6 +335,7 @@ async function fetchUserSettings(userId: string) {
     hasBio: false,
     hasDiscordMutedUntil: false,
     hasPublicWidgets: false,
+    hasPreferredLocale: false,
     leaderboard_opt_in: false,
     weekly_digest_opt_in: false,
     pinned_repos: [] as string[],
@@ -302,8 +343,10 @@ async function fetchUserSettings(userId: string) {
     wakatime_api_key_iv: null,
     discord_webhook_url: null,
     timezone: "UTC",
+    webhook_url: null,
     discord_muted_until: null,
     public_widgets: ["streak", "contributions"] as WidgetKey[],
+    preferred_locale: defaultLocale,
   };
 }
 
@@ -316,18 +359,15 @@ export async function GET(req: NextRequest) {
 
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) {
-    return NextResponse.json(
-      { error: "Failed to fetch user settings" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch user settings" }, { status: 500 });
   }
 
   const cacheKey = `settings:${user.id}`;
-  const SETTINGS_TTL = 5 * 60; // 5 minutes
+  const SETTINGS_TTL = 5 * 60;
 
   const cached = await cacheGet<Record<string, unknown>>(cacheKey, SETTINGS_TTL);
   if (cached) {
-    return NextResponse.json(cached);
+    return settingsResponse(cached);
   }
 
   const result = await fetchUserSettings(user.id);
@@ -337,7 +377,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch user settings" }, { status: 500 });
   }
 
-  const response = {
+  const responseData = {
     id: (result.data as any).id,
     github_login: (result.data as any).github_login,
     bio: (result.data as any).bio ?? "",
@@ -353,12 +393,12 @@ export async function GET(req: NextRequest) {
     webhook_url: result.webhook_url ?? null,
     discord_muted_until: result.discord_muted_until ?? null,
     public_widgets: result.public_widgets,
+    preferred_locale: result.preferred_locale,
   };
 
-  await cacheSet(cacheKey, response, SETTINGS_TTL);
-  return NextResponse.json(response);
+  await cacheSet(cacheKey, responseData, SETTINGS_TTL);
+  return settingsResponse(responseData);
 }
-
 
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -368,12 +408,8 @@ export async function PATCH(req: NextRequest) {
   }
 
   const user = await resolveAppUser(session.githubId, session.githubLogin);
-
   if (!user) {
-    return NextResponse.json(
-      { error: "User not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
   let body: {
@@ -389,6 +425,8 @@ export async function PATCH(req: NextRequest) {
     webhook_url?: string | null;
     discord_muted_until?: string | null;
     public_widgets?: string[];
+    seen_onboarding?: boolean;
+    preferred_locale?: string;
   };
   try {
     body = await req.json();
@@ -396,16 +434,15 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { is_public, show_weekly_goals, leaderboard_opt_in, weekly_digest_opt_in, pinned_repos, wakatime_api_key, discord_webhook_url, timezone, bio, webhook_url, discord_muted_until, public_widgets } = body;
+  const { is_public, show_weekly_goals, leaderboard_opt_in, weekly_digest_opt_in, pinned_repos, wakatime_api_key, discord_webhook_url, timezone, bio, webhook_url, discord_muted_until, public_widgets, seen_onboarding, preferred_locale } = body;
 
-  // Retrieve supported columns first
   const settingsResult = await fetchUserSettings(user.id);
   if (settingsResult.error || !settingsResult.data) {
     console.error("Error fetching settings during PATCH:", settingsResult.error);
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
 
-  const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey, hasWeeklyDigestOptIn, hasDiscordSettings, hasBio, hasWebhookUrl, hasDiscordMutedUntil, hasPublicWidgets } = settingsResult;
+  const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey, hasWeeklyDigestOptIn, hasDiscordSettings, hasBio, hasWebhookUrl, hasDiscordMutedUntil, hasPublicWidgets, hasPreferredLocale } = settingsResult;
   const updates: {
     is_public?: boolean;
     public_since?: string | null;
@@ -421,6 +458,8 @@ export async function PATCH(req: NextRequest) {
     webhook_url?: string | null;
     discord_muted_until?: string | null;
     public_widgets?: WidgetKey[];
+    seen_onboarding?: boolean;
+    preferred_locale?: string;
   } = {};
 
   if (is_public !== undefined && is_public !== null && typeof is_public === "boolean") {
@@ -432,17 +471,13 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  if (
-    hasLeaderboardOptIn &&
-    leaderboard_opt_in !== undefined &&
-    leaderboard_opt_in !== null &&
-    typeof leaderboard_opt_in === "boolean"
-  ) {
+  if (hasLeaderboardOptIn && leaderboard_opt_in !== undefined && leaderboard_opt_in !== null && typeof leaderboard_opt_in === "boolean") {
     updates.leaderboard_opt_in = leaderboard_opt_in;
     if (leaderboard_opt_in) {
       updates.is_public = true;
     }
   }
+
   if (show_weekly_goals !== undefined && show_weekly_goals !== null && typeof show_weekly_goals === "boolean") {
     updates.show_weekly_goals = show_weekly_goals;
   }
@@ -451,12 +486,7 @@ export async function PATCH(req: NextRequest) {
     updates.webhook_url = webhook_url;
   }
 
-  if (
-    hasWeeklyDigestOptIn &&
-    weekly_digest_opt_in !== undefined &&
-    weekly_digest_opt_in !== null &&
-    typeof weekly_digest_opt_in === "boolean"
-  ) {
+  if (hasWeeklyDigestOptIn && weekly_digest_opt_in !== undefined && weekly_digest_opt_in !== null && typeof weekly_digest_opt_in === "boolean") {
     updates.weekly_digest_opt_in = weekly_digest_opt_in;
   }
 
@@ -467,23 +497,19 @@ export async function PATCH(req: NextRequest) {
     updates.pinned_repos = pinned_repos;
   }
 
+  if (typeof seen_onboarding === "boolean") {
+    updates.seen_onboarding = seen_onboarding;
+  }
+
   if (!hasBio && bio !== undefined) {
-    return NextResponse.json(
-      { error: "Bio settings are not available until the latest database migration is applied" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Bio settings are not available until the latest database migration is applied" }, { status: 400 });
   }
 
   if (hasBio && bio !== undefined) {
     const result = validateTextInput(bio, "Bio", 500);
-  
     if (!result.ok) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
-  
     updates.bio = result.value;
   }
 
@@ -508,7 +534,6 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  // Handle Discord settings (only if the discord columns exist in the schema)
   if (hasDiscordSettings && discord_webhook_url !== undefined) {
     if (discord_webhook_url === "") {
       updates.discord_webhook_url = null;
@@ -541,9 +566,16 @@ export async function PATCH(req: NextRequest) {
     updates.public_widgets = sanitizePublicWidgets(public_widgets);
   }
 
+  if (hasPreferredLocale && preferred_locale !== undefined) {
+    if (!isValidLocale(preferred_locale)) {
+      return NextResponse.json({ error: "Unsupported locale" }, { status: 400 });
+    }
+    updates.preferred_locale = preferred_locale;
+  }
+
   // If there are no updates (or none that are supported by the schema)
   if (Object.keys(updates).length === 0) {
-    return NextResponse.json({
+    return settingsResponse({
       id: (settingsResult.data as any).id,
       github_login: (settingsResult.data as any).github_login,
       bio: (settingsResult.data as any).bio ?? "",
@@ -559,10 +591,10 @@ export async function PATCH(req: NextRequest) {
       webhook_url: settingsResult.webhook_url ?? null,
       discord_muted_until: settingsResult.discord_muted_until ?? null,
       public_widgets: settingsResult.public_widgets,
+      preferred_locale: settingsResult.preferred_locale,
     });
   }
 
-  // Query only supported columns in the returning select statement
   const selectCols = ["id", "github_login", "is_public", "public_since", "show_weekly_goals"];
   if (hasBio) selectCols.push("bio");
   if (hasLeaderboardOptIn) selectCols.push("leaderboard_opt_in");
@@ -576,6 +608,7 @@ export async function PATCH(req: NextRequest) {
   if (hasDiscordMutedUntil) selectCols.push("discord_muted_until");
   if (hasWebhookUrl) selectCols.push("webhook_url");
   if (hasPublicWidgets) selectCols.push("public_widgets");
+  if (hasPreferredLocale) selectCols.push("preferred_locale");
 
   const { data: updated, error: updateError } = await supabaseAdmin
     .from("users")
@@ -589,9 +622,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
 
-  // Bust settings cache so next GET returns fresh data.
-  await cacheDelete(`settings:${user.id}`);
-
   // If is_public or leaderboard_opt_in changed, the cached leaderboard would
   // show stale eligibility until it expires (up to 1 hour). Bust the cache
   // immediately so the next request reflects the updated preference.
@@ -602,13 +632,11 @@ export async function PATCH(req: NextRequest) {
     try {
       await clearLeaderboardCache();
     } catch {
-      // Cache invalidation is best-effort — a failure must not prevent the
-      // settings response from reaching the client.
       console.error("[settings] Failed to invalidate leaderboard cache after visibility change");
     }
   }
 
-  return NextResponse.json({
+  return settingsResponse({
     id: (updated as any).id,
     github_login: (updated as any).github_login,
     bio: (updated as any).bio ?? "",
@@ -626,5 +654,8 @@ export async function PATCH(req: NextRequest) {
     public_widgets: hasPublicWidgets
       ? sanitizePublicWidgets((updated as any).public_widgets)
       : settingsResult.public_widgets,
+    preferred_locale: hasPreferredLocale
+      ? (updated as any).preferred_locale || defaultLocale
+      : settingsResult.preferred_locale,
   });
 }

@@ -43,6 +43,7 @@
   "exclude": [
     "node_modules",
     "client",
-    "server"
+    "server",
+    "vitest.config.ts"
   ]
 }

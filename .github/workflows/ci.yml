@@ -25,7 +25,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || (npm cache clean --force && npm ci)
 
       - name: Run tsc
         run: npm run type-check
@@ -42,7 +42,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || (npm cache clean --force && npm ci)
 
       - name: Run ESLint
         run: npm run lint
@@ -62,7 +62,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || (npm cache clean --force && npm ci)
 
       - name: Run Vitest with coverage
         id: coverage
@@ -105,7 +105,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || (npm cache clean --force && npm ci)
 
       - name: Build Next.js app
         run: npm run build
@@ -122,7 +122,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || (npm cache clean --force && npm ci)
 
       - name: Check all imports exist in package.json
         run: node scripts/check-deps.js

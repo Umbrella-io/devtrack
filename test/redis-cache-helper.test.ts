@@ -27,10 +27,12 @@ describe("redis-cache-helper", () => {
 
       const mockGet = vi.fn().mockRejectedValue(new Error("Redis error"));
       vi.doMock("@upstash/redis", () => ({
-        Redis: vi.fn(() => ({
-          get: mockGet,
-          set: vi.fn(),
-        })),
+        Redis: vi.fn().mockImplementation(function () {
+          return {
+            get: mockGet,
+            set: vi.fn(),
+          };
+        }),
       }));
 
       const { getCachedData } = await import("../src/lib/redis-cache-helper");
@@ -45,10 +47,12 @@ describe("redis-cache-helper", () => {
 
       const mockGet = vi.fn().mockResolvedValue(null);
       vi.doMock("@upstash/redis", () => ({
-        Redis: vi.fn(() => ({
-          get: mockGet,
-          set: vi.fn(),
-        })),
+        Redis: vi.fn().mockImplementation(function () {
+          return {
+            get: mockGet,
+            set: vi.fn(),
+          };
+        }),
       }));
 
       const { getCachedData } = await import("../src/lib/redis-cache-helper");
@@ -73,10 +77,12 @@ describe("redis-cache-helper", () => {
 
       const mockSet = vi.fn().mockRejectedValue(new Error("Redis write error"));
       vi.doMock("@upstash/redis", () => ({
-        Redis: vi.fn(() => ({
-          get: vi.fn(),
-          set: mockSet,
-        })),
+        Redis: vi.fn().mockImplementation(function () {
+          return {
+            get: vi.fn(),
+            set: mockSet,
+          };
+        }),
       }));
 
       const { setCachedData } = await import("../src/lib/redis-cache-helper");

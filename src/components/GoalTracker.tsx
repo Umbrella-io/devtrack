@@ -697,7 +697,7 @@ export default function GoalTracker() {
             id="goal-title"
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => setTitle(e.target.value)} maxLength={100}
             placeholder="Make 10 commits"
             required
             disabled={creating}

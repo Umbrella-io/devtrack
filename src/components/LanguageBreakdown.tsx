@@ -189,16 +189,12 @@ export default function LanguageBreakdown() {
                 key={lang.name}
                 className="flex items-center gap-2 text-sm"
               >
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 10 10"
-                  className="shrink-0"
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: getColor(lang.name) }}
                   role="img"
                   aria-label={lang.name}
-                >
-                  <circle cx="5" cy="5" r="5" fill={getColor(lang.name)} />
-                </svg>
+                />
                 <span className="min-w-0 flex-1 truncate text-[var(--card-foreground)]">
                   {lang.name}
                 </span>

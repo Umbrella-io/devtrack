@@ -23,6 +23,7 @@ export default function RoomClient({
   const [messages, setMessages] = useState<RoomMessage[]>(initialMessages);
   const [members, setMembers] = useState<RoomMember[]>(initialMembers);
   const [deleting, setDeleting] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
 
   // Optimistic update: immediately show the message the current user just sent.
   function handleSent(msg: RoomMessage) {
@@ -111,7 +112,12 @@ export default function RoomClient({
             </a>
           </div>
         </div>
-
+        <button
+          onClick={() => setShowMembers(true)}
+          className="md:hidden text-xs px-3 py-1.5 border border-[var(--border)] rounded-lg"
+        >
+        Members
+        </button>
         {room.is_owner ? (
           <button
             onClick={handleDeleteRoom}
@@ -140,13 +146,44 @@ export default function RoomClient({
           />
           <MessageInput roomId={room.id} onSent={handleSent} />
         </div>
-        <MembersPanel
-          roomId={room.id}
-          members={members}
-          isOwner={room.is_owner}
-          onMemberAdded={handleMemberAdded}
-          onMemberRemoved={handleMemberRemoved}
-        />
+        <div className="hidden md:block">
+          <MembersPanel
+            roomId={room.id}
+            members={members}
+            isOwner={room.is_owner}
+            onMemberAdded={handleMemberAdded}
+            onMemberRemoved={handleMemberRemoved}
+          />
+        </div>
+        {showMembers && (
+  <div className="fixed inset-0 z-50 md:hidden">
+    <div
+      className="absolute inset-0 bg-black/50"
+      onClick={() => setShowMembers(false)}
+    />
+
+    <div className="absolute right-0 top-0 h-full w-72 bg-[var(--background)]">
+      <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
+        <h2 className="font-semibold">Members</h2>
+
+        <button
+          onClick={() => setShowMembers(false)}
+          className="text-sm px-2 py-1 border rounded"
+        >
+          Close
+        </button>
+      </div>
+
+      <MembersPanel
+        roomId={room.id}
+        members={members}
+        isOwner={room.is_owner}
+        onMemberAdded={handleMemberAdded}
+        onMemberRemoved={handleMemberRemoved}
+      />
+    </div>
+  </div>
+        )}
       </div>
     </div>
   );

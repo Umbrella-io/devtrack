@@ -2,6 +2,7 @@
 import SectionHeader from "./SectionHeader";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { useCountUp } from "@/hooks/useCountUp";
 import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
@@ -243,7 +244,7 @@ export function useStreakTracker() {
     }
   }
 
-  const currentMilestone = 
+  const currentMilestone =
     [...STREAK_MILESTONES]
       .reverse()
       .find(
@@ -252,7 +253,7 @@ export function useStreakTracker() {
           data.current >= m &&
           m > lastCelebratedMilestone
       );
-  const shouldShowBanner = 
+  const shouldShowBanner =
     currentMilestone &&
     !dismissedMilestones.includes(currentMilestone);
 
@@ -310,8 +311,27 @@ export function useStreakTracker() {
     }
   };
 
+  // -------------------------------------------------------------------------
+  // Realtime: re-fetch when streak_freezes rows change in Supabase.
+  // Falls back to 60-second polling if the WebSocket cannot connect.
+  // NOTE: enable Realtime for the `streak_freezes` table in the Supabase
+  // dashboard and ensure the anon role has a SELECT policy (or use a
+  // user-scoped filter once a Supabase JWT is available in the session).
+  // -------------------------------------------------------------------------
+  const handleRealtimeFreeze = useCallback(() => {
+    fetchFreeze();
+    fetchStreak();
+  }, [fetchFreeze, fetchStreak]);
+
+  const { isLive: isStreakLive } = useRealtimeSync(
+    "streak_freezes",
+    ["INSERT", "DELETE"],
+    handleRealtimeFreeze,
+  );
+
   return {
     selectedAccount,
+    isStreakLive,
     data,
     setData,
     contributionData,
@@ -361,6 +381,7 @@ export function useStreakTracker() {
 export default function StreakTracker() {
   const {
     selectedAccount,
+    isStreakLive,
     data,
     setData,
     contributionData,
@@ -564,7 +585,21 @@ export default function StreakTracker() {
         )}
         <div ref={containerRef} data-testid="streak-widget" className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <SectionHeader title="Commit Streaks" />
+            <div className="flex items-center gap-2">
+              <SectionHeader title="Commit Streaks" />
+              {isStreakLive && (
+                <span
+                  title="Live — updates automatically"
+                  className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-500"
+                >
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  </span>
+                  Live
+                </span>
+              )}
+            </div>
             {data && <div className="h-8 w-24" />}
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -572,8 +607,8 @@ export default function StreakTracker() {
               <div
                 key={stat.label}
                 className={`rounded-lg p-4 text-center ${stat.highlight
-                    ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
-                    : "bg-[var(--control)]"
+                  ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
+                  : "bg-[var(--control)]"
                   }`}
                 aria-label={stat.tooltip}
               >
@@ -749,10 +784,10 @@ export default function StreakTracker() {
                 type="button"
                 data-testid="streak-freeze-button"
                 onClick={handleApplyFreeze}
-                disabled={freezeLoading || cancelling}
-                className={`rounded-md px-3 py-1 text-xs font-medium transition ${freezeLoading || cancelling
-                    ? "cursor-not-allowed opacity-50 bg-[var(--accent)]"
-                    : "bg-[var(--accent)] hover:opacity-90"
+                disabled={freezeLoading || freeze?.hasFreeze}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition ${freezeLoading || freeze?.hasFreeze
+                  ? "cursor-not-allowed opacity-50 bg-[var(--accent)]"
+                  : "bg-[var(--accent)] hover:opacity-90"
                   } text-[var(--accent-foreground)]`}
               >
                 {freezeLoading ? "Freezing..." : "Freeze Streak"}

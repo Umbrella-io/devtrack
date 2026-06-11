@@ -15,12 +15,8 @@ import PinnedReposWidget from "@/components/PinnedReposWidget";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import { Moon, Sun } from "lucide-react";
 import { authOptions } from "@/lib/auth";
-import { getUserByGithubId, getUserByUsername } from "@/lib/supabase";
-import {
-  fetchPublicProfile as fetchPublicProfileLib,
-  type PublicProfileData,
-  type PublicWidgetKey,
-} from "@/lib/public-profile-data";
+import { getUserByGithubId } from "@/lib/supabase";
+import type { PublicProfileData } from "@/lib/public-profile-data";
 
 // Extend tracking structures to forward gamification flags seamlessly downstream
 interface ExtendedPublicProfileData extends PublicProfileData {
@@ -29,122 +25,53 @@ interface ExtendedPublicProfileData extends PublicProfileData {
   isEarlyBird: boolean;
 }
 
-function getVisualRegressionMockProfile(
-  username: string
-): ExtendedPublicProfileData | null {
-  if (
-    process.env.PLAYWRIGHT_TEST !== "true" ||
-    username !== "playwright-user"
-  ) {
-    return null;
-  }
-
-  return {
-    userId: "visual-regression-user",
-    username: "playwright-user",
-    bio: "Mock public profile used for deterministic visual regression coverage.",
-    isSponsor: true,
-    publicGists: 4,
-    memberSince: "2023-01-15T00:00:00Z",
-    repos: [
-      {
-        name: "playwright-user/devtrack-ui",
-        commits: 24,
-        url: "https://github.com/playwright-user/devtrack-ui",
-      },
-      {
-        name: "playwright-user/visual-tests",
-        commits: 16,
-        url: "https://github.com/playwright-user/visual-tests",
-      },
-      {
-        name: "playwright-user/productivity-dashboard",
-        commits: 9,
-        url: "https://github.com/playwright-user/productivity-dashboard",
-      },
-    ],
-    contributions: {
-      days: 30,
-      total: 58,
-      data: {
-        "2026-05-20": 3,
-        "2026-05-21": 5,
-        "2026-05-22": 2,
-        "2026-05-23": 7,
-        "2026-05-24": 4,
-        "2026-05-25": 8,
-        "2026-05-26": 6,
-        "2026-05-27": 5,
-        "2026-05-28": 3,
-        "2026-05-29": 6,
-        "2026-05-30": 4,
-        "2026-05-31": 5,
-      },
-    },
-    streak: {
-      current: 8,
-      longest: 21,
-      lastCommitDate: "2026-05-31",
-      totalActiveDays: 18,
-    },
-    topLanguages: [
-      { name: "TypeScript", count: 18, percentage: 60 },
-      { name: "JavaScript", count: 7, percentage: 23.3 },
-      { name: "CSS", count: 5, percentage: 16.7 },
-    ],
-    pullRequests: 14,
-    achievements: [],
-    achievementsError: null,
-    spotlightRepos: [],
-    weeklyGoalProgress: {
-      completed: 3,
-      total: 4,
-      percentage: 75,
-    },
-    publicWidgets: ["streak", "contributions", "languages", "prs"],
-    isNightOwl: true,
-    isEarlyBird: false,
-  };
+function getBaseUrl() {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000"
+  );
 }
 
 async function fetchPublicProfile(
   username: string,
   options: { includeAchievements?: boolean } = {}
 ): Promise<ExtendedPublicProfileData | null> {
-  const visualRegressionProfile = getVisualRegressionMockProfile(username);
-  if (visualRegressionProfile) return visualRegressionProfile;
-  const user = await getUserByUsername(username);
+  try {
+    const url = new URL(`/api/public/${encodeURIComponent(username)}`, getBaseUrl());
+    if (options.includeAchievements) url.searchParams.set("achievements", "1");
 
-  if (!user) return null;
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return null;
 
-  const canonicalUsername = user.github_login.toLowerCase();
+    const base: PublicProfileData = await res.json();
 
-  if (username !== canonicalUsername) {
-    redirect(`/u/${canonicalUsername}`);
-  }
-
-  const base = await fetchPublicProfileLib(username, options);
-
-  if (!base) return null;
-
-  // Compute Night Owl / Early Bird from repos
-  let nightOwlCount = 0;
-  let earlyBirdCount = 0;
-
-  (base.repos || []).forEach((repo: any) => {
-    if (repo.last_commit_date || repo.updatedAt) {
-      const commitHour = new Date(repo.last_commit_date || repo.updatedAt).getHours();
-      if (commitHour >= 0 && commitHour <= 4) nightOwlCount++;
-      if (commitHour >= 5 && commitHour <= 8) earlyBirdCount++;
+    const canonicalUsername = base.username.toLowerCase();
+    if (username !== canonicalUsername) {
+      redirect(`/u/${canonicalUsername}`);
     }
-  });
 
-  return {
-    ...base,
-    userId: user.id,
-    isNightOwl: nightOwlCount >= 1,
-    isEarlyBird: earlyBirdCount >= 1,
-  };
+    // Compute Night Owl / Early Bird from repos
+    let nightOwlCount = 0;
+    let earlyBirdCount = 0;
+
+    (base.repos || []).forEach((repo: any) => {
+      if (repo.last_commit_date || repo.updatedAt) {
+        const commitHour = new Date(repo.last_commit_date || repo.updatedAt).getHours();
+        if (commitHour >= 0 && commitHour <= 4) nightOwlCount++;
+        if (commitHour >= 5 && commitHour <= 8) earlyBirdCount++;
+      }
+    });
+
+    return {
+      ...base,
+      userId: "",
+      isNightOwl: nightOwlCount >= 1,
+      isEarlyBird: earlyBirdCount >= 1,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function getLoggedInGitHubUsername() {
@@ -163,12 +90,7 @@ async function getLoggedInGitHubUsername() {
 }
 
 function getProfileUrl(username: string) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXTAUTH_URL ||
-    "http://localhost:3000";
-
-  return `${baseUrl}/u/${username}`;
+  return `${getBaseUrl()}/u/${username}`;
 }
 
 export async function generateMetadata({
@@ -177,35 +99,32 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-
-  const visualRegressionProfile = getVisualRegressionMockProfile(username);
-
-  if (visualRegressionProfile) {
-    return {
-      title: "@playwright-user | DevTrack",
-      description:
-        "Mock public profile used for deterministic visual regression coverage.",
-    };
-  }
-
-  const user = await getUserByUsername(username);
   const profileUrl = getProfileUrl(username);
 
-  if (!user) {
+  let userExists = false;
+  try {
+    const res = await fetch(
+      new URL(`/api/public/${encodeURIComponent(username)}`, getBaseUrl()).toString(),
+      { cache: "no-store" }
+    );
+    userExists = res.ok;
+  } catch {
+    userExists = false;
+  }
+
+  if (!userExists) {
     return {
       title: "Profile Not Found",
       description: "This profile is not available or is private.",
     };
   }
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXTAUTH_URL ||
-    "http://localhost:3000";
+  const baseUrl = getBaseUrl();
 
   const ogImageUrl = new URL(`${baseUrl}/api/og/user`);
   ogImageUrl.searchParams.set("username", username);
   ogImageUrl.searchParams.set("name", username);
+  ogImageUrl.searchParams.set("avatar", `https://avatars.githubusercontent.com/${username}`);
   ogImageUrl.searchParams.set("topLang", "Code");
   ogImageUrl.searchParams.set("streak", "0");
   ogImageUrl.searchParams.set("commits", "0");

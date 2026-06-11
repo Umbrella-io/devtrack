@@ -240,8 +240,9 @@ describe("Local coding API key credential isolation — #1689", () => {
     await syncPost(req);
 
     // authEq is called with ("api_key_hash", hash) — never with "api_key".
-    const calls: [string, string][] = authEq.mock.calls;
-    expect(calls.every(([col]) => col === "api_key_hash")).toBe(true);
+    expect(authEq.mock.calls.every((call) => call[0] === "api_key_hash")).toBe(
+      true,
+    );
   });
 
   it("POST /sync rejects a stolen hash used as the bearer token", async () => {

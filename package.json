@@ -7,7 +7,7 @@
     "validate-env": "node scripts/validate-env.js",
     "build": "npm run validate-env && next build && node scripts/copy-standalone-static.js",
     "start": "next start",
-    "lint": "eslint src --ext .ts,.tsx",
+    "lint": "eslint src",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
@@ -70,24 +70,26 @@
     "@types/swagger-ui-react": "^5.18.0",
     "@typescript-eslint/eslint-plugin": "^8.60.0",
     "@typescript-eslint/parser": "^8.60.0",
-    "@vitest/coverage-v8": "^1.6.1",
+    "@vitest/coverage-v8": "^4.1.8",
     "autoprefixer": "^10.4.19",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^16.2.7",
+    "eslint-config-next": "16.2.9",
     "jsdom": "^29.1.1",
-    "postcss": "^8.4.38",
+    "postcss": "^8.5.10",
     "tailwind-scrollbar": "^3.1.0",
     "tailwindcss": "^3.4.1",
     "tree-sitter": "^0.22.4",
     "ts-jest": "^29.4.11",
     "typescript": "^5",
-    "vitest": "^1.6.0",
+    "vitest": "^4.1.8",
     "web-tree-sitter": "^0.24.5"
   },
   "overrides": {
     "glob": ">=10.5.0",
     "serialize-javascript": "^6.0.2",
-    "esbuild": ">=0.25.0"
+    "esbuild": ">=0.25.0",
+    "uuid": ">=9.0.1",
+    "swagger-client": "3.36.2"
   },
   "engines": {
     "node": ">=20.0.0"
