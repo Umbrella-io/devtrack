@@ -39,7 +39,8 @@ export type DashboardWidgetId =
   | "ci-analytics"
   | "language-breakdown"
   | "friend-comparison"
-  | "achievement-progress";
+  | "achievement-progress"
+  | "devtrack-badges";
 
 export interface DashboardLayoutPreference {
   version: 1;
@@ -96,6 +97,7 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   "language-breakdown": "Language Breakdown",
   "friend-comparison": "Friend Comparison",
   "achievement-progress": "Achievement Progress",
+  "devtrack-badges": "Badges & Achievements",
 };
 
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
@@ -137,6 +139,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
       "language-breakdown",
       "friend-comparison",
       "achievement-progress",
+      "devtrack-badges",
     ],
   },
   hidden: [],

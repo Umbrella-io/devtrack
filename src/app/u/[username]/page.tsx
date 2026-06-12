@@ -25,6 +25,14 @@ interface ExtendedPublicProfileData extends PublicProfileData {
   isEarlyBird: boolean;
 }
 
+interface PublicBadge {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  earnedAt: string;
+}
+
 function getBaseUrl() {
   return (
     process.env.NEXT_PUBLIC_APP_URL ||
@@ -158,15 +166,31 @@ export async function generateMetadata({
     },
   };
 }
+async function fetchPublicBadges(username: string): Promise<PublicBadge[]> {
+  try {
+    const url = new URL(
+      `/api/public/${encodeURIComponent(username)}/badges`,
+      getBaseUrl(),
+    );
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return [];
+    const data: { badges: PublicBadge[] } = await res.json();
+    return data.badges ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function PublicProfilePage({
   params,
 }: {
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const [profile, loggedInUsername] = await Promise.all([
+  const [profile, loggedInUsername, earnedBadges] = await Promise.all([
     fetchPublicProfile(username, { includeAchievements: true }),
     getLoggedInGitHubUsername(),
+    fetchPublicBadges(username),
   ]);
   const profileUrl = getProfileUrl(username);
 
@@ -422,6 +446,13 @@ export default async function PublicProfilePage({
         />
       </div>
 
+      {/* DevTrack earned badges */}
+      {earnedBadges.length > 0 && (
+        <div className="mt-6">
+          <PublicEarnedBadges badges={earnedBadges} />
+        </div>
+      )}
+
       {/* Get your badge */}
       <div className="mt-6">
         <BadgeSection username={profile.username} />
@@ -647,6 +678,40 @@ function PublicWeeklyGoalProgress({
         <div className="text-sm text-[var(--muted-foreground)]">
           {progress.completed} of {progress.total} weekly goals completed
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PublicEarnedBadges({ badges }: { badges: PublicBadge[] }) {
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
+        Earned Badges
+      </h2>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        {badges.map((badge) => (
+          <div
+            key={badge.id}
+            title={`Earned on ${new Date(badge.earnedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+            className="rounded-xl border border-[var(--accent)] bg-[var(--accent)]/5 p-4 text-center shadow-sm"
+            aria-label={`${badge.name} — earned on ${new Date(badge.earnedAt).toLocaleDateString()}`}
+          >
+            <div className="text-3xl mb-2 leading-none" aria-hidden="true">
+              {badge.emoji}
+            </div>
+            <div className="text-xs font-semibold text-[var(--card-foreground)] leading-tight">
+              {badge.name}
+            </div>
+            <div className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+              {new Date(badge.earnedAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
