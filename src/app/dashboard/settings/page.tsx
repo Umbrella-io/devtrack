@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import WebhookManager from "@/components/webhook/WebhookManager";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { WIDGET_KEYS, WIDGET_LABELS, DEFAULT_WIDGET_PREFS } from "@/lib/widget-prefs";
 import { useLocale, useTranslations } from "next-intl";
 import { localeMetadata, locales, type AppLocale } from "@/i18n/config";
 
@@ -37,6 +38,7 @@ interface UserSettings {
   pinned_repos?: string[];
   discord_muted_until?: string | null;
   preferred_locale?: AppLocale;
+  user_widget_prefs?: Record<string, boolean>;
 }
 
 interface LinkedAccount {
@@ -206,6 +208,8 @@ function SettingsPageContent() {
   const [isDirty, setIsDirty] = useState(false);
   const [publicWidgets, setPublicWidgets] = useState<string[]>(["streak", "contributions"]);
   const [savingWidgets, setSavingWidgets] = useState(false);
+  const [widgetPrefs, setWidgetPrefs] = useState<Record<string, boolean>>({ ...DEFAULT_WIDGET_PREFS });
+  const [savingWidgetPrefs, setSavingWidgetPrefs] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
@@ -322,6 +326,9 @@ function SettingsPageContent() {
           setTimezone(data.timezone || "UTC");
           setDiscordMutedUntil(data.discord_muted_until ?? null);
           setWebhookUrl(data.webhook_url ?? null);
+          if (data.user_widget_prefs && typeof data.user_widget_prefs === "object") {
+            setWidgetPrefs({ ...DEFAULT_WIDGET_PREFS, ...data.user_widget_prefs });
+          }
           setPublicWidgets(data.public_widgets ?? ["streak", "contributions"]);
         }
       } catch (error) {
@@ -622,6 +629,37 @@ function SettingsPageContent() {
       toast.error("Failed to save widget settings.");
     } finally {
       setSavingWidgets(false);
+    }
+  };
+
+  const handleToggleWidgetPref = (key: string, checked: boolean) => {
+    setWidgetPrefs((prev) => ({ ...prev, [key]: checked }));
+  };
+
+  const handleSaveWidgetPrefs = async () => {
+    if (!settings) return;
+    setSavingWidgetPrefs(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_widget_prefs: widgetPrefs }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        if (updated.user_widget_prefs && typeof updated.user_widget_prefs === "object") {
+          setWidgetPrefs({ ...DEFAULT_WIDGET_PREFS, ...updated.user_widget_prefs });
+        }
+        toast.success("Widget preferences saved!");
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to save widget preferences.");
+      }
+    } catch {
+      toast.error("Failed to save widget preferences.");
+    } finally {
+      setSavingWidgetPrefs(false);
     }
   };
 
@@ -1918,6 +1956,40 @@ function SettingsPageContent() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Dashboard Widgets */}
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <h2 className="mb-1 text-xl font-semibold text-[var(--card-foreground)]">Dashboard Widgets</h2>
+          <p className="mb-4 text-sm text-[var(--muted-foreground)]">Choose which widgets appear on your dashboard.</p>
+          <div className="space-y-3">
+            {WIDGET_KEYS.map((key) => (
+              <div key={key} className="flex items-center justify-between">
+                <span className="text-sm text-[var(--foreground)]">{WIDGET_LABELS[key]}</span>
+                <button
+                  role="switch"
+                  aria-checked={!!widgetPrefs[key]}
+                  onClick={() => handleToggleWidgetPref(key, !widgetPrefs[key])}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                    widgetPrefs[key] ? "bg-[var(--accent)]" : "bg-[var(--muted)]"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      widgetPrefs[key] ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={handleSaveWidgetPrefs}
+            disabled={savingWidgetPrefs}
+            className="mt-4 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {savingWidgetPrefs ? "Saving..." : "Save Widget Preferences"}
+          </button>
         </div>
 
         <PrivacySettings />
