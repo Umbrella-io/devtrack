@@ -30,9 +30,42 @@ function currentWeekEnd(): string {
   return sunday.toISOString();
 }
 
+/** Returns the first instant of the current UTC month. */
+function currentMonthStart(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+}
+
+/** Returns the last instant of the current UTC month. */
+function currentMonthEnd(): string {
+  const now = new Date();
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  end.setUTCMilliseconds(-1);
+  return end.toISOString();
+}
+
+/** Returns [since, until] ISO strings for the goal's active period. */
+function goalDateRange(
+  recurrence: string | undefined | null,
+  weekStart: string,
+  weekEnd: string,
+  monthStart: string,
+  monthEnd: string
+): [string, string] {
+  if (recurrence === "monthly") return [monthStart, monthEnd];
+  return [weekStart, weekEnd];
+}
+
 const GITHUB_API = "https://api.github.com";
 
-
+const AUTO_SYNC_UNITS = [
+  "commits",
+  "prs",
+  "reviews",
+  "issues_closed",
+  "issues_opened",
+  "open_source_prs",
+] as const;
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -51,24 +84,32 @@ export async function POST() {
 
   const weekStart = currentWeekStart();
   const weekEnd = currentWeekEnd();
+  const monthStart = currentMonthStart();
+  const monthEnd = currentMonthEnd();
 
-  // ── 2. Fetch all auto-sync-eligible goals for this week ───────────────────
-  const AUTO_SYNC_UNITS = ["commits", "prs", "reviews", "issues_closed", "issues_opened", "open_source_prs"];
-
+  // ── 2. Fetch all auto-sync-eligible goals for this period ─────────────────
+  // Use monthly range so both weekly (period_start = Monday) and monthly
+  // (period_start = 1st of month) goals are captured in a single query.
   const { data: activityGoals, error: goalsError } = await supabaseAdmin
     .from("goals")
-    .select("id, unit, repo, repository, repo_name")
+    .select("id, unit, repo, repository, repo_name, recurrence")
     .eq("user_id", user.id)
-    .in("unit", AUTO_SYNC_UNITS)
-    .gte("period_start", weekStart)
-    .lte("period_start", weekEnd);
+    .in("unit", AUTO_SYNC_UNITS as unknown as string[])
+    .gte("period_start", monthStart)
+    .lte("period_start", monthEnd);
 
   if (goalsError) {
     return Response.json({ error: "Failed to fetch goals" }, { status: 500 });
   }
 
   if (!activityGoals || activityGoals.length === 0) {
-    return Response.json({ updated: 0, commitCount: 0 });
+    return Response.json({
+      updated: 0,
+      commitCount: 0,
+      goalsUpdated: 0,
+      commitsProcessed: 0,
+      lastSyncedAt: new Date().toISOString(),
+    });
   }
 
   // ── 3. Sync each goal separately with paginated commit counting ───────────
@@ -82,6 +123,7 @@ export async function POST() {
   const openSourcePrGoals = activityGoals.filter(g => g.unit === "open_source_prs");
 
   let totalUpdated = 0;
+  let totalCommitsProcessed = 0;
 
   for (const goal of commitGoals) {
     let page = 1;
@@ -93,13 +135,15 @@ export async function POST() {
     // absent so it cannot inject additional search qualifiers.
     const repo = extractValidRepoFromGoal(goal);
 
+    const [since, until] = goalDateRange(goal.recurrence, weekStart, weekEnd, monthStart, monthEnd);
+
     while (hasMore) {
       // Build the GitHub Search query using URLSearchParams so that the
       // combined qualifier string is URL-encoded as a single atomic value
       // and cannot be split by embedded special characters.
       const qParts = [`author:${session.githubLogin}`];
       if (repo) qParts.push(`repo:${repo}`);
-      qParts.push(`author-date:${weekStart}..${weekEnd}`);
+      qParts.push(`author-date:${since}..${until}`);
 
       const commitSearchParams = new URLSearchParams({
         q: qParts.join(" "),
@@ -163,13 +207,15 @@ export async function POST() {
       );
     }
 
+    totalCommitsProcessed += commitCount;
     totalUpdated++;
   }
 
-  // Count PRs for the current week
+  // ── PRs ───────────────────────────────────────────────────────────────────
   if (prGoalsToUpdate.length > 0) {
+    const [since, until] = goalDateRange(prGoalsToUpdate[0].recurrence, weekStart, weekEnd, monthStart, monthEnd);
     const prSearchParams = new URLSearchParams({
-      q: `author:${session.githubLogin} type:pr is:merged merged:${weekStart}..${weekEnd}`,
+      q: `author:${session.githubLogin} type:pr is:merged merged:${since}..${until}`,
       per_page: "100",
     });
 
@@ -213,10 +259,11 @@ export async function POST() {
     }
   }
 
-  // ── Reviews sync ──────────────────────────────────────────────────────────
+  // ── Reviews ───────────────────────────────────────────────────────────────
   if (reviewGoals.length > 0) {
+    const [since, until] = goalDateRange(reviewGoals[0].recurrence, weekStart, weekEnd, monthStart, monthEnd);
     const reviewRes = await fetch(
-      `${GITHUB_API}/search/issues?q=reviewed-by:${session.githubLogin}+type:pr+updated:${weekStart}..${weekEnd}&per_page=1`,
+      `${GITHUB_API}/search/issues?q=reviewed-by:${session.githubLogin}+type:pr+updated:${since}..${until}&per_page=1`,
       {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
@@ -226,13 +273,16 @@ export async function POST() {
       const reviewData = await reviewRes.json() as { total_count: number };
       await supabaseAdmin.from("goals").update({ current: reviewData.total_count || 0, last_synced_at: now }).in("id", reviewGoals.map(g => g.id));
       totalUpdated += reviewGoals.length;
+    } else if (reviewRes.status === 403 || reviewRes.status === 429) {
+      return Response.json({ error: "GitHub rate limit reached. Please try again in a few minutes.", rateLimited: true }, { status: 429 });
     }
   }
 
-  // ── Issues closed sync ────────────────────────────────────────────────────
+  // ── Issues closed ─────────────────────────────────────────────────────────
   if (issuesClosedGoals.length > 0) {
+    const [since, until] = goalDateRange(issuesClosedGoals[0].recurrence, weekStart, weekEnd, monthStart, monthEnd);
     const icRes = await fetch(
-      `${GITHUB_API}/search/issues?q=assignee:${session.githubLogin}+type:issue+state:closed+closed:${weekStart}..${weekEnd}&per_page=1`,
+      `${GITHUB_API}/search/issues?q=assignee:${session.githubLogin}+type:issue+state:closed+closed:${since}..${until}&per_page=1`,
       {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
@@ -242,13 +292,16 @@ export async function POST() {
       const icData = await icRes.json() as { total_count: number };
       await supabaseAdmin.from("goals").update({ current: icData.total_count || 0, last_synced_at: now }).in("id", issuesClosedGoals.map(g => g.id));
       totalUpdated += issuesClosedGoals.length;
+    } else if (icRes.status === 403 || icRes.status === 429) {
+      return Response.json({ error: "GitHub rate limit reached. Please try again in a few minutes.", rateLimited: true }, { status: 429 });
     }
   }
 
-  // ── Issues opened sync ────────────────────────────────────────────────────
+  // ── Issues opened ─────────────────────────────────────────────────────────
   if (issuesOpenedGoals.length > 0) {
+    const [since, until] = goalDateRange(issuesOpenedGoals[0].recurrence, weekStart, weekEnd, monthStart, monthEnd);
     const ioRes = await fetch(
-      `${GITHUB_API}/search/issues?q=author:${session.githubLogin}+type:issue+created:${weekStart}..${weekEnd}&per_page=1`,
+      `${GITHUB_API}/search/issues?q=author:${session.githubLogin}+type:issue+created:${since}..${until}&per_page=1`,
       {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
@@ -258,13 +311,16 @@ export async function POST() {
       const ioData = await ioRes.json() as { total_count: number };
       await supabaseAdmin.from("goals").update({ current: ioData.total_count || 0, last_synced_at: now }).in("id", issuesOpenedGoals.map(g => g.id));
       totalUpdated += issuesOpenedGoals.length;
+    } else if (ioRes.status === 403 || ioRes.status === 429) {
+      return Response.json({ error: "GitHub rate limit reached. Please try again in a few minutes.", rateLimited: true }, { status: 429 });
     }
   }
 
-  // ── Open source PRs sync (PRs to repos the user doesn't own) ─────────────
+  // ── Open-source PRs (PRs to repos the user doesn't own) ──────────────────
   if (openSourcePrGoals.length > 0) {
+    const [since, until] = goalDateRange(openSourcePrGoals[0].recurrence, weekStart, weekEnd, monthStart, monthEnd);
     const osRes = await fetch(
-      `${GITHUB_API}/search/issues?q=author:${session.githubLogin}+type:pr+is:merged+merged:${weekStart}..${weekEnd}+-user:${session.githubLogin}&per_page=1`,
+      `${GITHUB_API}/search/issues?q=author:${session.githubLogin}+type:pr+is:merged+merged:${since}..${until}+-user:${session.githubLogin}&per_page=1`,
       {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
@@ -274,8 +330,15 @@ export async function POST() {
       const osData = await osRes.json() as { total_count: number };
       await supabaseAdmin.from("goals").update({ current: osData.total_count || 0, last_synced_at: now }).in("id", openSourcePrGoals.map(g => g.id));
       totalUpdated += openSourcePrGoals.length;
+    } else if (osRes.status === 403 || osRes.status === 429) {
+      return Response.json({ error: "GitHub rate limit reached. Please try again in a few minutes.", rateLimited: true }, { status: 429 });
     }
   }
 
-  return Response.json({ updated: totalUpdated });
+  return Response.json({
+    updated: totalUpdated,
+    goalsUpdated: totalUpdated,
+    commitsProcessed: totalCommitsProcessed,
+    lastSyncedAt: now,
+  });
 }

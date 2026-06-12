@@ -4,7 +4,8 @@ import crypto from "crypto";
 // Mock dependencies before importing the route
 vi.mock("@/lib/supabase", () => ({
   supabaseAdmin: {
-    from: vi.fn(() => ({
+    from: vi.fn((table: string) => ({
+      insert: vi.fn(() => ({ error: null })),
       update: vi.fn(() => ({
         eq: vi.fn(() => ({
           select: vi.fn(() => ({
@@ -17,10 +18,15 @@ vi.mock("@/lib/supabase", () => ({
       })),
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            in: vi.fn(() => ({ data: [], error: null })),
+          })),
           maybeSingle: vi.fn(() => ({ data: null, error: null })),
+          in: vi.fn(() => ({ data: [], error: null })),
         })),
       })),
     })),
+    rpc: vi.fn(() => ({ data: null, error: null })),
   },
 }));
 
