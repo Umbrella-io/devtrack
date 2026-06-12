@@ -2,7 +2,7 @@ import React from "react";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import AcceptChallengeButton from "@/components/AcceptChallengeButton";
+import AcceptChallengeButton from "../../../components/AcceptChallengeButton";
 import GithubSignInButton from "@/components/GithubSignInButton";
 
 export default async function InvitePage({ params }: { params: { id: string } }) {
@@ -53,7 +53,7 @@ export default async function InvitePage({ params }: { params: { id: string } })
             <p className="text-sm font-medium text-amber-500">Sign in to accept this challenge:</p>
             <GithubSignInButton />
           </div>
-        ) : session.user?.id === challenge.creator_id ? (
+        ) : session.githubLogin === challenge.creator?.github_login ? (
           <div className="rounded-xl bg-[var(--card-muted)] p-4 text-sm font-medium text-[var(--muted-foreground)]">
             You cannot accept your own challenge. Share this link with an opponent!
           </div>

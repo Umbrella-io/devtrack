@@ -52,9 +52,10 @@ export default function ActiveRivalryWidget() {
   return (
     <div className="space-y-4">
       {challenges.map((c) => {
-        const myScore = c.creator_id === session?.user?.id || c.creator.github_login === session?.githubLogin ? c.creator_score || 0 : c.opponent_score || 0;
-        const opponentScore = c.creator_id === session?.user?.id || c.creator.github_login === session?.githubLogin ? c.opponent_score || 0 : c.creator_score || 0;
-        const opponentName = c.creator_id === session?.user?.id || c.creator.github_login === session?.githubLogin ? c.opponent?.name || c.opponent?.github_login : c.creator?.name || c.creator?.github_login;
+        const isCreator = c.creator.github_login === session?.githubLogin;
+        const myScore = isCreator ? c.creator_score || 0 : c.opponent_score || 0;
+        const opponentScore = isCreator ? c.opponent_score || 0 : c.creator_score || 0;
+        const opponentName = isCreator ? c.opponent?.name || c.opponent?.github_login : c.creator?.name || c.creator?.github_login;
         const total = Math.max(1, myScore + opponentScore); // avoid div by 0
         const myPercentage = (myScore / total) * 100;
 
