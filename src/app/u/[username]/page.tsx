@@ -279,6 +279,15 @@ export default async function PublicProfilePage({
                   <span>Early Bird</span>
                 </span>
               )}
+              {profile.victoryBadges > 0 && (
+                <span
+                  title={`${profile.victoryBadges} Head-to-Head Challenges Won`}
+                  className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-xs font-bold text-emerald-500"
+                >
+                  <span>🏆</span>
+                  <span>{profile.victoryBadges}x Victor</span>
+                </span>
+              )}
             </h1>
             <CopyLinkButton url={profileUrl} />
           </div>

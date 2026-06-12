@@ -306,3 +306,21 @@ CREATE TABLE IF NOT EXISTS leaderboard_cache (
   building_until timestamptz,
   updated_at timestamptz default now()
 );
+
+-- -------------------------------------------------------
+-- Head-to-Head Challenges (Rivalries)
+-- -------------------------------------------------------
+create table if not exists challenges (
+  id uuid primary key default gen_random_uuid(),
+  creator_id text not null references users(id) on delete cascade,
+  opponent_id text references users(id) on delete cascade,
+  metric text not null check (metric in ('commits', 'prs')),
+  duration_days integer not null,
+  status text not null default 'pending' check (status in ('pending', 'active', 'completed', 'cancelled')),
+  start_time timestamptz,
+  end_time timestamptz,
+  creator_start_metrics integer,
+  opponent_start_metrics integer,
+  winner_id text references users(id) on delete cascade,
+  created_at timestamptz default now()
+);

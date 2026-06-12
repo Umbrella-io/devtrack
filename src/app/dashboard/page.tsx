@@ -11,6 +11,8 @@ import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import ThrottleBanner from "@/components/ThrottleBanner";
 import CustomizableDashboard from "@/components/dashboard/CustomizableDashboard";
 import MilestonePlanner from "@/components/MilestonePlanner";
+import ChallengeAction from "@/components/ChallengeAction";
+import ActiveRivalryWidget from "@/components/ActiveRivalryWidget";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -32,6 +34,8 @@ export default async function DashboardPage() {
               Year in Code
             </Link>
 
+            <ChallengeAction />
+
             <Link
               href="/dashboard/settings"
               className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)]/60 px-5 py-2.5 text-sm font-medium transition-all hover:bg-[var(--card)]/80 hover:shadow-sm hover:scale-[1.02] active:scale-95"
@@ -43,6 +47,10 @@ export default async function DashboardPage() {
           <div className="w-full sm:w-auto">
             <ExportButton />
           </div>
+        </div>
+
+        <div className="mt-6 mb-8">
+          <ActiveRivalryWidget />
         </div>
 
         {/* Info Banners */}

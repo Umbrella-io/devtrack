@@ -23,6 +23,10 @@
     {
       "path": "/api/notifications/weekly",
       "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/challenges",
+      "schedule": "0 * * * *"
     }
   ]
 }

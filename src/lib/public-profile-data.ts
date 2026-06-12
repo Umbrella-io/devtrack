@@ -57,6 +57,7 @@ export interface PublicProfileData {
   contributionMilestones?: { label: string; achievedAt: string | null }[];
   weeklyGoalProgress: WeeklyGoalProgress | null;
   publicWidgets: PublicWidgetKey[];
+  victoryBadges: number;
 }
 
 async function ghFetch(url: string, token?: string): Promise<Response> {
@@ -354,6 +355,19 @@ export async function fetchPublicProfile(
     // Column may not exist yet; use defaults
   }
 
+  // Fetch victory badges (completed challenges won by the user)
+  let victoryBadges = 0;
+  try {
+    const { count } = await supabaseAdmin
+      .from("challenges")
+      .select("*", { count: "exact", head: true })
+      .eq("winner_id", user.id)
+      .eq("status", "completed");
+    if (count !== null) victoryBadges = count;
+  } catch {
+    // Ignore errors for this
+  }
+
   return {
     username: user.github_login,
     bio: user.bio ?? null,
@@ -374,5 +388,6 @@ export async function fetchPublicProfile(
     })),
     weeklyGoalProgress,
     publicWidgets,
+    victoryBadges,
   };
 }
