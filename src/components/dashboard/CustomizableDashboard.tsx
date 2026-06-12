@@ -208,6 +208,11 @@ const AchievementProgressTracker = dynamic(
   { ssr: false, loading: () => <SkeletonCard /> },
 );
 
+const AchievementBadges = dynamic(
+  () => import("@/components/AchievementBadges"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
 const SECTION_ANCHOR_IDS: Record<DashboardSectionId, string> = {
   overview: "overview",
   activity: "streaks",
@@ -456,6 +461,13 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
       return (
         <LazyWidget fallback={<SkeletonCard />}>
           <GitHubAchievementProgress />
+        </LazyWidget>
+      );
+
+    case "devtrack-badges":
+      return (
+        <LazyWidget fallback={<SkeletonCard />}>
+          <AchievementBadges />
         </LazyWidget>
       );
 
