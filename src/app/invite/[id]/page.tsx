@@ -5,13 +5,14 @@ import { authOptions } from "@/lib/auth";
 import AcceptChallengeButton from "../../../components/AcceptChallengeButton";
 import GithubSignInButton from "@/components/GithubSignInButton";
 
-export default async function InvitePage({ params }: { params: { id: string } }) {
+export default async function InvitePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
 
   const { data: challenge, error } = await supabaseAdmin
     .from("challenges")
     .select("*, creator:users!challenges_creator_id_fkey(github_login, name)")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (error || !challenge) {

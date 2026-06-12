@@ -292,12 +292,13 @@ async function injectMockSession(page: import("@playwright/test").Page) {
     "**/api/metrics/productive-hours**",
     "**/api/user/pinned-repos/details**",
     "**/api/metrics/repo-explorer**",
+    "**/api/challenges**",
   ];
   for (const pattern of stubRoutes) {
     await page.route(pattern, (route) =>
       route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({}),
+        body: JSON.stringify({ challenges: [] }),
       })
     );
   }
