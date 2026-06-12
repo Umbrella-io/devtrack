@@ -6,15 +6,13 @@ import { verifyGitHubSignature } from "@/lib/crypto";
 import { logError } from "@/lib/error-handler";
 import { sendSSEEvent } from "@/lib/sse";
 import { invalidateUserMetricsCache } from "@/lib/metrics-cache";
+import { isGoalInCurrentPeriod, AUTO_SYNC_UNITS } from "@/lib/github/syncGoals";
 
 export const dynamic = "force-dynamic";
 
 const SIGNATURE_HEADER = "x-hub-signature-256";
 const GITHUB_EVENT_HEADER = "x-github-event";
 const DELIVERY_HEADER = "x-github-delivery";
-const REPLAY_WINDOW_MS = 5 * 60 * 1000;
-
-const recentDeliveries = new Map<string, number>();
 
 interface GitHubPushPayload {
   after?: string;
@@ -30,25 +28,18 @@ interface GitHubPushPayload {
   };
 }
 
-function isReplayRequest(deliveryId: string | null): boolean {
-  if (!deliveryId) {
-    return true;
-  }
+/**
+ * Records the delivery ID in the database. Returns true when the delivery has
+ * already been processed (23505 unique-constraint violation), indicating the
+ * handler should short-circuit without reprocessing.
+ */
+async function recordDelivery(deliveryId: string): Promise<boolean> {
+  const { error } = await supabaseAdmin
+    .from("webhook_deliveries")
+    .insert({ delivery_id: deliveryId });
 
-  const now = Date.now();
-
-  for (const [id, timestamp] of recentDeliveries) {
-    if (now - timestamp > REPLAY_WINDOW_MS) {
-      recentDeliveries.delete(id);
-    }
-  }
-
-  if (recentDeliveries.has(deliveryId)) {
-    return true;
-  }
-
-  recentDeliveries.set(deliveryId, now);
-  return false;
+  // 23505 = unique_violation — duplicate delivery from GitHub
+  return error?.code === "23505";
 }
 
 function getPushActor(payload: GitHubPushPayload): string | null {
@@ -91,6 +82,35 @@ async function markUserMetricsStale(githubLogin: string) {
   return { userId: linkedAccount.user_id as string, githubId: String(linkedAccount.github_id), accountType: "linked" };
 }
 
+/**
+ * Finds all active commit goals for a user that fall within their current
+ * period and increments each by pushCommitCount via the atomic
+ * increment_goal_progress database function.
+ */
+async function incrementCommitGoals(userId: string, pushCommitCount: number): Promise<void> {
+  const { data: goals } = await supabaseAdmin
+    .from("goals")
+    .select("id, recurrence, period_start")
+    .eq("user_id", userId)
+    .eq("unit", "commits")
+    .in("unit", AUTO_SYNC_UNITS as unknown as string[]);
+
+  if (!goals || goals.length === 0) return;
+
+  const now = new Date().toISOString();
+  const eligibleGoals = goals.filter(isGoalInCurrentPeriod);
+
+  await Promise.all(
+    eligibleGoals.map((goal) =>
+      supabaseAdmin.rpc("increment_goal_progress", {
+        p_goal_id: goal.id,
+        p_increment: pushCommitCount,
+        p_now: now,
+      })
+    )
+  );
+}
+
 export async function POST(req: NextRequest) {
   const secret = process.env.GITHUB_WEBHOOK_SECRET;
 
@@ -105,11 +125,13 @@ export async function POST(req: NextRequest) {
   const signature = req.headers.get(SIGNATURE_HEADER);
   const deliveryId = req.headers.get(DELIVERY_HEADER);
 
-  if (isReplayRequest(deliveryId)) {
-    return NextResponse.json(
-      { error: "Replay request detected" },
-      { status: 401 }
-    );
+  if (!deliveryId) {
+    return NextResponse.json({ error: "Missing delivery ID" }, { status: 400 });
+  }
+
+  const isDuplicate = await recordDelivery(deliveryId);
+  if (isDuplicate) {
+    return NextResponse.json({ received: true });
   }
 
   if (!verifyGitHubSignature(body, signature, secret)) {
@@ -156,6 +178,14 @@ export async function POST(req: NextRequest) {
     await invalidateUserMetricsCache(githubLogin);
     if (staleResult.githubId) {
       await invalidateUserMetricsCache(staleResult.githubId);
+    }
+
+    // Increment commit goals for this user by the number of commits in the
+    // push payload. increment_goal_progress enforces the target ceiling
+    // atomically so concurrent pushes cannot overshoot.
+    const pushCommitCount = payload.commits?.length ?? 1;
+    if (pushCommitCount > 0) {
+      await incrementCommitGoals(staleResult.userId, pushCommitCount);
     }
 
     sendSSEEvent(githubLogin, "commit", {
