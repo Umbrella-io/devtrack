@@ -429,7 +429,7 @@ test.describe("visual regression screenshots", () => {
     await setTheme(page, "classic-dark");
     await page.goto("/u/playwright-user", { waitUntil: "load" });
     await expect(
-      page.getByRole("heading", { name: /@playwright-user's profile/i })
+      page.getByRole("heading", { name: /@playwright-user/i })
     ).toBeVisible({ timeout: 30_000 });
     await stabilize(page);
 

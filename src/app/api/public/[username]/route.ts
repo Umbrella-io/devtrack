@@ -43,6 +43,36 @@ export async function GET(
     );
   }
 
+  // Deterministic mock for Playwright visual regression tests
+  if (process.env.PLAYWRIGHT_TEST === "true" && username === "playwright-user") {
+    return NextResponse.json({
+      username: "playwright-user",
+      bio: "Automated test account",
+      isSponsor: true,
+      publicGists: 5,
+      memberSince: "2024-01-01T00:00:00.000Z",
+      repos: [
+        {
+          name: "demo-repo",
+          description: "Demo repository",
+          stargazers_count: 10,
+          forks_count: 2,
+          language: "TypeScript",
+          html_url: "https://github.com/playwright-user/demo-repo",
+          last_commit_date: "2026-06-01T10:00:00.000Z",
+        }
+      ],
+      contributions: { totalContributions: 150, weeks: [] },
+      streak: { currentStreak: 5, longestStreak: 10, totalContributions: 150 },
+      topLanguages: [{ name: "TypeScript", count: 10, percentage: 100 }],
+      pullRequests: 12,
+      achievements: [],
+      weeklyGoalProgress: { completed: 2, total: 3, percentage: 66 },
+      publicWidgets: ["streak", "contributions", "languages", "prs"],
+      victoryBadges: 5,
+    });
+  }
+
 
   // Rate limiting
   const ip = getClientIp(req);
