@@ -251,9 +251,9 @@ function Cell({
       style={{ 
         gridColumn: spanCols > 1 ? `span ${spanCols}` : undefined, 
         transformStyle: 'preserve-3d',
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
-        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        background: 'var(--card)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-soft)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         ...tiltStyle,
@@ -548,10 +548,9 @@ function HeroSection() {
             fontSize: 'clamp(44px,7vw,82px)', lineHeight: 0.95,
             letterSpacing: '-0.04em', margin: '0 0 24px',
             animation: 'lndHeroIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both',
-            background: 'linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
+            background: 'linear-gradient(180deg, var(--foreground) 0%, color-mix(in srgb, var(--foreground) 70%, transparent) 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            textShadow: '0 4px 24px rgba(0,0,0,0.8)',
           }}
         >
           YOUR<br />CODE<br />HAS A<br />
@@ -620,10 +619,10 @@ function HeroSection() {
       {/* Right: bento window frame */}
       <div style={{ flex: '1 1 340px', display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
         <div style={{
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.05)',
+          background: 'var(--card)',
+          border: '1px solid var(--border)',
           borderRadius: 16,
-          boxShadow: '0 24px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
+          boxShadow: 'var(--shadow-medium)',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
           overflow: 'hidden',
@@ -633,8 +632,8 @@ function HeroSection() {
           {/* Traffic Lights */}
           <div style={{
             display: 'flex', gap: 8, padding: '16px 20px',
-            borderBottom: '1px solid rgba(255,255,255,0.03)',
-            background: 'rgba(0,0,0,0.2)',
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--control)',
           }}>
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f56' }} />
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ffbd2e' }} />
@@ -706,9 +705,9 @@ function AboutHighlightCard({
         transformOrigin: 'top center',
         transform: visible ? tiltStyle.transform : `perspective(1000px) rotateX(-90deg)`,
         transition: visible ? tiltStyle.transition : `opacity 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${index * 80}ms, transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${index * 80}ms`,
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
-        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        background: 'var(--card)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-soft)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         cursor: 'pointer',
@@ -757,7 +756,7 @@ function AboutSection() {
       aria-labelledby="about-heading"
       style={{
         padding: '88px clamp(20px,4vw,48px)',
-        borderTop: '1px solid #1e293b',
+        borderTop: '1px solid var(--border)',
         position: 'relative',
         zIndex: 1,
       }}
@@ -945,8 +944,8 @@ function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
       className="group relative overflow-hidden transition-all duration-300 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10"
       style={{
         display: 'flex', flexDirection: 'column', gap: 16,
-        padding: '32px 24px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b',
-        borderRadius: 16, boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+        padding: '32px 24px', background: 'var(--card)', border: '1px solid var(--border)',
+        borderRadius: 16, boxShadow: 'var(--shadow-soft)',
         opacity: vis ? 1 : 0,
         transformStyle: 'preserve-3d',
         transform: vis ? tiltStyle.transform : `translateY(12px)`,
@@ -992,7 +991,7 @@ function FeaturesSection() {
   return (
     <section style={{
       padding: '80px clamp(20px,4vw,48px)',
-      borderTop: '1px solid #1e293b',
+      borderTop: '1px solid var(--border)',
       maxWidth: 1200, margin: '0 auto',
     }}>
       <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 50, textAlign: 'center', background: 'linear-gradient(90deg, #818cf8, #2dd4bf)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', width: '100%' }}>
@@ -1028,7 +1027,7 @@ function HowItWorksSection() {
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(20px)',
         transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)',
-        borderTop: '1px solid #1e293b',
+        borderTop: '1px solid var(--border)',
         position: 'relative',
         overflow: 'hidden'
       }}
@@ -1039,15 +1038,15 @@ function HowItWorksSection() {
       <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 50, textAlign: 'center', background: 'linear-gradient(90deg, #2dd4bf, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', width: '100%', position: 'relative' }}>
         HOW IT WORKS
       </div>
-
+ 
       <div style={{
         display: 'flex', flexWrap: 'wrap', gap: 32, justifyContent: 'center', maxWidth: 1100, width: '100%', marginBottom: 50, position: 'relative'
       }}>
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           return (
-          <div key={i} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
-            <div className="group-hover:border-indigo-500/40 transition-colors duration-300" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, border: '1px solid #1e293b', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(129,140,248,0.05)' }}>
+          <div key={i} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: 'var(--shadow-soft)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
+            <div className="group-hover:border-indigo-500/40 transition-colors duration-300" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, border: '1px solid var(--border)', boxShadow: 'var(--shadow-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(129,140,248,0.05)' }}>
               <Icon size={64} strokeWidth={1} color="#818cf8" className="group-hover:scale-110 transition-transform duration-700 ease-in-out opacity-90" />
             </div>
             <div className="group-hover:bg-indigo-500/20 group-hover:scale-110 transition-all duration-300 group-hover:border-indigo-500/40" style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.2)', color: A, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontFamily: MONO, fontSize: 18, fontWeight: 700 }}>
@@ -1257,7 +1256,7 @@ function LandingFooter() {
         justifyContent: 'space-between', alignItems: 'center',
       }}
     >
-      <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
+      <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted-foreground)' }}>
         © {new Date().getFullYear()} DEVTRACK
       </span>
       <div style={{ display: 'flex', gap: 20 }}>

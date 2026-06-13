@@ -1,9 +1,9 @@
 /* Scope variables to the card only to avoid overriding the site's global variables */
 .profile-card{
-  --card-bg: #0b1220;
-  --card-border: rgba(255,255,255,0.04);
-  --muted: rgba(255,255,255,0.68);
-  --accent: #16a34a;
+  --card-bg: var(--card);
+  --card-border: var(--border);
+  --muted: var(--muted-foreground);
+  --accent: var(--accent);
   --glass: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
 }
 
@@ -13,10 +13,10 @@
   border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 18px;
-  color: white;
+  color: var(--foreground);
   width: 100%;
   max-width: 780px;
-  box-shadow: 0 6px 20px rgba(2,6,23,0.6);
+  box-shadow: var(--shadow-soft);
   transition: transform 200ms ease, box-shadow 200ms ease;
   display: flex;
   flex-direction: column;
@@ -166,7 +166,7 @@
 
 /* give the card a subtle inner gradient and softer radius for a professional finish */
 .profile-card{
-  background: linear-gradient(180deg, rgba(8,12,18,0.92), rgba(7,11,16,0.95));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, #ffffff 8%), var(--card));
   border-radius: 12px;
 }
 

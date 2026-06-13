@@ -31,13 +31,7 @@ export default function ProfileThemeWrapper({
   if (!mounted) return null;
 
   return (
-    <div
-      className={
-        theme === "dark"
-          ? "bg-[#020817] text-white min-h-screen"
-          : "bg-white text-black min-h-screen"
-      }
-    >
+    <div className="bg-[var(--background)] text-[var(--foreground)] min-h-screen transition-colors duration-200">
       {children}
     </div>
   );

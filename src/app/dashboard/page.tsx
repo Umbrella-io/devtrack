@@ -58,7 +58,7 @@ export default async function DashboardPage() {
 
         {/* Featured Section */}
         <section className="mt-10 mb-12">
-          <div className="relative overflow-hidden rounded-xl border border-[var(--border)] bg-gradient-to-r from-violet-950/20 via-indigo-950/10 to-transparent p-8 shadow-lg hover:shadow-xl transition-shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div className="relative overflow-hidden rounded-xl border border-[var(--border)] bg-gradient-to-r dark:from-violet-950/20 dark:via-indigo-950/10 from-violet-500/10 via-indigo-500/5 to-transparent p-8 shadow-lg hover:shadow-xl transition-shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
             <div className="space-y-3 max-w-xl flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] uppercase font-bold text-violet-400 tracking-wider px-2.5 py-1 rounded bg-violet-500/10 border border-violet-500/20">
