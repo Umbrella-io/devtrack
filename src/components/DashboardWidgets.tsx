@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { memo } from "react";
 
-
 import ContributionGraph from "@/components/ContributionGraph";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
@@ -22,114 +21,123 @@ import WeeklySummaryCard from "@/components/WeeklySummaryCard";
 import ExportButton from "@/components/ExportButton";
 import PersonalRecords from "@/components/PersonalRecords";
 import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
+import LazyWidget from "@/components/LazyWidget";
+import Skeleton from "@/components/Skeleton";
 
 function DashboardWidgets() { return (
-    <>
-      <WidgetErrorBoundary>
-        <DashboardHeader />
-      </WidgetErrorBoundary>
+  <>
+  <WidgetErrorBoundary>
+  <DashboardHeader />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  
+  <div className="mb-6 flex justify-end gap-3">
+  <WidgetErrorBoundary>
+  <Link
+    href="/dashboard/settings"
+    className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm transition-colors hover:bg-[var(--card-muted)]"
+    >
+  Settings
+  </Link>Link>
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  
+  <WidgetErrorBoundary>
+  <ExportButton />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  </div>div>
+  
+  <WidgetErrorBoundary>
+  <StreakAtRiskBanner />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  
+  <WidgetErrorBoundary>
+  <WeeklySummaryCard />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  
+  <div className="mb-6">
+  <WidgetErrorBoundary>
+  <PersonalRecords />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  </div>div>
+  
+    {/* Row 1 */}
+  <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <div className="lg:col-span-2">
+  <WidgetErrorBoundary>
+  <ContributionGraph />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  
+  <div className="mt-6">
+  <WidgetErrorBoundary>
+  <ContributionHeatmap />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  </div>div>
+  </div>div>
+  
+  <div className="flex flex-col gap-6">
+  <WidgetErrorBoundary>
+  <StreakTracker />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  
+  <WidgetErrorBoundary>
+  <FriendComparison />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  </div>div>
+  </div>div>
+  
+    {/* Row 2 */}
+  <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <WidgetErrorBoundary>
+  <PRMetrics />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  
+  <WidgetErrorBoundary>
+  <PRBreakdownChart />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  
+  <WidgetErrorBoundary>
+  <CommitTimeChart />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  </div>div>
+  
+    {/* Row 3 — lazy loaded */}
+  <div className="mt-6">
+  <LazyWidget fallback={<Skeleton className="h-48 w-full rounded-xl" />}>
+  <WidgetErrorBoundary>
+  <IssueMetrics />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  </LazyWidget>LazyWidget>
+  </div>div>
+  
+    {/* Row 4 — lazy loaded */}
+  <div className="mt-6">
+  <LazyWidget fallback={<Skeleton className="h-48 w-full rounded-xl" />}>
+  <WidgetErrorBoundary>
+  <PinnedRepos />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  </LazyWidget>LazyWidget>
+  </div>div>
+  
+    {/* Row 5 — lazy loaded */}
+  <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <LazyWidget fallback={<Skeleton className="h-48 w-full rounded-xl" />}>
+  <WidgetErrorBoundary>
+  <TopRepos />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  </LazyWidget>LazyWidget>
+  
+  <LazyWidget fallback={<Skeleton className="h-48 w-full rounded-xl" />}>
+  <WidgetErrorBoundary>
+  <LanguageBreakdown />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  </LazyWidget>LazyWidget>
+  
+  <LazyWidget fallback={<Skeleton className="h-48 w-full rounded-xl" />}>
+  <WidgetErrorBoundary>
+  <GoalTracker />
+  </WidgetErrorBoundary>WidgetErrorBoundary>
+  </LazyWidget>LazyWidget>
+  </div>div>
+  </>>
+  );}
 
-      <div className="mb-6 flex justify-end gap-3">
-        <WidgetErrorBoundary>
-          <Link
-            href="/dashboard/settings"
-            className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm transition-colors hover:bg-[var(--card-muted)]"
-          >
-            Settings
-          </Link>
-        </WidgetErrorBoundary>
-
-        <WidgetErrorBoundary>
-          <ExportButton />
-        </WidgetErrorBoundary>
-      </div>
-
-      <WidgetErrorBoundary>
-        <StreakAtRiskBanner />
-      </WidgetErrorBoundary>
-
-      <WidgetErrorBoundary>
-        <WeeklySummaryCard />
-      </WidgetErrorBoundary>
-
-      <div className="mb-6">
-        <WidgetErrorBoundary>
-          <PersonalRecords />
-        </WidgetErrorBoundary>
-      </div>
-
-      {/* Row 1 */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <WidgetErrorBoundary>
-            <ContributionGraph />
-          </WidgetErrorBoundary>
-
-          <div className="mt-6">
-            <WidgetErrorBoundary>
-              <ContributionHeatmap />
-            </WidgetErrorBoundary>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-6">
-          <WidgetErrorBoundary>
-            <StreakTracker />
-          </WidgetErrorBoundary>
-
-          <WidgetErrorBoundary>
-            <FriendComparison />
-          </WidgetErrorBoundary>
-        </div>
-      </div>
-
-      {/* Row 2 */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <WidgetErrorBoundary>
-          <PRMetrics />
-        </WidgetErrorBoundary>
-
-        <WidgetErrorBoundary>
-          <PRBreakdownChart />
-        </WidgetErrorBoundary>
-
-        <WidgetErrorBoundary>
-          <CommitTimeChart />
-        </WidgetErrorBoundary>
-      </div>
-
-      {/* Row 3 */}
-      <div className="mt-6">
-        <WidgetErrorBoundary>
-          <IssueMetrics />
-        </WidgetErrorBoundary>
-      </div>
-
-      
-
-      {/* Row 4 */}
-      <div className="mt-6">
-        <WidgetErrorBoundary>
-          <PinnedRepos />
-        </WidgetErrorBoundary>
-      </div>
-
-      {/* Row 5 */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <WidgetErrorBoundary>
-          <TopRepos />
-        </WidgetErrorBoundary>
-
-        <WidgetErrorBoundary>
-          <LanguageBreakdown />
-        </WidgetErrorBoundary>
-
-        <WidgetErrorBoundary>
-          <GoalTracker />
-        </WidgetErrorBoundary>
-      </div>
-    </>
-  );
-}
-
-export default memo(DashboardWidgets);
+export default memo(DashboardWidgets);</>
