@@ -29,6 +29,7 @@ import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 import DailyNoteWidget from "@/components/DailyNoteWidget";
 import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
+import StoryGenerator from "@/components/StoryGenerator";
 
 const SkeletonCard = () => (
   <div
@@ -171,6 +172,10 @@ export default async function DashboardPage() {
               <AIMentorWidget />
             </div>
           </div>
+        </section>
+        {/* STORY GENERATOR */}
+        <section className="mt-14">
+          <StoryGenerator />
         </section>
 
         {/* CAREER INTELLIGENCE BANNER */}
