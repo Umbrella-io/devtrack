@@ -26,6 +26,8 @@ interface PRMetricsBase {
   avgCycleTime: number;
   weeklyTrend: { week: string; avgHours: number }[];
   slowestRepos: { repo: string; avgHours: number }[];
+  totalAdditions: number;
+  totalDeletions: number;
 }
 
 interface ReviewMetrics {
@@ -66,10 +68,19 @@ interface GraphQLPullRequestNode {
   repository: { nameWithOwner: string };
 }
 
+interface GraphQLAuthoredPullRequestNode {
+  mergedAt: string | null;
+  additions: number;
+  deletions: number;
+}
+
 interface GraphQLSearchResponse {
   data?: {
-    search?: {
+    reviews?: {
       nodes?: GraphQLPullRequestNode[];
+    };
+    authored?: {
+      nodes?: GraphQLAuthoredPullRequestNode[];
     };
   };
 }
@@ -212,14 +223,36 @@ async function fetchPRMetrics(
   }
   gqlSearchQ += ` created:>${since}`;
 
+  // Authored PRs query to sum additions/deletions in the last 30 days
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysSince = thirtyDaysAgo.toISOString().split("T")[0];
+
+  let gqlAuthoredQ = `type:pr author:${gqlAuthorQ}`;
+  if (orgName) {
+    gqlAuthoredQ += ` org:${orgName}`;
+  } else if (excludedOrgs.length > 0) {
+    gqlAuthoredQ += excludedOrgs.map((org) => ` -org:${org}`).join("");
+  }
+  gqlAuthoredQ += ` updated:>${thirtyDaysSince}`;
+
   const query = `
     query {
-      search(query: "${gqlSearchQ}", type: ISSUE, first: 100) {
+      reviews: search(query: "${gqlSearchQ}", type: ISSUE, first: 100) {
         nodes {
           ... on PullRequest {
             createdAt
             reviews(first: 1) { nodes { submittedAt } }
             repository { nameWithOwner }
+          }
+        }
+      }
+      authored: search(query: "${gqlAuthoredQ}", type: ISSUE, first: 100) {
+        nodes {
+          ... on PullRequest {
+            mergedAt
+            additions
+            deletions
           }
         }
       }
@@ -237,7 +270,21 @@ async function fetchPRMetrics(
   });
 
   const gqlJson = (await gqlRes.json()) as GraphQLSearchResponse;
-  const prs = gqlJson.data?.search?.nodes ?? [];
+  const prs = gqlJson.data?.reviews?.nodes ?? [];
+  const authoredNodes = gqlJson.data?.authored?.nodes ?? [];
+
+  let totalAdditions = 0;
+  let totalDeletions = 0;
+
+  authoredNodes.forEach((node) => {
+    if (node.mergedAt) {
+      const mergedAtDate = new Date(node.mergedAt);
+      if (mergedAtDate >= thirtyDaysAgo) {
+        totalAdditions += node.additions ?? 0;
+        totalDeletions += node.deletions ?? 0;
+      }
+    }
+  });
 
   const reviewedPRs = prs.filter((pr) => pr.reviews?.nodes && pr.reviews.nodes.length > 0);
 
@@ -284,6 +331,8 @@ async function fetchPRMetrics(
     avgCycleTime,
     weeklyTrend,
     slowestRepos,
+    totalAdditions,
+    totalDeletions,
   };
 }
 
@@ -375,6 +424,8 @@ async function fetchGitLabMRMetrics(token: string): Promise<PRMetricsBase> {
     avgCycleTime: 0,
     weeklyTrend: [],
     slowestRepos: [],
+    totalAdditions: 0,
+    totalDeletions: 0,
   };
 }
 
@@ -422,6 +473,8 @@ function formatPRMetrics(metrics: PRMetricsBase) {
     avgCycleTime: metrics.avgCycleTime,
     weeklyTrend: metrics.weeklyTrend,
     slowestRepos: metrics.slowestRepos,
+    totalAdditions: metrics.totalAdditions,
+    totalDeletions: metrics.totalDeletions,
   };
 }
 
@@ -610,6 +663,8 @@ export async function GET(req: NextRequest) {
       const combinedMerged = results.reduce((sum, r) => sum + r.merged, 0);
       const combinedClosed = results.reduce((sum, r) => sum + r.closed, 0);
       const combinedOpen = results.reduce((sum, r) => sum + r.open, 0);
+      const combinedAdditions = results.reduce((sum, r) => sum + r.totalAdditions, 0);
+      const combinedDeletions = results.reduce((sum, r) => sum + r.totalDeletions, 0);
 
       const avgReviewHours = combinedTotal > 0
         ? results.reduce((sum, r) => sum + (r.avgReviewHours * r.total), 0) / combinedTotal
@@ -652,7 +707,9 @@ export async function GET(req: NextRequest) {
         mergeRate: combinedTotal > 0 ? combinedMerged / combinedTotal : 0,
         avgCycleTime: combinedCycleTime,
         weeklyTrend: combinedWeeklyTrend,
-        slowestRepos: combinedSlowest
+        slowestRepos: combinedSlowest,
+        totalAdditions: combinedAdditions,
+        totalDeletions: combinedDeletions,
       };
 
       const [gitlab, reviews] = await Promise.all([

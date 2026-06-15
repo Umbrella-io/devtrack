@@ -68,6 +68,7 @@ describe("GET /api/cron/weekly-digest — authentication hardening (#1745)", () 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.unstubAllEnvs();
+    vi.stubEnv("GITHUB_TOKEN", "");
     stubNoUsers();
   });
 

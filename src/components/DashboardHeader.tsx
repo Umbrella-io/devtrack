@@ -30,6 +30,38 @@ const DashboardSyncContext = createContext<DashboardSyncContextValue>({
   lastSynced: null,
 });
 
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+  headers: [string, string][];
+  status: number;
+  statusText: string;
+}
+
+const clientCache = new Map<string, CacheEntry>();
+const pendingRequests = new Map<string, Promise<Response>>();
+
+const STALE_TIMES: Record<string, number> = {
+  "/api/metrics/prs": 5 * 60 * 1000,
+  "/api/metrics/weekly-summary": 5 * 60 * 1000,
+  "/api/metrics/streak": 5 * 60 * 1000,
+  "/api/metrics/contributions": 5 * 60 * 1000,
+  "/api/metrics/repos": 5 * 60 * 1000,
+  "/api/metrics/languages": 5 * 60 * 1000,
+  "/api/notifications": 1 * 60 * 1000,
+  "default": 2 * 60 * 1000,
+};
+
+function getStaleTime(url: string): number {
+  const path = url.split("?")[0];
+  for (const [key, value] of Object.entries(STALE_TIMES)) {
+    if (path.endsWith(key) || path.includes(key)) {
+      return value;
+    }
+  }
+  return STALE_TIMES["default"];
+}
+
 function getRequestPath(input: RequestInfo | URL): string {
   if (typeof input === "string") {
     return input.startsWith("http") ? new URL(input).pathname : input;
@@ -51,7 +83,10 @@ function isDashboardDataRequest(input: RequestInfo | URL): boolean {
     requestPath.startsWith("/api/goals/") ||
     requestPath.startsWith("/api/streak/") ||
     requestPath === "/api/user/github-accounts" ||
-    requestPath.startsWith("/api/badge/")
+    requestPath.startsWith("/api/badge/") ||
+    requestPath.startsWith("/api/notifications") ||
+    requestPath.startsWith("/api/user/settings") ||
+    requestPath.startsWith("/api/ai-insights")
   );
 }
 
@@ -61,19 +96,91 @@ export function DashboardSyncProvider({ children }: { children: ReactNode }) {
     return stored ? new Date(stored) : null;
   });
 
+  useEffect(() => {
+    if (process.env.NODE_ENV === "test") return;
+    const handleSync = () => {
+      console.log("[Client Cache] Invalidating dashboard metrics cache due to sync event.");
+      clientCache.clear();
+    };
+
+    window.addEventListener("devtrack:sync", handleSync);
+    return () => {
+      window.removeEventListener("devtrack:sync", handleSync);
+    };
+  }, []);
+
   useLayoutEffect(() => {
+    if (process.env.NODE_ENV === "test") return;
     const originalFetch = window.fetch;
 
-    window.fetch = async (...args) => {
-      const response = await originalFetch(...args);
+    window.fetch = async (input, init) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      const isGet = !init || !init.method || init.method.toUpperCase() === "GET";
 
-      if (response.ok && isDashboardDataRequest(args[0])) {
-        const now = new Date();
-        setLastSynced(now);
-        localStorage.setItem("devtrack-last-synced", now.toISOString());
+      if (isDashboardDataRequest(input)) {
+        if (!isGet) {
+          // Clear cache on write requests (POST, PUT, DELETE, PATCH)
+          console.log("[Client Cache] Invalidate cache due to mutation request:", url);
+          clientCache.clear();
+          return originalFetch(input, init);
+        }
+
+        const cacheKey = url;
+        const now = Date.now();
+        const cached = clientCache.get(cacheKey);
+        const staleTime = getStaleTime(url);
+
+        let pending = pendingRequests.get(cacheKey);
+
+        const doFetch = async () => {
+          try {
+            const response = await originalFetch(input, init);
+            if (response.ok) {
+              const clone = response.clone();
+              const json = await clone.json();
+              clientCache.set(cacheKey, {
+                data: json,
+                timestamp: Date.now(),
+                headers: Array.from(response.headers.entries()),
+                status: response.status,
+                statusText: response.statusText,
+              });
+
+              const nowTime = new Date();
+              setLastSynced(nowTime);
+              localStorage.setItem("devtrack-last-synced", nowTime.toISOString());
+            }
+            return response;
+          } catch (error) {
+            throw error;
+          } finally {
+            pendingRequests.delete(cacheKey);
+          }
+        };
+
+        if (cached) {
+          const isStale = now - cached.timestamp > staleTime;
+          if (isStale) {
+            if (!pending) {
+              pending = doFetch();
+              pendingRequests.set(cacheKey, pending);
+            }
+          }
+          return new Response(JSON.stringify(cached.data), {
+            status: cached.status,
+            statusText: cached.statusText,
+            headers: new Headers(cached.headers),
+          });
+        }
+
+        if (!pending) {
+          pending = doFetch();
+          pendingRequests.set(cacheKey, pending);
+        }
+        return (await pending).clone();
       }
 
-      return response;
+      return originalFetch(input, init);
     };
 
     return () => {

@@ -18,6 +18,8 @@ interface PRMetricsSummary {
   avgCycleTime?: number;
   weeklyTrend?: { week: string; avgHours: number }[];
   slowestRepos?: { repo: string; avgHours: number }[];
+  totalAdditions?: number;
+  totalDeletions?: number;
 }
 
 interface PRData extends PRMetricsSummary {
@@ -31,7 +33,7 @@ interface PRData extends PRMetricsSummary {
 
 interface PRStat {
   label: string;
-  value: string | number;
+  value: React.ReactNode;
   title?: string;
   warning?: boolean;
   href?: string;
@@ -116,6 +118,21 @@ export default function PRMetrics() {
     if (labels.avgCycleTime && source.avgCycleTime !== undefined) {
       baseStats.push({ label: labels.avgCycleTime, value: `${source.avgCycleTime}h` });
     }
+
+    if (source.totalAdditions !== undefined && source.totalDeletions !== undefined) {
+      baseStats.push({
+        label: "Lines Changed",
+        value: (
+          <span className="flex items-center justify-center gap-1">
+            <span className="text-emerald-500 font-bold">+{source.totalAdditions.toLocaleString()}</span>
+            <span className="text-[var(--muted-foreground)]">/</span>
+            <span className="text-red-500 font-bold">-{source.totalDeletions.toLocaleString()}</span>
+          </span>
+        ),
+        title: "Total additions and deletions across merged PRs in the last 30 days",
+      });
+    }
+
     return baseStats;
   };
 
@@ -214,8 +231,8 @@ export default function PRMetrics() {
         >
           <span className="sr-only">Loading PR analytics</span>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7].map((i) => (
               <div
                 key={i}
                 aria-hidden="true"
@@ -256,13 +273,13 @@ export default function PRMetrics() {
                 ))}
               </div>
             </div>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
               {githubStats
                 .filter((stat) => {
                   if (prFilter === "all") return true;
                   const lbl = stat.label.toLowerCase();
                   if (prFilter === "open") return lbl.includes("open") || lbl.includes("stale");
-                  if (prFilter === "merged") return lbl.includes("merged") || lbl.includes("review") || lbl.includes("merge rate");
+                  if (prFilter === "merged") return lbl.includes("merged") || lbl.includes("review") || lbl.includes("merge rate") || lbl.includes("lines changed");
                   return true;
                 })
                 .map(renderStat)}

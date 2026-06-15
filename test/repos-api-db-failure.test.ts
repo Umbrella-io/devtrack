@@ -28,6 +28,7 @@ vi.mock("@/lib/supabase", () => ({
   supabaseAdmin: {
     from: vi.fn(),
   },
+  isSupabaseAdminAvailable: true,
 }));
 
 describe("Repos Metrics API Endpoint - DB Failure", () => {
