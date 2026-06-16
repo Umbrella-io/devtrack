@@ -1,7 +1,6 @@
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { fetchIssuesMetrics } from "@/lib/github";
 import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
 import {
   isMetricsCacheBypassed,
@@ -16,17 +15,28 @@ import { isSupabaseAdminAvailable } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
+// Helper function to get week numbers for the frontend trend chart
+function getWeekNumber(d: Date) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
+  
   if (!session?.accessToken || !session.githubLogin) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (session.error === "TokenRevoked") {
     return githubAuthErrorResponse();
   }
 
-  const accountId = req.nextUrl.searchParams.get("accountId");
-  const bypass = isMetricsCacheBypassed(req);
+  // 1. Core multi-account parameters from main branch
+  const accountId = request.nextUrl.searchParams.get("accountId");
+  const bypass = isMetricsCacheBypassed(request);
 
   let orgName: string | null = null;
   let targetAccountId: string | null = accountId;
@@ -62,19 +72,25 @@ export async function GET(req: NextRequest) {
 
   let token = session.accessToken;
   let userId = session.githubId ?? session.githubLogin;
-  let githubLogin = session.githubLogin;
+  let githubUsername = session.githubLogin;
 
+  // 2. Main branch multi-account routing safety checks
   if (targetAccountId && targetAccountId !== session.githubId) {
-    if (!session.githubId) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session.githubId || !userRow) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!userRow) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+
     const accountToken = await getAccountToken(userRow.id, targetAccountId);
     if (!accountToken) {
-      return Response.json({ error: "Account not found" }, { status: 404 });
+      return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
+    
+    // Dynamically retrieve the correct account configuration
+    const targetAccount = userRow.accounts?.find((acc: any) => acc.accountId === targetAccountId);
+    if (targetAccount?.username) {
+      githubUsername = targetAccount.username;
+    }
+    
     const { data: accountRow } = await supabaseAdmin
       .from("user_github_accounts")
       .select("github_login")
@@ -83,27 +99,103 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (!accountRow?.github_login) {
-      return Response.json({ error: "Account not found" }, { status: 404 });
+      return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
     token = accountToken;
     userId = targetAccountId;
-    githubLogin = accountRow.github_login;
   }
 
+  // 3. Cache setup utilizing targeted user metadata and excluded organizational parameters
   const key = metricsCacheKey(userId, "issues", {
     orgName: orgName || undefined,
     excludedOrgs: excludedOrgs.length > 0 ? excludedOrgs.join(",") : undefined,
   });
 
+  // 4. Custom issue calculation workflow protected by the cache wrapper
   try {
     const metrics = await withMetricsCache(
       { bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.issues },
-      () => fetchIssuesMetrics(token!, githubLogin, orgName, excludedOrgs)
+      async () => {
+        const { searchParams } = new URL(request.url);
+        const range = searchParams.get("range") || "30";
+
+        const daysLimit = parseInt(range, 10);
+        const sinceDate = new Date();
+        sinceDate.setDate(sinceDate.getDate() - daysLimit);
+        const sinceIso = sinceDate.toISOString().split("T")[0];
+
+        // Fetching metrics matching the precise targeted user identifier
+        const githubUrl = `https://api.github.com/search/issues?q=author:${githubUsername}+type:issue+created:>=${sinceIso}&per_page=100`;
+
+        const res = await fetch(githubUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (!res.ok) throw new Error("GitHub API error");
+        const data = await res.json();
+        const issues = data.items || [];
+
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        let totalOpen = 0;
+        let openedThisWeek = 0;
+        let closedThisWeek = 0;
+        let totalClosedDays = 0;
+        let closedWithDurationCount = 0;
+
+        const weeklyTrendMap = new Map<string, number>();
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i * 7);
+          weeklyTrendMap.set(`Wk ${getWeekNumber(d)}`, 0);
+        }
+
+        issues.forEach((issue: { state: string; created_at: string; closed_at: string | null }) => {
+          const createdAt = new Date(issue.created_at);
+          const closedAt = issue.closed_at ? new Date(issue.closed_at) : null;
+
+          if (issue.state === "open") totalOpen++;
+          if (createdAt.getTime() >= oneWeekAgo.getTime()) openedThisWeek++;
+          
+          if (closedAt) {
+            if (closedAt.getTime() >= oneWeekAgo.getTime()) closedThisWeek++;
+            const durationDays = (closedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+            totalClosedDays += durationDays;
+            closedWithDurationCount++;
+          }
+
+          const weekLabel = `Wk ${getWeekNumber(createdAt)}`;
+          if (weeklyTrendMap.has(weekLabel)) {
+            weeklyTrendMap.set(weekLabel, (weeklyTrendMap.get(weekLabel) || 0) + 1);
+          }
+        });
+
+        const chartData = Array.from(weeklyTrendMap.entries()).map(([week, count]) => ({
+          week,
+          issues: count,
+        }));
+
+        return {
+          stats: {
+            totalOpen,
+            openedThisWeek,
+            closedWithDurationCount > 0 ? Math.round(totalClosedDays / closedWithDurationCount) : 0,
+          },
+          chartData,
+        };
+      }
     );
-    return Response.json(metrics);
-  } catch (e) {
-    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+    
+    return NextResponse.json(metrics);
+  } catch (error) {
+    if (error instanceof GitHubAuthError) {
+      return githubAuthErrorResponse();
+    }
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to load issue metrics" },
+      { status: 502 }
+    );
   }
 }

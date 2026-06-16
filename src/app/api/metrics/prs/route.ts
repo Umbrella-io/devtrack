@@ -1,5 +1,5 @@
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
 import { GITHUB_API } from "@/lib/github";
@@ -568,8 +568,6 @@ export async function GET(req: NextRequest) {
       
       return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
     } catch {
-      // Catches errors from fetchCachedPRMetrics (GitHub Search API failures).
-      // Returns 502 so the client knows the data is unavailable, not just empty.
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
