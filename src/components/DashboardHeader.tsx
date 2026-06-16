@@ -1,16 +1,6 @@
 "use client";
-import React from "react";
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import NotificationBell from "@/components/NotificationBell";
-import {
-  createContext,
-  ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useState,
-} from "react";
 import { useSession } from "next-auth/react";
 import AccountToggle from "@/components/AccountToggle";
 import SignOutButton from "@/components/SignOutButton";
@@ -26,25 +16,18 @@ type DashboardSyncContextValue = {
   lastSynced: Date | null;
 };
 
-const DashboardSyncContext = createContext<DashboardSyncContextValue>({
-  lastSynced: null,
-});
+const DashboardSyncContext = createContext<DashboardSyncContextValue>({ lastSynced: null });
 
 function getRequestPath(input: RequestInfo | URL): string {
   if (typeof input === "string") {
     return input.startsWith("http") ? new URL(input).pathname : input;
   }
-
-  if (input instanceof URL) {
-    return input.pathname;
-  }
-
+  if (input instanceof URL) return input.pathname;
   return new URL(input.url).pathname;
 }
 
 function isDashboardDataRequest(input: RequestInfo | URL): boolean {
   const requestPath = getRequestPath(input);
-
   return (
     requestPath.startsWith("/api/metrics/") ||
     requestPath === "/api/goals" ||
@@ -57,40 +40,37 @@ function isDashboardDataRequest(input: RequestInfo | URL): boolean {
 
 export function DashboardSyncProvider({ children }: { children: ReactNode }) {
   const [lastSynced, setLastSynced] = useState<Date | null>(() => {
-    const stored = localStorage.getItem("devtrack-last-synced");
-    return stored ? new Date(stored) : null;
+    try {
+      const stored = localStorage.getItem("devtrack-last-synced");
+      return stored ? new Date(stored) : null;
+    } catch {
+      return null;
+    }
   });
 
   useLayoutEffect(() => {
     const originalFetch = window.fetch;
-
     window.fetch = async (...args) => {
       const response = await originalFetch(...args);
-
       if (response.ok && isDashboardDataRequest(args[0])) {
         const now = new Date();
         setLastSynced(now);
-        localStorage.setItem("devtrack-last-synced", now.toISOString());
+        try {
+          localStorage.setItem("devtrack-last-synced", now.toISOString());
+        } catch {}
       }
-
       return response;
     };
-
     return () => {
       window.fetch = originalFetch;
     };
   }, []);
 
   const value = useMemo(() => ({ lastSynced }), [lastSynced]);
-
-  return (
-    <DashboardSyncContext.Provider value={value}>
-      {children}
-    </DashboardSyncContext.Provider>
-  );
+  return <DashboardSyncContext.Provider value={value}>{children}</DashboardSyncContext.Provider>;
 }
 
-function useDashboardSync() {
+export function useDashboardSync() {
   return useContext(DashboardSyncContext);
 }
 
@@ -98,9 +78,15 @@ export default function DashboardHeader() {
   const { data: session } = useSession();
   const [isPublic, setIsPublic] = useState<boolean | null>(null);
   const [greeting, setGreeting] = useState<string>("Welcome back");
-
   const [isNightOwl, setIsNightOwl] = useState<boolean>(false);
   const [isEarlyBird, setIsEarlyBird] = useState<boolean>(false);
+  const [copied, setCopied] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const { lastSynced } = useDashboardSync();
+  const [now, setNow] = useState(() => Date.now());
+
+  const displayName = session?.user?.name || session?.githubLogin || "Developer";
 
   useEffect(() => {
     const computeCurrentGreeting = () => {
@@ -113,7 +99,6 @@ export default function DashboardHeader() {
     setGreeting(computeCurrentGreeting());
   }, []);
 
-  // Extracted to useCallback so useRealtimeSync can call it as a stable reference.
   const loadSettings = useCallback(async () => {
     if (!session) {
       setIsPublic(null);
@@ -137,18 +122,8 @@ export default function DashboardHeader() {
     loadSettings();
   }, [loadSettings]);
 
-  // -------------------------------------------------------------------------
-  // Realtime: re-fetch user settings whenever the `users` row changes
-  // (e.g. is_public toggled in another tab). Falls back to 60-second polling.
-  // NOTE: enable Realtime for the `users` table in Supabase and ensure the
-  // anon role has a SELECT policy, or provide a user-scoped filter once a
-  // Supabase JWT is available in the session.
-  // -------------------------------------------------------------------------
-  const { isLive: isHeaderLive } = useRealtimeSync(
-    "users",
-    ["UPDATE"],
-    loadSettings,
-  );
+  const { isLive: isHeaderLive } = useRealtimeSync("users", ["UPDATE"], loadSettings);
+
   useEffect(() => {
     if (!session?.githubLogin) return;
 
@@ -156,13 +131,10 @@ export default function DashboardHeader() {
       try {
         const res = await fetch("/api/metrics/repos?days=90");
         if (!res.ok) return;
-
         const data = await res.json();
         const commitsArray = data.repos || [];
-
         let nightOwlCommitsCount = 0;
         let earlyBirdCommitsCount = 0;
-
         commitsArray.forEach((repo: any) => {
           if (repo.last_commit_date) {
             const commitHour = new Date(repo.last_commit_date).getHours();
@@ -170,7 +142,6 @@ export default function DashboardHeader() {
             if (commitHour >= 5 && commitHour <= 8) earlyBirdCommitsCount++;
           }
         });
-
         if (nightOwlCommitsCount >= 1) setIsNightOwl(true);
         if (earlyBirdCommitsCount >= 1) setIsEarlyBird(true);
       } catch (err) {
@@ -180,39 +151,29 @@ export default function DashboardHeader() {
 
     evaluateCodingDistributionMilestones();
   }, [session]);
-  const [copied, setCopied] = useState(false);
 
   const handleCopyLink = () => {
     if (!session?.githubLogin) return;
     const profileUrl = `${window.location.origin}/u/${session.githubLogin}`;
-    navigator.clipboard.writeText(profileUrl).then(() => {
-      setCopied(true);
-      toast.success("Profile link copied!");
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {
-      toast.error("Failed to copy link");
-    });
+    navigator.clipboard
+      .writeText(profileUrl)
+      .then(() => {
+        setCopied(true);
+        toast.success("Profile link copied!");
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        toast.error("Failed to copy link");
+      });
   };
-  const [menuOpen, setMenuOpen] = useState(false);
 
-  const { lastSynced } = useDashboardSync();
-  const [now, setNow] = useState(() => Date.now());
-
-  // Extract a fallback username parameter from active session data strings
-  const displayName = session?.user?.name || session?.githubLogin || "Developer";
   useEffect(() => {
     if (!lastSynced) return;
-
-    const interval = setInterval(() => {
-      setNow(Date.now());
-    }, 60000);
-
+    const interval = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(interval);
   }, [lastSynced]);
 
-  const minutesAgo = lastSynced
-    ? Math.floor((now - lastSynced.getTime()) / 60000)
-    : null;
+  const minutesAgo = lastSynced ? Math.floor((now - lastSynced.getTime()) / 60000) : null;
 
   return (
     <header className="relative mb-8 overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]/95 p-4 shadow-[var(--shadow-soft)] backdrop-blur-md transition-all duration-300 hover:shadow-[var(--shadow-medium)] sm:p-5 md:p-6">
@@ -225,8 +186,8 @@ export default function DashboardHeader() {
           <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2">
             <div className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--accent)]/20 bg-[var(--accent)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)] transition-all duration-300">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--accent)]"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--accent)]" />
               </span>
               <span className="truncate">{greeting}, {displayName}!</span>
             </div>
@@ -249,6 +210,7 @@ export default function DashboardHeader() {
               </div>
             )}
           </div>
+
           <div className="min-w-0">
             <p
               className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted-foreground)]"
@@ -256,23 +218,15 @@ export default function DashboardHeader() {
             >
               Dashboard overview
             </p>
-            <h1 className="mt-2 bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-2xl font-extrabold text-transparent sm:text-3xl md:text-4xl">
-              Dashboard
-            </h1>
-            <p
-              className="mt-2 max-w-xl text-sm leading-6 text-[var(--muted-foreground)]"
-              style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", letterSpacing: "0.06em" }}
-            >
+            <h1 className="mt-2 bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-2xl font-extrabold text-transparent sm:text-3xl md:text-4xl">Dashboard</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--muted-foreground)]" style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", letterSpacing: "0.06em" }}>
               coding activity at a glance
             </p>
             {minutesAgo !== null && (
               <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
                 {minutesAgo <= 0 ? "Synced just now" : `Synced ${minutesAgo} min ago`}
                 {isHeaderLive && (
-                  <span
-                    title="Live — connected to Supabase Realtime"
-                    className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-500"
-                  >
+                  <span title="Live — connected to Supabase Realtime" className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-500">
                     <span className="relative flex h-1.5 w-1.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
                       <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -285,7 +239,6 @@ export default function DashboardHeader() {
           </div>
         </div>
 
-        {/* Right Section */}
         {/* Right Section */}
         <div className="w-full min-w-0 md:w-auto">
           <div className="flex w-full min-w-0 items-center gap-3 overflow-x-auto pb-1 md:w-auto md:justify-end md:overflow-visible md:pb-0">
@@ -326,41 +279,14 @@ export default function DashboardHeader() {
         </div>
 
         {/* Mobile hamburger button */}
-        <Button
-          variant="outline"
-          size="icon"
-          className="self-start sm:hidden"
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-label="Toggle menu"
-          aria-expanded={menuOpen}
-        >
+        <Button variant="outline" size="icon" className="self-start sm:hidden" onClick={() => setMenuOpen((v) => !v)} aria-label="Toggle menu" aria-expanded={menuOpen}>
           {menuOpen ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-5 w-5"
-              aria-hidden="true"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
               <path d="M18 6 6 18" />
               <path d="m6 6 12 12" />
             </svg>
           ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-5 w-5"
-              aria-hidden="true"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
               <path d="M4 6h16" />
               <path d="M4 12h16" />
               <path d="M4 18h16" />
@@ -395,14 +321,7 @@ export default function DashboardHeader() {
           </div>
 
           {isPublic === true && session?.githubLogin && (
-            <a
-              href={`/u/${session.githubLogin}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonVariants({ variant: "default", className: "w-full" })}
-              title="View your public profile"
-              onClick={() => setMenuOpen(false)}
-            >
+            <a href={`/u/${session.githubLogin}`} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "default", className: "w-full" })} title="View your public profile" onClick={() => setMenuOpen(false)}>
               Share Profile
             </a>
           )}

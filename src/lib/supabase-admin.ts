@@ -62,7 +62,7 @@ export const supabaseAdmin: SupabaseAdminClient = env
 
 // ─── User helpers ────────────────────────────────────────────────────────────
 
-interface User {
+export interface User {
   id: string;
   github_id: string;
   github_login: string;
