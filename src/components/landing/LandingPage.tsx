@@ -1012,9 +1012,10 @@ function FeaturesSection() {
    HOW IT WORKS SECTION
    ═══════════════════════════════════════════════════════════ */
 const STEPS = [
-  { num: '1', title: 'Sign in', desc: 'Authenticate with your GitHub account.', icon: LogIn },
-  { num: '2', title: 'View dashboard', desc: 'See your automatically generated stats.', icon: LayoutDashboard },
-  { num: '3', title: 'Set goals', desc: 'Configure weekly targets to keep your streak alive.', icon: Target },
+  { num: '1', title: 'Sign in', desc: 'Authenticate with your GitHub account.', icon: LogIn,href: '/api/auth/signin/github?callbackUrl=/dashboard' },
+  { num: '2', title: 'View dashboard', desc: 'See your automatically generated stats.', icon: LayoutDashboard,href: '/dashboard' },
+  { num: '3', title: 'Set goals', desc: 'Configure weekly targets to keep your streak alive.', icon: Target,href: '/dashboard/settings'
+ },
 ];
 
 function HowItWorksSection() {
@@ -1047,7 +1048,7 @@ function HowItWorksSection() {
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           return (
-          <div key={i} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
+          <Link key={i} href={step.href} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
             <div className="group-hover:border-indigo-500/40 transition-colors duration-300" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, border: '1px solid #1e293b', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(129,140,248,0.05)' }}>
               <Icon size={64} strokeWidth={1} color="#818cf8" className="group-hover:scale-110 transition-transform duration-700 ease-in-out opacity-90" />
             </div>
@@ -1056,7 +1057,7 @@ function HowItWorksSection() {
             </div>
             <h3 style={{ fontFamily: DISP, fontWeight: 700, fontSize: 20, color: TEXT, margin: '0 0 12px' }}>{step.title}</h3>
             <p style={{ fontSize: 15, color: MUTED, margin: 0, lineHeight: 1.6 }}>{step.desc}</p>
-          </div>
+          </Link>
           );
         })}
       </div>
