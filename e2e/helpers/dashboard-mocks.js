@@ -38,6 +38,8 @@ export function mockMetricResponse(url) {
       avgReviewHours: 5,
       avgFirstReviewHours: 2,
       mergeRate: "75%",
+      totalAdditions: 1240,
+      totalDeletions: 380,
     };
   }
   if (url.includes("/api/metrics/pr-breakdown")) {
