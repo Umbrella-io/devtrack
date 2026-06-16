@@ -215,10 +215,12 @@ export default function DashboardHeader() {
     : null;
 
   return (
-    <header className="relative mb-8 overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]/95 p-4 shadow-[var(--shadow-soft)] backdrop-blur-md transition-all duration-300 hover:shadow-[var(--shadow-medium)] sm:p-5 md:p-6">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/40 to-transparent" />
-      <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[var(--accent)]/10 blur-3xl" />
-      <div className="relative flex min-w-0 flex-col gap-5 md:flex-row md:items-end md:justify-between">
+    <header className="relative z-50 mb-8 rounded-3xl border border-[var(--border)] bg-[var(--card)]/95 p-4 shadow-[var(--shadow-soft)] backdrop-blur-md transition-all duration-300 hover:shadow-[var(--shadow-medium)] sm:p-5 md:p-6">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/40 to-transparent" />
+        <div className="absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+      </div>
+      <div className="relative z-10 flex min-w-0 flex-col gap-5 md:flex-row md:items-end md:justify-between">
 
         {/* Left Section */}
         <div className="min-w-0 pr-12 md:pr-0">
