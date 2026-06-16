@@ -221,14 +221,18 @@ export default function DashboardHeader() {
       <div className="relative flex min-w-0 flex-col gap-5 md:flex-row md:items-end md:justify-between">
 
         {/* Left Section */}
-        <div className="min-w-0 pr-12 md:pr-0">
-          <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2">
-            <div className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--accent)]/20 bg-[var(--accent)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)] transition-all duration-300">
+        <div>
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)] transition-all duration-300 min-w-0 max-w-full">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--accent)]"></span>
               </span>
+<<<<<<< HEAD
               <span className="truncate">{greeting}, {displayName}!</span>
+=======
+              <span className="truncate max-w-[120px] sm:max-w-[200px] inline-block align-bottom">{greeting}, {displayName}!</span>
+>>>>>>> f5f6e7ca (fix: truncate username overflow in dashboard header on mobile (#1762))
             </div>
             {isNightOwl && (
               <div
