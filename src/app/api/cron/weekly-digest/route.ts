@@ -81,10 +81,10 @@ async function sendEmail(params: {
   subject: string;
   html: string;
   text: string;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    return { ok: true };
+  if (!apiKey) { // no Resend key — skip silently
+    return { ok: true, skipped: true };
   }
 
   const from =
@@ -197,7 +197,7 @@ async function processUser(
   }
 
   // ── Record timestamp (best-effort) ────────────────────────────────────────
-  if (user.id) {
+  if (user.id && !result.skipped) {
     await recordDigestSent(user.id);
   }
 
