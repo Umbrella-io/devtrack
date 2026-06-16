@@ -11,6 +11,7 @@ import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import ThrottleBanner from "@/components/ThrottleBanner";
 import CustomizableDashboard from "@/components/dashboard/CustomizableDashboard";
 import MilestonePlanner from "@/components/MilestonePlanner";
+import TokenRevokedGuard from "@/components/TokenRevokedGuard";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -20,6 +21,7 @@ export default async function DashboardPage() {
     <DashboardSSEProvider>
       <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
         <DashboardHeader />
+        <TokenRevokedGuard />
 
         {/* Quick actions */}
         <div className="mt-10 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
