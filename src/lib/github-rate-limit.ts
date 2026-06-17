@@ -20,11 +20,19 @@ export function getGitHubRateLimitDetails(
 ): GitHubRateLimitDetails | null {
   const remaining = response.headers.get("x-ratelimit-remaining");
   const resetHeader = response.headers.get("x-ratelimit-reset");
+  const retryAfter = response.headers.get("retry-after");
 
-  const isRateLimitedStatus = response.status === 403 || response.status === 429;
-  const isQuotaExhausted = remaining === "0";
+  // 429 is always a rate limit regardless of remaining
+  const is429 = response.status === 429;
 
-  if (!isRateLimitedStatus || !isQuotaExhausted) {
+  // 403 is a rate limit only when:
+  // - quota is exhausted (remaining === "0"), OR
+  // - retry-after header is present (secondary rate limit)
+  const is403RateLimit =
+    response.status === 403 &&
+    (remaining === "0" || retryAfter !== null);
+
+  if (!is429 && !is403RateLimit) {
     return null;
   }
 
@@ -49,7 +57,6 @@ export function getGitHubRateLimitDetails(
 
 export function throwIfGitHubRateLimited(response: Response): void {
   const details = getGitHubRateLimitDetails(response);
-
   if (details) {
     throw new GitHubRateLimitError(details);
   }
