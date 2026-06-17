@@ -104,7 +104,6 @@ function buildHeaders(result: RateLimitResult) {
  * Each key maps to an array of request timestamps (milliseconds).
  * Entries are pruned once the map exceeds 500 keys.
  */
-const memoryBuckets = new Map<string, number[]>();
 
 function pruneMemoryBuckets(now: number) {
   if (memoryBuckets.size < 500) {
