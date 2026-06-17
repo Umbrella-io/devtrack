@@ -470,11 +470,11 @@ export default function ContributionHeatmap({
               Math.ceil(maxCommits * 0.5),
               Math.ceil(maxCommits * 0.75),
               maxCommits,
-            ].map((count) => {
+            ].map((count, index) => {
               const swatch = getHeatmapColor(count);
               return (
                 <span
-                  key={count}
+                  key={index} // <-- Changed from count to index
                   className="h-3 w-3 rounded-sm border"
                   style={{ backgroundColor: swatch, borderColor: themeConfig.border }}
                 />

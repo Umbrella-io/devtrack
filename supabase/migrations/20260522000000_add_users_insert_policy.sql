@@ -6,7 +6,8 @@
 
 -- Add INSERT policy for users (allow insert on own record)
 -- This policy is optional since service_role bypasses RLS, but it ensures consistency
-create policy if not exists "users_insert_own"
-  on users for insert
+DROP POLICY IF EXISTS "users_insert_own" ON public.users;
+create policy "users_insert_own" on public.users
+  for insert
   with check (id = auth.uid()::text);
 

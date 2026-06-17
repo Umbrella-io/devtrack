@@ -14,6 +14,7 @@ import {
 export const runtime = "nodejs";
 
 const isDev = process.env.NODE_ENV === "development";
+const memoryBuckets = new Map<string, number[]>();
 const WINDOW_SECONDS = 60;
 
 /* ============================================================

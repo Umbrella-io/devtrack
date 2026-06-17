@@ -1,9 +1,6 @@
--- Migration: create data_export_audit table
--- Used by the data-export route for rate limiting and audit logging.
-
 create table if not exists data_export_audit (
   id          uuid        primary key default gen_random_uuid(),
-  user_id     uuid        not null references users(id) on delete cascade,
+  user_id     text        not null references users(id) on delete cascade, -- CHANGED FROM UUID TO TEXT
   -- 'export' = GET /api/user/data-export
   -- 'delete' = DELETE /api/user/data-export
   action      text        not null check (action in ('export', 'delete')),
