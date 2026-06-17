@@ -115,13 +115,12 @@ export default function AccountToggle() {
 
   return (
     <div
-      className="mt-4 flex flex-wrap gap-2"
+      className="mt-4 flex flex-wrap gap-1.5"
       role="group"
       aria-label="Select GitHub account or organization"
     >
       {accountOptions.map((option) => {
         const isActive = selectedAccount === option.value;
-        // Determine if this option maps to a real GitHub login for avatar display
         const isOrgOption = option.value?.startsWith("org:") ?? false;
         const isCombined = option.value === "combined";
         const showAvatar = !isCombined && !isOrgOption;
@@ -137,7 +136,7 @@ export default function AccountToggle() {
             type="button"
             aria-pressed={isActive}
             onClick={() => setSelectedAccount(option.value)}
-            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+            className={`inline-flex max-w-[10rem] items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
               isActive
                 ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
                 : "border-[var(--card-muted)] bg-[var(--card-muted)] text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
@@ -178,7 +177,7 @@ export default function AccountToggle() {
                 <polyline points="9 22 9 12 15 12 15 22" />
               </svg>
             )}
-            <span>{option.label}</span>
+            <span className="truncate">{option.label}</span>
           </button>
         );
       })}

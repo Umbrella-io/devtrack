@@ -619,21 +619,21 @@ export default function StreakTracker() {
             </div>
             {data && <div className="h-8 w-24" />}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 xs:gap-3">
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className={`rounded-lg p-4 text-center ${stat.highlight
+                className={`rounded-lg p-3 text-center ${stat.highlight
                   ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
                   : "bg-[var(--control)]"
                   }`}
                 aria-label={stat.tooltip}
               >
                 <div className="flex justify-center mb-1">
-                  <stat.icon size={24} className="text-[var(--accent)]" aria-hidden="true" />
+                  <stat.icon size={20} className="text-[var(--accent)]" aria-hidden="true" />
                 </div>
                 <div
-                  className={`text-2xl font-bold ${stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
+                  className={`text-lg font-bold leading-tight break-all ${stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
                     }`}
                 >
                   {stat.value}

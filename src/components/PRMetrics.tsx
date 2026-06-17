@@ -166,7 +166,7 @@ export default function PRMetrics() {
   const renderStat = (stat: PRStat) => {
     const content = (
       <>
-        <div className={`truncate text-2xl font-bold ${stat.warning ? "text-orange-300" : "text-[var(--accent)]"}`}>
+        <div className={`truncate text-xl font-bold ${stat.warning ? "text-orange-300" : "text-[var(--accent)]"}`}>
           {stat.value}
         </div>
         <div className="truncate mt-1 text-sm text-[var(--muted-foreground)]">{stat.label}</div>
