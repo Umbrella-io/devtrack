@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import NotificationBell from "@/components/NotificationBell";
+import ShareProfileButton from "@/components/ShareProfileButton";
 import {
   createContext,
   ReactNode,
@@ -263,18 +264,20 @@ export default function DashboardHeader() {
         {/* Right Section */}
         <div className="w-full min-w-0 md:w-auto">
           <div className="flex w-full min-w-0 items-center gap-3 overflow-x-auto pb-1 md:w-auto md:justify-end md:overflow-visible md:pb-0">
-            {isPublic === true && session?.githubLogin && (
-              <a
-                href={`/u/${session.githubLogin}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
-                title="View your public profile"
-              >
-                Share Profile
-              </a>
-            )}
-
+           {isPublic === true && session?.githubLogin && (
+  <div className="flex items-center gap-2">
+    
+      href={`/u/${session.githubLogin}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
+      title="View your public profile"
+    >
+      Share Profile
+    </a>
+    <ShareProfileButton />
+  </div>
+)}
             <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
               <div className="transition-transform duration-200 hover:scale-[1.05]">
                 <KeyboardShortcuts />
@@ -367,20 +370,20 @@ export default function DashboardHeader() {
             </div>
           </div>
 
-          {isPublic === true && session?.githubLogin && (
-            <a
-              href={`/u/${session.githubLogin}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="primary-button inline-flex w-full items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
-              title="View your public profile"
-              onClick={() => setMenuOpen(false)}
-            >
-              Share Profile
-            </a>
-          )}
-        </div>
-      )}
+        {isPublic === true && session?.githubLogin && (
+  <div className="flex items-center gap-2">
+    
+      href={`/u/${session.githubLogin}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="primary-button inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
+      title="View your public profile"
+    >
+      Share Profile
+    </a>
+    <ShareProfileButton />
+  </div>
+)}
 
       {/* Bottom Toggle */}
       <div className="mt-5">
