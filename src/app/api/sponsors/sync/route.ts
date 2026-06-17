@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { validateCronRequest } from "@/lib/cron-auth";
 
@@ -8,12 +8,36 @@ export async function GET(req: Request) {
   const authError = validateCronRequest(req);
   if (authError) return authError;
 
+  const url = new URL(req.url);
+  const lastSyncedAt = url.searchParams.get("lastSyncedAt");
+
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
     return NextResponse.json({ error: "No GitHub token configured" }, { status: 500 });
   }
 
   const targetOwner = "Priyanshu-byte-coder";
+  const currentTimestamp = new Date().toISOString();
+
+  // 🧠 INCREMENTAL CHECKPOINT LAYER: Avoids duplicate sync loops if executed within an aggressive window
+  if (lastSyncedAt) {
+    try {
+      const syncThresholdMs = 5 * 60 * 1000; // 5-minute incremental safety delta
+      const lastSyncTime = new Date(lastSyncedAt).getTime();
+      const currentSyncTime = new Date(currentTimestamp).getTime();
+
+      if (!isNaN(lastSyncTime) && (currentSyncTime - lastSyncTime < syncThresholdMs)) {
+        return NextResponse.json({
+          success: true,
+          isIncremental: true,
+          message: "Data synchronization skipped. Checkpoint is up to date.",
+          synchronizedAt: currentTimestamp
+        });
+      }
+    } catch (e) {
+      console.warn("Invalid lastSyncedAt timestamp parameter provided, falling back to full baseline pass.");
+    }
+  }
 
   try {
     const query = `
@@ -91,6 +115,8 @@ export async function GET(req: Request) {
     const toRemove = [...currentLogins].filter((login: string) => !newLogins.has(login));
     const toAdd = [...newLogins].filter((login: string) => !currentLogins.has(login));
 
+    let updatesCount = 0;
+
     if (toRemove.length > 0) {
       const { error } = await supabaseAdmin
         .from("users")
@@ -101,6 +127,7 @@ export async function GET(req: Request) {
         console.error("Failed to remove sponsors:", error);
         return NextResponse.json({ error: "Database error" }, { status: 500 });
       }
+      updatesCount += toRemove.length;
     }
 
     if (toAdd.length > 0) {
@@ -113,11 +140,15 @@ export async function GET(req: Request) {
         console.error("Failed to add sponsors:", error);
         return NextResponse.json({ error: "Database error" }, { status: 500 });
       }
+      updatesCount += toAdd.length;
     }
 
     return NextResponse.json({
       success: true,
+      isIncremental: false,
+      updatesCount,
       sponsorCount: sponsorLogins.length,
+      synchronizedAt: currentTimestamp,
       sponsors: sponsorLogins
     });
   } catch (error) {
@@ -125,3 +156,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
