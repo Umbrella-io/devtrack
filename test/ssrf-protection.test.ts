@@ -4,7 +4,7 @@ import dns from "dns/promises";
 
 vi.mock("dns/promises", () => ({
   default: {
-    resolve: vi.fn(),
+    lookup: vi.fn(),
   },
 }));
 
@@ -63,10 +63,10 @@ describe("ssrf-protection", () => {
   });
 
   describe("isSafeUrl", () => {
-    const mockResolve = dns.resolve as any;
+    const mockLookup = dns.lookup as any;
 
     beforeEach(() => {
-      mockResolve.mockReset();
+      mockLookup.mockReset();
     });
 
     it("should return false for invalid protocol", async () => {
@@ -85,42 +85,27 @@ describe("ssrf-protection", () => {
     });
 
     it("should return true for public IPs via DNS", async () => {
-      mockResolve.mockImplementation(async (hostname: string, rrtype: string) => {
-        if (rrtype === "A") return ["8.8.8.8"];
-        throw new Error("ENOTFOUND");
-      });
+      mockLookup.mockResolvedValue([{ address: "8.8.8.8", family: 4 }]);
       expect(await isSafeUrl("http://example.com")).toBe(true);
     });
 
     it("should return false for private IPv4", async () => {
-      mockResolve.mockImplementation(async (hostname: string, rrtype: string) => {
-        if (rrtype === "A") return ["10.0.0.1"];
-        throw new Error("ENOTFOUND");
-      });
+      mockLookup.mockResolvedValue([{ address: "10.0.0.1", family: 4 }]);
       expect(await isSafeUrl("http://internal.com")).toBe(false);
     });
 
     it("should return false for IPv6-mapped IPv4 private address", async () => {
-      mockResolve.mockImplementation(async (hostname: string, rrtype: string) => {
-        if (rrtype === "AAAA") return ["::ffff:192.168.1.1"];
-        throw new Error("ENOTFOUND");
-      });
+      mockLookup.mockResolvedValue([{ address: "::ffff:192.168.1.1", family: 6 }]);
       expect(await isSafeUrl("http://internal.com")).toBe(false);
     });
 
     it("should return false for IPv6 loopback and link-local", async () => {
-      mockResolve.mockImplementation(async (hostname: string, rrtype: string) => {
-        if (rrtype === "AAAA") return ["fe80::1"];
-        throw new Error("ENOTFOUND");
-      });
+      mockLookup.mockResolvedValue([{ address: "fe80::1", family: 6 }]);
       expect(await isSafeUrl("http://internal.com")).toBe(false);
     });
 
     it("should return true for public IPv6", async () => {
-      mockResolve.mockImplementation(async (hostname: string, rrtype: string) => {
-        if (rrtype === "AAAA") return ["2001:4860:4860::8888"];
-        throw new Error("ENOTFOUND");
-      });
+      mockLookup.mockResolvedValue([{ address: "2001:4860:4860::8888", family: 6 }]);
       expect(await isSafeUrl("http://example.com")).toBe(true);
     });
   });

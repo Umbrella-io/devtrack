@@ -242,6 +242,42 @@ async function fetchCommitStats(username: string, since?: string) {
   }>(`/search/commits?${query}`);
 }
 
+async function fetchAllCommitDatesForStreak(
+  username: string,
+  since: string
+): Promise<string[]> {
+  const PER_PAGE = 100;
+  const seenDays = new Set<string>();
+  let page = 1;
+
+  while (true) {
+    const query = new URLSearchParams({
+      q: `author:${username} author-date:>=${since}`,
+      per_page: String(PER_PAGE),
+      page: String(page),
+      sort: "author-date",
+      order: "desc",
+    });
+
+    const data = await fetchGitHubJson<{
+      total_count: number;
+      items: Array<{ commit: { author: { date: string } } }>;
+    }>(`/search/commits?${query}`);
+
+    if (!data || data.items.length === 0) break;
+
+    for (const item of data.items) {
+      seenDays.add(item.commit.author.date.slice(0, 10));
+    }
+
+    // Stop when we have fetched all available results
+    if (page * PER_PAGE >= data.total_count || data.items.length < PER_PAGE) break;
+    page++;
+  }
+
+  return Array.from(seenDays);
+}
+
 async function fetchPrCount(username: string, since?: string): Promise<number> {
   const query = new URLSearchParams({
     q: [
@@ -286,15 +322,13 @@ export async function buildLeaderboard(
     safeUsers,
     USER_CONCURRENCY,
     async (user) => {
-      const [monthlyCommits, streakCommits, prs] = await Promise.all([
+      const [monthlyCommits, streakDates, prs] = await Promise.all([
         fetchCommitStats(user.github_login, periodStart),
-        fetchCommitStats(user.github_login, streakStart),
+        fetchAllCommitDatesForStreak(user.github_login, streakStart),
         fetchPrCount(user.github_login, periodStart),
       ]);
 
-      const streak = calculateCurrentStreak(
-        streakCommits?.items.map((item) => item.commit.author.date) ?? []
-      );
+      const streak = calculateCurrentStreak(streakDates);
       const commits = monthlyCommits?.total_count ?? 0;
       const score = streak * 5 + commits + prs * 3;
 
@@ -347,7 +381,10 @@ export const getCachedLeaderboard = (filters: LeaderboardFilters = {}) => {
   return unstable_cache(
     async () => buildLeaderboard(filters),
     ["leaderboard", period],
-    { revalidate: CACHE_REFRESH_SECONDS }
+    {
+      revalidate: CACHE_REFRESH_SECONDS,
+      tags: ["leaderboard"],
+    }
   )();
 };
 
@@ -356,7 +393,7 @@ export async function getLeaderboardData(
   filters: LeaderboardFilters = {}
 ): Promise<LeaderboardPayload | null> {
   const period = filters.period ?? DEFAULT_PERIOD;
-  
+
   if (bypass) {
     try {
       const payload = await buildLeaderboard(filters);
@@ -397,3 +434,60 @@ export async function getLeaderboardData(
     }
   }
 }
+
+export async function fetchLanguageRepositories(
+  username: string,
+  language: string
+): Promise<string[]> {
+  const LANGUAGE_REPO_LIMIT = 8;
+  const query = new URLSearchParams({
+    q: `user:${username} language:${language}`,
+    per_page: String(LANGUAGE_REPO_LIMIT),
+    sort: "updated",
+    order: "desc",
+  });
+
+  const data = await fetchGitHubJson<{
+    items: Array<{ full_name: string }>;
+  }>(`/search/repositories?${query.toString()}`);
+
+  return data?.items.map((repo) => repo.full_name) ?? [];
+}
+
+export async function filterLeaderboardByLanguage(
+  leaderboard: LeaderboardPayload,
+  language: string
+): Promise<LeaderboardPayload> {
+  const normalizedLanguage = language.trim().toLowerCase();
+  if (!normalizedLanguage) {
+    return leaderboard;
+  }
+
+  const filterEntries = async (
+    entries: LeaderboardEntry[]
+  ) => {
+    const matches = await Promise.all(
+      entries.map(async (entry) => {
+        const repos = await fetchLanguageRepositories(
+          entry.username,
+          normalizedLanguage
+        );
+        return repos.length > 0 ? entry : null;
+      })
+    );
+
+    return matches.filter(
+      (entry): entry is LeaderboardEntry => entry !== null
+    );
+  };
+
+  return {
+    ...leaderboard,
+    leaders: {
+      streak: await filterEntries(leaderboard.leaders.streak),
+      commits: await filterEntries(leaderboard.leaders.commits),
+      prs: await filterEntries(leaderboard.leaders.prs),
+    },
+  };
+}
+

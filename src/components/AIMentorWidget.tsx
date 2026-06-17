@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import DOMPurify from "dompurify";
+import { Sparkles } from "lucide-react";
 
 interface Insight {
   id: string;
@@ -113,7 +114,21 @@ export function AIMentorWidget() {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+        <div className="flex h-[200px] flex-col items-center justify-center text-center">
+          <Sparkles
+            className="mb-3 h-8 w-8 text-[var(--muted-foreground)]"
+            aria-hidden="true"
+          />
+          <p className="text-sm text-[var(--muted-foreground)]">
+            No metrics available yet.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const formattedDate = mounted
     ? new Date(data.generatedAt).toLocaleDateString(undefined, {

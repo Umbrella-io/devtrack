@@ -12,10 +12,6 @@ import {
 
 export const dynamic = "force-dynamic";
 
-interface ComparePageProps {
-  params: { users: string };
-}
-
 type Winner = "left" | "right" | "tie";
 
 async function parseUsers(params: Promise<{ users: string }>): Promise<[string, string] | null> {

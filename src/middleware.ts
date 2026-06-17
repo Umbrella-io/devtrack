@@ -59,7 +59,7 @@ const RATE_LIMIT_CONFIG = {
   AUTH_LIMIT: isDev ? 1000 : AUTH_LIMIT,
 } as const;
 
-const memoryBuckets = new Map<string, number[]>();
+// Warn in production if Upstash Redis is not configured (rates reset on cold starts)if (process.env.NODE_ENV === "production" && !process.env.UPSTASH_REDIS_REST_URL) {
 
 type RateLimitResult = {
   allowed: boolean;
@@ -70,9 +70,9 @@ type RateLimitResult = {
 
 function getIp(req: NextRequest) {
   return (
-    req.headers.get("cf-connecting-ip") ??
+    req.headers.get("cf-connecting-ip")?.trim() ??
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
+    req.headers.get("x-real-ip")?.trim() ??
     "unknown"
   );
 }

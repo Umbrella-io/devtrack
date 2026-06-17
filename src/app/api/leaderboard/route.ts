@@ -6,10 +6,9 @@ import {
   getLeaderboardData,
   isFresh,
   LEADERBOARD_BUILD_LOCK_KEY,
-  type LeaderboardEntry,
   type LeaderboardPayload,
-  type LeaderboardMetric,
   type LeaderboardPeriod,
+  filterLeaderboardByLanguage,
 } from "@/lib/leaderboard";
 import {
   pruneExpiredRateLimits,
@@ -25,20 +24,16 @@ export const dynamic = "force-dynamic";
 
 const RATE_LIMIT_REQUESTS = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const LANGUAGE_REPO_LIMIT = 8;
 
 const memoryRateLimits = new Map<string, RateLimitEntry>();
 
-// In-process build promise to dedupe concurrent builds in the same Node
-// process when an external cache/lock (Upstash) is not configured.
-let _inProcessLeaderboardBuild: Promise<LeaderboardPayload | null> | null = null;
+type RateLimitResult = { allowed: boolean; retryAfter?: number };
+
 function getRateLimitKey(req: NextRequest): string {
   return req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
 }
 
-function checkMemoryRateLimit(
-  ip: string
-): { allowed: boolean; retryAfter?: number } {
+function checkMemoryRateLimit(ip: string): RateLimitResult {
   const now = Date.now();
   pruneExpiredRateLimits(memoryRateLimits, now);
   const record = memoryRateLimits.get(ip);
@@ -59,9 +54,7 @@ function checkMemoryRateLimit(
   };
 }
 
-async function checkRateLimit(
-  ip: string
-): Promise<{ allowed: boolean; retryAfter?: number }> {
+async function checkRateLimit(ip: string): Promise<RateLimitResult> {
   if (getUpstashConfig()) {
     return upstashRateLimitFixedWindow({
       key: `leaderboard-rate-limit:${ip}`,
@@ -99,89 +92,6 @@ function getLanguageCacheKey(filters: {
 
 function getLeaderboardBuildLockCacheKey(cacheKey: string): string {
   return `${LEADERBOARD_BUILD_LOCK_KEY}:${cacheKey}`;
-}
-
-async function fetchGitHubJson<T>(path: string): Promise<T | null> {
-  const token = process.env.GITHUB_TOKEN;
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  try {
-    const res = await fetch(`https://api.github.com${path}`, {
-      headers,
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) {
-      console.error("GitHub leaderboard request failed:", path, res.status);
-      return null;
-    }
-
-    return (await res.json()) as T;
-  } catch (error) {
-    console.error("GitHub leaderboard request error:", path, error);
-    return null;
-  }
-}
-
-async function fetchLanguageRepositories(
-  username: string,
-  language: string
-): Promise<string[]> {
-  const query = new URLSearchParams({
-    q: `user:${username} language:${language}`,
-    per_page: String(LANGUAGE_REPO_LIMIT),
-    sort: "updated",
-    order: "desc",
-  });
-
-  const data = await fetchGitHubJson<{
-    items: Array<{ full_name: string }>;
-  }>(`/search/repositories?${query.toString()}`);
-
-  return data?.items.map((repo) => repo.full_name) ?? [];
-}
-
-async function filterLeaderboardByLanguage(
-  leaderboard: LeaderboardPayload,
-  language: string
-): Promise<LeaderboardPayload> {
-  const normalizedLanguage = language.trim().toLowerCase();
-  if (!normalizedLanguage) {
-    return leaderboard;
-  }
-
-  const filterEntries = async (
-    entries: LeaderboardEntry[]
-  ) => {
-    const matches = await Promise.all(
-      entries.map(async (entry) => {
-        const repos = await fetchLanguageRepositories(
-          entry.username,
-          normalizedLanguage
-        );
-        return repos.length > 0 ? entry : null;
-      })
-    );
-
-    return matches.filter(
-      (entry): entry is LeaderboardEntry => entry !== null
-    );
-  };
-
-  return {
-    ...leaderboard,
-    leaders: {
-      streak: await filterEntries(leaderboard.leaders.streak),
-      commits: await filterEntries(leaderboard.leaders.commits),
-      prs: await filterEntries(leaderboard.leaders.prs),
-    },
-  };
 }
 
 export async function GET(req: NextRequest) {

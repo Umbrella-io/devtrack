@@ -89,6 +89,10 @@ test("theme selector switches between themes on the dashboard", async ({ page })
   await expect(themeSelect).toHaveValue(nextTheme);
   const stored = await page.evaluate(() => localStorage.getItem("theme"));
   expect(stored).toBe(nextTheme);
+
+  // Reload the page and verify theme persists
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(themeSelect).toHaveValue(nextTheme);
 });
 
 /**
@@ -125,4 +129,10 @@ test("public profile page theme selector works without authentication", async ({
   // Theme preference must be persisted to localStorage
   const stored = await page.evaluate(() => localStorage.getItem("theme"));
   expect(stored).toBe(nextTheme);
+
+  // Reload the page and verify theme persists on the profile page
+  await page.reload({ waitUntil: "load" });
+  await expect(page.getByRole("banner").getByRole("button", { name: "Choose theme" })).toBeVisible();
+  const storedAfterReload = await page.evaluate(() => localStorage.getItem("theme"));
+  expect(storedAfterReload).toBe(nextTheme);
 });

@@ -38,7 +38,7 @@ export default function MembersPanel({ roomId, members, isOwner, onMemberAdded, 
   }
 
   return (
-    <aside className="w-56 shrink-0 border-l dark:border-gray-800 flex flex-col">
+    <aside className="w-full md:w-56 shrink-0 border-l dark:border-gray-800 flex flex-col">
       <div className="p-4 border-b dark:border-gray-800 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Members ({members.length})

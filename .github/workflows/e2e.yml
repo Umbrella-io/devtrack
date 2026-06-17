@@ -34,7 +34,7 @@ jobs:
           cache: npm
 
       - name: Install app dependencies
-        run: npm ci
+        run: npm ci || (npm cache clean --force && npm ci)
 
       - name: Build Next.js app
         run: |

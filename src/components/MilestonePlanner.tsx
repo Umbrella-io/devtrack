@@ -1,7 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Target, Plus, Trash2, TrendingUp, Clock, CheckCircle2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Target,
+  Plus,
+  Trash2,
+  Copy,
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
 
 interface Milestone {
   id: string;
@@ -136,6 +147,23 @@ export default function MilestonePlanner() {
     setMilestones(updated);
     saveMilestones(updated);
   }, [milestones]);
+  const handleDuplicate = useCallback((id: string) => {
+  const milestone = milestones.find(m => m.id === id);
+
+  if (!milestone) return;
+
+  const duplicate: Milestone = {
+    ...milestone,
+    id: `${Date.now()}`,
+    title: `${milestone.title} (Copy)`,
+    createdAt: new Date().toISOString(),
+  };
+
+  const updated = [...milestones, duplicate];
+
+  setMilestones(updated);
+  saveMilestones(updated);
+}, [milestones]);
 
   const statusCounts = milestones.reduce((acc, m) => {
     acc[getStatus(m)] = (acc[getStatus(m)] || 0) + 1;
@@ -283,6 +311,20 @@ export default function MilestonePlanner() {
                     </button>
                     <button onClick={() => setExpanded(isExpanded ? null : m.id)} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted-foreground)', cursor: 'pointer' }}>
                       {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+                    <button
+                      onClick={() => handleDuplicate(m.id)}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                        color: 'var(--foreground)',
+                        cursor: 'pointer'
+                      }}
+                      title="Duplicate milestone"
+                    >
+                      <Copy size={14} />
                     </button>
                     <button onClick={() => handleDelete(m.id)} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid transparent', background: 'transparent', color: '#ef4444', cursor: 'pointer' }}>
                       <Trash2 size={14} />

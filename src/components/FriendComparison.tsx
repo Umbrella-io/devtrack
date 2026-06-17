@@ -34,6 +34,7 @@ function FriendComparison() {
     if (typeof window === "undefined") return "";
     return localStorage.getItem(STORAGE_KEY) ?? "";
   });
+  const [selectedUserAvatar, setSelectedUserAvatar] = useState("");
   const [comparingUser, setComparingUser] = useState("");
   const [myData, setMyData] = useState<CompareData | null>(null);
   const [friendData, setFriendData] = useState<CompareData | null>(null);
@@ -132,6 +133,7 @@ function FriendComparison() {
 
   const chooseSuggestion = (user: SuggestedUser) => {
     setFriendUsername(user.username);
+    setSelectedUserAvatar(user.avatarUrl);
     setSuppressNextSuggestFetch(true);
     setSuggestions([]);
     setSuggestOpen(false);
@@ -163,6 +165,11 @@ function FriendComparison() {
             detail: { username: trimmed },
           })
         );
+        window.dispatchEvent(
+          new CustomEvent("devtrack:show-commit-activity", {
+            detail: { username: trimmed },
+          })
+        );
       }
     } catch (e) {
       setError("An error occurred");
@@ -178,6 +185,7 @@ function FriendComparison() {
 
   const clearComparison = () => {
     setFriendUsername("");
+    setSelectedUserAvatar("");
     setComparingUser("");
     setFriendData(null);
     setError("");
@@ -190,12 +198,6 @@ function FriendComparison() {
 
   const handleCommitActivityClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    const element = document.getElementById("contribution-activity");
-    if (element) {
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - 100;
-      window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-    }
   };
 
   return (
@@ -216,39 +218,63 @@ function FriendComparison() {
           className="flex flex-col sm:flex-row gap-2 w-full"
         >
           <div ref={containerRef} className="relative min-w-0 flex-1">
-            <input
-              type="text"
-              role="combobox"
-              placeholder="GitHub username..."
-              value={friendUsername}
-              onChange={(e) => setFriendUsername(e.target.value)}
-              onFocus={() => {
-                if (suggestions.length > 0) setSuggestOpen(true);
-              }}
-              onKeyDown={(e) => {
-                if (!suggestOpen || suggestions.length === 0) return;
+            {selectedUserAvatar && friendUsername ? (
+              <div className="flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
+                <Image
+                  src={selectedUserAvatar}
+                  alt={`${friendUsername} avatar`}
+                  width={24}
+                  height={24}
+                  className="h-6 w-6 rounded-full"
+                />
+                <span className="text-sm font-medium text-[var(--foreground)]">{friendUsername}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFriendUsername("");
+                    setSelectedUserAvatar("");
+                  }}
+                  className="ml-auto text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  title="Change user"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <input
+                type="text"
+                role="combobox"
+                placeholder="GitHub username..."
+                value={friendUsername}
+                onChange={(e) => setFriendUsername(e.target.value)}
+                onFocus={() => {
+                  if (suggestions.length > 0) setSuggestOpen(true);
+                }}
+                onKeyDown={(e) => {
+                  if (!suggestOpen || suggestions.length === 0) return;
 
-                if (e.key === "ArrowDown") {
-                  e.preventDefault();
-                  setActiveIndex((prev) => Math.min(prev + 1, suggestions.length - 1));
-                } else if (e.key === "ArrowUp") {
-                  e.preventDefault();
-                  setActiveIndex((prev) => Math.max(prev - 1, 0));
-                } else if (e.key === "Enter") {
-                  if (activeIndex >= 0 && activeIndex < suggestions.length) {
+                  if (e.key === "ArrowDown") {
                     e.preventDefault();
-                    chooseSuggestion(suggestions[activeIndex]);
+                    setActiveIndex((prev) => Math.min(prev + 1, suggestions.length - 1));
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setActiveIndex((prev) => Math.max(prev - 1, 0));
+                  } else if (e.key === "Enter") {
+                    if (activeIndex >= 0 && activeIndex < suggestions.length) {
+                      e.preventDefault();
+                      chooseSuggestion(suggestions[activeIndex]);
+                    }
+                  } else if (e.key === "Escape") {
+                    setSuggestOpen(false);
+                    setActiveIndex(-1);
                   }
-                } else if (e.key === "Escape") {
-                  setSuggestOpen(false);
-                  setActiveIndex(-1);
-                }
-              }}
-              aria-autocomplete="list"
-              aria-expanded={suggestOpen}
-              aria-controls="friend-compare-suggestions"
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus-visible:border-[var(--accent)]"
-            />
+                }}
+                aria-autocomplete="list"
+                aria-expanded={suggestOpen}
+                aria-controls="friend-compare-suggestions"
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+              />
+            )}
 
             {suggestOpen && suggestions.length > 0 && (
               <div
@@ -299,6 +325,16 @@ function FriendComparison() {
           >
             {loading ? "Loading..." : "Compare"}
           </button>
+
+          {friendData && (
+            <button
+              type="button"
+              onClick={clearComparison}
+              className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-800"
+            >
+              Clear
+            </button>
+          )}
         </form>
       </div>
 
@@ -337,14 +373,41 @@ function FriendComparison() {
           )}
 
           <div className="overflow-x-auto pb-2 scrollbar-thin">
-            <div className="min-w-[400px]">
-              <div className="flex justify-between items-center text-sm font-medium text-[var(--muted-foreground)] px-2 mb-4">
-                <div className="w-1/3 text-left">You ({myData.username})</div>
-                <div className="w-1/3 text-center uppercase tracking-wider text-xs">Metric</div>
-                <div className="w-1/3 text-right">Them ({friendData.username})</div>
+            <div className="min-w-[500px]">
+              {/* Header with profile info */}
+              <div className="grid grid-cols-3 gap-4 px-4 py-3 border-b border-[var(--border)]">
+                {/* Metric column header */}
+                <div className="flex items-center justify-start">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Metric</span>
+                </div>
+                
+                {/* My profile header */}
+                <div className="flex items-center justify-center gap-2">
+                  <Image
+                    src={myData.username ? `https://avatars.githubusercontent.com/${myData.username}?v=4` : "https://via.placeholder.com/32"}
+                    alt={myData.username}
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 rounded-full"
+                  />
+                  <span className="text-sm font-semibold text-[var(--foreground)]">{myData.username}</span>
+                </div>
+                
+                {/* Friend profile header */}
+                <div className="flex items-center justify-end gap-2">
+                  <Image
+                    src={selectedUserAvatar || "https://via.placeholder.com/32"}
+                    alt={friendData.username}
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 rounded-full"
+                  />
+                  <span className="text-sm font-semibold text-[var(--foreground)]">{friendData.username}</span>
+                </div>
               </div>
 
-              <div className="space-y-2">
+              {/* Metrics rows */}
+              <div className="space-y-0">
                 <ComparisonRow
                   label="Current Streak"
                   myValue={myData.streak}
@@ -373,29 +436,16 @@ function FriendComparison() {
 
           {/* Chart overlay — only renders when both have weekly data */}
           {myData.weeklyCommits && friendData.weeklyCommits && (
-            <ComparisonChart
-              myUsername={myData.username}
-              friendUsername={friendData.username}
-              myWeeklyCommits={myData.weeklyCommits}
-              friendWeeklyCommits={friendData.weeklyCommits}
-            />
+            <div id="comparison-chart" className="scroll-mt-24">
+              <ComparisonChart
+                myUsername={myData.username}
+                friendUsername={friendData.username}
+                myWeeklyCommits={myData.weeklyCommits}
+                friendWeeklyCommits={friendData.weeklyCommits}
+              />
+            </div>
           )}
 
-          <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 pt-4">
-            <a
-              href="#contribution-activity"
-              onClick={handleCommitActivityClick}
-              className="text-center rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
-            >
-              View Commit Activity
-            </a>
-            <button
-              onClick={clearComparison}
-              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-all hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)] hover:opacity-90 active:scale-95"
-            >
-              Clear Comparison
-            </button>
-          </div>
         </div>
       )}
 
@@ -430,20 +480,20 @@ function ComparisonRow({
   }
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--control)]">
+    <div className="grid grid-cols-3 gap-4 px-4 py-3 border-b border-[var(--border)] bg-[var(--background)]/50 min-h-[56px] items-center">
+      <div className="text-left text-sm font-medium text-[var(--foreground)]">
+        {label}
+      </div>
       <div
-        className={`w-1/3 text-left font-medium ${
+        className={`text-center text-sm font-medium ${
           myWin ? "text-[var(--accent)]" : "text-[var(--foreground)]"
         }`}
       >
         {myValue}
         {suffix}
       </div>
-      <div className="w-1/3 text-center text-xs text-[var(--muted-foreground)] font-medium">
-        {label}
-      </div>
       <div
-        className={`w-1/3 text-right font-medium ${
+        className={`text-right text-sm font-medium ${
           theirWin ? "text-[var(--accent)]" : "text-[var(--foreground)]"
         }`}
       >

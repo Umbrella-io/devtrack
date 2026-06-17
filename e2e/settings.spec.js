@@ -87,12 +87,24 @@ test("settings page saves and reflects changes", async ({ page }) => {
 
   // Wait for settings to load
   await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
-  
-  const publicProfileCheckbox = page.getByRole("checkbox", {
-    name: "Toggle Public Profile",
-  });
 
+  // The public profile toggle is a sr-only checkbox driven by React's onChange.
+  // Clicking the hidden input directly won't fire the synthetic event.
+  // Instead click the visible toggle track (the div sibling of the sr-only input)
+  // which is inside the label wrapping the "Toggle Public Profile" checkbox.
+  const toggleLabel = page.locator("label").filter({
+    has: page.locator("input[aria-label='Toggle Public Profile']"),
+  });
+  const toggleTrack = toggleLabel.locator("div").first();
+
+  const publicProfileCheckbox = page.locator("input[aria-label='Toggle Public Profile']");
+
+  // Initially false based on our mock
   await expect(publicProfileCheckbox).not.toBeChecked();
-  await publicProfileCheckbox.check({ force: true });
+
+  // Click the visible toggle track — this fires the React onChange
+  await toggleTrack.click();
+
+  // It should now be checked (our mock returns the patched value)
   await expect(publicProfileCheckbox).toBeChecked();
 });
