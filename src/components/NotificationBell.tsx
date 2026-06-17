@@ -119,7 +119,7 @@ export default function NotificationBell() {
 
       return next;
     });
-  }, [notifications, unreadCount, refetch]);
+  }, [unreadCount, refetch]);
 
   function timeAgo(iso: string): string {
     const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
