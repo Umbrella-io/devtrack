@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Image from "next/image";
 import Link from 'next/link';
 import { Activity, GitPullRequest, Goal, Share2, Flame, FolderGit2, LogIn, LayoutDashboard, Target, type LucideIcon } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 /* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
@@ -167,6 +168,9 @@ function use3DTilt(aggressiveness = 15) {
       const rotateX = ((y - centerY) / centerY) * -aggressiveness;
       const rotateY = ((x - centerX) / centerX) * aggressiveness;
 
+      el.style.setProperty('--mouse-x', `${x}px`);
+      el.style.setProperty('--mouse-y', `${y}px`);
+
       setStyle({
         transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`,
         transition: 'transform 0.1s ease-out'
@@ -211,10 +215,11 @@ function MouseSpotlight() {
     <div
       ref={ref}
       aria-hidden
+      className="mouse-spotlight"
       style={{
         position: 'fixed', pointerEvents: 'none', zIndex: 0,
         width: 700, height: 700,
-        background: 'radial-gradient(circle, rgba(129,140,248,0.05) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(129,140,248,0.18) 0%, rgba(129,140,248,0.06) 50%, transparent 70%)',
         transform: 'translate(-50%,-50%)',
         transition: 'left 0.15s ease-out, top 0.15s ease-out',
       }}
@@ -464,7 +469,7 @@ function HeroSection() {
       style={{
         minHeight: '100vh',
         display: 'flex', alignItems: 'center',
-        padding: '80px clamp(24px,5vw,64px) 40px',
+        padding: 'clamp(100px, 12vh, 140px) clamp(24px,5vw,64px) 40px',
         gap: 'clamp(32px,5vw,80px)',
         flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
@@ -482,7 +487,7 @@ function HeroSection() {
           zIndex: -2,
         }}
       />
-      
+
       {/* Ambient Animated Background Glow */}
       <div 
         style={{
@@ -510,7 +515,7 @@ function HeroSection() {
           zIndex: -1,
         }}
       />
-      
+
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes floatGlow {
           0% { transform: translate(0px, 0px) scale(1); opacity: 0.5; }
@@ -531,7 +536,7 @@ function HeroSection() {
         {/* Badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.25)',
+          background: 'color-mix(in srgb, var(--accent) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 40%, transparent)',
           borderRadius: 24, padding: '6px 14px', marginBottom: 28,
           boxShadow: '0 4px 14px rgba(129,140,248,0.1)',
         }}>
@@ -565,9 +570,9 @@ function HeroSection() {
 
         {/* Tagline */}
         <p style={{
-          fontSize: 'clamp(16px,2vw,18px)', color: MUTED,
+          fontSize: 'clamp(16px,2vw,18px)', color: 'var(--foreground)',
           lineHeight: 1.6, maxWidth: 420, margin: '0 0 40px',
-          fontWeight: 400, letterSpacing: '0.01em',
+          fontWeight: 400, letterSpacing: '0.01em', opacity: 0.85,
         }}>
           Open-source developer productivity dashboard. Track GitHub streaks,
           PR velocity, and coding goals — automatically.
@@ -617,7 +622,8 @@ function HeroSection() {
       </div>
 
       {/* Right: bento window frame */}
-      <div style={{ flex: '1 1 340px', display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
+      <div style={{ flex: '1 1 340px', display: 'flex', flexDirection: 'column',alignItems: 'flex-end', gap: 24, position: 'relative', zIndex: 2 }}>
+        <ThemeToggle />
         <div style={{
           background: 'var(--card)',
           border: '1px solid var(--border)',
@@ -892,8 +898,12 @@ function StatsSection({ stats }: { stats: RepoStats }) {
   return (
     <section id="features" style={{
       padding: '64px clamp(20px,4vw,48px)',
-      display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
-        gap: 24, borderTop: `1px solid ${BORDER}`,
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
+      gap: 24,
+      maxWidth: 1180,
+      margin: '0 auto',
+      borderTop: `1px solid ${BORDER}`,
     }}>
       {items.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
@@ -1010,9 +1020,10 @@ function FeaturesSection() {
    HOW IT WORKS SECTION
    ═══════════════════════════════════════════════════════════ */
 const STEPS = [
-  { num: '1', title: 'Sign in', desc: 'Authenticate with your GitHub account.', icon: LogIn },
-  { num: '2', title: 'View dashboard', desc: 'See your automatically generated stats.', icon: LayoutDashboard },
-  { num: '3', title: 'Set goals', desc: 'Configure weekly targets to keep your streak alive.', icon: Target },
+  { num: '1', title: 'Sign in', desc: 'Authenticate with your GitHub account.', icon: LogIn,href: '/api/auth/signin/github?callbackUrl=/dashboard' },
+  { num: '2', title: 'View dashboard', desc: 'See your automatically generated stats.', icon: LayoutDashboard,href: '/dashboard' },
+  { num: '3', title: 'Set goals', desc: 'Configure weekly targets to keep your streak alive.', icon: Target,href: '/dashboard/settings'
+ },
 ];
 
 function HowItWorksSection() {
@@ -1045,8 +1056,8 @@ function HowItWorksSection() {
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           return (
-          <div key={i} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: 'var(--shadow-soft)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
-            <div className="group-hover:border-indigo-500/40 transition-colors duration-300" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, border: '1px solid var(--border)', boxShadow: 'var(--shadow-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(129,140,248,0.05)' }}>
+          <Link key={i} href={step.href} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
+            <div className="group-hover:border-indigo-500/40 transition-colors duration-300" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, border: '1px solid #1e293b', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(129,140,248,0.05)' }}>
               <Icon size={64} strokeWidth={1} color="#818cf8" className="group-hover:scale-110 transition-transform duration-700 ease-in-out opacity-90" />
             </div>
             <div className="group-hover:bg-indigo-500/20 group-hover:scale-110 transition-all duration-300 group-hover:border-indigo-500/40" style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.2)', color: A, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontFamily: MONO, fontSize: 18, fontWeight: 700 }}>
@@ -1054,7 +1065,7 @@ function HowItWorksSection() {
             </div>
             <h3 style={{ fontFamily: DISP, fontWeight: 700, fontSize: 20, color: TEXT, margin: '0 0 12px' }}>{step.title}</h3>
             <p style={{ fontSize: 15, color: MUTED, margin: 0, lineHeight: 1.6 }}>{step.desc}</p>
-          </div>
+          </Link>
           );
         })}
       </div>
@@ -1151,7 +1162,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           who actually use it. Every widget, every metric, every API was contributed by
           someone in this list. {stats.goodFirstIssues > 0 && (
             <span style={{ color: TEXT }}>
-              {stats.goodFirstIssues} issues are tagged good&nbsp;first&nbsp;issue and waiting right now.
+              {stats.goodFirstIssues}{" "} issues are tagged good&nbsp;first&nbsp;issue and waiting right now.
             </span>
           )}
         </p>

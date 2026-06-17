@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface ShortcutsModalProps {
   isOpen: boolean;
@@ -24,17 +25,42 @@ const SHORTCUTS: ShortcutItem[] = [
 export default function ShortcutsModal({
   isOpen,
   onClose,
-}: ShortcutsModalProps) {
+  anchorRef,
+}: ShortcutsModalProps & { anchorRef?: React.RefObject<HTMLElement | null> }) {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const [isMac, setIsMac] = useState(false);
+  const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== "undefined" && typeof navigator !== "undefined") {
       setIsMac(/Mac|iPod|iPhone|iPad/.test(navigator.userAgent));
     }
   }, []);
+
+  // Recalculate position whenever the modal opens or the window resizes
+  useEffect(() => {
+    if (!isOpen || !anchorRef?.current) return;
+
+    const calculate = () => {
+      const rect = anchorRef.current!.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    };
+
+    calculate();
+    window.addEventListener("resize", calculate);
+    window.addEventListener("scroll", calculate, true);
+    return () => {
+      window.removeEventListener("resize", calculate);
+      window.removeEventListener("scroll", calculate, true);
+    };
+  }, [isOpen, anchorRef]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -106,15 +132,20 @@ export default function ShortcutsModal({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  const style: React.CSSProperties = position
+    ? { position: "fixed", top: position.top, right: position.right }
+    : { position: "fixed", top: 64, right: 16 };
+
+  const modal = (
     <div
       ref={modalRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="shortcuts-title"
-      className="absolute right-0 top-full z-[9999] mt-2 w-80 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl"
+      style={{ ...style, zIndex: 9999, width: 320 }}
+      className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl"
     >
       <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
         <h2
@@ -130,7 +161,7 @@ export default function ShortcutsModal({
           className="rounded-lg p-1 text-[var(--muted-foreground)] transition-all hover:bg-[var(--control)] hover:text-[var(--card-foreground)] hover:opacity-90 active:scale-95"
           aria-label="Close shortcuts"
         >
-          x
+          ✕
         </button>
       </div>
 
@@ -161,4 +192,6 @@ export default function ShortcutsModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

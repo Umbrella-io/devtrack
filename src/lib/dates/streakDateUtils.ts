@@ -68,7 +68,27 @@ export function calculateStreak(dates: string[], userTimezone: string = "UTC"): 
   if (!dates || dates.length === 0) return 0;
 
   const today = getLocalDateString(userTimezone);
-  const yesterday = getLocalDateString(userTimezone);
+  // Compute yesterday by parsing today and subtracting one calendar day,
+  // re-formatting in the user's timezone. Using getLocalDateString twice
+  // returned the same string, which silently dropped the one-day grace
+  // period for streaks. The shift uses local midnight to avoid DST edge
+  // cases where subtracting 24h of UTC time can land on the same date.
+  const yesterday = (() => {
+    const [year, month, day] = today.split("-").map(Number);
+    if (
+      !Number.isInteger(year) ||
+      !Number.isInteger(month) ||
+      !Number.isInteger(day)
+    ) {
+      return today;
+    }
+    const prev = new Date(Date.UTC(year, month - 1, day));
+    prev.setUTCDate(prev.getUTCDate() - 1);
+    const yyyy = prev.getUTCFullYear();
+    const mm = String(prev.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(prev.getUTCDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  })();
 
   const uniqueDates = [...new Set(dates)].sort().reverse();
 

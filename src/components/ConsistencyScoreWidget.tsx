@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { BarChart3 } from "lucide-react";
 import SectionHeader from "@/components/SectionHeader";
 import { useAccount } from "@/components/AccountContext";
 import {
@@ -165,7 +166,20 @@ export default function ConsistencyScoreWidget() {
   }
 
   if (!data) {
-    return null;
+    return (
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+        <SectionHeader title="Consistency Score" />
+        <div className="flex h-[320px] flex-col items-center justify-center text-center">
+          <BarChart3
+            className="mb-3 h-8 w-8 text-[var(--muted-foreground)]"
+            aria-hidden="true"
+          />
+          <p className="text-sm text-[var(--muted-foreground)]">
+            No contribution activity available.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const stats = [
@@ -234,7 +248,7 @@ export default function ConsistencyScoreWidget() {
               cursor={{ fill: "var(--control)" }}
               contentStyle={{
                 backgroundColor: "var(--card)",
-                borderColor: "var(--border)",
+                border: "1px solid var(--border)",
                 borderRadius: "8px",
                 color: "var(--card-foreground)",
               }}

@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
 import { submitGoalWithRefresh } from "@/lib/goal-tracker";
 import ConfirmModal from "@/components/ConfirmModal";
 import { buildPublicGoalShareUrl } from "@/lib/goals/share";
 import GoalHistory from "@/components/GoalHistory";
+import EmptyState from "@/components/EmptyState";
+
 
 type Recurrence = "none" | "weekly" | "monthly";
 
@@ -59,6 +62,9 @@ export function useGoalTracker() {
 
   const loadGoals = useCallback(async () => {
     const response = await fetch("/api/goals");
+    if (!response.ok) {
+      throw new Error(`Failed to load goals (HTTP ${response.status})`);
+    }
     const data: { goals: Goal[] } = await response.json();
     const fetchedGoals = data.goals ?? [];
     setGoals(fetchedGoals);
@@ -71,23 +77,25 @@ export function useGoalTracker() {
     try {
       const res = await fetch("/api/goals/sync", { method: "POST" });
       if (!res.ok) {
-        let msg = "Sync failed. Please try again.";
+        // Read the body exactly once — the Fetch API body stream can only be
+        // consumed once, so we must store the result before branching on status.
+        let errData: { error?: string } = {};
         try {
-          const errData = await res.json();
-          if (errData && errData.error) {
-            msg = errData.error;
-          }
-        } catch (e) {}
-        if (res.status === 401) {
-          msg = "Unauthorized. Please log in again.";
-        } else if (res.status === 502) {
-          msg = "GitHub sync failed: Expired token or missing repo scope.";
-        }
+          errData = await res.json();
+        } catch (_) {}
+
         if (res.status === 429) {
-          const data = await res.json();
-          setSyncError(data.error ?? "GitHub rate limit reached. Please try again later.");
+          setSyncError(
+            errData.error ?? "GitHub rate limit reached. Please try again later."
+          );
+        } else if (res.status === 401) {
+          setSyncError("Unauthorized. Please log in again.");
+        } else if (res.status === 502) {
+          setSyncError(
+            "GitHub sync failed: Expired token or missing repo scope."
+          );
         } else {
-          setSyncError("Failed to sync goals. Please try again.");
+          setSyncError(errData.error ?? "Sync failed. Please try again.");
         }
         return;
       }
@@ -105,7 +113,7 @@ export function useGoalTracker() {
     loadGoals()
       .then(async (fetchedGoals) => {
         const needsSync = fetchedGoals.some((g: Goal) => {
-          if (g.unit !== "commits") return false;
+          // auto-sync applies to all goal types
           if (!g.last_synced_at) return true;
           const syncedAt = new Date(g.last_synced_at).getTime();
           return Date.now() - syncedAt > 15 * 60 * 1000;
@@ -114,7 +122,9 @@ export function useGoalTracker() {
           await handleSync();
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        setSyncError("Failed to load goals. Please try again.");
+      })
       .finally(() => {
         setLoading(false);
         setLastUpdated(new Date());
@@ -129,7 +139,9 @@ export function useGoalTracker() {
           setLastUpdated(new Date());
           setMinutesAgo(0);
         })
-        .catch(() => {});
+        .catch(() => {
+          setSyncError("Failed to sync goals. Please try again.");
+        });
     };
     window.addEventListener("devtrack:sync", handleSyncEvent);
     return () => window.removeEventListener("devtrack:sync", handleSyncEvent);
@@ -167,7 +179,9 @@ export function useGoalTracker() {
       if (unit === "commits" || unit === "prs") {
         await handleSync();
       } else {
-        await loadGoals().catch(() => {});
+        await loadGoals().catch(() => {
+          setSyncError("Failed to refresh goals after creation.");
+        });
       }
     } catch (e) {
       setCreateError("Failed to create goal. Please try again.");
@@ -294,7 +308,10 @@ export function useGoalTracker() {
 }
 
 export default function GoalTracker() {
+
+
   const {
+
     goals,
     setGoals,
     loading,
@@ -326,6 +343,22 @@ export default function GoalTracker() {
     handleDelete,
     getCompletionLabel,
   } = useGoalTracker();
+
+  const { setSummary, setIsUpdating } = useDashboardWidgetA11y("goal-tracker");
+
+  useEffect(() => {
+    setIsUpdating(loading);
+  }, [loading, setIsUpdating]);
+
+  useEffect(() => {
+    const activeCount = goals.filter((goal) => goal.current < goal.target).length;
+    const completedCount = goals.filter(
+      (goal) => goal.current >= goal.target,
+    ).length;
+    setSummary(
+      `${activeCount} active goal${activeCount === 1 ? "" : "s"}. ${completedCount} completed.`,
+    );
+  }, [goals, setSummary]);
 
   const { data: session } = useSession();
 
@@ -487,11 +520,19 @@ export default function GoalTracker() {
       )}
 
       {goals.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">
-          No goals yet. Create one below.
-        </p>
+        <div className="mt-6">
+          <EmptyState
+            icon="🎯"
+            title="No goals yet"
+            description="No goals yet. Create your first coding goal to start tracking progress!"
+            actionLabel="Create Goal"
+            actionHref="#create-goal-form"
+          />
+
+        </div>
       ) : (
         <ul className="space-y-4">
+
           {goals.map((goal) => {
             const pct =
               goal.current > 0
@@ -503,7 +544,22 @@ export default function GoalTracker() {
             const isAutoSynced = goal.unit === "commits" || goal.unit === "prs";
 
             return (
-              <li key={goal.id} className="relative">
+              <li
+                key={goal.id}
+                className="relative rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]"
+                tabIndex={0}
+                aria-label={`Goal: ${goal.title}. ${goal.current} of ${goal.target} ${goal.unit}. ${getCompletionLabel(goal) || "In progress"}`}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    // Focus the primary action button inside this card
+                    const primaryBtn = e.currentTarget.querySelector<HTMLButtonElement>(
+                      "button:not([disabled])"
+                    );
+                    primaryBtn?.click();
+                  }
+                }}
+              >
                 {activeConfettiGoalId === goal.id && <ConfettiBurst />}
                 <div className="flex justify-between items-center text-sm mb-1">
                   <div className="flex flex-col gap-0.5">
@@ -685,7 +741,12 @@ export default function GoalTracker() {
       )}
 
       {/* Goal Creation Form */}
-      <form onSubmit={handleCreate} className="mt-6 space-y-3 border-t border-[var(--border)] pt-4">
+      <form
+        id="create-goal-form"
+        onSubmit={handleCreate}
+        className="mt-6 space-y-3 border-t border-[var(--border)] pt-4"
+      >
+
         <div>
           <label
             htmlFor="goal-title"

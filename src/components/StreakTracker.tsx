@@ -2,6 +2,7 @@
 import SectionHeader from "./SectionHeader";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { useCountUp } from "@/hooks/useCountUp";
 import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
@@ -421,6 +422,22 @@ export default function StreakTracker() {
     handleCopy,
   } = useStreakTracker();
 
+  const { setSummary, setIsUpdating } = useDashboardWidgetA11y("streak-tracker");
+
+  useEffect(() => {
+    setIsUpdating(loading);
+  }, [loading, setIsUpdating]);
+
+  useEffect(() => {
+    if (!data) {
+      setSummary(null);
+      return;
+    }
+    setSummary(
+      `Current streak: ${data.current} days. Longest streak: ${data.longest} days.`,
+    );
+  }, [data, setSummary]);
+
   if (loading) {
     return (
       <div className="bg-[var(--card)] rounded-xl p-6 min-h-[700px]">
@@ -631,7 +648,8 @@ export default function StreakTracker() {
 
                   <button
                     type="button"
-                    aria-label={stat.tooltip}
+                    aria-label={`More info about ${stat.label}`}
+                    title={stat.tooltip}
                     className="text-[var(--muted-foreground)] hover:text-[var(--accent)]"
                   >
                     <svg

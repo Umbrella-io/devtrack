@@ -28,12 +28,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   const [theme, updateTheme] = useState<ThemeId | undefined>(undefined);
 
   useSafeLayoutEffect(() => {
-    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    if (isThemeId(storedTheme)) {
-      updateTheme(storedTheme);
-      return;
+    try {
+      const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+      if (isThemeId(storedTheme)) {
+        updateTheme(storedTheme);
+        return;
+      }
+
+      // Respect prefers-color-scheme on first load
+      const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      updateTheme(systemPrefersDark ? "classic-dark" : "modern-light-blue");
+    } catch (e) {
+      updateTheme(DEFAULT_THEME);
     }
-    updateTheme(DEFAULT_THEME);
   }, []);
 
   useSafeLayoutEffect(() => {
@@ -47,17 +54,21 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     html.style.colorScheme = definition.mode;
   }, [theme]);
 
-  useEffect(() => {
-    if (!theme) return;
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
-
   const setTheme = useCallback((nextTheme: ThemeId) => {
     updateTheme(nextTheme);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    } catch (e) {}
   }, []);
 
   const toggleTheme = useCallback(() => {
-    updateTheme((prev) => nextThemeId(prev ?? DEFAULT_THEME));
+    updateTheme((prev) => {
+      const next = nextThemeId(prev ?? DEFAULT_THEME);
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, next);
+      } catch (e) {}
+      return next;
+    });
   }, []);
 
   const themeDefinition = theme ? getThemeDefinition(theme) : undefined;
