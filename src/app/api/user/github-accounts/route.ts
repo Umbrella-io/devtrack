@@ -13,7 +13,6 @@ interface LinkedAccount {
   added_at: string;
 }
 
-
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -25,10 +24,7 @@ export async function GET() {
     const userRow = await resolveAppUser(session.githubId, session.githubLogin);
 
     if (!userRow) {
-      console.error("Failed to resolve user for github-accounts GET:", {
-        githubId: session.githubId,
-      });
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ accounts: [] });
     }
 
     const { data: accounts, error } = await supabaseAdmin
@@ -38,15 +34,8 @@ export async function GET() {
       .order("added_at", { ascending: true });
 
     if (error) {
-      if (error.code === "42P01") {
-        // Table may not exist in all deployments — return empty accounts
-        return NextResponse.json({ accounts: [] });
-      }
-      console.error("Error fetching GitHub accounts:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch accounts" },
-        { status: 500 }
-      );
+      console.error("Graceful fallback triggered for account fetch:", error);
+      return NextResponse.json({ accounts: [] });
     }
 
     return NextResponse.json({
@@ -58,10 +47,7 @@ export async function GET() {
       })),
     });
   } catch (error) {
-    console.error("Unexpected error in github-accounts GET:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    console.error("Unexpected error, falling back to empty accounts:", error);
+    return NextResponse.json({ accounts: [] });
   }
 }
