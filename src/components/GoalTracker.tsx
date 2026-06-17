@@ -690,6 +690,11 @@ export default function GoalTracker() {
                       completed ? "bg-emerald-500" : "bg-[var(--accent)]"
                     }`}
                     style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
+                    role="progressbar"
+                    aria-valuenow={goal.current}
+                    aria-valuemin={0}
+                    aria-valuemax={goal.target}
+                    aria-label={`Goal progress: ${goal.current} of ${goal.target} ${goal.unit}`}
                   />
                 </div>
 
