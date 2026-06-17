@@ -75,7 +75,13 @@ export default async function RootLayout({
                 try {
                   const stored = localStorage.getItem('theme');
                   const validThemes = ['classic-dark', 'modern-light-blue', 'nordic-frost', 'cyberpunk-matrix'];
-                  const theme = validThemes.includes(stored || '') ? stored : 'classic-dark';
+                  let theme = validThemes.includes(stored || '') ? stored : null;
+
+                  if (!theme) {
+                    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    theme = systemPrefersDark ? 'classic-dark' : 'modern-light-blue';
+                  }
+
                   const isDark = theme !== 'modern-light-blue';
 
                   document.documentElement.dataset.theme = theme;

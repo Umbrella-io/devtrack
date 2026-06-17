@@ -185,7 +185,7 @@ test.describe("[Streak E2E]", () => {
     // Use the stat card's aria-label to scope to the correct card, then assert
     // the card itself contains the text "21".
     const longestStreakCard = section.locator(
-      '[aria-label="Your longest streak ever"]'
+      'div[aria-label="Your longest streak ever"]'
     );
     await expect(longestStreakCard).toBeVisible({ timeout: 5_000 });
     await expect(longestStreakCard).toContainText("21");

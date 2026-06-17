@@ -74,6 +74,7 @@ interface User {
   created_at: string;
   updated_at: string;
   is_sponsor?: boolean;
+  timezone?: string;
 }
 
 /**
@@ -90,7 +91,7 @@ export async function getUserByUsername(
     const { data, error } = await supabaseAdmin
       .from("users")
       .select(
-        "id,github_id,github_login,bio,is_public,pinned_repos,created_at,updated_at,is_sponsor"
+        "id,github_id,github_login,bio,is_public,pinned_repos,created_at,updated_at,is_sponsor,timezone"
       )
       .ilike("github_login", username)
       .eq("is_public", true)
@@ -104,7 +105,7 @@ export async function getUserByUsername(
       if (error.code === "42703") {
         const { data: minimal, error: minError } = await supabaseAdmin
           .from("users")
-          .select("id,github_id,github_login,is_public,created_at,updated_at")
+          .select("id,github_id,github_login,is_public,created_at,updated_at,timezone")
           .ilike("github_login", username)
           .eq("is_public", true)
           .single();

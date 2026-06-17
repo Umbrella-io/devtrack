@@ -12,6 +12,7 @@ export default function KeyboardShortcuts() {
   const { theme, themeDefinition, toggleTheme } = useTheme();
   const keyboardToggleRef = useRef(false);
   const shortcutsRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (keyboardToggleRef.current && theme !== undefined) {
@@ -82,6 +83,7 @@ export default function KeyboardShortcuts() {
       </div>
 
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--control)] hover:text-[var(--card-foreground)]"
@@ -95,7 +97,7 @@ export default function KeyboardShortcuts() {
         </kbd>
         <span>Shortcuts</span>
       </button>
-      <ShortcutsModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      <ShortcutsModal isOpen={isOpen} onClose={() => setIsOpen(false)} anchorRef={triggerRef} />
     </div>
   );
 }

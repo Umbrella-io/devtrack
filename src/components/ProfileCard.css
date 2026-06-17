@@ -106,6 +106,22 @@
   flex: 1 1 auto;
 }
 
+.profile-card__bio--empty{
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.profile-card__bio--empty a{
+  color: var(--accent);
+  text-decoration: none;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.profile-card__bio--empty a:hover{
+  text-decoration: underline;
+}
+
 .profile-card__body{
   display: flex;
   gap: 18px;

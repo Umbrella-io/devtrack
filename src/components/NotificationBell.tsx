@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 
 import { useNotifications } from "@/hooks/useNotifications";
@@ -10,6 +11,11 @@ const EMPTY_NOTIFICATIONS: any[] = [];
 export default function NotificationBell() {
   const { data, loading, error, refetch } = useNotifications();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
 
   const notifications = data?.notifications ?? EMPTY_NOTIFICATIONS;
@@ -22,6 +28,25 @@ export default function NotificationBell() {
   }, [unreadCountFromApi]);
 
   const [open, setOpen] = useState(false);
+
+  // Recompute anchor position whenever the dropdown opens or window resizes
+  useEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const calculate = () => {
+      const rect = triggerRef.current!.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    };
+    calculate();
+    window.addEventListener("resize", calculate);
+    window.addEventListener("scroll", calculate, true);
+    return () => {
+      window.removeEventListener("resize", calculate);
+      window.removeEventListener("scroll", calculate, true);
+    };
+  }, [open]);
 
 
 
@@ -120,6 +145,7 @@ export default function NotificationBell() {
 
       {/* Bell button */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={handleOpen}
         className="relative rounded-lg p-2 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-all hover:opacity-90 active:scale-95"
@@ -150,9 +176,19 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {/* dropdown */}
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl z-50">
+      {/* dropdown via portal so it escapes overflow:hidden ancestors */}
+      {open && mounted && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{
+            position: "fixed",
+            top: dropdownPos?.top ?? 64,
+            right: dropdownPos?.right ?? 16,
+            zIndex: 9999,
+            width: 320,
+          }}
+          className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl"
+        >
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
             <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
               Notifications
@@ -186,7 +222,7 @@ export default function NotificationBell() {
             </div>
           </div>
 
-          <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--border)]  scrollbar-thin">
+          <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--border)] scrollbar-thin">
             {loading ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
                 Loading notifications…
@@ -217,7 +253,8 @@ export default function NotificationBell() {
               ))
             )}
           </ul>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

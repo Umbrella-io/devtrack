@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { isValidGitHubUsername, normalizeGitHubUsername } from "../src/lib/validate-github-username";
+import {
+  isValidGitHubUsername,
+  normalizeGitHubUsername,
+} from "../src/lib/validate-github-username";
 
 describe("isValidGitHubUsername", () => {
   it("returns true for valid simple username", () => {
@@ -42,8 +45,8 @@ describe("isValidGitHubUsername", () => {
     expect(isValidGitHubUsername("johndoe-")).toBe(false);
   });
 
-  it("returns true for username with consecutive hyphens (regex allows it)", () => {
-    expect(isValidGitHubUsername("john--doe")).toBe(true);
+  it("returns false for username with consecutive hyphens", () => {
+    expect(isValidGitHubUsername("john--doe")).toBe(false);
   });
 
   it("returns false for username exceeding max length", () => {
