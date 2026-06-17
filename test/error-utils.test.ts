@@ -53,10 +53,10 @@ describe("error-utils", () => {
     });
 
     it("replaces unknown messages with a generic string in production", () => {
-      const raw = 'duplicate key value violates unique constraint "users_github_id_key"';
-      const result = getSafeApiErrorMessage(raw, "production");
-      expect(result).toBe("An unexpected error occurred.");
-    });
+  const raw = 'duplicate key value violates unique constraint "users_github_id_key"';
+  const result = getSafeApiErrorMessage(raw, "production");  // ✅ add this line
+  expect(result).toBe("An unexpected error occurred.");
+});
 
     it("returns the raw message in development mode for debuggability", () => {
       const raw = 'relation "goals" does not exist';

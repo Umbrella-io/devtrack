@@ -6,9 +6,7 @@ import {
   getLeaderboardData,
   isFresh,
   LEADERBOARD_BUILD_LOCK_KEY,
-  type LeaderboardEntry,
   type LeaderboardPayload,
-  type LeaderboardMetric,
   type LeaderboardPeriod,
   filterLeaderboardByLanguage,
 } from "@/lib/leaderboard";
@@ -29,16 +27,13 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
 const memoryRateLimits = new Map<string, RateLimitEntry>();
 
-// In-process build promise to dedupe concurrent builds in the same Node
-// process when an external cache/lock (Upstash) is not configured.
-let _inProcessLeaderboardBuild: Promise<LeaderboardPayload | null> | null = null;
+type RateLimitResult = { allowed: boolean; retryAfter?: number };
+
 function getRateLimitKey(req: NextRequest): string {
   return req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
 }
 
-function checkMemoryRateLimit(
-  ip: string
-): { allowed: boolean; retryAfter?: number } {
+function checkMemoryRateLimit(ip: string): RateLimitResult {
   const now = Date.now();
   pruneExpiredRateLimits(memoryRateLimits, now);
   const record = memoryRateLimits.get(ip);
@@ -59,9 +54,7 @@ function checkMemoryRateLimit(
   };
 }
 
-async function checkRateLimit(
-  ip: string
-): Promise<{ allowed: boolean; retryAfter?: number }> {
+async function checkRateLimit(ip: string): Promise<RateLimitResult> {
   if (getUpstashConfig()) {
     return upstashRateLimitFixedWindow({
       key: `leaderboard-rate-limit:${ip}`,

@@ -23,6 +23,8 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
     "Access was denied. You may have cancelled the GitHub authorization.",
   Verification:
     "The sign-in link has expired or has already been used.",
+   RateLimitError:
+    "Too many authentication attempts. Please wait a minute and try again.",
   Default:
     "An unexpected authentication error occurred. Please try again.",
 };

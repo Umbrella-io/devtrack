@@ -144,7 +144,8 @@ export async function fetchPublicContributions(
 
 export async function fetchPublicStreak(
   username: string,
-  token?: string
+  token?: string,
+  timezone?: string
 ): Promise<StreakData> {
   const since = new Date();
   since.setDate(since.getDate() - 365);
@@ -161,12 +162,24 @@ export async function fetchPublicStreak(
     items: Array<{ commit: { author: { date: string } } }>;
   };
 
+  const tz = timezone || "UTC";
   const activeDates = new Set<string>();
   for (const item of data.items) {
-    activeDates.add(item.commit.author.date.slice(0, 10));
+    try {
+      const d = new Date(item.commit.author.date);
+      const tzDate = new Intl.DateTimeFormat("en-CA", {
+        timeZone: tz,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(d);
+      activeDates.add(tzDate);
+    } catch (e) {
+      activeDates.add(item.commit.author.date.slice(0, 10));
+    }
   }
 
-  const result = calculateStreakFromDates(activeDates);
+  const result = calculateStreakFromDates(activeDates, new Set(), tz);
   return {
     current: result.current,
     longest: result.longest,
@@ -290,6 +303,27 @@ export async function fetchPublicProfile(
   username: string,
   options: { includeAchievements?: boolean } = {}
 ): Promise<PublicProfileData | null> {
+  if (process.env.PLAYWRIGHT_TEST === "true" && username === "playwright-user") {
+    return {
+      username: "playwright-user",
+      bio: "Test user for visual regression",
+      isSponsor: false,
+      publicGists: 5,
+      memberSince: "2026-06-01T00:00:00.000Z",
+      repos: [],
+      contributions: { days: 30, total: 10, data: {} },
+      streak: { current: 5, longest: 10, lastCommitDate: "2026-06-01", totalActiveDays: 50 },
+      topLanguages: [{ name: "TypeScript", count: 10, percentage: 100 }],
+      pullRequests: 2,
+      achievements: [],
+      achievementsError: null,
+      spotlightRepos: [],
+      contributionMilestones: [],
+      weeklyGoalProgress: null,
+      publicWidgets: ["streak", "contributions"],
+    };
+  }
+
   const user = await getUserByUsername(username);
   if (!user) return null;
 
@@ -310,7 +344,7 @@ export async function fetchPublicProfile(
     fetchPublicGists(user.github_login, githubToken),
     fetchPublicTopRepos(user.github_login, githubToken, 30),
     fetchPublicContributions(user.github_login, githubToken, 30),
-    fetchPublicStreak(user.github_login, githubToken),
+    fetchPublicStreak(user.github_login, githubToken, user.timezone),
     fetchPublicTopLanguages(user.github_login, githubToken),
     fetchPublicPullRequests(user.github_login, githubToken),
     options.includeAchievements

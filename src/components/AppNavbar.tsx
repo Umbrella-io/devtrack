@@ -21,6 +21,9 @@ function isActivePath(pathname: string, href: string) {
 
 const MONO = "var(--font-jetbrains, ui-monospace, monospace)";
 
+// AppNavbar component provides a persistent, responsive navigation bar
+// for improved app-wide navigation and discoverability.
+// Features included: Logo, Navigation links, Auth state handling, Active state indicators, and Mobile hamburger menu.
 export default function AppNavbar() {
   const t = useTranslations("navigation");
   const pathname = usePathname();
@@ -86,7 +89,7 @@ export default function AppNavbar() {
     <header style={headerStyle}>
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
 
-        {/* Logo */}
+        {/* Logo / brand - Links to homepage or dashboard */}
         <Link
           href={isAuthenticated ? "/dashboard" : "/"}
           className="group inline-flex items-center gap-2.5 select-none transition-transform duration-300 hover:scale-[1.02]"
@@ -100,7 +103,7 @@ export default function AppNavbar() {
           </span>
         </Link>
 
-        {/* Desktop nav */}
+        {/* Desktop nav - Includes links to Dashboard, Streaks, Pull Requests, Goals, etc. */}
         <nav className="hidden items-center gap-1 md:flex rounded-full border border-white/5 bg-white/[0.02] px-2 py-1.5 shadow-sm" aria-label={t("main")}>
           {navItems.map((item) => {
             const active = isActivePath(pathname, item.href);
@@ -131,6 +134,7 @@ export default function AppNavbar() {
         <div className="hidden shrink-0 items-center gap-2 md:flex">
           {/* Show ThemeToggle in navbar except on dashboard, where DashboardHeader provides it */}
           {!isDashboardRoute && <ThemeToggle variant="compact" />}
+          {/* Auth state - Shows user identity and settings when logged in, or generic sign-in when logged out */}
           {isAuthenticated ? (
             !isDashboardRoute && (
               <div className="flex items-center gap-4 border-l border-white/10 pl-4">
@@ -172,7 +176,7 @@ export default function AppNavbar() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
+        {/* Mobile hamburger menu - Collapses links into a dropdown for smaller viewports */}
         <button
           type="button"
           onClick={() => setMobileOpen((o) => !o)}

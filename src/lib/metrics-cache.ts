@@ -6,6 +6,7 @@ export const METRICS_CACHE_TTL_SECONDS = {
   "productive-hours": 5 * 60,
   discussions: 10 * 60,
   repos: 10 * 60,
+  "pinned-repos": 10 * 60,
   "inactive-repos": 10 * 60,
   prs: 10 * 60,
   "pr-review-time": 10 * 60,
@@ -25,6 +26,19 @@ export const METRICS_CACHE_TTL_SECONDS = {
 type MetricsCacheEndpoint = keyof typeof METRICS_CACHE_TTL_SECONDS;
 type CacheParamValue = boolean | number | string | null | undefined;
 type MemoryCacheEntry = { value: unknown; expiresAt: number };
+export const DEFAULT_METRICS_STALE_GRACE_SECONDS = 24 * 60 * 60;
+
+export type MetricsCacheOptions = {
+  bypass: boolean;
+  key: string;
+  ttlSeconds: number;
+  staleGraceSeconds?: number;
+  fallbackToStaleOnError?: (error: unknown) => boolean;
+};
+
+function staleMetricsCacheKey(key: string): string {
+  return `${key}:stale`;
+}
 
 let redisClient: Redis | null | undefined;
 const MAX_MEMORY_CACHE_ENTRIES = 500;
@@ -132,7 +146,7 @@ export function metricsCacheKey(
 
   Object.entries(params)
     .filter(([, value]) => value !== undefined && value !== null)
-    .sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .forEach(([key, value]) => cacheParams.set(key, String(value)));
 
   return `metrics:${userId}:${endpoint}:${cacheParams.toString() || "default"}`;
@@ -148,7 +162,7 @@ export async function cacheGet<T>(
   }
 
   const redis = getRedisClient();
-  
+
   if (redis) {
     try {
       const redisValue = await redis.get<T>(key);
@@ -160,7 +174,7 @@ export async function cacheGet<T>(
       return null;
     }
   }
-  
+
   return null;
 }
 
@@ -174,7 +188,7 @@ export async function cacheSet<T>(
   }
 
   const redis = getRedisClient();
-  
+
   if (redis) {
     try {
       await redis.set(key, value, { ex: ttlSeconds });
@@ -187,23 +201,49 @@ export async function cacheSet<T>(
 }
 
 export async function withMetricsCache<T>(
-  options: {
-    bypass: boolean;
-    key: string;
-    ttlSeconds: number;
-  },
+  options: MetricsCacheOptions,
   loadFresh: () => Promise<T>
 ): Promise<T> {
+  let staleValue: T | null = null;
+
   if (!options.bypass) {
     const cached = await cacheGet<T>(options.key, options.ttlSeconds);
+
     if (cached !== null) {
       return cached;
     }
+
+    if (options.fallbackToStaleOnError) {
+      staleValue = await cacheGet<T>(staleMetricsCacheKey(options.key));
+    }
   }
 
-  const fresh = await loadFresh();
-  await cacheSet(options.key, fresh, options.ttlSeconds);
-  return fresh;
+  try {
+    const fresh = await loadFresh();
+
+    await cacheSet(options.key, fresh, options.ttlSeconds);
+
+    if (options.fallbackToStaleOnError) {
+      const staleGraceSeconds =
+        options.staleGraceSeconds ?? DEFAULT_METRICS_STALE_GRACE_SECONDS;
+
+      if (Number.isFinite(staleGraceSeconds) && staleGraceSeconds > 0) {
+        await cacheSet(
+          staleMetricsCacheKey(options.key),
+          fresh,
+          options.ttlSeconds + staleGraceSeconds
+        );
+      }
+    }
+
+    return fresh;
+  } catch (error) {
+    if (staleValue !== null && options.fallbackToStaleOnError?.(error)) {
+      return staleValue;
+    }
+
+    throw error;
+  }
 }
 
 /**
@@ -212,19 +252,25 @@ export async function withMetricsCache<T>(
  * scanning all keys the way invalidateUserMetricsCache does for per-user data.
  */
 export async function cacheDelete(key: string): Promise<void> {
-  memoryCache.delete(key);
+  const keys = [key, staleMetricsCacheKey(key)];
+
+  for (const cacheKey of keys) {
+    memoryCache.delete(cacheKey);
+  }
 
   const redis = getRedisClient();
   if (!redis) return;
 
   try {
-    await redis.del(key);
+    await redis.del(...keys);
   } catch {
     // Cache invalidation failures must not surface to callers.
   }
 }
 
-export async function invalidateUserMetricsCache(userId: string): Promise<void> {
+export async function invalidateUserMetricsCache(
+  userId: string
+): Promise<void> {
   const prefix = `metrics:${userId}:`;
 
   for (const key of memoryCache.keys()) {
@@ -239,7 +285,10 @@ export async function invalidateUserMetricsCache(userId: string): Promise<void> 
   try {
     let cursor = 0;
     do {
-      const [nextCursor, keys] = await redis.scan(cursor, { match: `${prefix}*`, count: 100 });
+      const [nextCursor, keys] = await redis.scan(cursor, {
+        match: `${prefix}*`,
+        count: 100,
+      });
       if (keys.length > 0) {
         await redis.del(...keys);
       }
@@ -265,7 +314,10 @@ export async function invalidateLeaderboardCache(): Promise<void> {
   try {
     let cursor = 0;
     do {
-      const [nextCursor, keys] = await redis.scan(cursor, { match: `${prefix}*`, count: 100 });
+      const [nextCursor, keys] = await redis.scan(cursor, {
+        match: `${prefix}*`,
+        count: 100,
+      });
       if (keys.length > 0) {
         await redis.del(...keys);
       }

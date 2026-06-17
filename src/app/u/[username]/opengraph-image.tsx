@@ -55,7 +55,7 @@ export default async function Image({
 
     const [contributions, streak, topLanguage] = await Promise.all([
       fetchPublicContributions(user.github_login, githubToken, 30),
-      fetchPublicStreak(user.github_login, githubToken),
+      fetchPublicStreak(user.github_login, githubToken, user.timezone),
       fetchTopLanguage(user.github_login, githubToken),
     ]);
 

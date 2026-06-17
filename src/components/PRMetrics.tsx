@@ -3,6 +3,7 @@ import SectionHeader from "./SectionHeader";
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import PRStatusDonutChart from "./PRStatusDonutChart";
 import MiniPRTrendChart from "./MiniPRTrendChart";
@@ -12,6 +13,8 @@ interface PRMetricsSummary {
   merged: number;
   closed: number;
   total: number;
+  totalAdditions?: number;
+  totalDeletions?: number;
   avgReviewHours: number;
   avgFirstReviewHours: number | null;
   mergeRate: string;
@@ -52,7 +55,23 @@ export default function PRMetrics() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"authored" | "reviews">("authored");
   const [prFilter, setPrFilter] = useState<"all" | "merged" | "open">("all");
+  const [range, setRange] = useState<"7d" | "30d" | "90d">("30d");
   const [staleThresholdDays, setStaleThresholdDays] = useState(14);
+  const { setSummary, setIsUpdating } = useDashboardWidgetA11y("pr-metrics");
+
+  useEffect(() => {
+    setIsUpdating(loading);
+  }, [loading, setIsUpdating]);
+
+  useEffect(() => {
+    if (!metrics) {
+      setSummary(null);
+      return;
+    }
+    setSummary(
+      `${metrics.open} open PRs. ${metrics.merged} merged in the last 30 days.`,
+    );
+  }, [metrics, setSummary]);
 
   const fetchMetrics = useCallback(() => {
     setLoading(true);
@@ -60,8 +79,8 @@ export default function PRMetrics() {
 
     const url =
       selectedAccount !== null
-        ? `/api/metrics/prs?accountId=${encodeURIComponent(selectedAccount)}`
-        : "/api/metrics/prs";
+        ? `/api/metrics/prs?accountId=${encodeURIComponent(selectedAccount)}&range=${range}`
+        : `/api/metrics/prs?range=${range}`;
 
     fetch(url)
       .then((r) => {
@@ -75,7 +94,7 @@ export default function PRMetrics() {
       })
       .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
       .finally(() => setLoading(false));
-  }, [selectedAccount]);
+  }, [selectedAccount, range]);
 
   useEffect(() => {
     fetchMetrics();
@@ -104,6 +123,10 @@ export default function PRMetrics() {
     const baseStats: PRStat[] = [
       { label: labels.open, value: source.open },
       { label: labels.merged, value: source.merged },
+      {
+        label: "Lines Changed",
+        value: `+${(source.totalAdditions ?? 0).toLocaleString()} / -${(source.totalDeletions ?? 0).toLocaleString()}`
+      },
       { label: labels.avgReview, value: `${source.avgReviewHours}h` },
       {
         label: labels.avgFirstReview,
@@ -173,6 +196,21 @@ export default function PRMetrics() {
         <SectionHeader title="PR Analytics" />
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex gap-2">
+            {(["7d", "30d", "90d"] as const).map((option) => (
+              <button
+                key={option}
+                onClick={() => setRange(option)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  range === option
+                    ? "bg-[var(--accent)] text-white"
+                    : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
             <button
               onClick={() => setActiveTab("authored")}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -215,7 +253,7 @@ export default function PRMetrics() {
           <span className="sr-only">Loading PR analytics</span>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+            {[1, 2, 3, 4, 5, 6,7].map((i) => (
               <div
                 key={i}
                 aria-hidden="true"
@@ -346,7 +384,7 @@ export default function PRMetrics() {
           </div>
         </div>
       )}
-      
+
       {lastUpdated && (
         <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
           {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
