@@ -2,6 +2,7 @@
 
 import { type ReactNode, useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
+import EmptyState from "@/components/EmptyState";
 
 type ActivityType =
   | "push"
@@ -241,9 +242,17 @@ export default function RecentActivity() {
           </button>
         </div>
       ) : items.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--card-muted)] p-4 text-sm text-[var(--muted-foreground)]">
-          No recent GitHub activity yet.
-        </p>
+        <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--card-muted)]">
+          <EmptyState
+            compact
+            icon="📭"
+            title="No recent activity yet"
+            description="Your latest commits, pull requests, and issues from GitHub will show up here once you start contributing."
+            actionLabel="Open GitHub"
+            actionHref="https://github.com"
+            external
+          />
+        </div>
       ) : (
         <div className="max-h-[320px] overflow-y-auto pr-1 flex flex-col space-y-3">
           <ul className="space-y-3 border-l border-[var(--border)] pl-4">

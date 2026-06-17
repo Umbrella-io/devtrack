@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useAccount } from "@/components/AccountContext";
+import EmptyState from "@/components/EmptyState";
 
 interface PRBreakdown {
   draft: number;
@@ -99,9 +100,15 @@ export default function PRBreakdownChart() {
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Breakdown</h2>
       {total === 0 ? (
-        <p className="flex h-[200px] items-center justify-center text-sm text-[var(--muted-foreground)]">
-          No pull requests found.
-        </p>
+        <EmptyState
+          compact
+          icon="🔀"
+          title="No pull requests yet"
+          description="Open or merge pull requests on GitHub to see how your contributions break down by status."
+          actionLabel="Open GitHub"
+          actionHref="https://github.com"
+          external
+        />
       ) : (
         <>
           <ResponsiveContainer width="100%" height={200}>

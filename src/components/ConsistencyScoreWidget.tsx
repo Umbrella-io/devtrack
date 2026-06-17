@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { BarChart3 } from "lucide-react";
 import SectionHeader from "@/components/SectionHeader";
+import EmptyState from "@/components/EmptyState";
 import { useAccount } from "@/components/AccountContext";
 import {
   isRecentlyActiveFromScore,
@@ -169,15 +170,20 @@ export default function ConsistencyScoreWidget() {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
         <SectionHeader title="Consistency Score" />
-        <div className="flex h-[320px] flex-col items-center justify-center text-center">
-          <BarChart3
-            className="mb-3 h-8 w-8 text-[var(--muted-foreground)]"
-            aria-hidden="true"
-          />
-          <p className="text-sm text-[var(--muted-foreground)]">
-            No contribution activity available.
-          </p>
-        </div>
+        <EmptyState
+          compact
+          icon={
+            <BarChart3
+              className="h-10 w-10 text-[var(--muted-foreground)]"
+              aria-hidden="true"
+            />
+          }
+          title="No contribution activity yet"
+          description="Commit regularly on GitHub and we'll score how consistent your coding habits are over time."
+          actionLabel="Open GitHub"
+          actionHref="https://github.com"
+          external
+        />
       </div>
     );
   }

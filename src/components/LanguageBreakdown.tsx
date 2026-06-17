@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import EmptyState from "@/components/EmptyState";
 import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
 import {
   PieChart,
@@ -149,10 +150,16 @@ export default function LanguageBreakdown() {
           {error}
         </p>
       ) : languages.length === 0 ? (
-        <div className="flex min-h-[200px] items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card-muted)]">
-          <p className="text-sm text-[var(--muted-foreground)]">
-            No language data available.
-          </p>
+        <div className="min-h-[200px] rounded-lg border border-dashed border-[var(--border)] bg-[var(--card-muted)]">
+          <EmptyState
+            compact
+            icon="🧬"
+            title="No language data yet"
+            description="Push code to your GitHub repositories and your most-used programming languages will appear here."
+            actionLabel="Open GitHub"
+            actionHref="https://github.com"
+            external
+          />
         </div>
       ) : (
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-8">

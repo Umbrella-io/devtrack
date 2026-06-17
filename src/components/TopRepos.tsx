@@ -6,6 +6,7 @@ import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
 import RepoHealthPanel from "@/components/RepoHealthPanel";
 import RepoActivityDrawer from "@/components/RepoActivityDrawer";
+import EmptyState from "@/components/EmptyState";
 import { Search, Bookmark } from "lucide-react";
 
 interface RepoItemProps {
@@ -537,26 +538,15 @@ export default function TopRepos() {
           </button>
         </div>
       ) : repos.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <div className="mb-3 text-4xl">📦</div>
-      
-          <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
-            No repositories found
-          </h3>
-      
-          <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
-            Push your first commit on GitHub to get started and see repository activity here.
-          </p>
-      
-          <a
-            href="https://github.com/new"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-flex rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--control)]"
-          >
-            Create Repository
-          </a>
-        </div>
+        <EmptyState
+          compact
+          icon="📦"
+          title="No repositories yet"
+          description="Push your first commit on GitHub to get started and see your most active repositories here."
+          actionLabel="Create repository"
+          actionHref="https://github.com/new"
+          external
+        />
       ) : (
       <>
         {repos.length > 10 && (

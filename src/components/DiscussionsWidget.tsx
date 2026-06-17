@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import EmptyState from "@/components/EmptyState";
 
 interface DiscussionData {
   discussionsStarted: number;
@@ -85,26 +86,15 @@ export default function DiscussionsWidget() {
           </button>
         </div>
       ) : hasNoDiscussionData ? (
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <div className="mb-3 text-4xl">💬</div>
-      
-          <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
-            No discussion activity yet
-          </h3>
-      
-          <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
-            Participate in GitHub Discussions to see your activity metrics here.
-          </p>
-      
-          <a
-            href="https://github.com/discussions"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-flex rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--control)]"
-          >
-            Explore Discussions
-          </a>
-        </div>
+        <EmptyState
+          compact
+          icon="💬"
+          title="No discussion activity yet"
+          description="Participate in GitHub Discussions and your engagement metrics will show up here."
+          actionLabel="Explore Discussions"
+          actionHref="https://github.com/discussions"
+          external
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 stagger-children">
           {stats.map((stat) => (

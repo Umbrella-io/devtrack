@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "./ThemeContext";
+import EmptyState from "@/components/EmptyState";
 import {
   Bar,
   BarChart,
@@ -262,8 +263,16 @@ export default function RepoContributionDistribution({ days = 365 }: { days?: nu
           {error}
         </div>
       ) : data.length === 0 ? (
-        <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-[var(--border)] text-sm text-[var(--muted-foreground)]">
-          No repository contribution data available yet.
+        <div className="rounded-xl border border-dashed border-[var(--border)]">
+          <EmptyState
+            compact
+            icon="📊"
+            title="No repository data yet"
+            description="Once you push commits across your GitHub repositories, you'll see how your contributions are distributed here."
+            actionLabel="Open GitHub"
+            actionHref="https://github.com"
+            external
+          />
         </div>
       ) : (
         <>
