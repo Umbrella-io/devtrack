@@ -164,24 +164,23 @@ export default function CustomCursor() {
           position: "fixed",
           top: 0,
           left: 0,
-          width: 32,
-          height: 32,
+          width: isHovered ? 48 : 32,
+          height: isHovered ? 48 : 32,
           borderRadius: "50%",
-          border: "1.5px solid #00f0ff",
+          borderWidth: "1.5px",
+          borderStyle: "solid",
+          borderColor: isHovered ? "#ffffff" : "#00f0ff",
           pointerEvents: "none",
-          zIndex: 99997, // just below the dot
+          zIndex: 99997,
           opacity: isHidden ? 0 : 0.85,
           transform: "translate3d(-100px, -100px, 0)",
-          boxShadow: "0 0 8px rgba(0, 240, 255, 0.4)",
-          transition: "opacity 0.25s ease-out, border-color 0.2s, width 0.25s, height 0.25s, box-shadow 0.25s, margin 0.25s",
-          ...(isHovered && {
-            width: 48,
-            height: 48,
-            borderColor: "#ffffff",
-            boxShadow: "0 0 16px rgba(255, 255, 255, 0.55)",
-            marginLeft: -8, // offsets the larger width (48px vs 32px -> 16px diff -> 8px margin shift)
-            marginTop: -8,
-          }),
+          boxShadow: isHovered
+            ? "0 0 16px rgba(255, 255, 255, 0.55)"
+            : "0 0 8px rgba(0, 240, 255, 0.4)",
+          marginLeft: isHovered ? -8 : 0,
+          marginTop: isHovered ? -8 : 0,
+          transition:
+            "opacity 0.25s ease-out, border-color 0.2s, width 0.25s, height 0.25s, box-shadow 0.25s, margin 0.25s",
         }}
       />
     </>

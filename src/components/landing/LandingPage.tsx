@@ -957,8 +957,9 @@ function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         opacity: vis ? 1 : 0,
         transformStyle: 'preserve-3d',
         transform: vis ? tiltStyle.transform : `translateY(12px)`,
-        transition: vis ? tiltStyle.transition : 'opacity 500ms cubic-bezier(0.4, 0, 0.2, 1), transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
-        transitionDelay: vis ? '0ms' : `${index * 50}ms`,
+        transition: vis
+          ? tiltStyle.transition
+          : `opacity 500ms cubic-bezier(0.4, 0, 0.2, 1) ${index * 50}ms, transform 500ms cubic-bezier(0.4, 0, 0.2, 1) ${index * 50}ms`,
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         cursor: 'pointer',
