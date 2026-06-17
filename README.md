@@ -190,7 +190,7 @@ To deploy your own instance, see the **[Self-Hosting Guide](./docs/self-hosting.
 **1. Clone and install**
 
 ```bash
-git clone https://github.com/Priyanshu-byte-coder/devtrack.git
+git clone https://github.com/Umbrella-io/devtrack.git
 cd devtrack
 npm install
 ```
