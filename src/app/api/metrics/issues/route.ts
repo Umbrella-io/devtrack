@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerSession, type Session } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { fetchIssuesMetrics } from "@/lib/github";
@@ -9,7 +9,7 @@ import {
   metricsCacheKey,
   withMetricsCache,
 } from "@/lib/metrics-cache";
-import { getAccountToken } from "@/lib/github-accounts";
+import { getAccountToken, getAllAccounts, mergeMetrics } from "@/lib/github-accounts";
 import { resolveAppUser, type AppUser } from "@/lib/resolve-user";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isSupabaseAdminAvailable } from "@/lib/supabase-admin";
@@ -27,7 +27,9 @@ export async function GET(req: NextRequest) {
 
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
-
+  if (accountId === "combined") {
+    return await getCombinedIssuesMetrics(session, req);
+  }
   let orgName: string | null = null;
   let targetAccountId: string | null = accountId;
 
@@ -106,4 +108,46 @@ export async function GET(req: NextRequest) {
     if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
+}
+async function getCombinedIssuesMetrics(
+  session: Session,
+  req: NextRequest
+) {
+  if (!session.githubId || !session.accessToken || !session.githubLogin) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
+  if (!userRow) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const bypass = isMetricsCacheBypassed(req);
+
+  const accounts = await getAllAccounts(
+    {
+      token: session.accessToken,
+      githubId: session.githubId,
+      githubLogin: session.githubLogin,
+    },
+    userRow.id
+  );
+
+  const results = await Promise.allSettled(
+    accounts.map((account) =>
+      fetchIssuesMetrics(account.token, account.githubLogin, null, [])
+    )
+  );
+type IssueMetrics = Awaited<ReturnType<typeof fetchIssuesMetrics>>;
+
+const merged = mergeMetrics<IssueMetrics>(results, (a, b) => ({
+    ...a,
+    opened: a.opened + b.opened,
+    closed: a.closed + b.closed,
+}));
+  if (!merged) {
+    return Response.json({ error: "All accounts failed" }, { status: 502 });
+  }
+
+  return Response.json(merged);
 }

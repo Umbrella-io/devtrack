@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth";
+import { getSessionWithToken } from "@/lib/get-session-token";
 import { NextRequest } from "next/server";
-import { authOptions } from "@/lib/auth";
 import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
 import { GITHUB_API, fetchUserEvents } from "@/lib/github";
 import { githubGraphQL } from "@/lib/github-fetch";
@@ -152,14 +151,15 @@ async function fetchFormattedActivityWithFallback(
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const sessionData = await getSessionWithToken();
 
-  if (!session?.accessToken || !session.githubLogin) {
+  if (!sessionData || !sessionData.session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const accessToken: string = session.accessToken;
-  const githubLogin: string = session.githubLogin;
+  const session = sessionData.session;
+  const accessToken = sessionData.accessToken;
+  const githubLogin: string = session.githubLogin!;
   const accountId = req.nextUrl.searchParams.get("accountId");
   const limitParam = req.nextUrl.searchParams.get("limit");
   const offsetParam = req.nextUrl.searchParams.get("offset");

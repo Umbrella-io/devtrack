@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
 import {
   PieChart,
   Pie,
@@ -65,6 +66,22 @@ export default function LanguageBreakdown() {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { setSummary, setIsUpdating } = useDashboardWidgetA11y("language-breakdown");
+
+  useEffect(() => {
+    setIsUpdating(loading);
+  }, [loading, setIsUpdating]);
+
+  useEffect(() => {
+    if (languages.length === 0) {
+      setSummary(null);
+      return;
+    }
+    const top = languages[0];
+    setSummary(
+      `Top language: ${top.name}, ${top.percentage}%. ${languages.length} language${languages.length === 1 ? "" : "s"} tracked.`,
+    );
+  }, [languages, setSummary]);
 
   useEffect(() => {
     setLoading(true);
@@ -190,8 +207,12 @@ export default function LanguageBreakdown() {
                 className="flex items-center gap-2 text-sm"
               >
                 <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: getColor(lang.name) }}
+                  className="shrink-0 rounded-full"
+                  style={{
+                    width: "0.5rem",
+                    height: "0.5rem",
+                    backgroundColor: getColor(lang.name),
+                  }}
                   role="img"
                   aria-label={lang.name}
                 />

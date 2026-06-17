@@ -77,14 +77,13 @@ export async function isSafeUrl(url: string): Promise<boolean> {
     const addresses: string[] = [];
 
     try {
-      const aRecords = await dns.resolve(hostname, "A");
-      if (Array.isArray(aRecords)) addresses.push(...(aRecords as string[]));
-    } catch {}
-
-    try {
-      const aaaaRecords = await dns.resolve(hostname, "AAAA");
-      if (Array.isArray(aaaaRecords)) addresses.push(...(aaaaRecords as string[]));
-    } catch {}
+      const lookupResults = await dns.lookup(hostname, { all: true });
+      if (Array.isArray(lookupResults)) {
+        addresses.push(...lookupResults.map((r) => r.address));
+      }
+    } catch {
+      return false;
+    }
 
     if (addresses.length === 0) {
       return false;

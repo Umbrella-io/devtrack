@@ -5,6 +5,7 @@ import { GripVertical, EyeOff } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { DashboardWidgetId } from "@/lib/dashboard-layout";
+import DashboardWidgetShell from "@/components/dashboard/DashboardWidgetShell";
 
 interface SortableDashboardWidgetProps {
   id: DashboardWidgetId;
@@ -78,10 +79,16 @@ export default function SortableDashboardWidget({
         className={
           isEditing
             ? "rounded-xl outline outline-2 outline-dashed outline-[var(--accent)]/40 outline-offset-2 transition-all"
-            : "rounded-xl hover:shadow-lg transition-shadow duration-200"
+            : "transition-shadow duration-200 hover:shadow-lg"
         }
       >
-        {children}
+        <DashboardWidgetShell
+          widgetId={id}
+          title={title}
+          isEditing={isEditing}
+        >
+          {children}
+        </DashboardWidgetShell>
       </div>
     </div>
   );

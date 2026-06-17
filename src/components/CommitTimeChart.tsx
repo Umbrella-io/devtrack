@@ -182,7 +182,7 @@ export default function CommitTimeChart() {
                 cursor={{ fill: "var(--card-muted)", opacity: 0.4 }}
                 contentStyle={{
                   backgroundColor: "var(--card)",
-                  borderColor: "var(--border)",
+                  border: "1px solid var(--border)",
                   color: "var(--card-foreground)",
                   borderRadius: "0.5rem",
                   fontSize: "0.875rem",
