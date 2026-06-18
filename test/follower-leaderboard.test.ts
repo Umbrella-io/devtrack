@@ -372,6 +372,7 @@ describe("buildFollowerLeaderboard", () => {
 
 describe("getFollowerLeaderboard (cache integration)", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(cacheGet).mockResolvedValue(null);
     vi.mocked(cacheSet).mockResolvedValue(undefined);
   });

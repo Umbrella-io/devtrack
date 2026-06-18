@@ -333,18 +333,11 @@ describe("GET /api/metrics/contributions — org: accountId", () => {
       json: async () => ({ total_count: 0, items: [] }),
     });
 
-    mocks.getAccountToken.mockResolvedValue("tok-alice");
-
-    // Stub metrics cache (supabase) — supports infinite chain-mocking
-    const cacheSingle = vi.fn().mockResolvedValue({ data: { github_login: "alice" }, error: null });
-    const createChain = () => {
-      const obj = {
-        eq: () => obj,
-        single: cacheSingle,
-      };
-      return obj;
-    };
-    mocks.supabaseFrom.mockReturnValue({ select: () => createChain() });
+    // Stub metrics cache (supabase) — needs select chain with double .eq() support
+    const cacheSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const cacheEq = vi.fn().mockReturnValue({ single: cacheSingle, eq: vi.fn().mockReturnValue({ single: cacheSingle }) });
+    const cacheSelect = vi.fn().mockReturnValue({ eq: cacheEq });
+    mocks.supabaseFrom.mockReturnValue({ select: cacheSelect });
 
     const { GET } = await import("@/app/api/metrics/contributions/route");
     const req = makeRequest(
