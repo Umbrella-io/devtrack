@@ -71,7 +71,7 @@ export default function AppNavbar() {
     ];
   }, [isAuthenticated, t]);
 
-  // Hide the global navbar on pages that have their own navigation structure
+// The wrapped experience provides its own navigation
   if (pathname === "/wrapped") return null;
 
   const headerStyle: React.CSSProperties = {
