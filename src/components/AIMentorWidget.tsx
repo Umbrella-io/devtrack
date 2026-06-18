@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import DOMPurify from "dompurify";
+import { Sparkles } from "lucide-react";
 
 interface Insight {
   id: string;
@@ -39,7 +40,7 @@ function SkeletonCard() {
       role="status"
       aria-busy="true"
       aria-live="polite"
-      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm animate-pulse"
+      className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm animate-pulse transition-all duration-300 hover:shadow-md hover:-translate-y-1"
     >
       <span className="sr-only">Loading AI Mentor insights</span>
       <div className="flex items-center justify-between mb-4">
@@ -107,13 +108,27 @@ export function AIMentorWidget() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <p className="text-sm text-[var(--muted-foreground)]">{error}</p>
       </div>
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+        <div className="flex h-[200px] flex-col items-center justify-center text-center">
+          <Sparkles
+            className="mb-3 h-8 w-8 text-[var(--muted-foreground)]"
+            aria-hidden="true"
+          />
+          <p className="text-sm text-[var(--muted-foreground)]">
+            No metrics available yet.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const formattedDate = mounted
     ? new Date(data.generatedAt).toLocaleDateString(undefined, {
@@ -124,7 +139,7 @@ export function AIMentorWidget() {
     : "";
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-[var(--card-foreground)] flex items-center gap-2">

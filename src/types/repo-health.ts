@@ -16,4 +16,3 @@ export interface RepoHealthScore {
 export interface RepoHealthResponse {
   repos: RepoHealthScore[];
 }
-

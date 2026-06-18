@@ -213,3 +213,55 @@ For guides on self-hosting DevTrack or deploying it manually, please check the [
 ---
 
 Thank you for helping make DevTrack better! Happy coding! 🚀
+
+
+### GSSoC Git Commit & Branching Conventions
+
+To maintain a clean and consistent Git history, contributors must follow these standards.
+
+## 🧾 Commit Message Convention
+
+Use prefixes:
+
+- feat: New feature
+- fix: Bug fix
+- chore: Maintenance tasks (deps, configs, lockfiles)
+- docs: Documentation updates
+- refactor: Code restructuring without behavior change
+- test: Adding or updating tests
+
+### Examples:
+- feat(auth): add GitHub OAuth login
+- fix(ui): resolve navbar alignment issue
+- docs(contributing): update branching guide
+- chore: update dependencies
+
+---
+
+## 🌿 Branch Naming Convention
+
+- feature/<name>
+- fix/<name>
+- docs/<name>
+
+### Examples:
+- feature/login-system
+- fix/header-alignment
+- docs/readme-update
+
+---
+
+## 🔁 PR Guidelines
+
+- Keep PRs small and focused
+- One change per PR
+- Link issue: Closes #1944
+- Ensure all checks pass before submitting
+
+---
+
+## 📌 Best Practices
+
+- Write meaningful commit messages
+- Do not mix unrelated changes
+- Rebase before push if needed

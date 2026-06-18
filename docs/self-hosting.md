@@ -46,20 +46,40 @@ DevTrack uses `@supabase/supabase-js` which relies on the Supabase REST API, so 
 
 DevTrack provides a production-ready `Dockerfile` and `docker-compose.yml`.
 
+### Docker Variables Reference Manual
+
+When running DevTrack with Docker, set the following environment variables in your `.env` file or container configuration.
+
+| Variable | Required? | Docker / GSSoC Notes |
+|---|---|---|
+| `NODE_ENV` | Yes | Must be set to `production` for self-hosted containers. |
+| `PORT` | Yes | Port exposed by the app inside the container. Default: `3000`. |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase Project URL used by the frontend. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Public Supabase anonymous key used by the frontend. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-side Supabase key required for secure API access. |
+| `NEXTAUTH_URL` | Yes | Public URL of your deployed Docker instance. |
+| `NEXTAUTH_SECRET` | Yes | Secret used by NextAuth for signing sessions. |
+| `GITHUB_ID` | Yes | GitHub OAuth App Client ID. |
+| `GITHUB_SECRET` | Yes | GitHub OAuth App Client Secret. |
+| `ENCRYPTION_KEY` | Yes | 32-byte hex key used to encrypt GitHub tokens. |
+| `GITHUB_TOKEN` | Optional | Optional PAT to reduce GitHub API rate-limit issues. |
+
+#### Docker setup steps
 1. Clone the repository and navigate into it:
    ```bash
    git clone https://github.com/Priyanshu-byte-coder/devtrack.git
    cd devtrack
    ```
-2. Copy the `.env.example` file to `.env` and fill in the required variables (see the table above).
+2. Copy the `.env.example` file to `.env` and fill in the required variables.
    ```bash
    cp .env.example .env
    ```
-3. Start the container:
+3. Ensure `NODE_ENV=production` is set in your container or compose configuration.
+4. Start the container:
    ```bash
    docker compose up -d
    ```
-4. DevTrack will be available at `http://localhost:3000`.
+5. DevTrack will be available at `http://localhost:3000`.
 
 ---
 
@@ -94,9 +114,9 @@ DevTrack includes a `render.yaml` Blueprint for easy deployment on Render's free
 
 ## 🔧 Troubleshooting
 
-- **Server Error 500 on Login**: 
+- **Server Error 500 on Login**:
   Make sure your `NEXTAUTH_SECRET` and `ENCRYPTION_KEY` are set. If `ENCRYPTION_KEY` is missing or the wrong length (must be 32 bytes/64 hex chars), the OAuth callback will crash when attempting to encrypt the GitHub token.
-- **Login Redirects back to Home Page infinitely**: 
-  Ensure your `NEXTAUTH_URL` exactly matches your deployment URL (including `https://` and no trailing slash). 
-- **Database Fetch Errors**: 
+- **Login Redirects back to Home Page infinitely**:
+  Ensure your `NEXTAUTH_URL` exactly matches your deployment URL (including `https://` and no trailing slash).
+- **Database Fetch Errors**:
   Make sure you ran the `supabase/schema.sql` file in your Supabase SQL editor. Without the `users` and `goals` tables, the dashboard will fail to load.

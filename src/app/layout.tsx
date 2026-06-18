@@ -8,19 +8,25 @@ import Providers from "./providers";
 import OfflineBanner from "@/components/OfflineBanner";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocaleDirection } from "@/i18n/config";
+import { getRequestLocale } from "@/i18n/locale";
+import { getMessagesForLocale } from "@/i18n/messages";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 const syne = Syne({
   subsets: ["latin"],
   variable: "--font-syne",
   weight: ["700", "800"],
   display: "swap",
+  preload: false,
 });
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
   weight: ["400", "500", "600", "700"],
   display: "optional",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -55,28 +61,32 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getRequestLocale();
+  const messages = await getMessagesForLocale(locale);
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} dir={getLocaleDirection(locale)} suppressHydrationWarning>
       <head>
+        <meta name="mobile-web-app-capable" content="yes" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 try {
                   const stored = localStorage.getItem('theme');
-                  if (stored === 'dark') {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.style.colorScheme = 'dark';
-                  } else if (stored === 'light') {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.style.colorScheme = 'light';
-                  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.style.colorScheme = 'dark';
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.style.colorScheme = 'light';
+                  const validThemes = ['classic-dark', 'modern-light-blue', 'nordic-frost', 'cyberpunk-matrix'];
+                  let theme = validThemes.includes(stored || '') ? stored : null;
+
+                  if (!theme) {
+                    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    theme = systemPrefersDark ? 'classic-dark' : 'modern-light-blue';
                   }
+
+                  const isDark = theme !== 'modern-light-blue';
+
+                  document.documentElement.dataset.theme = theme;
+                  document.documentElement.classList.toggle('dark', isDark);
+                  document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
                 } catch (e) {}
               })();
             `,
@@ -92,10 +102,12 @@ export default async function RootLayout({
 
         <div className="flex min-h-screen flex-col">
           <div className="flex-1">
-            <Providers>
-              <AppNavbar />
-              {children}
-            </Providers>
+            <NextIntlClientProvider locale={locale} messages={messages}>
+              <Providers>
+                <AppNavbar />
+                {children}
+              </Providers>
+            </NextIntlClientProvider>
           </div>
 
           <Footer />

@@ -34,7 +34,7 @@ export async function submitGoalWithRefresh({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-  } catch {
+  } catch (e) {
     return {
       created: false,
       error: "Failed to create goal. Please try again.",
@@ -54,7 +54,7 @@ export async function submitGoalWithRefresh({
     } else {
       await loadGoals();
     }
-  } catch {
+  } catch (e) {
     return {
       created: true,
       error: "Goal created, but refreshing goals failed. Please try refreshing.",

@@ -74,7 +74,7 @@ export default function RepoHealthPanel({ health, isOpen, onClose }: Props) {
             <span className={`text-2xl font-bold ${health.grade === "green" ? "text-[var(--accent)]" : health.grade === "yellow" ? "text-[var(--warning,#ca8a04)]" : "text-[var(--destructive)]"}`}>
               {health.score}
             </span>
-            <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--control)] transition-colors" aria-label="Close panel">
+            <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--control)] transition-all hover:opacity-90 active:scale-95" aria-label="Close panel">
               ✕
             </button>
           </div>
@@ -91,9 +91,17 @@ export default function RepoHealthPanel({ health, isOpen, onClose }: Props) {
             </div>
           ))}
         </div>
-        <p className="mt-5 text-xs text-[var(--muted-foreground)] border-t border-[var(--border)] pt-4">
-          Score based on activity in the last 30 days. Updates on page refresh.
-        </p>
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--border)] pt-4">
+          <p className="text-xs text-[var(--muted-foreground)]">
+            Score based on activity in the last 30 days. Updates on page refresh.
+          </p>
+          <a
+            href={`/dashboard/repo-health`}
+            className="shrink-0 text-xs font-medium text-[var(--accent)] hover:underline underline-offset-2"
+          >
+            Full Analysis →
+          </a>
+        </div>
       </div>
     </div>
   );

@@ -2,21 +2,51 @@
 
 # DevTrack
 
-**Your personal developer productivity command center.**
+**Your developer productivity command center.**
 
-> Pull your GitHub activity, commit streaks, PR analytics, and coding goals into one clean, self-hostable dashboard — no enterprise plan, no vendor lock-in.
+> Track your GitHub activity, commit streaks, PR analytics, and coding goals in one clean, self-hostable dashboard — no enterprise plan, no vendor lock-in.
 
 [![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 [![GSSoC 2026](https://img.shields.io/badge/GSSoC-2026-orange.svg)](https://gssoc.girlscript.tech/)
-[![Stack](https://img.shields.io/badge/stack-Next.js%20%7C%20Supabase%20%7C%20TypeScript-blue)](./DEVELOPMENT.md)
+[![Stack](https://img.shields.io/badge/stack-Next.js%2016%20%7C%20Supabase%20%7C%20TypeScript-blue)](./DEVELOPMENT.md)
 [![Good First Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22)
 [![Contributors](https://img.shields.io/github/contributors/Priyanshu-byte-coder/devtrack?color=brightgreen)](https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors)
 [![Last Commit](https://img.shields.io/github/last-commit/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/commits/main)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/Priyanshu-byte-coder?label=sponsors&color=ea4aaa)](https://github.com/sponsors/Priyanshu-byte-coder)
 
-**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
+**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
+
+</div>
+
+---
+
+## Demo
+
+<div align="center">
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="./public/assets/gifs/dashboard-demo.gif" alt="DevTrack dashboard demo" width="100%" />
+      <br />
+      <em>Dashboard: streaks, PR analytics, activity heatmap, and goals</em>
+    </td>
+    <td width="50%" align="center">
+      <img src="./public/assets/gifs/feature-hover-demo.gif" alt="DevTrack widget demo" width="100%" />
+      <br />
+      <em>Interactive widgets: real-time GitHub data in action</em>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="./public/assets/gifs/year_wrapped.gif" alt="DevTrack Year Wrapped" width="70%" />
+      <br />
+      <em>Year Wrapped: your annual coding journey, visualized</em>
+    </td>
+  </tr>
+</table>
 
 </div>
 
@@ -25,14 +55,19 @@
 ## Table of Contents
 
 - [Why DevTrack?](#why-devtrack)
+- [Demo](#demo)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
+- [Architecture](#architecture)
 - [Getting Started](#getting-started)
+- [Docker Development Setup](#docker-development-setup)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
+- [Community](#community)
 - [Sponsors](#sponsors)
 - [License](#license)
+- [Contributors](#contributors)
 
 ---
 
@@ -70,6 +105,8 @@ Most developers track their work across multiple disconnected tools — GitHub f
 | **Data Export** | Download all your data in JSON format |
 | **AI Weekly Insights** | Groq-powered natural language summary of your weekly activity |
 | **Heatmap Themes** | Default and colour-blind-friendly heatmap colour schemes |
+| **Year Wrapped** | Annual coding journey recap with animated visualizations |
+| **Real-time Dashboard** | Live updates via Supabase Realtime with polling fallback |
 
 ---
 
@@ -77,7 +114,7 @@ Most developers track their work across multiple disconnected tools — GitHub f
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Frontend | Next.js 16 (App Router), TypeScript, Tailwind CSS |
 | Auth | GitHub OAuth via NextAuth.js v4 |
 | Database | Supabase (PostgreSQL) with Row Level Security |
 | API | Next.js Route Handlers (`/app/api/`) |
@@ -120,10 +157,33 @@ devtrack/
 
 ---
 
+## Architecture
+
+New contributors can start with the [architecture overview](./docs/architecture.md) for Mermaid diagrams covering the Next.js frontend, API routes, Supabase schema, external services, and GitHub activity sync flow.
+
+---
+
+## API Documentation
+
+DevTrack includes a documented REST API.
+
+Documentation resources:
+
+- `docs/api.md` — API usage guide
+- `public/openapi.yaml` — OpenAPI 3.1 specification
+- `/api-docs` — Interactive Swagger UI
+
+After starting the development server, open:
+
+`http://localhost:3000/api-docs`
+
+---
+
 ## Getting Started
 
 For local development and contributing, see **[DEVELOPMENT.md](./DEVELOPMENT.md)**.
 To deploy your own instance, see the **[Self-Hosting Guide](./docs/self-hosting.md)**.
+
 
 ### Quick Start
 
@@ -194,11 +254,133 @@ npx playwright install --with-deps chromium
 npm run test:e2e
 ```
 
+### E2E Test Suite (Playwright)
+
+DevTrack ships a Playwright-based end-to-end suite covering the full user journey — OAuth sign-in, dashboard rendering, and API correctness. No real credentials needed; all external calls are mocked via `page.route()`.
+
+| Spec file | Coverage |
+|-----------|----------|
+| `e2e/auth.spec.ts` | Landing page, sign-in button, OAuth redirect, unauthenticated redirects |
+| `e2e/dashboard.spec.ts` | All 6 dashboard widgets render after mock login, no console errors |
+| `e2e/goals.spec.ts` | Goal create/delete lifecycle with API payload verification |
+| `e2e/streak.spec.ts` | Streak values display, freeze button triggers API call |
+| `e2e/api.spec.ts` | Auth-gated API routes return 200/401 correctly |
+
+```bash
+# Install Playwright browsers (one-time)
+npx playwright install --with-deps chromium
+
+# Run the full suite (dev server auto-starts on port 3002)
+npm run test:e2e
+
+# Run a single spec
+npx playwright test e2e/goals.spec.ts
+
+# Interactive UI runner
+npx playwright test --ui
+```
+
+The test server is configured in `playwright.config.mjs` and auto-starts on `http://127.0.0.1:3002` with placeholder credentials — no `.env.local` required. E2E tests also run on every PR via `.github/workflows/e2e.yml`.
+
+### Visual Regression Tests
+
+Playwright screenshot assertions cover the landing page, sign-in page, dashboard header, public profile, and 404 page.
+
+```bash
+# Run visual regression tests
+npx playwright test -c playwright.visual.config.mjs
+
+# Update baselines
+npx playwright test -c playwright.visual.config.mjs --update-snapshots
+```
+
+Baselines are stored in `tests/snapshots/`. Use the same Linux/Chromium environment as CI to avoid OS-specific rendering differences. The suite uses a `1280x720` viewport and fails at >0.1% pixel difference.
+
+---
+
+## Docker Development Setup
+
+DevTrack includes Docker support for local development, allowing contributors to get started quickly without manually installing dependencies or configuring environments.
+
+### Prerequisites
+
+- Docker Desktop (Windows/macOS) or Docker Engine (Linux)
+- Docker Compose v2+
+
+Verify installation:
+
+```bash
+docker --version
+docker compose version
+```
+
+### Configure Environment Variables
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in the required values as described in the Environment Variables section above.
+
+### Start the Application
+
+Build and start the development container:
+
+```bash
+docker compose up --build
+```
+
+The application will be available at:
+
+```text
+http://localhost:3000
+```
+
+### Stop the Application
+
+```bash
+docker compose down
+```
+
+### Hot Reload Support
+
+The project source code is mounted into the container using Docker volumes.
+
+Any changes made to files on your host machine are automatically reflected inside the container, enabling Next.js hot reload during development without rebuilding the image.
+
+### Rebuild After Dependency Changes
+
+If you modify `package.json` or install new dependencies:
+
+```bash
+docker compose down
+docker compose up --build
+```
+
+### Troubleshooting
+
+Remove containers and rebuild from scratch:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+View container logs:
+
+```bash
+docker compose logs -f
+```
+
 ---
 
 ## Roadmap
 
 ### Shipped
+
+These features are live in the current version.
 
 | Feature | Notes |
 |---|---|
@@ -222,8 +404,12 @@ npm run test:e2e
 | AI weekly insights | Groq-powered natural language summary |
 | Streak freeze | Protect streak during planned breaks |
 | RSS feed | Atom feed at `/u/[username]/feed.xml` |
+| Year Wrapped | Animated annual coding journey recap |
+| Real-time dashboard | Live Supabase Realtime sync with polling fallback |
 
 ### In Progress / Planned
+
+Want to contribute? Pick an item below and open an issue or start a PR.
 
 | Feature | Difficulty | Issue |
 |---|---|---|
@@ -239,6 +425,8 @@ npm run test:e2e
 | Mobile app (React Native) | Advanced | — |
 
 ---
+
+> For caching best practices used in this project, see [Caching Guidelines](docs/caching.md).
 
 ## Contributing
 
@@ -274,9 +462,35 @@ DevTrack is free and open source. Sponsoring helps cover infrastructure costs an
 
 ---
 
+## Community
+
+Have questions, ideas, or want to connect with other contributors?
+
+- **[GitHub Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** — ask questions, share ideas, show what you've built
+- **[Open an Issue](https://github.com/Priyanshu-byte-coder/devtrack/issues/new/choose)** — bug reports, feature requests, and good-first-issues
+- **[Email the maintainer](mailto:priyanshu.coder.dev@gmail.com)** — for anything else
+
+All contributors are expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
+
+---
+
 ## License
 
 MIT — see [LICENSE](./LICENSE) for details.
+
+---
+
+## Contributors
+
+Thanks to everyone who has helped build DevTrack. Want to join the list? See [CONTRIBUTING.md](./CONTRIBUTING.md) and pick a [good first issue](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22).
+
+<div align="center">
+
+<a href="https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Priyanshu-byte-coder/devtrack" alt="Contributors" />
+</a>
+
+</div>
 
 ---
 

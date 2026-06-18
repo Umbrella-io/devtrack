@@ -7,7 +7,6 @@ import { decryptToken } from "@/lib/crypto";
 import { JiraIssue, calculateMetrics } from "@/lib/jira-utils";
 
 export const dynamic = "force-dynamic";
-
 interface JiraCredentials {
   id: string;
   jira_domain: string;
@@ -37,7 +36,6 @@ function validateProjectKey(key: string): boolean {
   const projectKeyRegex = /^[A-Z][A-Z0-9]{0,9}$/;
   return projectKeyRegex.test(key);
 }
-
 async function fetchJiraIssues(
   domain: string,
   email: string,
@@ -118,13 +116,12 @@ export async function GET(req: NextRequest) {
       );
     }
     decryptedToken = decrypted;
-  } catch {
+  } catch (e) {
     return Response.json(
       { error: "Failed to decrypt credentials" },
       { status: 500 }
     );
   }
-
   try {
     const issues = await fetchJiraIssues(
       cred.jira_domain,
@@ -139,7 +136,7 @@ export async function GET(req: NextRequest) {
       metrics,
       recentIssues: issues.slice(0, 10),
     });
-  } catch {
+  } catch (e) {
     return Response.json(
       { error: "Failed to fetch Jira data" },
       { status: 502 }

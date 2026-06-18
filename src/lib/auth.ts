@@ -5,7 +5,7 @@ import { supabaseAdmin } from "./supabase";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 const SESSION_UPDATE_AGE = 24 * 60 * 60;
-const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://") ?? process.env.NODE_ENV === "production";
+const isPlaywrightServer = process.env.PLAYWRIGHT_SERVER_MODE === "start";
 
 const GITHUB_API = "https://api.github.com";
 // Re-validate the stored GitHub token at most once every 24 hours per session.
@@ -14,30 +14,26 @@ const GITHUB_API = "https://api.github.com";
 const TOKEN_VALIDATION_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export const authOptions: NextAuthOptions = {
+  // Playwright runs on plain HTTP (127.0.0.1) and relies on the default
+  // `next-auth.session-token` cookie name. If NextAuth infers HTTPS via
+  // forwarded headers, it may switch to secure cookie prefixes and the E2E
+  // session cookie won't be read. Force non-secure cookies in this mode.
+  ...(isPlaywrightServer ? { useSecureCookies: false } : {}),
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_ID ?? "",
       clientSecret: process.env.GITHUB_SECRET ?? "",
       authorization: {
-        params: { scope: "read:user user:email repo read:discussion" },
+        params: { scope: "read:user user:email repo read:discussion read:org" },
       },
     }),
   ],
   pages: {
     signIn: "/auth/signin",
   },
-  // From PR #1334: use secure cookies on HTTPS deployments, plain cookies on HTTP (local dev).
-  cookies: {
-    sessionToken: {
-      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: useSecureCookies,
-      },
-    },
-  },
+  // Use NextAuth's default cookie behavior (secure cookies on HTTPS deployments),
+  // which keeps Playwright E2E (http://127.0.0.1) aligned with the default
+  // `next-auth.session-token` cookie name.
   session: {
     strategy: "jwt",
     maxAge: SESSION_MAX_AGE,
@@ -122,7 +118,7 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account, profile, user }) {
       // account is only populated on the initial sign-in; all subsequent JWT
       // refreshes arrive here with account === undefined.
       if (account?.access_token) {
@@ -130,11 +126,17 @@ export const authOptions: NextAuthOptions = {
         // Record when we first obtained and validated this token so we know
         // when the next liveness check is due.
         token.accessTokenValidatedAt = Date.now();
+      } else if (user && (user as any).accessToken) {
+        token.accessToken = (user as any).accessToken;
+        token.accessTokenValidatedAt = Date.now();
       }
       if (profile) {
         const p = profile as { id: number; login: string };
         token.githubId = String(p.id);
         token.githubLogin = p.login;
+      } else if (user) {
+        token.githubId = user.id;
+        token.githubLogin = (user as any).login || "mock-user";
       }
 
       // Periodic token liveness check: if more than TOKEN_VALIDATION_INTERVAL_MS
@@ -164,7 +166,7 @@ export const authOptions: NextAuthOptions = {
           }
           // Non-401 non-ok responses (rate limit, server error) are intentionally
           // left without updating accessTokenValidatedAt so the next request retries.
-        } catch {
+        } catch (e) {
           // Network failures during validation are not treated as revocation.
           // The check will be retried on the next request.
         }
@@ -187,4 +189,3 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
-

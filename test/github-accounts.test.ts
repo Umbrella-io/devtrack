@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockSelect = vi.fn().mockReturnThis();
 const mockEq = vi.fn();
@@ -184,5 +184,130 @@ describe('mergeMetrics', () => {
     ];
     const merged = mergeMetrics(results, (a, b) => ({ count: a.count + b.count }));
     expect(merged).toEqual({ count: 10 });
+  });
+});
+
+describe('getRateLimitRemaining and pickBestToken', () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  describe('getRateLimitRemaining', () => {
+    it('returns rate limit remaining value when API succeeds', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          resources: {
+            core: {
+              remaining: 4500,
+            },
+          },
+        }),
+      });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const { getRateLimitRemaining } = await import('../src/lib/github-accounts');
+      const result = await getRateLimitRemaining('test-token');
+      expect(result).toBe(4500);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://api.github.com/rate_limit",
+        expect.objectContaining({
+          headers: {
+            Authorization: "Bearer test-token",
+            Accept: "application/vnd.github+json",
+          },
+        })
+      );
+    });
+
+    it('returns 0 when API returns non-ok status', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+      });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const { getRateLimitRemaining } = await import('../src/lib/github-accounts');
+      const result = await getRateLimitRemaining('test-token');
+      expect(result).toBe(0);
+    });
+
+    it('returns 0 when API response is missing remaining field', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({}),
+      });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const { getRateLimitRemaining } = await import('../src/lib/github-accounts');
+      const result = await getRateLimitRemaining('test-token');
+      expect(result).toBe(0);
+    });
+
+    it('returns 0 when fetch throws an error', async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const { getRateLimitRemaining } = await import('../src/lib/github-accounts');
+      const result = await getRateLimitRemaining('test-token');
+      expect(result).toBe(0);
+    });
+  });
+
+  describe('pickBestToken', () => {
+    it('throws error when no tokens are provided', async () => {
+      const { pickBestToken } = await import('../src/lib/github-accounts');
+      await expect(pickBestToken([])).rejects.toThrow('No tokens available');
+    });
+
+    it('returns the token with the highest remaining rate limit', async () => {
+      const mockFetch = vi.fn().mockImplementation((url, init) => {
+        const token = init.headers.Authorization.split(' ')[1];
+        let remaining = 0;
+        if (token === 'token-1') remaining = 1000;
+        if (token === 'token-2') remaining = 3000;
+        if (token === 'token-3') remaining = 2000;
+
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            resources: {
+              core: {
+                remaining,
+              },
+            },
+          }),
+        });
+      });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const { pickBestToken } = await import('../src/lib/github-accounts');
+      const result = await pickBestToken(['token-1', 'token-2', 'token-3']);
+      expect(result).toBe('token-2');
+    });
+
+    it('parallelizes getRateLimitRemaining calls (Promise.all check)', async () => {
+      const spy = vi.spyOn(Promise, 'all');
+      
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          resources: {
+            core: {
+              remaining: 100,
+            },
+          },
+        }),
+      });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const { pickBestToken } = await import('../src/lib/github-accounts');
+      await pickBestToken(['token-a', 'token-b']);
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+    });
   });
 });

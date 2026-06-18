@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
 import { computeHealthScore } from "@/lib/repo-health";
 import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
+import { isSafeUrl } from "@/lib/ssrf-protection";
+import { parseRepoParam } from "@/lib/repo-analytics-utils";
 
 export const dynamic = "force-dynamic";
 const GITHUB_API = "https://api.github.com";
@@ -16,28 +18,56 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const repoParam = req.nextUrl.searchParams.get("repo");
-  if (!repoParam) return Response.json({ error: "Missing repo parameter" }, { status: 400 });
+  const rawRepo = req.nextUrl.searchParams.get("repo");
+  if (!rawRepo) {
+    return Response.json({ error: "Missing repo parameter" }, { status: 400 });
+  }
+
+  const parsed = parseRepoParam(rawRepo);
+  if (!parsed) {
+    return Response.json(
+      { error: "Invalid repo parameter. Expected format: owner/repo (e.g. octocat/Hello-World)" },
+      { status: 400 }
+    );
+  }
+
+  const { owner, repo } = parsed;
+  const safeRepoPath = `${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
+
+  const repoUrl = `${GITHUB_API}/repos/${safeRepoPath}`;
+  let urlSafe = false;
+  try {
+    urlSafe = await isSafeUrl(repoUrl);
+  } catch {
+    urlSafe = false;
+  }
+  if (!urlSafe) {
+    return Response.json({ error: "Invalid repository URL" }, { status: 400 });
+  }
 
   const bypass = isMetricsCacheBypassed(req);
-  const key = metricsCacheKey(session.githubId ?? session.githubLogin, `repo-analytics-${repoParam}` as any, { days: 30 });
+  const key = metricsCacheKey(
+    session.githubId ?? session.githubLogin,
+    `repo-analytics-${owner}/${repo}` as any,
+    { days: 30 }
+  );
 
   try {
     const data = await withMetricsCache({ bypass, key, ttlSeconds: 60 * 60 }, async () => {
-      const repoRes = await fetch(`${GITHUB_API}/repos/${repoParam}`, {
+      const repoRes = await fetch(repoUrl, {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });
       if (!repoRes.ok) throw new Error("API error fetching repo overview");
       const repoData = await repoRes.json();
 
-      const contribRes = await fetch(`${GITHUB_API}/repos/${repoParam}/contributors?per_page=10`, {
+      const contribRes = await fetch(`${GITHUB_API}/repos/${safeRepoPath}/contributors?per_page=10`, {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });
       const contribData = contribRes.ok ? await contribRes.json() : [];
 
-      const langRes = await fetch(`${GITHUB_API}/repos/${repoParam}/languages`, {
+      const langRes = await fetch(`${GITHUB_API}/repos/${safeRepoPath}/languages`, {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });
@@ -54,29 +84,36 @@ export async function GET(req: NextRequest) {
 
       const primaryStack = languageBreakdown.slice(0, 3).map((l) => l.name);
 
-      const activityRes = await fetch(`${GITHUB_API}/repos/${repoParam}/stats/commit_activity`, {
+      const activityRes = await fetch(`${GITHUB_API}/repos/${safeRepoPath}/stats/commit_activity`, {
         headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });
-      
+
       let timeline: { date: string; events: number }[] = [];
-      if (activityRes.ok && activityRes.status === 200) {
+      let statsBuilding = false;
+
+      if (activityRes.status === 202) {
+        // GitHub is computing stats asynchronously; surface this to the caller
+        statsBuilding = true;
+      } else if (activityRes.ok) {
         const activityData = await activityRes.json();
         if (Array.isArray(activityData) && activityData.length > 0) {
           const lastWeek = activityData[activityData.length - 1];
-          const days = lastWeek.days || [];
-          const today = new Date();
+          const days: number[] = lastWeek.days || [];
+          // `lastWeek.week` is a Unix timestamp (seconds) for the Sunday that starts the bucket.
+          // Derive labels from it so they always match the actual calendar days GitHub recorded.
+          const weekStart = new Date((lastWeek.week as number) * 1000);
           for (let i = 0; i < 7; i++) {
-            const d = new Date(today);
-            d.setDate(d.getDate() - (6 - i));
+            const d = new Date(weekStart);
+            d.setUTCDate(d.getUTCDate() + i);
             timeline.push({
-              date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              events: days[i] || 0
+              date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
+              events: days[i] ?? 0,
             });
           }
         }
       }
-      
+
       if (timeline.length === 0) {
         for (let i = 6; i >= 0; i--) {
           const d = new Date();
@@ -92,8 +129,17 @@ export async function GET(req: NextRequest) {
         openIssuesCount: repoData.open_issues_count || 0,
         daysSinceLastCommit: 1,
       };
-      
+
       const health = computeHealthScore(repoData.name, healthSignals);
+
+      // Fetch PR activity for this repo (Issue 1: top repos by PR activity)
+      const prRes = await fetch(`${GITHUB_API}/repos/${safeRepoPath}/pulls?state=all&per_page=1`, {
+        headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      });
+      const prLinkHeader = prRes.headers.get("link") ?? "";
+      const prLastMatch = prLinkHeader.match(/page=(\d+)>; rel="last"/);
+      const totalPrs = prLastMatch ? parseInt(prLastMatch[1], 10) : (prRes.ok ? 1 : 0);
 
       const result: RepoAnalyticsResponse = {
         overview: {
@@ -115,12 +161,14 @@ export async function GET(req: NextRequest) {
         timeline,
         health,
         primaryStack,
-        languageBreakdown
+        languageBreakdown,
+        prActivity: { total: totalPrs },
+        ...(statsBuilding ? { statsBuilding: true } : {}),
       };
 
       return result;
     });
-    
+
     return Response.json(data);
   } catch (error) {
     console.error(error);

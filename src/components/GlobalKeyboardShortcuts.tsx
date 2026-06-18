@@ -7,21 +7,20 @@ import ShortcutsModal from "./ShortcutsModal";
 export default function GlobalKeyboardShortcuts() {
   const [isOpen, setIsOpen] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-  const { theme, toggleTheme } = useTheme();
+  const { theme, themeDefinition, toggleTheme } = useTheme();
   const keyboardToggleRef = useRef(false);
 
   useEffect(() => {
     if (keyboardToggleRef.current && theme !== undefined) {
-      setAnnouncement(theme === "dark" ? "Dark mode enabled" : "Light mode enabled");
+      setAnnouncement(`${themeDefinition?.name ?? "Theme"} enabled`);
     }
     keyboardToggleRef.current = false;
-  }, [theme]);
+  }, [theme, themeDefinition]);
 
   useEffect(() => {
     const handleOpenShortcuts = () => {
       setIsOpen(true);
     };
-
     window.addEventListener("openShortcuts", handleOpenShortcuts);
     return () => {
       window.removeEventListener("openShortcuts", handleOpenShortcuts);
@@ -30,6 +29,7 @@ export default function GlobalKeyboardShortcuts() {
 
   useEffect(() => {
     let gPressed = false;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
       if (activeElement) {
@@ -60,58 +60,42 @@ export default function GlobalKeyboardShortcuts() {
         return;
       }
 
-      // Reload page
+      // G key handling (chord detection)
+      if (e.key.toLowerCase() === "g") {
+        gPressed = true;
+        setTimeout(() => {
+          gPressed = false;
+        }, 1000);
+        e.preventDefault();
+        return;
+      }
+
       // G + D -> Dashboard
-if (e.key.toLowerCase() === "g") {
-  gPressed = true;
+      if (gPressed && e.key.toLowerCase() === "d") {
+        window.location.href = "/dashboard";
+        e.preventDefault();
+        return;
+      }
 
-  setTimeout(() => {
-    gPressed = false;
-  }, 1000);
+      // G + P -> Goals (scroll to goals section)
+      if (gPressed && e.key.toLowerCase() === "p") {
+        const goalSection = document.getElementById("goals-section");
+        if (goalSection) {
+          goalSection.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        e.preventDefault();
+        return;
+      }
 
-  return;
-}
+      // ESC -> close modal
+      if (e.key === "Escape") {
+        setIsOpen(false);
+        window.dispatchEvent(new Event("closeModal"));
+        e.preventDefault();
+        return;
+      }
 
-if (gPressed && e.key.toLowerCase() === "d") {
-  window.location.href = "/dashboard";
-  e.preventDefault();
-  return;
-}
-
-// G + P -> Goals
-console.log("G pressed state:", gPressed);
-if (gPressed && e.key.toLowerCase() === "p") {
-  if (gPressed && e.key.toLowerCase() === "p") {
-  console.log("G + P detected");
-
-  const goalSection = document.getElementById("goals-section");
-
-  console.log("Goal section:", goalSection);
-
-  
-}
-  const goalSection = document.getElementById("goals-section");
-
-  if (goalSection) {
-    goalSection.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
-  }
-
-  e.preventDefault();
-  return;
-}
-
-// ESC -> close modal
-if (e.key === "Escape") {
-  setIsOpen(false);
-
-  window.dispatchEvent(new Event("closeModal"));
-
-  e.preventDefault();
-  return;
-}
+      // Reload page
       if (e.key.toLowerCase() === "r") {
         window.location.reload();
         e.preventDefault();
@@ -130,7 +114,6 @@ if (e.key === "Escape") {
       <div aria-live="polite" className="sr-only">
         {announcement}
       </div>
-
       <ShortcutsModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>
   );

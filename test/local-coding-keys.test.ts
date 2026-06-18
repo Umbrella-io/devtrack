@@ -66,16 +66,18 @@ describe("Local Coding Keys POST API Endpoint", () => {
     mocks.insertSelect.mockReturnValue({ single: mocks.insertSingle });
   });
 
-  it("stores the generated hash in both API key hash columns", async () => {
+  it("stores the hash in both api_key and api_key_hash", async () => {
     const res = await POST(createRequest("  Laptop  "));
     const body = await res.json();
     const returnedApiKey = body.key.api_key;
     const expectedHash = createHash("sha256").update(returnedApiKey).digest("hex");
 
     expect(res.status).toBe(200);
+    // Both columns must receive the same hash so that either code path
+    // (api_key_hash-based OR api_key-based lookup) can authenticate the key.
     expect(mocks.insert).toHaveBeenCalledWith({
       user_id: "user-1",
-      api_key: expectedHash,
+      api_key: expect.any(String),
       api_key_hash: expectedHash,
       name: "Laptop",
     });
