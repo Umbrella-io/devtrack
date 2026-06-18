@@ -325,9 +325,9 @@ describe("GET /api/metrics/contributions — org: accountId", () => {
       json: async () => ({ total_count: 0, items: [] }),
     });
 
-    // Stub metrics cache (supabase) — needs select chain
+    // Stub metrics cache (supabase) — needs select chain with double .eq() support
     const cacheSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-    const cacheEq = vi.fn().mockReturnValue({ single: cacheSingle });
+    const cacheEq = vi.fn().mockReturnValue({ single: cacheSingle, eq: vi.fn().mockReturnValue({ single: cacheSingle }) });
     const cacheSelect = vi.fn().mockReturnValue({ eq: cacheEq });
     mocks.supabaseFrom.mockReturnValue({ select: cacheSelect });
 

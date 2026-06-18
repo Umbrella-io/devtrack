@@ -87,7 +87,7 @@ export function useGoalTracker() {
           const data = await res.json();
           setSyncError(data.error ?? "GitHub rate limit reached. Please try again later.");
         } else {
-          setSyncError("Failed to sync goals. Please try again.");
+          setSyncError(msg);
         }
         return;
       }

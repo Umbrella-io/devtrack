@@ -1,4 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("next-intl/plugin", () => ({
+  default: () => (config: unknown) => config,
+}));
+
+vi.mock("@ducanh2912/next-pwa", () => ({
+  default: () => (config: unknown) => config,
+}));
+
 // @ts-ignore
 import nextConfig from "../next.config.mjs";
 

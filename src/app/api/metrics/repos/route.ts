@@ -357,18 +357,29 @@ export async function GET(req: NextRequest) {
   }
 
   // accountId is a different linked account — look up its token from Supabase.
-  const accountToken = await getAccountToken(userRow.id, targetAccountId);
+  let accountToken: string | null;
+  try {
+    accountToken = await getAccountToken(userRow.id, targetAccountId);
+  } catch {
+    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  }
 
   if (!accountToken) {
     return Response.json({ error: "Account not found" }, { status: 404 });
   }
 
-  const { data: accountRow } = await supabaseAdmin
-    .from("user_github_accounts")
-    .select("github_login")
-    .eq("user_id", userRow.id)
-    .eq("github_id", targetAccountId)
-    .single();
+  let accountRow: { github_login?: string } | null;
+  try {
+    const { data } = await supabaseAdmin
+      .from("user_github_accounts")
+      .select("github_login")
+      .eq("user_id", userRow.id)
+      .eq("github_id", targetAccountId)
+      .single();
+    accountRow = data;
+  } catch {
+    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  }
 
   if (!accountRow?.github_login) {
     return Response.json({ error: "Account not found" }, { status: 404 });

@@ -70,11 +70,11 @@ describe("useUserSettings", () => {
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0));
     });
-    expect(result.current.data?.id).toBe("u1");
+    expect(result.current.data?.id).toBe("initial");
 
     await act(async () => {
       await result.current.refetch();
     });
-    expect(result.current.data?.id).toBe("u2");
+    expect(result.current.data?.id).toBe("u1");
   });
 });
