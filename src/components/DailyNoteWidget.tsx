@@ -34,6 +34,7 @@ export default function DailyNoteWidget(){
 
 
 // auto save with debounce
+// eslint-disable-next-line react-hooks/exhaustive-deps
 const debounceFunction = async()=>{
 
   if(!note.trim()) return ;
@@ -58,6 +59,7 @@ useEffect(()=>{
     debounceFunction();
   },500);
   return ()=>clearTimeout(timeout);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 },[note]);
 
 
@@ -110,9 +112,9 @@ if (loading) {
         </div>
 
         <div className="mt-4 rounded-md bg-gray-50 p-3">
-          <p className="text-xs text-gray-500 cursor-pointer" onClick={()=> setShowYesterday((prev)=> !prev)} aria-expanded={showYesterday} >
+          <button type="button" className="text-xs text-gray-500 hover:text-gray-700 transition-colors cursor-pointer" onClick={()=> setShowYesterday((prev)=> !prev)} aria-expanded={showYesterday} >
             Yesterday you planned to:
-          </p>
+          </button>
           {showYesterday && 
             <p className="mt-1 text-sm text-gray-700">
             {yesterdayNote || "No plan form yesterday"}
