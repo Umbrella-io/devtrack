@@ -126,8 +126,6 @@ if ([301, 302, 303, 307, 308].includes(response.status)) {
   }
 }
 
-statusCode = response.status;
-const success = response.ok;
     statusCode = response.status;
     const success = response.ok;
 

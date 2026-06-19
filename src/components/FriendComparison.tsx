@@ -199,6 +199,12 @@ function FriendComparison() {
     e.preventDefault();
   };
 
+  const hasNoCompareData =
+    friendData !== null &&
+    friendData.commits30d === 0 &&
+    friendData.streak === 0 &&
+    friendData.prs === 0;
+
   return (
     <div className="w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
 

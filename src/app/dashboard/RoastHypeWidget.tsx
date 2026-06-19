@@ -92,7 +92,7 @@ export default function RoastHypeWidget({ stats }: { stats: UserStats }) {
 
       {output && (
         <div className="mt-5 p-4 bg-[var(--background)] border border-[var(--border)] rounded-lg relative group">
-          <p className="text-[var(--foreground)] pr-6 text-sm italic">"{output}"</p>
+          <p className="text-[var(--foreground)] pr-6 text-sm italic">&ldquo;{output}&rdquo;</p>
           <button
             onClick={copyToClipboard}
             className="absolute top-3 right-3 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"

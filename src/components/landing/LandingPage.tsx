@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from "next/image";
 import Link from 'next/link';
-import { Activity, GitPullRequest, Goal, Share2, Flame, FolderGit2, LogIn, LayoutDashboard, Target, type LucideIcon } from "lucide-react";
+import { Activity, GitPullRequest, Goal, Share2, Flame, FolderGit2, LogIn, LayoutDashboard, Target, Brain, Trophy, Users, Server, type LucideIcon } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
 /* ═══════════════════════════════════════════════════════════
