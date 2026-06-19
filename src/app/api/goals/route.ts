@@ -242,6 +242,23 @@ try {
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
+  const { data: existing } = await supabaseAdmin
+    .from("goals")
+    .select("id")
+    .eq("user_id", user.id)
+    .ilike("title", sanitizedTitle)
+    .maybeSingle();
+
+  if (existing) {
+    return Response.json(
+      {
+        error: "Task with this title already exists",
+        code: "DUPLICATE_TASK_TITLE",
+      },
+      { status: 400 }
+    );
+  }
+
   // Pre-check count query using head option for peak performance
   const { count, error: countError } = await supabaseAdmin
     .from("goals")

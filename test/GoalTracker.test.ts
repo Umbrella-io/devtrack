@@ -188,6 +188,11 @@ describe('GoalTracker - useGoalTracker Hook', () => {
         return Promise.resolve({
           ok: false,
           status: 400,
+          json: () =>
+            Promise.resolve({
+              error: 'Task with this title already exists',
+              code: 'DUPLICATE_TASK_TITLE',
+            }),
         } as Response);
       }
       return Promise.resolve({
@@ -211,7 +216,7 @@ describe('GoalTracker - useGoalTracker Hook', () => {
       await result.current.handleCreate();
     });
 
-    expect(result.current.createError).toBe('Failed to create goal. Please try again.');
+    expect(result.current.createError).toBe('Task with this title already exists');
   });
 
   it('handles optimistic deletion and failure rollback', async () => {

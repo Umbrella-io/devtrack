@@ -42,9 +42,16 @@ export async function submitGoalWithRefresh({
   }
 
   if (!response.ok) {
+    let message = "Failed to create goal. Please try again.";
+    try {
+      const data = (await response.json()) as { error?: string };
+      if (data.error) message = data.error;
+    } catch {
+      // keep fallback message
+    }
     return {
       created: false,
-      error: "Failed to create goal. Please try again.",
+      error: message,
     };
   }
 

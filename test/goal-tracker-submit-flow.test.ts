@@ -19,7 +19,10 @@ describe("submitGoalWithRefresh", () => {
   });
 
   it("returns a create error when the POST request fails", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: false });
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({}),
+    });
     const handleSync = vi.fn();
     const loadGoals = vi.fn();
 
@@ -33,6 +36,34 @@ describe("submitGoalWithRefresh", () => {
     expect(result).toEqual({
       created: false,
       error: "Failed to create goal. Please try again.",
+    });
+    expect(handleSync).not.toHaveBeenCalled();
+    expect(loadGoals).not.toHaveBeenCalled();
+  });
+
+  it("returns the API error message when duplicate title is rejected", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: () =>
+        Promise.resolve({
+          error: "Task with this title already exists",
+          code: "DUPLICATE_TASK_TITLE",
+        }),
+    });
+    const handleSync = vi.fn();
+    const loadGoals = vi.fn();
+
+    const result = await submitGoalWithRefresh({
+      fetchImpl,
+      payload: basePayload,
+      handleSync,
+      loadGoals,
+    });
+
+    expect(result).toEqual({
+      created: false,
+      error: "Task with this title already exists",
     });
     expect(handleSync).not.toHaveBeenCalled();
     expect(loadGoals).not.toHaveBeenCalled();
