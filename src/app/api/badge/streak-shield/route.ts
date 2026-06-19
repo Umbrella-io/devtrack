@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateBadgeSVG } from "../badge-utils";
-import {
-  checkBadgeRateLimit,
-  getBadgeClientIp,
-} from "@/lib/badge-rate-limit";
+import { checkBadgeRateLimit, getBadgeClientIp } from "@/lib/badge-rate-limit";
 import { calculateStreakFromDates } from "@/lib/streak";
 import { logError } from "@/lib/error-handler";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
@@ -60,10 +57,10 @@ async function fetchStreak(
       body: errorBody,
       rateLimited: isRateLimited,
     });
-    return { 
-      current: 0, 
-      longest: 0, 
-      lastCommitDate: null, 
+    return {
+      current: 0,
+      longest: 0,
+      lastCommitDate: null,
       totalActiveDays: 0,
       stale: isRateLimited ? true : undefined,
     };
@@ -106,7 +103,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const username = normalizeGitHubUsername(req.nextUrl.searchParams.get("user"));
+    const username = normalizeGitHubUsername(
+      req.nextUrl.searchParams.get("user")
+    );
 
     if (!username) {
       return NextResponse.json(

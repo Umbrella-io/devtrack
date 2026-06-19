@@ -162,6 +162,7 @@ test.beforeEach(async ({ page }) => {
     "**/api/user/pinned-repos/details**",
     "**/api/metrics/repo-explorer**",
     "**/api/metrics/pr-review-time**",
+    "**/api/metrics/achievement-progress**",
   ];
 
   for (const pattern of metricRoutes) {

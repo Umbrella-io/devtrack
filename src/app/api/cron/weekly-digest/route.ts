@@ -8,20 +8,22 @@
  * Execution model
  * ───────────────
  * 1. Authenticate via CRON_SECRET (fail-closed when env var is absent).
- * 2. Fetch all opted-in users who have an email address.
+ * 2. Fetch opted-in users in paginated batches of PAGE_SIZE (50) to avoid
+ *    loading the entire user table into memory and hitting Vercel timeout
+ *    limits on large deployments.
  * 3. Skip users whose last digest was sent within the past 6 days
  *    (idempotency guard prevents duplicate sends on re-runs).
  * 4. Fetch weekly metrics via GITHUB_TOKEN when configured; fall back
  *    to sending the email without metrics when the token is absent.
  * 5. Render HTML + plain-text email and POST to Resend.
  * 6. Record the send timestamp (best-effort; failure does not cancel batch).
- * 7. Process users in bounded parallel batches (BATCH_SIZE = 5) to stay
- *    within serverless function timeout budgets.
- * 8. Return { sentCount, failedCount, skippedCount, errors }.
+ * 7. Within each page, process users in bounded parallel sub-batches
+ *    (BATCH_SIZE = 5) via Promise.allSettled so one failure never blocks
+ *    the rest.
+ * 8. Return { totalUsersProcessed, emailsSent, emailsFailed, skippedCount, errors }.
  *
  * Backward-compatible contract:
- *   • Response always contains `sentCount`.
- *   • `message: "No users opted in"` when the query returns zero rows.
+ *   • `message: "No users opted in"` when zero opted-in rows exist.
  *   • Auth errors return the same 401 / 500 shapes as before.
  */
 
@@ -29,6 +31,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { buildDigestMetrics, buildUnsubscribeUrl } from "@/lib/weekly-digest";
 import { buildDigestHtml, buildDigestText } from "@/lib/digest-email";
+import { validateCronRequest } from "@/lib/cron-auth";
 import type { DigestMetrics } from "@/lib/weekly-digest";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +40,11 @@ export const dynamic = "force-dynamic";
 // duplicate cron trigger does not send two emails in the same week.
 const DIGEST_COOLDOWN_MS = 6 * 24 * 60 * 60 * 1000;
 
-// Maximum users processed in parallel per batch.
+// Rows fetched per Supabase query — keeps each DB round-trip bounded and
+// prevents loading the entire users table into serverless memory.
+const PAGE_SIZE = 50;
+
+// Maximum users processed in parallel within a fetched page.
 const BATCH_SIZE = 5;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -54,6 +61,12 @@ interface SendError {
   user: string;
   error: string;
 }
+
+type SendResult = {
+  ok: boolean;
+  skipped?: boolean;
+  error?: string;
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -81,10 +94,10 @@ async function sendEmail(params: {
   subject: string;
   html: string;
   text: string;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<SendResult> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    return { ok: true };
+    return { ok: true, skipped: true };
   }
 
   const from =
@@ -142,7 +155,10 @@ async function processUser(
   user: UserRow,
   weekLabel: string,
   githubToken: string | undefined
-): Promise<{ status: "sent" | "failed" | "skipped_cooldown"; error?: string }> {
+): Promise<{
+  status: "sent" | "failed" | "skipped_cooldown" | "skipped_unconfigured";
+  error?: string;
+}> {
   // ── Cooldown guard ────────────────────────────────────────────────────────
   if (user.last_digest_sent_at) {
     const lastSent = new Date(user.last_digest_sent_at).getTime();
@@ -190,110 +206,127 @@ async function processUser(
   });
 
   if (!result.ok) {
-    console.error(
-      `[weekly-digest] Failed to send to ${user.email}: ${result.error}`
-    );
-    return { status: "failed", error: result.error };
+    return {
+      status: "failed",
+      error: result.error,
+    };
   }
 
-  // ── Record timestamp (best-effort) ────────────────────────────────────────
+  if (result.skipped) {
+    return {
+      status: "skipped_unconfigured",
+    };
+  }
+
   if (user.id) {
     await recordDigestSent(user.id);
   }
 
-  return { status: "sent" };
+  return {
+    status: "sent",
+  };
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function GET(request: Request) {
-  // 1. Authenticate — fail closed when CRON_SECRET is absent or mismatched.
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    return NextResponse.json(
-      { error: "CRON_SECRET is not configured" },
-      { status: 500 }
-    );
-  }
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // 1. Authenticate via the centralized hardening utility
+  const authValidationError = validateCronRequest(request);
+  if (authValidationError) {
+    // Returns the exact pre-baked 401 or 500 NextResponse generated by the helper
+    return authValidationError;
   }
 
   try {
-    // 2. Fetch opted-in users who have an email address.
-    const { data: users, error } = await supabaseAdmin
-      .from("users")
-      .select("id, github_login, email, timezone, last_digest_sent_at")
-      .eq("weekly_digest_opt_in", true)
-      .not("email", "is", null);
-
-    if (error) {
-      console.error("[weekly-digest] Error fetching users:", error);
-      return NextResponse.json(
-        { error: "Internal Server Error" },
-        { status: 500 }
-      );
-    }
-
-    if (!users || users.length === 0) {
-      return NextResponse.json({ message: "No users opted in" });
-    }
-
-    // 3. Process users in parallel batches to respect timeout budgets.
     const weekLabel = currentWeekLabel();
     const githubToken = process.env.GITHUB_TOKEN || undefined;
 
-    let sentCount = 0;
-    let failedCount = 0;
+    let totalUsersProcessed = 0;
+    let emailsSent = 0;
+    let emailsFailed = 0;
     let skippedCount = 0;
     const errors: SendError[] = [];
 
-    for (let i = 0; i < users.length; i += BATCH_SIZE) {
-      const batch = (users as UserRow[]).slice(i, i + BATCH_SIZE);
+    // 2. Page through opted-in users so no single query loads the full table.
+    let page = 0;
+    let hasMore = true;
 
-      const results = await Promise.allSettled(
-        batch.map((user) => processUser(user, weekLabel, githubToken))
-      );
+    while (hasMore) {
+      const { data: users, error } = await supabaseAdmin
+        .from("users")
+        .select("id, github_login, email, timezone, last_digest_sent_at")
+        .eq("weekly_digest_opt_in", true)
+        .not("email", "is", null)
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-      for (let j = 0; j < results.length; j++) {
-        const user = batch[j];
-        const result = results[j];
+      if (error) {
+        console.error("[weekly-digest] Error fetching users:", error);
+        return NextResponse.json(
+          { error: "Internal Server Error" },
+          { status: 500 }
+        );
+      }
 
-        if (result.status === "rejected") {
-          failedCount++;
-          errors.push({
-            user: user.github_login,
-            error:
-              result.reason instanceof Error
-                ? result.reason.message
-                : String(result.reason),
-          });
-        } else {
-          const { status, error: sendError } = result.value;
-          if (status === "sent") {
-            sentCount++;
-          } else if (status === "failed") {
-            failedCount++;
+      if (!users?.length) break;
+
+      totalUsersProcessed += users.length;
+
+      // 3. Within each page, send in parallel sub-batches to cap concurrency.
+      for (let i = 0; i < users.length; i += BATCH_SIZE) {
+        const batch = (users as UserRow[]).slice(i, i + BATCH_SIZE);
+
+        const results = await Promise.allSettled(
+          batch.map((user) => processUser(user, weekLabel, githubToken))
+        );
+
+        for (let j = 0; j < results.length; j++) {
+          const user = batch[j];
+          const result = results[j];
+
+          if (result.status === "rejected") {
+            emailsFailed++;
             errors.push({
               user: user.github_login,
-              error: sendError ?? "Unknown error",
+              error:
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : String(result.reason),
             });
-          } else if (status === "skipped_cooldown") {
-            skippedCount++;
+          } else {
+            const { status, error: sendError } = result.value;
+            if (status === "sent") {
+              emailsSent++;
+            } else if (status === "failed") {
+              emailsFailed++;
+              errors.push({
+                user: user.github_login,
+                error: sendError ?? "Unknown error",
+              });
+            } else if (status === "skipped_cooldown") {
+              skippedCount++;
+            }
           }
         }
       }
+
+      // A partial page means we've reached the last page.
+      hasMore = users.length === PAGE_SIZE;
+      page++;
+    }
+
+    if (totalUsersProcessed === 0) {
+      return NextResponse.json({ message: "No users opted in" });
     }
 
     console.log(
-      `[weekly-digest] done — sent:${sentCount} failed:${failedCount} skipped:${skippedCount}`
+      `[weekly-digest] done — processed:${totalUsersProcessed} sent:${emailsSent} failed:${emailsFailed} skipped:${skippedCount}`
     );
 
     return NextResponse.json({
       success: true,
-      sentCount,
-      failedCount,
+      totalUsersProcessed,
+      emailsSent,
+      emailsFailed,
       skippedCount,
       errors,
     });

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
 import {
   PieChart,
   Pie,
@@ -65,6 +66,22 @@ export default function LanguageBreakdown() {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { setSummary, setIsUpdating } = useDashboardWidgetA11y("language-breakdown");
+
+  useEffect(() => {
+    setIsUpdating(loading);
+  }, [loading, setIsUpdating]);
+
+  useEffect(() => {
+    if (languages.length === 0) {
+      setSummary(null);
+      return;
+    }
+    const top = languages[0];
+    setSummary(
+      `Top language: ${top.name}, ${top.percentage}%. ${languages.length} language${languages.length === 1 ? "" : "s"} tracked.`,
+    );
+  }, [languages, setSummary]);
 
   useEffect(() => {
     setLoading(true);
@@ -131,13 +148,28 @@ export default function LanguageBreakdown() {
         <p className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           {error}
         </p>
-      ) : languages.length === 0 ? (
-        <div className="flex min-h-[200px] items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card-muted)]">
-          <p className="text-sm text-[var(--muted-foreground)]">
-            No language data available.
-          </p>
-        </div>
-      ) : (
+    ) : languages.length === 0 ? (
+  <div className="flex flex-col items-center justify-center py-10 text-center">
+    <div className="mb-3 text-4xl">🧩</div>
+
+    <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+      No language data available
+    </h3>
+
+    <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
+      Start committing code to repositories and we&apos;ll analyze the language distribution across your projects.
+    </p>
+
+    <a
+      href="https://github.com/new"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-4 inline-flex rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--control)]"
+    >
+      Create Repository
+    </a>
+  </div>
+) : (
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-8">
           {/* Donut chart */}
           <div
@@ -190,8 +222,12 @@ export default function LanguageBreakdown() {
                 className="flex items-center gap-2 text-sm"
               >
                 <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: getColor(lang.name) }}
+                  className="h-3 w-3 shrink-0 rounded-full"
+                  style={{
+                    backgroundColor: getColor(lang.name),
+                    minWidth: "12px",
+                    minHeight: "12px",
+                  }}
                   role="img"
                   aria-label={lang.name}
                 />

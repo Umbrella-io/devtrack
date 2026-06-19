@@ -7,9 +7,9 @@ export type LocaleResolution = {
   source: LocaleSource;
 };
 
-function normalizeLocale(value: string | null | undefined): AppLocale | null {
+export function normalizeLocale(value: string | null | undefined): AppLocale | null {
   if (!value) return null;
-  const [language] = value.toLowerCase().split("-");
+  const [language] = value.trim().toLowerCase().split("-");
   return isValidLocale(language) ? language : null;
 }
 

@@ -42,6 +42,7 @@ import RecentActivity from "@/components/RecentActivity";
 import DailyNoteWidget from "@/components/DailyNoteWidget";
 import WidgetErrorBoundary from "@/components/WidgetErrorBoundary";
 import DashboardLayoutToolbar from "@/components/dashboard/DashboardLayoutToolbar";
+import { DashboardWidgetA11yProvider } from "@/components/dashboard/DashboardWidgetA11yContext";
 import SortableDashboardWidget from "@/components/dashboard/SortableDashboardWidget";
 import {
   DASHBOARD_LAYOUT_STORAGE_KEY,
@@ -207,6 +208,11 @@ const AchievementProgressTracker = dynamic(
   { ssr: false, loading: () => <SkeletonCard /> },
 );
 
+const SponsorAnalytics = dynamic(
+  () => import("@/components/SponsorAnalytics"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
 const SECTION_ANCHOR_IDS: Record<DashboardSectionId, string> = {
   overview: "overview",
   activity: "streaks",
@@ -237,6 +243,7 @@ const WIDGET_SPAN_CLASSES: Partial<Record<DashboardWidgetId, string>> = {
   "goal-tracker": "xl:col-span-2",
   "daily-note": "xl:col-span-2",
   "recent-activity": "xl:col-span-2",
+  "sponsor-analytics": "xl:col-span-2",
 };
 
 const isDashboardWidgetId = (
@@ -446,6 +453,13 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
         </LazyWidget>
       );
 
+    case "sponsor-analytics":
+      return (
+        <WidgetErrorBoundary>
+          <SponsorAnalytics />
+        </WidgetErrorBoundary>
+      );
+
     default:
       return null;
   }
@@ -624,12 +638,13 @@ export default function CustomizableDashboard() {
           : "Layout editing disabled."}
       </p>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        {layout.sections.map((sectionId) => {
+      <DashboardWidgetA11yProvider>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          {layout.sections.map((sectionId) => {
           const sectionWidgets = layout.widgets[sectionId];
 
           return (
@@ -679,7 +694,8 @@ export default function CustomizableDashboard() {
             </section>
           );
         })}
-      </DndContext>
+        </DndContext>
+      </DashboardWidgetA11yProvider>
     </div>
   );
 }

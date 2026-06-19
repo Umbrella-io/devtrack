@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from "@/lib/supabase";
 import { decryptTokenEdge } from "@/lib/crypto-edge";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
+import { logError } from "@/lib/error-handler";
 
 export const runtime = 'edge';
 
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
         .range(wakaPage * PAGE_SIZE, (wakaPage + 1) * PAGE_SIZE - 1);
 
       if (wakaUsersError) {
-        console.error("Failed to fetch users for wakatime sync:", wakaUsersError.message);
+        logError(new Error(wakaUsersError.message), { endpoint: "/api/cron/sync", operation: "fetchWakatimeUsers" });
         break;
       }
 
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
             );
 
             if (!apiKey) {
-              console.error(`Decryption failed for user ${user.id}`);
+              logError(new Error("Decryption failed"), { endpoint: "/api/cron/sync", operation: "decryptWakatimeToken", userId: user.id });
               return false;
             }
 
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
             });
 
             if (!res.ok) {
-              console.error(`Wakatime API error for user ${user.id}: ${res.status}`);
+              logError(new Error(`Wakatime API error: ${res.status}`), { endpoint: "/api/cron/sync", operation: "fetchWakatimeSummary", userId: user.id, additionalContext: { status: res.status } });
               return false;
             }
 
@@ -99,14 +100,13 @@ export async function POST(req: Request) {
               .upsert(statsToUpsert, { onConflict: "user_id, date" });
 
             if (upsertError) {
-              console.error(`Failed to upsert wakatime stats for user ${user.id}:`, upsertError.message);
+              logError(new Error(upsertError.message), { endpoint: "/api/cron/sync", operation: "upsertWakatimeStats", userId: user.id });
               return false;
             }
 
             return true;
           } catch (e) {
-            const msg = e instanceof Error ? e.message : "Unknown error";
-            console.error(`Error processing wakatime stats for user ${user.id}:`, msg);
+            logError(e, { endpoint: "/api/cron/sync", operation: "syncWakatimeStats", userId: user.id });
             return false;
           }
         }));
@@ -139,7 +139,7 @@ export async function POST(req: Request) {
         .range(ghPage * PAGE_SIZE, (ghPage + 1) * PAGE_SIZE - 1);
 
       if (ghAccountsError) {
-        console.error("Failed to fetch github accounts for sync:", ghAccountsError.message);
+        logError(new Error(ghAccountsError.message), { endpoint: "/api/cron/sync", operation: "fetchGithubAccounts" });
         break;
       }
 
@@ -158,7 +158,7 @@ export async function POST(req: Request) {
             );
 
             if (!token) {
-              console.error(`Decryption failed for github account of user ${account.user_id}`);
+              logError(new Error("Decryption failed"), { endpoint: "/api/cron/sync", operation: "decryptGithubToken", userId: account.user_id });
               return false;
             }
 
@@ -172,8 +172,7 @@ export async function POST(req: Request) {
 
             return true;
           } catch (e) {
-            const msg = e instanceof Error ? e.message : "Unknown error";
-            console.error(`Error syncing github for user ${account.user_id}:`, msg);
+            logError(e, { endpoint: "/api/cron/sync", operation: "syncGithubAchievements", userId: account.user_id });
             return false;
           }
         }));
@@ -201,7 +200,7 @@ export async function POST(req: Request) {
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error('Error in sync edge function:', errorMessage);
+    logError(error, { endpoint: "/api/cron/sync", operation: "cronSyncFatal" });
     return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
