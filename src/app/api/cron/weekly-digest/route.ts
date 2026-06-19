@@ -8,7 +8,7 @@
  * Execution model
  * ───────────────
  * 1. Authenticate via CRON_SECRET (fail-closed when env var is absent).
- * 2. Fetch all opted-in users who have an email address.
+ * 2. Paginate opted-in users (PAGE_SIZE = 50) who have an email address.
  * 3. Skip users whose last digest was sent within the past 6 days
  *    (idempotency guard prevents duplicate sends on re-runs).
  * 4. Fetch weekly metrics via GITHUB_TOKEN when configured; fall back
@@ -40,6 +40,9 @@ const DIGEST_COOLDOWN_MS = 6 * 24 * 60 * 60 * 1000;
 
 // Maximum users processed in parallel per batch.
 const BATCH_SIZE = 5;
+
+// Number of users fetched per paginated Supabase query.
+const PAGE_SIZE = 50;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -262,13 +265,41 @@ export async function GET(request: Request) {
     let failedCount = 0;
     let skippedCount = 0;
     const errors: SendError[] = [];
+    let page = 0;
+    let hasMore = true;
+    let totalFetched = 0;
 
-    for (let i = 0; i < users.length; i += BATCH_SIZE) {
-      const batch = (users as UserRow[]).slice(i, i + BATCH_SIZE);
+    while (hasMore) {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
 
-      const results = await Promise.allSettled(
-        batch.map((user) => processUser(user, weekLabel, githubToken))
-      );
+      const { data: users, error } = await supabaseAdmin
+        .from("users")
+        .select("id, github_login, email, timezone, last_digest_sent_at")
+        .eq("weekly_digest_opt_in", true)
+        .not("email", "is", null)
+        .range(from, to);
+
+      if (error) {
+        console.error("[weekly-digest] Error fetching users (page ", page, "):", error);
+        return NextResponse.json(
+          { error: "Internal Server Error" },
+          { status: 500 }
+        );
+      }
+
+      if (!users || users.length === 0) {
+        if (page === 0) {
+          return NextResponse.json({ message: "No users opted in" });
+        }
+        break;
+      }
+
+      totalFetched += users.length;
+      hasMore = users.length === PAGE_SIZE;
+
+      for (let i = 0; i < users.length; i += BATCH_SIZE) {
+        const batch = (users as UserRow[]).slice(i, i + BATCH_SIZE);
 
       results.forEach((result, idx) => {
         const user = batch[idx];
@@ -295,19 +326,33 @@ export async function GET(request: Request) {
             failedCount++;
             errors.push({
               user: user.github_login,
-              error: sendError ?? "Unknown error",
+              error:
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : String(result.reason),
             });
-            break;
-          case "skipped_cooldown":
-          case "skipped_unconfigured":
-            skippedCount++;
-            break;
+          } else {
+            const { status, error: sendError } = result.value;
+            if (status === "sent") {
+              sentCount++;
+            } else if (status === "failed") {
+              failedCount++;
+              errors.push({
+                user: user.github_login,
+                error: sendError ?? "Unknown error",
+              });
+            } else if (status === "skipped_cooldown") {
+              skippedCount++;
+            }
+          }
         }
-      });
+      }
+
+      page++;
     }
 
     console.log(
-      `[weekly-digest] done — sent:${sentCount} failed:${failedCount} skipped:${skippedCount}`
+      `[weekly-digest] done — fetched:${totalFetched} sent:${sentCount} failed:${failedCount} skipped:${skippedCount}`
     );
 
     return NextResponse.json({
