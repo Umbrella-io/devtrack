@@ -30,6 +30,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://devtrack.vercel.app"),
   title: "DevTrack — Developer Productivity Dashboard",
   description:
     "Track coding habits, visualize GitHub contributions, and hit your goals.",
@@ -106,11 +107,10 @@ export default async function RootLayout({
               <Providers>
                 <AppNavbar />
                 {children}
+                <Footer />
               </Providers>
             </NextIntlClientProvider>
           </div>
-
-          <Footer />
 
           <Toaster richColors position="top-right" />
         </div>

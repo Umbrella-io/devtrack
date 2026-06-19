@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from "next/image";
 import Link from 'next/link';
-import { Activity, GitPullRequest, Goal, Share2, Flame, FolderGit2, LogIn, LayoutDashboard, Target, type LucideIcon } from "lucide-react";
+import { Activity, GitPullRequest, Goal, Share2, Flame, FolderGit2, LogIn, LayoutDashboard, Target, Brain, Trophy, Users, Server, type LucideIcon } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
 /* ═══════════════════════════════════════════════════════════
@@ -936,6 +936,34 @@ const FEATURES = [
   },
 ];
 
+const WHY_DEVTRACK = [
+  {
+    icon: Goal,
+    title: "Goal Tracking",
+    desc: "Set coding goals and track progress automatically."
+  },
+  {
+    icon: Brain,
+    title: "AI Insights",
+    desc: "Get AI-powered summaries and recommendations."
+  },
+  {
+    icon: Trophy,
+    title: "Year Wrapped",
+    desc: "Review your yearly development journey."
+  },
+  {
+    icon: Users,
+    title: "Multi-Account Support",
+    desc: "Manage multiple GitHub profiles in one place."
+  },
+  {
+    icon: Server,
+    title: "Self-Hosting",
+    desc: "Run DevTrack on your own infrastructure."
+  }
+];
+
 function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
   const [ref, vis] = useScrollReveal(0.15);
   const [tiltRef, tiltStyle] = use3DTilt(12);
@@ -1009,6 +1037,94 @@ function FeaturesSection() {
         {FEATURES.map((f, i) => (
           <FeatureCard key={f.title} f={f} index={i} />
         ))}
+      </div>
+    </section>
+  );
+}
+
+function WhyDevTrackSection() {
+  return (
+    <section
+      style={{
+        padding: "80px clamp(20px,4vw,48px)",
+        borderTop: "1px solid #1e293b",
+        maxWidth: 1200,
+        margin: "0 auto",
+      }}
+    >
+      <div
+        style={{
+          textAlign: "center",
+          marginBottom: 50,
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: DISP,
+            fontSize: "clamp(32px,4vw,48px)",
+            fontWeight: 800,
+            color: TEXT,
+            marginBottom: 12,
+          }}
+        >
+          Why DevTrack?
+        </h2>
+
+        <p
+          style={{
+            color: MUTED,
+            maxWidth: 700,
+            margin: "0 auto",
+          }}
+        >
+          Go beyond GitHub analytics with goal tracking,
+          AI insights, yearly summaries, multi-account
+          support, and self-hosting.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        {WHY_DEVTRACK.map((item) => {
+          const Icon = item.icon;
+
+          return (
+            <div
+              key={item.title}
+              style={{
+                padding: "24px",
+                border: "1px solid #1e293b",
+                borderRadius: "16px",
+                background: "rgba(10,10,12,0.7)",
+              }}
+            >
+              <Icon
+                size={28}
+                color="#818cf8"
+                style={{ marginBottom: 16 }}
+              />
+
+              <h3
+                style={{
+                  color: TEXT,
+                  marginBottom: 10,
+                  fontWeight: 700,
+                }}
+              >
+                {item.title}
+              </h3>
+
+              <p
+                style={{
+                  color: MUTED,
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                }}
+              >
+                {item.desc}
+              </p>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -1300,6 +1416,7 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <HeatmapSection />
       <StatsSection stats={repoStats} />
       <FeaturesSection />
+      <WhyDevTrackSection />
       <ContributeSection stats={repoStats} />
       <HowItWorksSection />
       <LandingFooter />

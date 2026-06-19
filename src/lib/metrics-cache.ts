@@ -110,6 +110,10 @@ function isTruthyCacheBypass(value: string | null): boolean {
   return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }
 
+/**
+ * Retrieves the singleton Redis client instance for caching metrics.
+ * @returns The Upstash Redis client or null if not configured.
+ */
 export function getRedisClient(): Redis | null {
   if (redisClient !== undefined) {
     return redisClient;
@@ -127,6 +131,11 @@ export function getRedisClient(): Redis | null {
   return redisClient;
 }
 
+/**
+ * Checks if the metrics cache should be bypassed based on request parameters or headers.
+ * @param req - The Next.js request object.
+ * @returns True if cache bypass is requested.
+ */
 export function isMetricsCacheBypassed(req: NextRequest): boolean {
   const bypassParam =
     req.nextUrl.searchParams.get("refresh") ??
@@ -137,6 +146,13 @@ export function isMetricsCacheBypassed(req: NextRequest): boolean {
   return isTruthyCacheBypass(bypassParam) || isTruthyCacheBypass(bypassHeader);
 }
 
+/**
+ * Constructs a unique cache key for a given metrics endpoint, user, and arbitrary parameters.
+ * @param userId - The ID of the user.
+ * @param endpoint - The metrics endpoint key.
+ * @param params - Additional parameters to uniquely identify the request.
+ * @returns The constructed cache key string.
+ */
 export function metricsCacheKey(
   userId: string,
   endpoint: MetricsCacheEndpoint,
@@ -152,6 +168,12 @@ export function metricsCacheKey(
   return `metrics:${userId}:${endpoint}:${cacheParams.toString() || "default"}`;
 }
 
+/**
+ * Retrieves a cached value, checking in-memory first and falling back to Redis.
+ * @param key - The cache key.
+ * @param ttlSeconds - Optional TTL to refresh the in-memory cache if a Redis hit occurs.
+ * @returns A promise resolving to the cached value, or null if a cache miss.
+ */
 export async function cacheGet<T>(
   key: string,
   ttlSeconds?: number
@@ -178,6 +200,13 @@ export async function cacheGet<T>(
   return null;
 }
 
+/**
+ * Stores a value in both the in-memory cache and Redis with a specific TTL.
+ * @param key - The cache key.
+ * @param value - The value to store.
+ * @param ttlSeconds - The time-to-live in seconds.
+ * @returns A promise that resolves when caching completes.
+ */
 export async function cacheSet<T>(
   key: string,
   value: T,
@@ -200,6 +229,12 @@ export async function cacheSet<T>(
   setMemoryCacheValue(key, value, ttlSeconds);
 }
 
+/**
+ * Helper to fetch fresh data and cache it, or return cached data if available and not bypassed.
+ * @param options - Bypassing, key, and TTL options.
+ * @param loadFresh - A callback to load fresh data on a cache miss.
+ * @returns A promise resolving to the data.
+ */
 export async function withMetricsCache<T>(
   options: MetricsCacheOptions,
   loadFresh: () => Promise<T>
@@ -268,9 +303,12 @@ export async function cacheDelete(key: string): Promise<void> {
   }
 }
 
-export async function invalidateUserMetricsCache(
-  userId: string
-): Promise<void> {
+/**
+ * Evicts all cached metric keys associated with a specific user from memory and Redis.
+ * @param userId - The user's ID whose metrics should be invalidated.
+ * @returns A promise that resolves when the invalidation is complete.
+ */
+export async function invalidateUserMetricsCache(userId: string): Promise<void> {
   const prefix = `metrics:${userId}:`;
 
   for (const key of memoryCache.keys()) {

@@ -18,6 +18,7 @@ import SignOutButton from "@/components/SignOutButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
+import OnboardingTour from "@/components/OnboardingTour";
 import { Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
@@ -205,6 +206,7 @@ function useDashboardSync() {
 export default function DashboardHeader() {
   const { data: session } = useSession();
   const [isPublic, setIsPublic] = useState<boolean | null>(null);
+  const [seenOnboarding, setSeenOnboarding] = useState<boolean>(true);
   const [greeting, setGreeting] = useState<string>("Welcome back");
 
   const [isNightOwl, setIsNightOwl] = useState<boolean>(false);
@@ -232,6 +234,7 @@ export default function DashboardHeader() {
       if (res.ok) {
         const data = await res.json();
         setIsPublic(data.is_public === true);
+        setSeenOnboarding(data.seen_onboarding === true);
       } else {
         setIsPublic(false);
       }
@@ -311,15 +314,15 @@ export default function DashboardHeader() {
     : null;
 
   return (
-    <header className="relative mb-8 overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]/95 p-4 shadow-[var(--shadow-soft)] backdrop-blur-md transition-all duration-300 hover:shadow-[var(--shadow-medium)] sm:p-5 md:p-6">
+    <header className="relative mb-8 overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]/95 p-3 shadow-[var(--shadow-soft)] backdrop-blur-md transition-all duration-300 hover:shadow-[var(--shadow-medium)] sm:p-5 md:p-6">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/40 to-transparent" />
       <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[var(--accent)]/10 blur-3xl" />
       <div className="relative z-10 flex min-w-0 flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 
         {/* Left Section */}
-        <div className="min-w-0 pr-12 lg:pr-0">
+        <div className="min-w-0 pr-0">
           <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2">
-            <div className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--accent)]/20 bg-[var(--accent)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)] transition-all duration-300">
+            <div className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--accent)]/20 bg-[var(--accent)]/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)] transition-all duration-300">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--accent)]"></span>
@@ -352,7 +355,7 @@ export default function DashboardHeader() {
             >
               Dashboard overview
             </p>
-            <h1 className="mt-2 bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-2xl font-extrabold text-transparent sm:text-3xl md:text-4xl">
+            <h1 className="mt-2 bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-xl font-extrabold text-transparent sm:text-3xl md:text-4xl">
               Dashboard
             </h1>
             <p
@@ -384,7 +387,7 @@ export default function DashboardHeader() {
         {/* Right Section */}
         {/* Right Section */}
         <div className="w-full min-w-0 lg:w-auto">
-          <div className="flex w-full min-w-0 items-center gap-3 overflow-x-auto pb-1 lg:w-auto lg:justify-end lg:overflow-visible lg:pb-0">
+          <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto pb-1 lg:w-auto lg:justify-end lg:overflow-visible lg:pb-0">
             {isPublic === true && session?.githubLogin && (
               <ShareProfileButton githubLogin={session.githubLogin} />
             )}
@@ -413,11 +416,11 @@ export default function DashboardHeader() {
           </div>
         </div>
 
-        {/* Mobile hamburger button */}
+        {/* Mobile hamburger button - hidden since controls are inline on mobile via overflow-x-auto */}
         <Button
           variant="outline"
           size="icon"
-          className="self-start sm:hidden"
+          className="hidden"
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Toggle menu"
           aria-expanded={menuOpen}
@@ -492,6 +495,8 @@ export default function DashboardHeader() {
       <div className="mt-5">
         <AccountToggle />
       </div>
+
+      {!seenOnboarding && <OnboardingTour />}
     </header>
   );
 }

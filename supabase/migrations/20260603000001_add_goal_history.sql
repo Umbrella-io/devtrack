@@ -20,6 +20,12 @@ create index if not exists goal_history_goal_period
 
 alter table goal_history enable row level security;
 
+-- Drop policies if they already exist to prevent duplicate errors
+DROP POLICY IF EXISTS "goal_history_select_own" ON goal_history;
+DROP POLICY IF EXISTS "goal_history_insert_own" ON goal_history;
+DROP POLICY IF EXISTS "goal_history_delete_own" ON goal_history;
+
+-- Create the policies cleanly
 create policy "goal_history_select_own"
   on goal_history for select
   using (user_id = auth.uid()::text);
