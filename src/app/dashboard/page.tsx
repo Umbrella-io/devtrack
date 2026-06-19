@@ -1,4 +1,4 @@
-import OnboardingTour from "@/components/OnboardingTour";
+
 import StreakTracker from "@/components/StreakTracker";
 import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
@@ -130,7 +130,7 @@ export default async function DashboardPage() {
   return (
     <DashboardSSEProvider>
       <DashboardWidgetA11yProvider>
-        <OnboardingTour />
+  
         <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
           <DashboardHeader />
 
@@ -222,7 +222,7 @@ export default async function DashboardPage() {
             <PRMetrics />
             <CommunityMetrics />
           </div>
-           </div>
+           
           {/* PR breakdown + commit time — 2-col so charts have room */}
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <LazyWidget fallback={<SkeletonCard />}>
