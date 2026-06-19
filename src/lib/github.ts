@@ -26,6 +26,11 @@ async function githubFetch(
   }
 }
 
+/**
+ * Fetches recent events for the authenticated user from the GitHub API.
+ * @param token - The user's GitHub personal access token.
+ * @returns A promise that resolves to an array of GitHub events.
+ */
 export async function fetchUserEvents(token: string): Promise<GitHubEvent[]> {
   const res = await githubFetch(`${GITHUB_API}/user/events?per_page=100`, {
     headers: {
@@ -46,6 +51,12 @@ interface FetchUserReposOptions {
   maxPages?: number;
 }
 
+/**
+ * Fetches all repositories (public, private, and internal) for the authenticated user.
+ * @param token - The user's GitHub personal access token.
+ * @param options - Pagination options like perPage and maxPages.
+ * @returns A promise that resolves to an array of GitHub repositories.
+ */
 export async function fetchUserRepos(
   token: string,
   options: FetchUserReposOptions = {}
@@ -137,6 +148,14 @@ export interface IssuesMetrics {
   mostActiveRepo: string | null;
 }
 
+/**
+ * Fetches issue metrics (opened, closed, etc.) for a user or organization over the last 30 days.
+ * @param token - A GitHub personal access token.
+ * @param githubLogin - The GitHub username to search for (defaults to "@me").
+ * @param orgName - Optional organization name to filter issues.
+ * @param excludedOrgs - Array of organizations to exclude from the search.
+ * @returns A promise that resolves to calculated issue metrics.
+ */
 export async function fetchIssuesMetrics(
   token: string,
   githubLogin?: string,

@@ -18,11 +18,11 @@ interface Milestone {
   id: string;
   title: string;
   description: string;
-  targetValue: number;
-  currentValue: number;
+  target_value: number;
+  current_value: number;
   unit: string;
-  targetDate: string;
-  createdAt: string;
+  target_date: string;
+  created_at: string;
   category: 'commits' | 'streak' | 'projects' | 'custom';
 }
 
@@ -35,29 +35,13 @@ const CATEGORY_OPTIONS = [
   { value: 'custom', label: 'Custom', icon: '🎯' },
 ];
 
-const STORAGE_KEY = 'devtrack:milestones';
-
-function loadMilestones(): Milestone[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveMilestones(milestones: Milestone[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(milestones));
-}
-
 function getStatus(milestone: Milestone): MilestoneStatus {
-  const progress = milestone.currentValue / milestone.targetValue;
+  const progress = milestone.current_value / milestone.target_value;
   if (progress >= 1) return 'completed';
 
   const now = Date.now();
-  const created = new Date(milestone.createdAt).getTime();
-  const target = new Date(milestone.targetDate).getTime();
+  const created = new Date(milestone.created_at).getTime();
+  const target = new Date(milestone.target_date).getTime();
   const totalDuration = target - created;
   const elapsed = now - created;
   const expectedProgress = totalDuration > 0 ? elapsed / totalDuration : 0;
@@ -69,12 +53,12 @@ function getStatus(milestone: Milestone): MilestoneStatus {
 }
 
 function getForecastDate(milestone: Milestone): string | null {
-  const { currentValue, targetValue, createdAt } = milestone;
-  if (currentValue <= 0) return null;
+  const { current_value, target_value, created_at } = milestone;
+  if (current_value <= 0) return null;
 
-  const elapsed = Date.now() - new Date(createdAt).getTime();
-  const rate = currentValue / elapsed; // units per ms
-  const remaining = targetValue - currentValue;
+  const elapsed = Date.now() - new Date(created_at).getTime();
+  const rate = current_value / elapsed;
+  const remaining = target_value - current_value;
   if (rate <= 0) return null;
 
   const msNeeded = remaining / rate;
@@ -103,67 +87,117 @@ function StatusBadge({ status }: { status: MilestoneStatus }) {
 
 export default function MilestonePlanner() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '', description: '', targetValue: '', currentValue: '0',
     unit: '', targetDate: '', category: 'custom' as Milestone['category'],
   });
 
-  useEffect(() => {
-    setMilestones(loadMilestones());
+  const loadMilestones = useCallback(async () => {
+    try {
+      const res = await fetch('/api/milestones');
+      if (!res.ok) return;
+      const data = await res.json();
+      setMilestones(data.milestones ?? []);
+    } catch {
+      // silently ignore network errors on initial load
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const handleAdd = useCallback(() => {
+  useEffect(() => {
+    loadMilestones();
+  }, [loadMilestones]);
+
+  const handleAdd = useCallback(async () => {
     if (!form.title || !form.targetValue || !form.targetDate) return;
-    const newMilestone: Milestone = {
-      id: `${Date.now()}`,
-      title: form.title,
-      description: form.description,
-      targetValue: Number(form.targetValue),
-      currentValue: Number(form.currentValue) || 0,
-      unit: form.unit || CATEGORY_OPTIONS.find(c => c.value === form.category)?.label || 'units',
-      targetDate: form.targetDate,
-      createdAt: new Date().toISOString(),
-      category: form.category,
-    };
-    const updated = [...milestones, newMilestone];
-    setMilestones(updated);
-    saveMilestones(updated);
-    setForm({ title: '', description: '', targetValue: '', currentValue: '0', unit: '', targetDate: '', category: 'custom' });
-    setShowForm(false);
-  }, [form, milestones]);
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/milestones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.title,
+          description: form.description,
+          targetValue: Number(form.targetValue),
+          currentValue: Number(form.currentValue) || 0,
+          unit: form.unit || CATEGORY_OPTIONS.find(c => c.value === form.category)?.label || 'units',
+          targetDate: form.targetDate,
+          category: form.category,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError((data as { error?: string }).error ?? 'Failed to create milestone.');
+        return;
+      }
+      const data = await res.json();
+      setMilestones(prev => [data.milestone, ...prev]);
+      setForm({ title: '', description: '', targetValue: '', currentValue: '0', unit: '', targetDate: '', category: 'custom' });
+      setShowForm(false);
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }, [form]);
 
-  const handleIncrement = useCallback((id: string) => {
-    const updated = milestones.map(m =>
-      m.id === id ? { ...m, currentValue: Math.min(m.currentValue + 1, m.targetValue) } : m
-    );
-    setMilestones(updated);
-    saveMilestones(updated);
+  const handleIncrement = useCallback(async (id: string) => {
+    const milestone = milestones.find(m => m.id === id);
+    if (!milestone || milestone.current_value >= milestone.target_value) return;
+    const next = milestone.current_value + 1;
+    setMilestones(prev => prev.map(m => m.id === id ? { ...m, current_value: next } : m));
+    try {
+      await fetch(`/api/milestones/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentValue: next }),
+      });
+    } catch {
+      setMilestones(prev => prev.map(m => m.id === id ? { ...m, current_value: milestone.current_value } : m));
+    }
   }, [milestones]);
 
-  const handleDelete = useCallback((id: string) => {
-    const updated = milestones.filter(m => m.id !== id);
-    setMilestones(updated);
-    saveMilestones(updated);
-  }, [milestones]);
-  const handleDuplicate = useCallback((id: string) => {
-  const milestone = milestones.find(m => m.id === id);
+  const handleDelete = useCallback(async (id: string) => {
+    setMilestones(prev => prev.filter(m => m.id !== id));
+    try {
+      await fetch(`/api/milestones/${id}`, { method: 'DELETE' });
+    } catch {
+      loadMilestones();
+    }
+  }, [loadMilestones]);
 
-  if (!milestone) return;
-
-  const duplicate: Milestone = {
-    ...milestone,
-    id: `${Date.now()}`,
-    title: `${milestone.title} (Copy)`,
-    createdAt: new Date().toISOString(),
-  };
-
-  const updated = [...milestones, duplicate];
-
-  setMilestones(updated);
-  saveMilestones(updated);
-}, [milestones]);
+  const handleDuplicate = useCallback(async (id: string) => {
+    const milestone = milestones.find(m => m.id === id);
+    if (!milestone) return;
+    try {
+      const res = await fetch('/api/milestones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `${milestone.title} (Copy)`,
+          description: milestone.description,
+          targetValue: milestone.target_value,
+          currentValue: milestone.current_value,
+          unit: milestone.unit,
+          targetDate: milestone.target_date,
+          category: milestone.category,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMilestones(prev => [data.milestone, ...prev]);
+      }
+    } catch {
+      loadMilestones();
+    }
+  }, [milestones, loadMilestones]);
 
   const statusCounts = milestones.reduce((acc, m) => {
     acc[getStatus(m)] = (acc[getStatus(m)] || 0) + 1;
@@ -207,6 +241,11 @@ export default function MilestonePlanner() {
         </div>
       )}
 
+      {/* Error message */}
+      {error && (
+        <p role="alert" style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: '12px' }}>{error}</p>
+      )}
+
       {/* Add form */}
       {showForm && (
         <div style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
@@ -217,6 +256,7 @@ export default function MilestonePlanner() {
                 value={form.title}
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                 placeholder="e.g. Reach 500 commits"
+                maxLength={100}
                 style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)', fontSize: '0.875rem', boxSizing: 'border-box' }}
               />
             </div>
@@ -248,6 +288,7 @@ export default function MilestonePlanner() {
                 value={form.targetValue}
                 onChange={e => setForm(f => ({ ...f, targetValue: e.target.value }))}
                 placeholder="100"
+                min={1}
                 style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)', fontSize: '0.875rem' }}
               />
             </div>
@@ -258,6 +299,7 @@ export default function MilestonePlanner() {
                 value={form.currentValue}
                 onChange={e => setForm(f => ({ ...f, currentValue: e.target.value }))}
                 placeholder="0"
+                min={0}
                 style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)', fontSize: '0.875rem' }}
               />
             </div>
@@ -266,15 +308,23 @@ export default function MilestonePlanner() {
             <button onClick={() => setShowForm(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--foreground)', fontSize: '0.8rem', cursor: 'pointer' }}>
               Cancel
             </button>
-            <button onClick={handleAdd} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#6366f1', color: '#fff', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
-              Add Milestone
+            <button
+              onClick={handleAdd}
+              disabled={saving}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#6366f1', color: '#fff', fontSize: '0.8rem', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}
+            >
+              {saving ? 'Saving…' : 'Add Milestone'}
             </button>
           </div>
         </div>
       )}
 
       {/* Milestone list */}
-      {milestones.length === 0 ? (
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
+          Loading milestones…
+        </div>
+      ) : milestones.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
           <Target size={32} style={{ opacity: 0.3, margin: '0 auto 8px' }} />
           <p style={{ margin: 0 }}>No milestones yet. Create one to start tracking!</p>
@@ -283,7 +333,7 @@ export default function MilestonePlanner() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {milestones.map(m => {
             const status = getStatus(m);
-            const pct = Math.min(Math.round((m.currentValue / m.targetValue) * 100), 100);
+            const pct = Math.min(Math.round((m.current_value / m.target_value) * 100), 100);
             const forecast = getForecastDate(m);
             const isExpanded = expanded === m.id;
             const statusColor = { completed: '#10b981', 'on-track': '#6366f1', 'at-risk': '#f59e0b', behind: '#ef4444' }[status];
@@ -298,7 +348,7 @@ export default function MilestonePlanner() {
                       <StatusBadge status={status} />
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginTop: '2px' }}>
-                      {m.currentValue}/{m.targetValue} {m.unit} · Due {new Date(m.targetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {m.current_value}/{m.target_value} {m.unit} · Due {new Date(m.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '4px' }}>
@@ -349,7 +399,7 @@ export default function MilestonePlanner() {
                 {isExpanded && (
                   <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>
                     {m.description && <p style={{ margin: '0 0 6px' }}>{m.description}</p>}
-                    <p style={{ margin: 0 }}>Created: {new Date(m.createdAt).toLocaleDateString()}</p>
+                    <p style={{ margin: 0 }}>Created: {new Date(m.created_at).toLocaleDateString()}</p>
                     {status === 'completed' && <p style={{ margin: '4px 0 0', color: '#10b981', fontWeight: 600 }}>🎉 Milestone achieved!</p>}
                   </div>
                 )}

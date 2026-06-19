@@ -453,7 +453,9 @@ test.describe("visual regression screenshots", () => {
       document.documentElement.classList.remove("dark");
     });
     await page.emulateMedia({ colorScheme: "light" });
-    await page.reload({ waitUntil: "load" });
+    // Re-apply mocks before reload
+    await page.reload({ waitUntil: "load" }); 
+    await mockDashboardApis(page);
     await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible({
       timeout: 30_000,
     });

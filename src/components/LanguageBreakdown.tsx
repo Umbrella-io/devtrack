@@ -214,11 +214,11 @@ export default function LanguageBreakdown() {
                 className="flex items-center gap-2 text-sm"
               >
                 <span
-                  className="shrink-0 rounded-full"
+                  className="h-3 w-3 shrink-0 rounded-full"
                   style={{
-                    width: "0.5rem",
-                    height: "0.5rem",
                     backgroundColor: getColor(lang.name),
+                    minWidth: "12px",
+                    minHeight: "12px",
                   }}
                   role="img"
                   aria-label={lang.name}

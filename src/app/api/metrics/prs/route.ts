@@ -166,21 +166,21 @@ async function fetchPRMetrics(
   githubLogin?: string,
   orgName?: string | null,
   excludedOrgs: string[] = [],
-  range:string="30d"
+  range: string = "30d"
 ): Promise<PRMetricsBase> {
   const authorQ = githubLogin ? githubLogin : "@me";
+  let q = `type:pr+author:${authorQ}`;
   const days =
-    range === "7d"
-      ? 7
-      : range === "90d"
-      ? 90
-      : 30;
+    range === "7d" ? 7 :
+      range === "90d" ? 90 :
+        30;
 
-  const sinceDate = new Date();
-  sinceDate.setDate(sinceDate.getDate() - days);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
 
-  const since = sinceDate.toISOString().split("T")[0];
-  let q = `type:pr+author:${authorQ}+created:>=${since}`;
+  const searchSince = cutoff.toISOString().split("T")[0];
+
+  q += `+created:>=${searchSince}`;
   if (orgName) {
     q += `+org:${orgName}`;
   } else if (excludedOrgs.length > 0) {
@@ -214,7 +214,9 @@ async function fetchPRMetrics(
   const avgFirstReviewHours = await getAverageFirstReviewHours(token, data.items);
 
   // GraphQL for review cycle time
-  const graphSince = since;
+  const sinceDate = new Date();
+  sinceDate.setDate(sinceDate.getDate() - days);
+  const since = sinceDate.toISOString().split("T")[0];
 
   const gqlAuthorQ = githubLogin ? githubLogin : "@me";
   let gqlSearchQ = `type:pr reviewed-by:${gqlAuthorQ}`;
@@ -223,7 +225,7 @@ async function fetchPRMetrics(
   } else if (excludedOrgs.length > 0) {
     gqlSearchQ += excludedOrgs.map((org) => ` -org:${org}`).join("");
   }
-  gqlSearchQ += ` created:>${graphSince}`;
+  gqlSearchQ += ` created:>${since}`;
 
   const query = `
     query {
@@ -415,6 +417,7 @@ async function fetchCachedPRMetrics(
   range: string = "30d"
 ): Promise<PRMetricsBase> {
   const key = metricsCacheKey(cacheContext.userId, "prs", {
+    range,
     staleThresholdDays: cacheContext.staleThresholdDays ?? 14,
     githubLogin,
     orgName: orgName || undefined,
@@ -423,7 +426,7 @@ async function fetchCachedPRMetrics(
 
   return withMetricsCache(
     { bypass: cacheContext.bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.prs },
-    () => fetchPRMetrics(token, githubLogin, orgName, excludedOrgs,range)
+    () => fetchPRMetrics(token, githubLogin, orgName, excludedOrgs, range)
   );
 }
 
@@ -627,7 +630,7 @@ export async function GET(req: NextRequest) {
           ? session.accessToken
           : await getAccountToken(userRow.id, acc.githubId);
         if (!token) return null;
-        return fetchCachedPRMetrics(token, { bypass, userId: acc.githubId }, acc.githubLogin, orgName, excludedOrgs,range);
+        return fetchCachedPRMetrics(token, { bypass, userId: acc.githubId }, acc.githubLogin, orgName, excludedOrgs, range);
       });
 
       const resultsRaw = await Promise.allSettled(metricsPromises);
@@ -709,8 +712,8 @@ export async function GET(req: NextRequest) {
   }
 
   const token = !targetAccountId || targetAccountId === session.githubId
-      ? session.accessToken
-      : await getAccountToken(userRow.id, targetAccountId);
+    ? session.accessToken
+    : await getAccountToken(userRow.id, targetAccountId);
 
   if (!token) return Response.json({ error: "Account not found" }, { status: 404 });
 

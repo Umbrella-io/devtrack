@@ -354,15 +354,15 @@ export default function ContributionHeatmap({
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
-      <div className="mb-4 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-4 sm:gap-2">
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)] dark:text-white">Contribution Heatmap</h2>          
-          <p className="text-sm text-[var(--muted-foreground)] dark:text-gray-300">
+      <div className="mb-4 flex flex-col items-start justify-between gap-3">
+        <div className="w-full">
+          <h2 className="text-base font-semibold text-[var(--card-foreground)] dark:text-white">Contribution Heatmap</h2>          
+          <p className="text-xs text-[var(--muted-foreground)] dark:text-gray-300">
             {customLabel ? `${customLabel}` : `Last ${selectedDays} days of commit activity.`}
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2">
           {/* Range buttons */}
           <div className="flex flex-wrap gap-1 rounded-lg border border-[var(--border)] bg-[var(--background)] p-1">
             {PRESET_RANGES.map((r) => (
@@ -470,11 +470,11 @@ export default function ContributionHeatmap({
               Math.ceil(maxCommits * 0.5),
               Math.ceil(maxCommits * 0.75),
               maxCommits,
-            ].map((count) => {
+            ].map((count, index) => {
               const swatch = getHeatmapColor(count);
               return (
                 <span
-                  key={count}
+                  key={index} // <-- Changed from count to index
                   className="h-3 w-3 rounded-sm border"
                   style={{ backgroundColor: swatch, borderColor: themeConfig.border }}
                 />

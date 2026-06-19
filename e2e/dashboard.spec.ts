@@ -293,6 +293,7 @@ async function injectMockSession(page: import("@playwright/test").Page) {
     "**/api/user/pinned-repos/details**",
     "**/api/metrics/repo-explorer**",
     "**/api/daily-note**",
+    "**/api/metrics/achievement-progress**",
   ];
   for (const pattern of stubRoutes) {
     await page.route(pattern, (route) =>

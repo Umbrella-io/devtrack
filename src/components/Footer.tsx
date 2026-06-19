@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession, signIn } from "next-auth/react";
 import { Github, Linkedin, Mail, ExternalLink } from "lucide-react";
 
 const year = new Date().getFullYear();
@@ -84,6 +85,8 @@ function FooterLink({
 export default function Footer() {
   const pathname = usePathname();
   const isLanding = pathname === "/";
+  const { status } = useSession();
+  const isAuthenticated = status === "authenticated";
 
   if (pathname === "/wrapped") return null;
 
@@ -162,6 +165,29 @@ export default function Footer() {
             >
               Product
             </h3>
+            <div className="mt-6 flex flex-col gap-4 text-[14px] text-[var(--muted-foreground)]">
+              <Link className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit" href="/">
+                Home
+              </Link>
+              {isAuthenticated ? (
+                <Link className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit" href="/dashboard">
+                  Dashboard
+                </Link>
+              ) : (
+                <button
+                  className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit text-left"
+                  onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+                >
+                  Dashboard
+                </button>
+              )}
+              <Link className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit" href="/leaderboard">
+                Leaderboard
+              </Link>
+              <Link className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit" href="/contact">
+                Contact
+              </Link>
+            </div>
             <nav aria-label="Product links" className="mt-6 flex flex-col gap-3">
               {PRODUCT_LINKS.map(({ label, href }) => (
                 <FooterLink key={label} href={href}>

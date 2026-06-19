@@ -308,6 +308,7 @@ export async function installDashboardApiMocks(page, options = {}) {
     "**/api/user/pinned-repos/details**",
     "**/api/metrics/repo-explorer**",
     "**/api/metrics/sponsors**",
+    "**/api/metrics/achievement-progress**",
   ];
 
   for (const pattern of stubRoutes) {

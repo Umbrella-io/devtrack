@@ -125,6 +125,7 @@ test.describe("[Streak E2E]", () => {
       "**/api/goals/sync**",
       "**/api/goals**",
       "**/api/ai-insights**",
+      "**/api/metrics/achievement-progress**",
     ];
 
     for (const pattern of stubRoutes) {

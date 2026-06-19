@@ -44,6 +44,11 @@ function getRuns(dates: StreakDate[]): { end: string; length: number }[] {
   return runs;
 }
 
+/**
+ * Calculates the current streak of consecutive days with activity.
+ * @param dates - Array of date objects or strings representing activity days.
+ * @returns The length of the current streak in days.
+ */
 export function calculateCurrentStreak(dates: StreakDate[]): number {
   const runs = getRuns(dates);
   if (runs.length === 0) return 0;
@@ -57,6 +62,11 @@ export function calculateCurrentStreak(dates: StreakDate[]): number {
     : 0;
 }
 
+/**
+ * Calculates the longest streak of consecutive days with activity.
+ * @param dates - Array of date objects or strings representing activity days.
+ * @returns The length of the longest streak in days.
+ */
 export function calculateLongestStreak(dates: StreakDate[]): number {
   return getRuns(dates).reduce(
     (longest, run) => Math.max(longest, run.length),

@@ -10,6 +10,7 @@
     "lint": "eslint src",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "supabase:generate-types": "npx supabase@latest gen types typescript --local > src/types/supabase.ts"
   },
@@ -19,6 +20,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@google/generative-ai": "^0.24.1",
     "@sentry/nextjs": "^10",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.106.2",
@@ -33,6 +35,7 @@
     "dompurify": "^3.1.6",
     "driver.js": "^1.4.0",
     "fflate": "^0.8.3",
+    "groq-sdk": "^1.2.1",
     "html-to-image": "^1.11.13",
     "idb-keyval": "^6.2.5",
     "jspdf": "^4.2.1",

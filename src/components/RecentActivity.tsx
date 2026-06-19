@@ -221,7 +221,7 @@ export default function RecentActivity() {
         </button>
       </div>
 
-      {loading && !isLoadingMore ? (
+      {loading && !isLoadingMore ? ( 
         <div className="max-h-[320px] space-y-3 overflow-y-auto pr-1">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
@@ -307,7 +307,7 @@ export default function RecentActivity() {
             </div>
           )}
         </div>
-      )}
-    </div>
+      )
+} </div>
   );
 }
