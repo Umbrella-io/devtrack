@@ -1,6 +1,5 @@
-import { getServerAuthSession } from "@/lib/server-auth";
+import { getSessionWithToken } from "@/lib/get-session-token";
 import { NextRequest } from "next/server";
-import { authOptions } from "@/lib/auth";
 import {
   getAccountToken,
   getAllAccounts,
@@ -230,21 +229,23 @@ function formatTrendWeeks(weeks: TrendWeek[]) {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getServerAuthSession();
+  const sessionData = await getSessionWithToken();
 
-  if (!session?.accessToken) {
+  if (!sessionData) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const session = sessionData.session;
+  const accessToken = sessionData.accessToken;
+
   if (session.error === "TokenRevoked") {
     return githubAuthErrorResponse();
   }
-
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
 
   if (!accountId) {
     try {
-      const result = await fetchPRReviewTrendForAccount(session.accessToken, {
+      const result = await fetchPRReviewTrendForAccount(accessToken, {
         bypass,
         userId: session.githubId ?? session.githubLogin ?? "primary",
       });
@@ -269,7 +270,7 @@ export async function GET(req: NextRequest) {
   if (accountId === "combined") {
     const accounts = await getAllAccounts(
       {
-        token: session.accessToken,
+        token: accessToken,
         githubId: session.githubId,
         githubLogin: session.githubLogin,
       },
@@ -296,7 +297,7 @@ export async function GET(req: NextRequest) {
 
   const token =
     accountId === session.githubId
-      ? session.accessToken
+      ? accessToken
       : await getAccountToken(userRow.id, accountId);
 
   if (!token) {

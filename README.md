@@ -4,36 +4,31 @@
 
 **Your developer productivity command center.**
 
-> Pull your GitHub activity, commit streaks, PR analytics, and coding goals into one clean, self-hostable dashboard — no enterprise plan, no vendor lock-in.
+> Track your GitHub activity, commit streaks, PR analytics, and coding goals in one clean, self-hostable dashboard — no enterprise plan, no vendor lock-in.
 
-**What you get:**
-
-- A real-time dashboard for your GitHub stats (streaks, PR analytics, activity)
-- Weekly goals with progress tracking
-- A shareable public profile (`/u/[username]`)
-
-[![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml)
+[![CI](https://github.com/Umbrella-io/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Umbrella-io/devtrack/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
-[![GSSoC 2026](https://img.shields.io/badge/GSSoC-2026-orange.svg)](https://gssoc.girlscript.tech/)
-[![Stack](https://img.shields.io/badge/stack-Next.js%20%7C%20Supabase%20%7C%20TypeScript-blue)](./DEVELOPMENT.md)
-[![Good First Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22)
-[![Contributors](https://img.shields.io/github/contributors/Priyanshu-byte-coder/devtrack?color=brightgreen)](https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors)
-[![Last Commit](https://img.shields.io/github/last-commit/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/commits/main)
+[![Stack](https://img.shields.io/badge/stack-Next.js%2016%20%7C%20Supabase%20%7C%20TypeScript-blue)](./DEVELOPMENT.md)
+[![Good First Issues](https://img.shields.io/github/issues/Umbrella-io/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)](https://github.com/Umbrella-io/devtrack/issues?q=label%3A%22good+first+issue%22)
+[![Contributors](https://img.shields.io/github/contributors/Umbrella-io/devtrack?color=brightgreen)](https://github.com/Umbrella-io/devtrack/graphs/contributors)
+[![Last Commit](https://img.shields.io/github/last-commit/Umbrella-io/devtrack)](https://github.com/Umbrella-io/devtrack/commits/main)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/Priyanshu-byte-coder?label=sponsors&color=ea4aaa)](https://github.com/sponsors/Priyanshu-byte-coder)
 
-**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Community Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
-
-### Quick Links
-
-- **[Demo](#demo)**
-- **[Features](#features)**
-- **[Getting Started](#getting-started)**
-- **[Architecture](./docs/architecture.md)**
-- **[Roadmap](#roadmap)**
-- **[Contributing](#contributing)**
+**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Umbrella-io/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Umbrella-io/devtrack/issues/new?template=feature_request.md)** · **[Discussions](https://github.com/Umbrella-io/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
 
 </div>
+
+---
+
+## Project Stats
+
+| Metric | Count |
+|---|---|
+| GitHub Stars | 130+ |
+| Forks | 369 |
+| Merged PRs | 800+ |
+| Contributors | 224 |
 
 ---
 
@@ -54,6 +49,13 @@
       <em>Interactive widgets: real-time GitHub data in action</em>
     </td>
   </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="./public/assets/gifs/year_wrapped.gif" alt="DevTrack Year Wrapped" width="70%" />
+      <br />
+      <em>Year Wrapped: your annual coding journey, visualized</em>
+    </td>
+  </tr>
 </table>
 
 </div>
@@ -63,6 +65,7 @@
 ## Table of Contents
 
 - [Why DevTrack?](#why-devtrack)
+- [Project Stats](#project-stats)
 - [Demo](#demo)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
@@ -73,6 +76,7 @@
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [Community](#community)
+- [Built With](#built-with)
 - [Sponsors](#sponsors)
 - [License](#license)
 - [Contributors](#contributors)
@@ -113,6 +117,8 @@ Most developers track their work across multiple disconnected tools — GitHub f
 | **Data Export** | Download all your data in JSON format |
 | **AI Weekly Insights** | Groq-powered natural language summary of your weekly activity |
 | **Heatmap Themes** | Default and colour-blind-friendly heatmap colour schemes |
+| **Year Wrapped** | Annual coding journey recap with animated visualizations |
+| **Real-time Dashboard** | Live updates via Supabase Realtime with polling fallback |
 
 ---
 
@@ -120,7 +126,7 @@ Most developers track their work across multiple disconnected tools — GitHub f
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Frontend | Next.js 16 (App Router), TypeScript, Tailwind CSS |
 | Auth | GitHub OAuth via NextAuth.js v4 |
 | Database | Supabase (PostgreSQL) with Row Level Security |
 | API | Next.js Route Handlers (`/app/api/`) |
@@ -196,7 +202,7 @@ To deploy your own instance, see the **[Self-Hosting Guide](./docs/self-hosting.
 **1. Clone and install**
 
 ```bash
-git clone https://github.com/Priyanshu-byte-coder/devtrack.git
+git clone https://github.com/Umbrella-io/devtrack.git
 cd devtrack
 npm install
 ```
@@ -258,69 +264,49 @@ npm test
 # End-to-end tests (requires Chromium)
 npx playwright install --with-deps chromium
 npm run test:e2e
+```
 
 ### E2E Test Suite (Playwright)
 
-DevTrack ships a Playwright-based end-to-end suite that covers the full user journey — from OAuth sign-in through to dashboard rendering and API route correctness. **No real GitHub or Supabase credentials are needed**; all external calls are mocked inside the specs via `page.route()`.
+DevTrack ships a Playwright-based end-to-end suite covering the full user journey — OAuth sign-in, dashboard rendering, and API correctness. No real credentials needed; all external calls are mocked via `page.route()`.
 
-#### Spec files
-
-| File | What it covers |
-|------|----------------|
-| `e2e/auth.spec.ts` | Landing page loads, "Sign in with GitHub" button visible, OAuth redirect fires, unauthenticated dashboard redirects |
-| `e2e/dashboard.spec.ts` | Dashboard renders all 6 widgets after mock login, no uncaught console errors |
-| `e2e/goals.spec.ts` | Create goal → POST fires with correct payload → goal appears in list; delete goal → removed from list |
-| `e2e/streak.spec.ts` | Streak widget shows numeric current/longest values, freeze button visible and triggers API call |
-| `e2e/api.spec.ts` | `/api/metrics/contributions` returns 200 with valid session, 401 without; `/api/goals` POST returns 401 without session |
-
-The existing smoke specs (`e2e/landing.spec.js`, `e2e/auth-bypass.spec.js`, etc.) remain untouched.
-
-#### Running locally
+| Spec file | Coverage |
+|-----------|----------|
+| `e2e/auth.spec.ts` | Landing page, sign-in button, OAuth redirect, unauthenticated redirects |
+| `e2e/dashboard.spec.ts` | All 6 dashboard widgets render after mock login, no console errors |
+| `e2e/goals.spec.ts` | Goal create/delete lifecycle with API payload verification |
+| `e2e/streak.spec.ts` | Streak values display, freeze button triggers API call |
+| `e2e/api.spec.ts` | Auth-gated API routes return 200/401 correctly |
 
 ```bash
-# 1. Install Playwright browsers (one-time)
+# Install Playwright browsers (one-time)
 npx playwright install --with-deps chromium
 
-# 2. Run the full suite (dev server auto-starts on port 3002)
+# Run the full suite (dev server auto-starts on port 3002)
 npm run test:e2e
 
-# 3. Run a single spec file
+# Run a single spec
 npx playwright test e2e/goals.spec.ts
 
-# 4. Open the interactive UI runner
+# Interactive UI runner
 npx playwright test --ui
-
-# 5. View the HTML report after a run
-npx playwright show-report
-\```
-
-The test server is configured in `playwright.config.mjs`. It auto-starts `next dev` on `http://127.0.0.1:3002` with placeholder credentials so no `.env.local` is required for E2E runs.
-
-#### CI
-
-E2E tests run automatically on every pull request targeting `main` via `.github/workflows/e2e.yml`. The job builds the Next.js app in standalone mode, installs Chromium, runs the suite, and uploads the Playwright HTML report as an artifact retained for 7 days.
 ```
 
-4. Everything else in the README stays exactly as it is. The rest of the file — Docker setup, Roadmap, Contributing, Sponsors, etc. — don't touch.
-```
+The test server is configured in `playwright.config.mjs` and auto-starts on `http://127.0.0.1:3002` with placeholder credentials — no `.env.local` required. E2E tests also run on every PR via `.github/workflows/e2e.yml`.
 
-### Visual regression tests
+### Visual Regression Tests
 
-DevTrack uses Playwright screenshot assertions for visual regression coverage of the landing page, sign-in page, dashboard header, public profile, and 404 page.
-
-Run visual regression tests locally:
+Playwright screenshot assertions cover the landing page, sign-in page, dashboard header, public profile, and 404 page.
 
 ```bash
+# Run visual regression tests
 npx playwright test -c playwright.visual.config.mjs
-```
 
-Update visual baselines:
-
-```bash
+# Update baselines
 npx playwright test -c playwright.visual.config.mjs --update-snapshots
 ```
 
-Baselines are stored in `tests/snapshots/`. Generate and update baselines in the same Linux/Chromium environment used by CI to avoid OS-specific rendering differences. The visual suite uses a fixed `1280x720` viewport and fails when screenshot differences exceed `0.1%`.
+Baselines are stored in `tests/snapshots/`. Use the same Linux/Chromium environment as CI to avoid OS-specific rendering differences. The suite uses a `1280x720` viewport and fails at >0.1% pixel difference.
 
 ---
 
@@ -430,6 +416,8 @@ These features are live in the current version.
 | AI weekly insights | Groq-powered natural language summary |
 | Streak freeze | Protect streak during planned breaks |
 | RSS feed | Atom feed at `/u/[username]/feed.xml` |
+| Year Wrapped | Animated annual coding journey recap |
+| Real-time dashboard | Live Supabase Realtime sync with polling fallback |
 
 ### In Progress / Planned
 
@@ -437,12 +425,12 @@ Want to contribute? Pick an item below and open an issue or start a PR.
 
 | Feature | Difficulty | Issue |
 |---|---|---|
-| Contribution heatmap calendar | Intermediate | [#18](https://github.com/Priyanshu-byte-coder/devtrack/issues/18) |
-| Chart type toggle (bar / line) | Intermediate | [#17](https://github.com/Priyanshu-byte-coder/devtrack/issues/17) |
-| Language breakdown widget | Intermediate | [#32](https://github.com/Priyanshu-byte-coder/devtrack/issues/32) |
-| Activity feed | Intermediate | [#33](https://github.com/Priyanshu-byte-coder/devtrack/issues/33) |
-| Auto-progress goals from commits | Advanced | [#34](https://github.com/Priyanshu-byte-coder/devtrack/issues/34) |
-| GitLab integration | Advanced | [#6](https://github.com/Priyanshu-byte-coder/devtrack/issues/6) |
+| Contribution heatmap calendar | Intermediate | [#18](https://github.com/Umbrella-io/devtrack/issues/18) |
+| Chart type toggle (bar / line) | Intermediate | [#17](https://github.com/Umbrella-io/devtrack/issues/17) |
+| Language breakdown widget | Intermediate | [#32](https://github.com/Umbrella-io/devtrack/issues/32) |
+| Activity feed | Intermediate | [#33](https://github.com/Umbrella-io/devtrack/issues/33) |
+| Auto-progress goals from commits | Advanced | [#34](https://github.com/Umbrella-io/devtrack/issues/34) |
+| GitLab integration | Advanced | [#6](https://github.com/Umbrella-io/devtrack/issues/6) |
 | Jira integration | Advanced | — |
 | Team dashboards | Advanced | — |
 | Embeddable stats widgets | Intermediate | — |
@@ -450,31 +438,51 @@ Want to contribute? Pick an item below and open an issue or start a PR.
 
 ---
 
-
-For caching best practices used in this project, see [Caching Guidelines](docs/caching.md).
+> For caching best practices used in this project, see [Caching Guidelines](docs/caching.md).
 
 ## Contributing
 
-DevTrack actively welcomes contributors of all skill levels, including **GSSoC 2026 participants**.
+DevTrack actively welcomes contributors of all skill levels.
 
 Setup takes under 10 minutes — see [DEVELOPMENT.md](./DEVELOPMENT.md) for the full walkthrough.
 
 ### How to contribute
 
-1. Browse [open issues](https://github.com/Priyanshu-byte-coder/devtrack/issues) — start with `good first issue`
+1. Browse [open issues](https://github.com/Umbrella-io/devtrack/issues) — start with `good first issue`
 2. Comment on the issue to get assigned before starting work
 3. Fork → branch (`feat/issue-42-description`) → PR against `main`
 4. Ensure CI passes: `npm run lint && npm run type-check`
 
 See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for commit style, branch naming, and the review process.
 
-Questions? Open a [Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions).
+Questions? Open a [Discussion](https://github.com/Umbrella-io/devtrack/discussions).
+
+---
+
+## Built With
+
+DevTrack is built on best-in-class open-source infrastructure. Sponsoring helps us keep using these tools and exposes them to 224+ active contributors.
+
+| Partner | Role in DevTrack |
+|---|---|
+| [Supabase](https://supabase.com) | PostgreSQL database, auth, Row Level Security, and Realtime sync |
+| [Vercel](https://vercel.com) | Hosting, CI/CD, and preview deployments |
+| [Groq](https://groq.com) | AI-powered weekly coding insights |
+| [Wakatime](https://wakatime.com) | Coding time tracking and language analytics |
 
 ---
 
 ## Sponsors
 
-DevTrack is free and open source. Sponsoring helps cover infrastructure costs and accelerates new features.
+DevTrack is free and open source, built by **224+ contributors** worldwide. Sponsoring directly funds:
+
+- **Supabase and Vercel infrastructure** — keeping the hosted demo fast and free for every contributor
+- **Groq API costs** — powering AI weekly insights for all users
+- **Maintainer time** — code review, issue triage, and release management
+
+With **130+ stars**, **369 forks**, **800+ merged PRs**, and **224 contributors**, DevTrack is one of the most active open-source developer-productivity projects on GitHub. Your logo here reaches a highly technical, actively coding audience.
+
+### Sponsor Tiers
 
 | Tier | Amount | Perks |
 |---|---|---|
@@ -483,7 +491,13 @@ DevTrack is free and open source. Sponsoring helps cover infrastructure costs an
 | Champion | $50 / mo | Name + logo in README + feature request priority |
 | One-time | $10+ | One-time thanks, no recurring commitment |
 
-**[Sponsor DevTrack on GitHub](https://github.com/sponsors/Priyanshu-byte-coder)**
+### Current Sponsors
+
+> Be the first sponsor — your logo or name will appear here. See tiers above.
+
+**[Sponsor DevTrack on GitHub →](https://github.com/sponsors/Priyanshu-byte-coder)** · **[Buy Me a Chai →](https://www.buymeachai.in/devtrack)**
+
+Want a standalone sponsor brief to share with your company's finance team? See [docs/SPONSORS.md](./docs/SPONSORS.md).
 
 ---
 
@@ -491,9 +505,9 @@ DevTrack is free and open source. Sponsoring helps cover infrastructure costs an
 
 Have questions, ideas, or want to connect with other contributors?
 
-- **[GitHub Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** — ask questions, share ideas, show what you've built
-- **[Open an Issue](https://github.com/Priyanshu-byte-coder/devtrack/issues/new/choose)** — bug reports, feature requests, and good-first-issues
-- **[Email the maintainer](mailto:priyanshu.coder.dev@gmail.com)** — for anything else
+- **[GitHub Discussions](https://github.com/Umbrella-io/devtrack/discussions)** — ask questions, share ideas, show what you've built
+- **[Open an Issue](https://github.com/Umbrella-io/devtrack/issues/new/choose)** — bug reports, feature requests, and good-first-issues
+- **[Email the maintainer](mailto:doshipriyanshu3@gmail.com)** — for anything else
 
 All contributors are expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
@@ -507,12 +521,12 @@ MIT — see [LICENSE](./LICENSE) for details.
 
 ## Contributors
 
-Thanks to everyone who has helped build DevTrack. Want to join the list? See [CONTRIBUTING.md](./CONTRIBUTING.md) and pick a [good first issue](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22).
+Thanks to everyone who has helped build DevTrack. Want to join the list? See [CONTRIBUTING.md](./CONTRIBUTING.md) and pick a [good first issue](https://github.com/Umbrella-io/devtrack/issues?q=label%3A%22good+first+issue%22).
 
 <div align="center">
 
-<a href="https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Priyanshu-byte-coder/devtrack" alt="Contributors" />
+<a href="https://github.com/Umbrella-io/devtrack/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Umbrella-io/devtrack" alt="Contributors" />
 </a>
 
 </div>

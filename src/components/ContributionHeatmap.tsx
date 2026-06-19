@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import DailyBreakdownSheet from "@/components/DailyBreakdownSheet";
+import { getContributionInsights } from "@/lib/contribution-insights";
+import { Calendar, TrendingUp, Zap, Clock, Award, BarChart2 } from "lucide-react";
 
 interface ContributionHeatmapProps {
   days?: number;
@@ -334,19 +336,33 @@ export default function ContributionHeatmap({
   const totalCommits = cells
     .filter((cell) => cell.inRange)
     .reduce((total, cell) => total + cell.count, 0);
+  const { inRangeDays, insights } = useMemo(() => {
+    const days = cells
+      .filter((cell) => cell.inRange)
+      .map((cell) => ({
+        date: cell.date,
+        dateKey: cell.dateKey,
+        count: cell.count,
+      }));
+    return {
+      inRangeDays: days,
+      insights: getContributionInsights(days),
+    };
+  }, [cells]);
+
   const heatmapSummary = `Contribution heatmap showing ${formatCommitCount(totalCommits)} across ${displayDays} days.`;
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
-      <div className="mb-4 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-4 sm:gap-2">
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)] dark:text-white">Contribution Heatmap</h2>          
-          <p className="text-sm text-[var(--muted-foreground)] dark:text-gray-300">
+      <div className="mb-4 flex flex-col items-start justify-between gap-3">
+        <div className="w-full">
+          <h2 className="text-base font-semibold text-[var(--card-foreground)] dark:text-white">Contribution Heatmap</h2>          
+          <p className="text-xs text-[var(--muted-foreground)] dark:text-gray-300">
             {customLabel ? `${customLabel}` : `Last ${selectedDays} days of commit activity.`}
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2">
           {/* Range buttons */}
           <div className="flex flex-wrap gap-1 rounded-lg border border-[var(--border)] bg-[var(--background)] p-1">
             {PRESET_RANGES.map((r) => (
@@ -454,11 +470,11 @@ export default function ContributionHeatmap({
               Math.ceil(maxCommits * 0.5),
               Math.ceil(maxCommits * 0.75),
               maxCommits,
-            ].map((count) => {
+            ].map((count, index) => {
               const swatch = getHeatmapColor(count);
               return (
                 <span
-                  key={count}
+                  key={index} // <-- Changed from count to index
                   className="h-3 w-3 rounded-sm border"
                   style={{ backgroundColor: swatch, borderColor: themeConfig.border }}
                 />
@@ -590,6 +606,133 @@ export default function ContributionHeatmap({
             </p>
             {lastUpdated && (
               <p>{minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}</p>
+            )}
+          </div>
+
+          {/* Contribution Insights section */}
+          <div className="mt-6 border-t border-[var(--border)] pt-6">
+            <h3 className="text-sm font-semibold text-[var(--card-foreground)] dark:text-white mb-4">
+              Contribution Insights
+            </h3>
+            
+            {inRangeDays.length === 0 ? (
+              <p className="text-xs text-[var(--muted-foreground)]">No contribution data available for this range.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" role="region" aria-label="Contribution Insights Panel">
+                {/* Most Productive Weekday */}
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--control)] p-4 shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-blue-500" aria-hidden="true" />
+                    <span className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
+                      Most Productive Day
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-lg font-semibold text-[var(--card-foreground)] dark:text-white">
+                      {insights.mostProductiveWeekday}
+                    </span>
+                    <p className="text-[11px] text-[var(--muted-foreground)] mt-1">
+                      Day with highest average commits
+                    </p>
+                  </div>
+                </div>
+
+                {/* Average Weekly Contributions */}
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--control)] p-4 shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart2 className="h-4 w-4 text-green-500" aria-hidden="true" />
+                    <span className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
+                      Avg Weekly Contributions
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-lg font-semibold text-[var(--card-foreground)] dark:text-white">
+                      {insights.averageWeeklyContributions.toFixed(1)}
+                    </span>
+                    <p className="text-[11px] text-[var(--muted-foreground)] mt-1">
+                      Commits per 7 calendar days
+                    </p>
+                  </div>
+                </div>
+
+                {/* Longest Contribution Streak */}
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--control)] p-4 shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="h-4 w-4 text-amber-500" aria-hidden="true" />
+                    <span className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
+                      Longest Streak
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-lg font-semibold text-[var(--card-foreground)] dark:text-white">
+                      {insights.longestStreak} {insights.longestStreak === 1 ? 'day' : 'days'}
+                    </span>
+                    <p className="text-[11px] text-[var(--muted-foreground)] mt-1">
+                      Max consecutive active days
+                    </p>
+                  </div>
+                </div>
+
+                {/* Longest Inactive Period */}
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--control)] p-4 shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="h-4 w-4 text-red-500" aria-hidden="true" />
+                    <span className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
+                      Longest Inactive Period
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-lg font-semibold text-[var(--card-foreground)] dark:text-white">
+                      {insights.longestInactivePeriod} {insights.longestInactivePeriod === 1 ? 'day' : 'days'}
+                    </span>
+                    <p className="text-[11px] text-[var(--muted-foreground)] mt-1">
+                      Max consecutive days with zero commits
+                    </p>
+                  </div>
+                </div>
+
+                {/* Monthly Contribution Trends */}
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--control)] p-4 shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-4 w-4 text-purple-500" aria-hidden="true" />
+                    <span className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
+                      Monthly Trend
+                    </span>
+                  </div>
+                  <div>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${
+                      insights.monthlyTrend === 'Increasing'
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                        : insights.monthlyTrend === 'Decreasing'
+                        ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                        : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                    }`}>
+                      {insights.monthlyTrend}
+                    </span>
+                    <p className="text-[11px] text-[var(--muted-foreground)] mt-2">
+                      Recent month vs preceding month
+                    </p>
+                  </div>
+                </div>
+
+                {/* Best Contribution Month */}
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--control)] p-4 shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="h-4 w-4 text-indigo-500" aria-hidden="true" />
+                    <span className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
+                      Best Month
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-lg font-semibold text-[var(--card-foreground)] dark:text-white truncate block">
+                      {insights.bestMonth}
+                    </span>
+                    <p className="text-[11px] text-[var(--muted-foreground)] mt-1">
+                      Highest total ({insights.bestMonthTotal} commits)
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </>

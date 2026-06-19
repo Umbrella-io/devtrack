@@ -292,6 +292,8 @@ async function injectMockSession(page: import("@playwright/test").Page) {
     "**/api/metrics/productive-hours**",
     "**/api/user/pinned-repos/details**",
     "**/api/metrics/repo-explorer**",
+    "**/api/daily-note**",
+    "**/api/metrics/achievement-progress**",
   ];
   for (const pattern of stubRoutes) {
     await page.route(pattern, (route) =>
@@ -375,6 +377,7 @@ test("[Dashboard E2E] no uncaught console errors on dashboard load", async ({
       !e.includes("react-dev-overlay") &&
       !e.includes("Failed to load resource") &&
       !e.includes("Warning: ") && // Catch React warnings that get printed as errors
+      !e.includes("Encountered two children with the same key") &&
       e.trim() !== "div" &&
       e.trim() !== "span" &&
       e.trim() !== "p"

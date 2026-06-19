@@ -104,6 +104,11 @@ function getUtcWeekStart(date: Date): Date {
   return result;
 }
 
+/**
+ * Calculates current and longest streaks, and commit aggregations based on daily commit counts.
+ * @param commitCountsByDate - A mapping of date strings to commit counts.
+ * @returns An object containing streak statistics and week-over-week commit data.
+ */
 export function calculateStreaks(commitCountsByDate: Record<string, number>) {
   const commitDays = Object.keys(commitCountsByDate).sort();
 
@@ -153,6 +158,11 @@ export function calculateStreaks(commitCountsByDate: Record<string, number>) {
   };
 }
 
+/**
+ * Formats a given number of hours into a human-readable duration string (e.g., '45m', '2.5h', '1.2d').
+ * @param hours - The duration in hours.
+ * @returns The formatted string.
+ */
 export function formatDurationHours(hours: number): string {
   if (!Number.isFinite(hours) || hours <= 0) {
     return "0h";
@@ -169,6 +179,12 @@ export function formatDurationHours(hours: number): string {
   return `${Math.round((hours / 24) * 10) / 10}d`;
 }
 
+/**
+ * Chooses the best matching developer persona from a list of scored candidates.
+ * @param candidates - The list of eligible personas and their computed scores.
+ * @param fallback - The fallback persona to return if no candidate matches strongly.
+ * @returns The selected persona key.
+ */
 export function choosePersonaCandidate(
   candidates: Array<{ key: PersonaKey; score: number; eligible: boolean }>,
   fallback: PersonaKey
@@ -196,6 +212,13 @@ function addInsight(
   insights.push({ ...insight, score });
 }
 
+/**
+ * Generates personalized "smart insights" based on a developer's metrics and assigned persona.
+ * @param signals - The raw developer signals (e.g., timeblocks, deletions).
+ * @param summary - Aggregated streak and commit summary.
+ * @param persona - The assigned developer persona.
+ * @returns An array of top smart insights.
+ */
 export function buildSmartInsightCandidates(
   signals: DeveloperSignals,
   summary: ReturnType<typeof calculateStreaks>,
@@ -294,6 +317,11 @@ export function buildSmartInsightCandidates(
     .map(({ score: _score, ...insight }) => insight);
 }
 
+/**
+ * Constructs the complete developer persona profile and insights based on raw activity signals.
+ * @param signals - The developer activity metrics.
+ * @returns The computed persona and insights response.
+ */
 export function buildDeveloperPersonaResponse(
   signals: DeveloperSignals
 ): PersonaResponse {
@@ -353,6 +381,12 @@ export function buildDeveloperPersonaResponse(
   };
 }
 
+/**
+ * Merges two maps of daily commit counts.
+ * @param a - The first commit counts map.
+ * @param b - The second commit counts map.
+ * @returns The newly merged map.
+ */
 export function mergeCommitCounts(
   a: Record<string, number>,
   b: Record<string, number>
@@ -366,6 +400,12 @@ export function mergeCommitCounts(
   return merged;
 }
 
+/**
+ * Merges two sets of developer signals, aggregating counts, times, and churn.
+ * @param a - The first DeveloperSignals object.
+ * @param b - The second DeveloperSignals object.
+ * @returns The aggregated DeveloperSignals.
+ */
 export function mergeSignals(a: DeveloperSignals, b: DeveloperSignals): DeveloperSignals {
   return {
     commitCountsByDate: mergeCommitCounts(a.commitCountsByDate, b.commitCountsByDate),

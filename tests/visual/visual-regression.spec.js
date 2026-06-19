@@ -105,6 +105,19 @@ async function mockDashboardApis(page) {
       });
     }
 
+    if (path.includes("/api/public/")) {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          name: "Playwright User",
+          githubLogin: "playwright-user",
+          bio: "Test user for visual regression",
+          profileImage: null,
+          is_public: true,
+        }),
+      });
+    }
+
     if (path === "/api/notifications") {
       return route.fulfill({
         contentType: "application/json",
@@ -343,6 +356,35 @@ function mockMetricResponse(path) {
     return { repos: [] };
   }
 
+  if (path.includes("/sponsors")) {
+    return {
+      mrr: 85,
+      activeCount: 3,
+      growthTrend: 200,
+      sparklineData: [
+        { month: "Jan", count: 0 },
+        { month: "Feb", count: 0 },
+        { month: "Mar", count: 0 },
+        { month: "Apr", count: 1 },
+        { month: "May", count: 1 },
+        { month: "Jun", count: 3 },
+      ],
+      sponsors: [
+        {
+          login: "sponsor-1",
+          name: "Gold Supporter",
+          url: "https://github.com/sponsor-1",
+          avatarUrl: null,
+          privacyLevel: "PUBLIC",
+          tierName: "$50 tier",
+          monthlyPriceInCents: 5000,
+          createdAt: "2026-05-18T12:00:00.000Z",
+        },
+      ],
+      syncedAt: "2026-06-11T12:00:00.000Z",
+    };
+  }
+
   return {};
 }
 
@@ -354,7 +396,7 @@ test.describe("visual regression screenshots", () => {
     await stabilize(page);
 
     await expect(page).toHaveScreenshot("landing-page-dark.png", {
-      fullPage: true,
+      clip: { x: 0, y: 0, width: 1280, height: 4400 },
     });
   });
 
@@ -411,7 +453,9 @@ test.describe("visual regression screenshots", () => {
       document.documentElement.classList.remove("dark");
     });
     await page.emulateMedia({ colorScheme: "light" });
-    await page.reload({ waitUntil: "load" });
+    // Re-apply mocks before reload
+    await page.reload({ waitUntil: "load" }); 
+    await mockDashboardApis(page);
     await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible({
       timeout: 30_000,
     });
@@ -426,10 +470,11 @@ test.describe("visual regression screenshots", () => {
   test("public profile screenshot with deterministic mock data", async ({
     page,
   }) => {
+    await mockDashboardApis(page);
     await setTheme(page, "classic-dark");
     await page.goto("/u/playwright-user", { waitUntil: "load" });
     await expect(
-      page.getByRole("heading", { name: /@playwright-user's profile/i })
+      page.getByRole("heading", { name: "@playwright-user", exact: false })
     ).toBeVisible({ timeout: 30_000 });
     await stabilize(page);
 

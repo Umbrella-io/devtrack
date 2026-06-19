@@ -85,15 +85,30 @@ const DEFAULT_PERIOD: LeaderboardPeriod = "month";
 // within the same Node.js process (standalone mode).
 let _memoryCache = new Map<string, LeaderboardCacheEntry<LeaderboardPayload>>();
 
+/**
+ * Checks if a cached leaderboard payload is still fresh based on its generation time.
+ * @param payload - The leaderboard payload to check.
+ * @returns True if the payload is within the cache refresh window.
+ */
 export function isFresh(payload: LeaderboardPayload): boolean {
   const ts = Date.parse(payload.generatedAt);
   return Number.isFinite(ts) && Date.now() - ts < CACHE_REFRESH_SECONDS * 1000;
 }
 
+/**
+ * Generates the cache key for the leaderboard based on the given period.
+ * @param period - The time period (e.g., 'week', 'month', 'all').
+ * @returns The cache key string.
+ */
 export function getLeaderboardCacheKey(period: LeaderboardPeriod = DEFAULT_PERIOD): string {
   return `${LEADERBOARD_CACHE_KEY}:${period}`;
 }
 
+/**
+ * Retrieves the in-memory cached leaderboard payload, if it is fresh.
+ * @param period - The time period (e.g., 'week', 'month', 'all').
+ * @returns The cached payload, or null if missing or stale.
+ */
 export function getMemoryCachedLeaderboard(
   period: LeaderboardPeriod = DEFAULT_PERIOD
 ): LeaderboardPayload | null {
@@ -111,6 +126,11 @@ export function getMemoryCachedLeaderboard(
   return null;
 }
 
+/**
+ * Stores a leaderboard payload in the in-memory cache.
+ * @param payload - The leaderboard payload to store.
+ * @param period - The time period.
+ */
 export function setMemoryCachedLeaderboard(
   payload: LeaderboardPayload,
   period: LeaderboardPeriod = DEFAULT_PERIOD
@@ -242,6 +262,42 @@ async function fetchCommitStats(username: string, since?: string) {
   }>(`/search/commits?${query}`);
 }
 
+async function fetchAllCommitDatesForStreak(
+  username: string,
+  since: string
+): Promise<string[]> {
+  const PER_PAGE = 100;
+  const seenDays = new Set<string>();
+  let page = 1;
+
+  while (true) {
+    const query = new URLSearchParams({
+      q: `author:${username} author-date:>=${since}`,
+      per_page: String(PER_PAGE),
+      page: String(page),
+      sort: "author-date",
+      order: "desc",
+    });
+
+    const data = await fetchGitHubJson<{
+      total_count: number;
+      items: Array<{ commit: { author: { date: string } } }>;
+    }>(`/search/commits?${query}`);
+
+    if (!data || data.items.length === 0) break;
+
+    for (const item of data.items) {
+      seenDays.add(item.commit.author.date.slice(0, 10));
+    }
+
+    // Stop when we have fetched all available results
+    if (page * PER_PAGE >= data.total_count || data.items.length < PER_PAGE) break;
+    page++;
+  }
+
+  return Array.from(seenDays);
+}
+
 async function fetchPrCount(username: string, since?: string): Promise<number> {
   const query = new URLSearchParams({
     q: [
@@ -259,6 +315,11 @@ async function fetchPrCount(username: string, since?: string): Promise<number> {
   return data?.total_count ?? 0;
 }
 
+/**
+ * Builds the leaderboard by calculating scores, streaks, commits, and PRs for all eligible users.
+ * @param filters - Filtering options such as the period to build for.
+ * @returns A promise resolving to the fully constructed leaderboard payload.
+ */
 export async function buildLeaderboard(
   filters: LeaderboardFilters = {}
 ): Promise<LeaderboardPayload> {
@@ -286,15 +347,13 @@ export async function buildLeaderboard(
     safeUsers,
     USER_CONCURRENCY,
     async (user) => {
-      const [monthlyCommits, streakCommits, prs] = await Promise.all([
+      const [monthlyCommits, streakDates, prs] = await Promise.all([
         fetchCommitStats(user.github_login, periodStart),
-        fetchCommitStats(user.github_login, streakStart),
+        fetchAllCommitDatesForStreak(user.github_login, streakStart),
         fetchPrCount(user.github_login, periodStart),
       ]);
 
-      const streak = calculateCurrentStreak(
-        streakCommits?.items.map((item) => item.commit.author.date) ?? []
-      );
+      const streak = calculateCurrentStreak(streakDates);
       const commits = monthlyCommits?.total_count ?? 0;
       const score = streak * 5 + commits + prs * 3;
 
@@ -330,6 +389,11 @@ export async function buildLeaderboard(
   };
 }
 
+/**
+ * Forces a refresh of the leaderboard, caching the newly built payload.
+ * @param filters - Filtering options.
+ * @returns A promise resolving to the refreshed leaderboard payload.
+ */
 export async function refreshLeaderboardCache(
   filters: LeaderboardFilters = {}
 ): Promise<LeaderboardPayload> {
@@ -342,21 +406,35 @@ export async function refreshLeaderboardCache(
   return payload;
 }
 
+/**
+ * Retrieves the cached leaderboard using Next.js unstable_cache, falling back to buildLeaderboard.
+ * @param filters - Filtering options.
+ * @returns A promise resolving to the leaderboard payload.
+ */
 export const getCachedLeaderboard = (filters: LeaderboardFilters = {}) => {
   const period = filters.period ?? DEFAULT_PERIOD;
   return unstable_cache(
     async () => buildLeaderboard(filters),
     ["leaderboard", period],
-    { revalidate: CACHE_REFRESH_SECONDS }
+    {
+      revalidate: CACHE_REFRESH_SECONDS,
+      tags: ["leaderboard"],
+    }
   )();
 };
 
+/**
+ * Retrieves the leaderboard data, attempting memory cache, redis cache, and rebuild as fallbacks.
+ * @param bypass - Whether to bypass the cache entirely and force a rebuild.
+ * @param filters - Filtering options.
+ * @returns A promise resolving to the leaderboard payload.
+ */
 export async function getLeaderboardData(
   bypass = false,
   filters: LeaderboardFilters = {}
 ): Promise<LeaderboardPayload | null> {
   const period = filters.period ?? DEFAULT_PERIOD;
-  
+
   if (bypass) {
     try {
       const payload = await buildLeaderboard(filters);
@@ -398,6 +476,12 @@ export async function getLeaderboardData(
   }
 }
 
+/**
+ * Fetches the repositories associated with a user for a specific programming language.
+ * @param username - The GitHub username.
+ * @param language - The programming language to filter by.
+ * @returns An array of repository full names.
+ */
 export async function fetchLanguageRepositories(
   username: string,
   language: string
@@ -417,6 +501,12 @@ export async function fetchLanguageRepositories(
   return data?.items.map((repo) => repo.full_name) ?? [];
 }
 
+/**
+ * Filters an existing leaderboard payload to include only users active in a specific language.
+ * @param leaderboard - The original leaderboard payload.
+ * @param language - The programming language to filter by.
+ * @returns A promise resolving to the filtered leaderboard payload.
+ */
 export async function filterLeaderboardByLanguage(
   leaderboard: LeaderboardPayload,
   language: string

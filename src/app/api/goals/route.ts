@@ -68,7 +68,6 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
@@ -121,6 +120,7 @@ export async function GET() {
             current: 0,
             period_start: periodStart.toISOString(),
             goal_reset_version: oldVersion + 1,
+            week_start: periodStart.toISOString().split("T")[0],
           })
           .eq("id", goal.id)
           .eq("goal_reset_version", oldVersion)
@@ -242,6 +242,23 @@ try {
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
+  const { data: existing } = await supabaseAdmin
+    .from("goals")
+    .select("id")
+    .eq("user_id", user.id)
+    .ilike("title", sanitizedTitle)
+    .maybeSingle();
+
+  if (existing) {
+    return Response.json(
+      {
+        error: "Task with this title already exists",
+        code: "DUPLICATE_TASK_TITLE",
+      },
+      { status: 400 }
+    );
+  }
+
   // Pre-check count query using head option for peak performance
   const { count, error: countError } = await supabaseAdmin
     .from("goals")
@@ -258,7 +275,6 @@ try {
       { status: 400 }
     );
   }
-
   const { data: goal, error } = await supabaseAdmin
     .from("goals")
     .insert({
@@ -275,8 +291,9 @@ try {
     .select()
     .single();
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
-
+  if (error) {
+  return Response.json({ error: error.message }, { status: 500 });
+}
   dispatchToAllWebhooks(user.id, "goal.created", {
     goalId: goal.id,
     title: goal.title,
