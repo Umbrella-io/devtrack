@@ -1,3 +1,4 @@
+import OnboardingTour from "@/components/OnboardingTour";
 import StreakTracker from "@/components/StreakTracker";
 import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
@@ -129,6 +130,7 @@ export default async function DashboardPage() {
   return (
     <DashboardSSEProvider>
       <DashboardWidgetA11yProvider>
+        <OnboardingTour />
         <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
           <DashboardHeader />
 
@@ -201,24 +203,26 @@ export default async function DashboardPage() {
                   failedGoals: 1
                 }} 
               />
-              <StreakTracker />
+              <div id="widget-streak">
+                 <StreakTracker />
+              </div>
               <LocalCodingTime />
               <CodingTimeWidget />
             </div>
 
           {/* Repo analytics explorer — full width */}
-          <div className="mt-6">
+          <div id="widget-contribution-graph" className="mt-6">
             <LazyWidget fallback={<SkeletonCard />}>
               <RepoAnalyticsExplorer />
             </LazyWidget>
           </div>
 
           {/* -- Row 2: PR metrics + Community metrics -- */}
-          <div id="pull-requests" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 md:grid-cols-2">
+          <div id="widget-pr-metrics" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 md:grid-cols-2">
             <PRMetrics />
             <CommunityMetrics />
           </div>
-
+           </div>
           {/* PR breakdown + commit time — 2-col so charts have room */}
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <LazyWidget fallback={<SkeletonCard />}>
@@ -276,9 +280,11 @@ export default async function DashboardPage() {
                 <LazyWidget fallback={<SkeletonCard />}>
                   <PinnedReposWidget />
                 </LazyWidget>
-                <LazyWidget fallback={<SkeletonCard />}>
+                <div id="widget-top-repos">
+                  <LazyWidget fallback={<SkeletonCard />}>
                   <TopRepos />
                 </LazyWidget>
+                </div>
                 <LazyWidget fallback={<SkeletonCard />}>
                   <InactiveRepositoriesCard />
                 </LazyWidget>
@@ -287,7 +293,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* 4. GOALS & INSIGHTS */}
-          <section id="goals" className="mt-14 space-y-6 scroll-mt-28 mb-12">
+          <section id="widget-goals" className="mt-14 space-y-6 scroll-mt-28 mb-12">
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">
               <div className="h-8 w-1.5 rounded-full bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
               <h2 className="text-2xl font-bold tracking-tight">Goals & Insights</h2>
