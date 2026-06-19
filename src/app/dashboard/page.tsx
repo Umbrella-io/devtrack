@@ -71,6 +71,12 @@ export default async function DashboardPage() {
                 Compare Friends
               </Link>
               <Link
+                href="/dashboard/timeline"
+                className="inline-flex items-center gap-2 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90"
+              >
+                🕒 Activity Timeline
+              </Link>
+              <Link
                 href="/dashboard/settings"
                 className="secondary-button inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium"
               >
