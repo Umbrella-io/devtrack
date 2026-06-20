@@ -136,6 +136,28 @@ export default function NotificationBell() {
     return `${Math.floor(hrs / 24)}d ago`;
   }
 
+  const [clearing, setClearing] = useState(false);
+
+  const handleClearAll = useCallback(async () => {
+    if (clearing || notifications.length === 0) return;
+
+    setClearing(true);
+    try {
+      const res = await fetch("/api/notifications", { method: "DELETE" });
+      if (!res.ok) throw new Error(`Failed to clear notifications (${res.status})`);
+
+      setUnreadCount(0);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("devtrack:unread-notification-count", "0");
+      }
+    } catch (e) {
+      console.error("Failed to clear notifications:", e);
+    } finally {
+      setClearing(false);
+      void refetch();
+    }
+  }, [clearing, notifications.length, refetch]);
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Dynamic announcement live region */}
@@ -199,6 +221,18 @@ export default function NotificationBell() {
                   All caught up
                 </span>
               )}
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  disabled={clearing}
+                  className="text-xs font-medium text-[var(--muted-foreground)] hover:text-[var(--card-foreground)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Clear all notifications"
+                  title="Clear all notifications"
+                >
+                  {clearing ? "Clearing…" : "Clear all"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -239,9 +273,8 @@ export default function NotificationBell() {
               notifications.map((n) => (
                 <li
                   key={n.id}
-                  className={`px-4 py-3 ${
-                    !n.read ? "bg-[var(--accent)]/5" : ""
-                  }`}
+                  className={`px-4 py-3 ${!n.read ? "bg-[var(--accent)]/5" : ""
+                    }`}
                 >
                   <p className="text-sm text-[var(--card-foreground)]">
                     {n.message}
