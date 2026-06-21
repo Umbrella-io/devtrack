@@ -40,16 +40,16 @@ Please note that this project is released with a [Code of Conduct](CODE_OF_CONDU
 ---
 
 ## 📋 Table of Contents
-
 1. [Prerequisites](#1-prerequisites)
 2. [Local Development Setup](#2-local-development-setup)
 3. [Environment Variables Guide](#3-environment-variables-guide)
-4. [Code Style & Standards](#4-code-style--standards)
-5. [Branch Naming Conventions](#5-branch-naming-conventions)
-6. [Commit Guidelines](#6-commit-guidelines)
-7. [Issue Labels & GSSoC Levels](#7-issue-labels--gssoc-levels)
-8. [Pull Request (PR) Checklist](#8-pull-request-pr-checklist)
-9. [Self-Hosting & Deployment](#9-self-hosting--deployment)
+4. [Troubleshooting Common Issues](#4-troubleshooting-common-issues)
+5. [Code Style & Standards](#5-code-style--standards)
+6. [Branch Naming Conventions](#6-branch-naming-conventions)
+7. [Commit Guidelines](#7-commit-guidelines)
+8. [Issue Labels & GSSoC Levels](#8-issue-labels--gssoc-levels)
+9. [Pull Request (PR) Checklist](#9-pull-request-pr-checklist)
+10. [Self-Hosting & Deployment](#10-self-hosting--deployment)
 
 ---
 
@@ -111,7 +111,158 @@ DevTrack relies on a set of environment variables to connect to external APIs an
 
 ---
 
-## 4. Code Style & Standards
+## 4. Troubleshooting Common Issues
+
+Here are solutions to the most frequent problems contributors face during setup:
+
+### Issue: `pnpm install` fails with permission errors
+
+**Solution:**
+
+* **macOS/Linux:** Try `sudo pnpm install` or fix npm permissions:
+
+```bash
+mkdir ~/.npm-global
+npm config set prefix '~/.npm-global'
+export PATH=~/.npm-global/bin:$PATH
+```
+
+* **Windows:** Run your terminal as Administrator.
+
+### Issue: `.env.local` file not found or missing variables
+
+**Solution:**
+
+```bash
+cp .env.example .env.local
+```
+
+Then open `.env.local` in your editor and fill in all required values (see Environment Variables Guide above).
+
+### Issue: Supabase connection error
+
+**Solution:**
+
+* Verify your `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are correct.
+* Check if your Supabase project is active (not paused due to inactivity).
+* Ensure Row Level Security (RLS) policies are properly configured for your tables.
+* Check that your IP is not blocked by the Supabase firewall.
+
+### Issue: GitHub OAuth returns "redirect_uri mismatch"
+
+**Solution:**
+
+Go to your GitHub OAuth App settings.
+
+Ensure the Authorization callback URL is exactly:
+
+```text
+http://localhost:3000/api/auth/callback/github
+```
+
+Make sure `NEXTAUTH_URL` in `.env.local` matches:
+
+```text
+http://localhost:3000
+```
+
+(no trailing slash).
+
+If using a different port, update both the callback URL and `NEXTAUTH_URL`.
+
+### Issue: Port 3000 already in use
+
+**Solution:**
+
+```bash
+# Find and kill the process using port 3000
+
+# macOS/Linux:
+lsof -ti:3000 | xargs kill -9
+
+# Windows:
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+
+# Or run on a different port:
+pnpm dev -- -p 3001
+```
+
+### Issue: TypeScript errors during build or type-check
+
+**Solution:**
+
+```bash
+# Run type-check to see all errors
+pnpm run type-check
+
+# Fix the errors, then try building again
+pnpm run build
+```
+
+Common fixes:
+
+* Add missing types
+* Fix import paths
+* Update dependencies
+
+### Issue: Dependency conflicts after pulling latest changes
+
+**Solution:**
+
+```bash
+# Clean install
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
+```
+
+### Issue: The app loads but metrics/data are missing
+
+**Solution:**
+
+* Open browser developer tools (F12) and check the Console for API errors.
+* Verify your GitHub token (`GITHUB_TOKEN`) has the required permissions (`repo`, `read:user`, etc.).
+* Ensure Supabase tables are properly seeded with test data.
+* Check that the API routes are correctly configured in `pages/api/` or `app/api/`.
+
+### Issue: NEXTAUTH_SECRET or ENCRYPTION_KEY not set
+
+**Solution:** Generate secure keys using the terminal:
+
+```bash
+# For NEXTAUTH_SECRET (32-byte base64)
+openssl rand -base64 32
+
+# For ENCRYPTION_KEY (32-byte hex)
+openssl rand -hex 32
+```
+
+Copy the generated values and paste them into your `.env.local` file.
+
+### Issue: "Module not found" or "Cannot find module" errors
+
+**Solution:**
+
+Ensure all dependencies are installed:
+
+```bash
+pnpm install
+```
+
+Check that you're running the command from the project root directory.
+
+If using a monorepo, make sure you're in the correct workspace.
+
+Try clearing the Next.js cache:
+
+```bash
+rm -rf .next
+pnpm dev
+```
+
+---
+
+## 5. Code Style & Standards
 
 To ensure code readability and maintainability, please adhere to our styling rules:
 
@@ -130,7 +281,7 @@ To ensure code readability and maintainability, please adhere to our styling rul
 
 ---
 
-## 5. Branch Naming Conventions
+## 6. Branch Naming Conventions
 
 Always create a new branch for your task. Never push directly to `main`. Use the following format:
 
@@ -145,7 +296,7 @@ Always create a new branch for your task. Never push directly to `main`. Use the
 
 ---
 
-## 6. Commit Guidelines
+## 7. Commit Guidelines
 
 We enforce **Conventional Commits** to keep our git history clean and understandable.
 
@@ -170,7 +321,7 @@ We enforce **Conventional Commits** to keep our git history clean and understand
 
 ---
 
-## 7. Issue Labels & GSSoC Levels
+## 8. Issue Labels & GSSoC Levels
 
 For contributors joining through GirlScript Summer of Code (GSSoC), we map issues using levels to indicate complexity and points:
 
@@ -187,7 +338,7 @@ For contributors joining through GirlScript Summer of Code (GSSoC), we map issue
 
 ---
 
-## 8. Pull Request (PR) Checklist
+## 9. Pull Request (PR) Checklist
 
 Before submitting your PR, make sure you have verified the following:
 
@@ -206,7 +357,7 @@ Before submitting your PR, make sure you have verified the following:
 
 ---
 
-## 9. Self-Hosting & Deployment
+## 10. Self-Hosting & Deployment
 
 For guides on self-hosting DevTrack or deploying it manually, please check the [Self-Hosting Documentation](./docs/self-hosting.md).
 
