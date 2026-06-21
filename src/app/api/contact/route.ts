@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkContactRateLimit, getContactClientIp } from "@/lib/contact-rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -6,6 +7,7 @@ type ContactPayload = {
   name?: unknown;
   email?: unknown;
   message?: unknown;
+  website?: unknown; // honeypot
 };
 
 function escapeHtml(value: string): string {
@@ -22,8 +24,30 @@ export async function POST(request: NextRequest) {
 
   try {
     payload = (await request.json()) as ContactPayload;
-  } catch {
+  } catch (e) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  // Honeypot check for bots
+  if (payload.website) {
+    // Silently ignore spam by returning a mock success response
+    return NextResponse.json({ success: true });
+  }
+
+  // In-route rate limiting check (3 requests per IP per hour)
+  const ip = getContactClientIp(request);
+  const rateLimitResult = checkContactRateLimit(ip);
+
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { error: "Too many contact submissions. Please try again in an hour." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.max(rateLimitResult.reset - Math.ceil(Date.now() / 1000), 1)),
+        },
+      }
+    );
   }
 
   const name = typeof payload.name === "string" ? payload.name.trim() : "";
@@ -34,8 +58,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Name, email, and message are required." }, { status: 400 });
   }
 
+  // Bound length before regex to prevent ReDoS on pathological inputs
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailPattern.test(email)) {
+  if (email.length > 254 || !emailPattern.test(email)) {
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
   }
 

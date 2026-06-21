@@ -6,6 +6,7 @@ type FormValues = {
   name: string;
   email: string;
   message: string;
+  website?: string; // honeypot
 };
 
 type FieldErrors = Partial<Record<keyof FormValues, string>>;
@@ -16,6 +17,7 @@ const initialValues: FormValues = {
   name: "",
   email: "",
   message: "",
+  website: "",
 };
 
 function validate(values: FormValues): FieldErrors {
@@ -138,6 +140,20 @@ export default function ContactForm() {
       </div>
 
       <div className="mt-6 grid gap-5">
+        {/* Honeypot field - completely hidden from human users */}
+        <div style={{ display: "none" }} aria-hidden="true">
+          <label htmlFor="website">Website</label>
+          <input
+            id="website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={values.website || ""}
+            onChange={(event) => handleChange("website", event.target.value)}
+          />
+        </div>
+
         <div>
           <label htmlFor={nameId} className="mb-2 block text-sm font-medium text-[#e5eefc]">
             Name

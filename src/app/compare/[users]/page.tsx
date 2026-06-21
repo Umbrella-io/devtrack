@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Link from "next/link";
 import { Scale, Trophy } from "lucide-react";
 import Image from "next/image";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
@@ -11,17 +12,14 @@ import {
 
 export const dynamic = "force-dynamic";
 
-interface ComparePageProps {
-  params: { users: string };
-}
-
 type Winner = "left" | "right" | "tie";
 
-function parseUsers(users: string): [string, string] | null {
+async function parseUsers(params: Promise<{ users: string }>): Promise<[string, string] | null> {
   let decoded: string;
   try {
+    const { users } = await params;
     decoded = decodeURIComponent(users);
-  } catch {
+  } catch (e) {
     return null;
   }
 
@@ -53,8 +51,8 @@ function repoCommitTotal(repos: TopRepo[]): number {
 
 export async function generateMetadata({
   params,
-}: ComparePageProps): Promise<Metadata> {
-  const parsed = parseUsers(params.users);
+}: { params: Promise<{ users: string }> }): Promise<Metadata> {
+  const parsed = await parseUsers(params);
   if (!parsed) {
     return {
       title: "Compare Public Profiles",
@@ -71,8 +69,9 @@ export async function generateMetadata({
 
 export default async function PublicProfileComparePage({
   params,
-}: ComparePageProps) {
-  const parsed = parseUsers(params.users);
+}: { params: Promise<{ users: string }> }) {
+  const { users } = await params;
+  const parsed = await parseUsers(params);
 
   if (!parsed) {
     return <CompareUnavailable title="Invalid compare URL" />;
@@ -108,12 +107,12 @@ export default async function PublicProfileComparePage({
               Shareable comparison built only from publicly visible DevTrack stats.
             </p>
           </div>
-          <a
+          <Link
             href={`/u/${encodeURIComponent(rightProfile.username)}`}
             className="secondary-button inline-flex rounded-lg px-4 py-2 text-sm font-medium"
           >
             View profile
-          </a>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
@@ -199,9 +198,9 @@ function CompareUnavailable({
       <div className="surface-card max-w-md rounded-2xl p-8 text-center">
         <h1 className="mb-2 text-3xl font-bold">{title}</h1>
         <p className="mb-6 text-sm text-[var(--muted-foreground)]">{message}</p>
-        <a href="/" className="primary-button inline-block rounded-lg px-6 py-2">
+        <Link href="/" className="primary-button inline-block rounded-lg px-6 py-2">
           Back to Home
-        </a>
+        </Link>
       </div>
     </div>
   );
@@ -233,12 +232,12 @@ function ProfileHeader({
           className="h-14 w-14 rounded-full border border-[var(--border)]"
         />
         <div className="min-w-0">
-          <a
+          <Link
             href={`/u/${encodeURIComponent(profile.username)}`}
             className="truncate text-xl font-bold text-[var(--card-foreground)] hover:text-[var(--accent)]"
           >
             @{profile.username}
-          </a>
+          </Link>
           <p className="text-sm text-[var(--muted-foreground)]">
             {profile.streak.current} day streak - {profile.contributions.total} commits
           </p>

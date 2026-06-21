@@ -1,15 +1,13 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { decryptToken } from "@/lib/crypto";
+import { validateCronRequest } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  // To secure the cron job, check the authorization header
-  const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV !== "development") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = validateCronRequest(req);
+  if (authError) return authError;
 
   // Fetch users with wakatime keys
   const { data: users, error } = await supabaseAdmin
@@ -30,7 +28,7 @@ export async function GET(req: Request) {
   const CHUNK_SIZE = 5;
   for (let i = 0; i < users.length; i += CHUNK_SIZE) {
     const chunk = users.slice(i, i + CHUNK_SIZE);
-    
+
     await Promise.allSettled(chunk.map(async (user) => {
       try {
         const apiKey = decryptToken(
@@ -60,7 +58,7 @@ export async function GET(req: Request) {
 
         const data = await res.json();
         const now = new Date().toISOString();
-        
+
         const statsToUpsert = data.data.map((day: any) => ({
           user_id: user.id,
           date: day.range.date,

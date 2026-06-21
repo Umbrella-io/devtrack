@@ -33,7 +33,7 @@ test.beforeEach(async ({ page }) => {
     },
   ]);
 
-  await page.route("**/api/auth/session", async (route) => {
+  await page.route("**/api/auth/session**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -87,20 +87,24 @@ test("settings page saves and reflects changes", async ({ page }) => {
 
   // Wait for settings to load
   await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
-  
-  // Find the public profile toggle (which is visually a checkbox)
-  // The label wraps the checkbox and "Public Profile" isn't strictly associated with the input
-  // Since we know the DOM structure:
-  // It has a hidden input type="checkbox"
-  const publicProfileCheckbox = page.locator("input[type='checkbox']").first();
-  
+
+  // The public profile toggle is a sr-only checkbox driven by React's onChange.
+  // Clicking the hidden input directly won't fire the synthetic event.
+  // Instead click the visible toggle track (the div sibling of the sr-only input)
+  // which is inside the label wrapping the "Toggle Public Profile" checkbox.
+  const toggleLabel = page.locator("label").filter({
+    has: page.locator("input[aria-label='Toggle Public Profile']"),
+  });
+  const toggleTrack = toggleLabel.locator("div").first();
+
+  const publicProfileCheckbox = page.locator("input[aria-label='Toggle Public Profile']");
+
   // Initially false based on our mock
   await expect(publicProfileCheckbox).not.toBeChecked();
-  
-  // Click the label/toggle container to change it
-  // We can click the parent container or the label
-  await page.locator("text=Public Profile").locator("..").locator("..").locator("input[type='checkbox']").first().evaluate(node => node.click());
-  
+
+  // Click the visible toggle track — this fires the React onChange
+  await toggleTrack.click();
+
   // It should now be checked (our mock returns the patched value)
   await expect(publicProfileCheckbox).toBeChecked();
 });

@@ -34,7 +34,7 @@ export async function submitGoalWithRefresh({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-  } catch {
+  } catch (e) {
     return {
       created: false,
       error: "Failed to create goal. Please try again.",
@@ -42,9 +42,16 @@ export async function submitGoalWithRefresh({
   }
 
   if (!response.ok) {
+    let message = "Failed to create goal. Please try again.";
+    try {
+      const data = (await response.json()) as { error?: string };
+      if (data.error) message = data.error;
+    } catch {
+      // keep fallback message
+    }
     return {
       created: false,
-      error: "Failed to create goal. Please try again.",
+      error: message,
     };
   }
 
@@ -54,7 +61,7 @@ export async function submitGoalWithRefresh({
     } else {
       await loadGoals();
     }
-  } catch {
+  } catch (e) {
     return {
       created: true,
       error: "Goal created, but refreshing goals failed. Please try refreshing.",

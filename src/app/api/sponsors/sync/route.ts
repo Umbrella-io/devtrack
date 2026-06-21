@@ -1,19 +1,15 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { validateCronRequest } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-  
-  if (!cronSecret) {
-    return NextResponse.json({ error: "CRON_SECRET is not configured" }, { status: 500 });
-  }
+  const authError = validateCronRequest(req);
+  if (authError) return authError;
 
-  if (authHeader !== `Bearer ${cronSecret}` && process.env.NODE_ENV !== "development") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const url = new URL(req.url);
+  const lastSyncedAt = url.searchParams.get("lastSyncedAt");
 
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
@@ -21,6 +17,27 @@ export async function GET(req: Request) {
   }
 
   const targetOwner = "Priyanshu-byte-coder";
+  const currentTimestamp = new Date().toISOString();
+
+  // 🧠 INCREMENTAL CHECKPOINT LAYER: Avoids duplicate sync loops if executed within an aggressive window
+  if (lastSyncedAt) {
+    try {
+      const syncThresholdMs = 5 * 60 * 1000; // 5-minute incremental safety delta
+      const lastSyncTime = new Date(lastSyncedAt).getTime();
+      const currentSyncTime = new Date(currentTimestamp).getTime();
+
+      if (!isNaN(lastSyncTime) && (currentSyncTime - lastSyncTime < syncThresholdMs)) {
+        return NextResponse.json({
+          success: true,
+          isIncremental: true,
+          message: "Data synchronization skipped. Checkpoint is up to date.",
+          synchronizedAt: currentTimestamp
+        });
+      }
+    } catch (e) {
+      console.warn("Invalid lastSyncedAt timestamp parameter provided, falling back to full baseline pass.");
+    }
+  }
 
   try {
     const query = `
@@ -58,7 +75,7 @@ export async function GET(req: Request) {
     }
 
     const { data, errors } = await res.json();
-    
+
     if (errors && errors.length > 0) {
       console.error("GraphQL errors:", errors);
       return NextResponse.json({ error: "GraphQL query failed" }, { status: 502 });
@@ -68,9 +85,9 @@ export async function GET(req: Request) {
       console.error("GraphQL returned empty data or null user");
       return NextResponse.json({ error: "GraphQL query returned no user data" }, { status: 502 });
     }
-    
+
     const sponsorLogins: string[] = [];
-    
+
     if (data.user.sponsorshipsAsMaintainer?.nodes) {
       const nodes = data.user.sponsorshipsAsMaintainer.nodes;
       for (const node of nodes) {
@@ -98,16 +115,19 @@ export async function GET(req: Request) {
     const toRemove = [...currentLogins].filter((login: string) => !newLogins.has(login));
     const toAdd = [...newLogins].filter((login: string) => !currentLogins.has(login));
 
+    let updatesCount = 0;
+
     if (toRemove.length > 0) {
       const { error } = await supabaseAdmin
         .from("users")
         .update({ is_sponsor: false })
         .in("github_login", toRemove);
-      
+
       if (error) {
         console.error("Failed to remove sponsors:", error);
         return NextResponse.json({ error: "Database error" }, { status: 500 });
       }
+      updatesCount += toRemove.length;
     }
 
     if (toAdd.length > 0) {
@@ -115,20 +135,25 @@ export async function GET(req: Request) {
         .from("users")
         .update({ is_sponsor: true })
         .in("github_login", toAdd);
-      
+
       if (error) {
         console.error("Failed to add sponsors:", error);
         return NextResponse.json({ error: "Database error" }, { status: 500 });
       }
+      updatesCount += toAdd.length;
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      sponsorCount: sponsorLogins.length, 
-      sponsors: sponsorLogins 
+    return NextResponse.json({
+      success: true,
+      isIncremental: false,
+      updatesCount,
+      sponsorCount: sponsorLogins.length,
+      synchronizedAt: currentTimestamp,
+      sponsors: sponsorLogins
     });
   } catch (error) {
     console.error("Error in sponsors sync:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateBadgeSVG } from "../badge-utils";
-import {
-  checkBadgeRateLimit,
-  getBadgeClientIp,
-} from "@/lib/badge-rate-limit";
+import { checkBadgeRateLimit, getBadgeClientIp } from "@/lib/badge-rate-limit";
 import { logError } from "@/lib/error-handler";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 
@@ -75,7 +72,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const username = normalizeGitHubUsername(req.nextUrl.searchParams.get("user"));
+    const username = normalizeGitHubUsername(
+      req.nextUrl.searchParams.get("user")
+    );
 
     if (!username) {
       return NextResponse.json(
