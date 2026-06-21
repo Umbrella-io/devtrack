@@ -229,7 +229,7 @@ test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30000 });
-  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible(
+  await expect(page.getByRole("heading", { name: "Your Commits" }).first()).toBeVisible(
     { timeout: 10000 }
   );
   await expect(page.getByRole("heading", { name: "PR Analytics" }).first()).toBeVisible(
@@ -282,10 +282,10 @@ test("goal form posts a new goal", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30000 });
-  await page.getByLabel("Goal title").fill("Ship one PR");
-  await page.getByLabel("Target").fill("1");
-  await page.getByLabel("Unit", { exact: true }).selectOption("prs");
-  await page.getByRole("button", { name: "Create goal" }).click();
+  await page.getByLabel("Goal title").first().fill("Ship one PR");
+  await page.getByLabel("Target").first().fill("1");
+  await page.getByLabel("Unit").first().selectOption("prs");
+  await page.getByRole("button", { name: "Create goal" }).first().click();
 
   await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);
   expect(goalPosts[0]).toMatchObject({

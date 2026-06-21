@@ -340,11 +340,11 @@ test("notification bell opens and closes drawer", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible({ timeout: 30000 });
 
   // Find and click the notification bell
-  const bellButton = page.getByRole("button", { name: /Notifications/ });
+  const bellButton = page.getByRole("button", { name: /Notifications/ }).first();
   await expect(bellButton).toBeVisible({ timeout: 10000 });
 
   await bellButton.click();
-  const drawerHeading = page.getByRole("heading", { name: "Notifications" });
+  const drawerHeading = page.getByRole("heading", { name: "Notifications" }).first();
   await expect(drawerHeading).toBeVisible({ timeout: 5000 });
   await expect(page.getByText("Test notification")).toBeVisible({
     timeout: 5000,
