@@ -4,7 +4,7 @@ import {
   utcToLocalDate,
   areConsecutiveDays,
   calculateStreak,
-} from "../src/lib/dates/streakDateUtils";
+} from "../src/lib/date-utils";
 
 afterEach(() => {
   vi.useRealTimers();

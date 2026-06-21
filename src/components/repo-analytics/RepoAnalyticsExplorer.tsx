@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import RepoCarousel from "./RepoCarousel";
-import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
+import { ExplorerRepoCardData } from "@/lib/repo-analytics-types";
 import { toast } from "sonner";
 
 function useDebounce<T>(value: T, delay: number): T {

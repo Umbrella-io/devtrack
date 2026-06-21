@@ -325,12 +325,14 @@ src/
 │   │   ├── cv-classifier.ts
 │   │   ├── cv-github-fetcher.ts
 │   │   └── cv-prompts.ts
+│   ├── date-utils.ts                   # Date formatting, arithmetic, week ranges, streak utils
 │   ├── github.ts                       # GitHub REST API client
 │   ├── github-accounts.ts              # Multi-account GitHub helpers
 │   ├── jira-utils.ts                   # Jira credential helpers
 │   ├── leaderboard-cache.ts            # Leaderboard cache TTL helpers
 │   ├── metrics-cache.ts                # Server-side TTL cache (memory + Redis)
 │   ├── personality-analysis.ts         # Deterministic personality scoring
+│   ├── repo-analytics-types.ts         # Type definitions for repo analytics
 │   ├── repo-health.ts                  # Repository health score logic
 │   ├── resolve-user.ts                 # Resolve session to Supabase user
 │   ├── response-cache.ts               # Cache-Control header helpers
