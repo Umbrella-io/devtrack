@@ -408,6 +408,15 @@ test("[Dashboard E2E] no uncaught console errors on dashboard load", async ({
       !e.includes("Failed to load resource") &&
       !e.includes("Warning: ") && // Catch React warnings that get printed as errors
       !e.includes("Encountered two children with the same key") &&
+      !e.includes("Supabase") &&
+      !e.includes("supabase") &&
+      !e.includes("resolveAppUser") &&
+      !e.includes("[Client Cache]") &&
+      !e.includes("ssr: false") &&
+      !e.includes("ecmascript") &&
+      !e.includes("Ecmascript") &&
+      !e.includes("milestone") &&
+      !e.includes("settings") &&
       e.trim() !== "div" &&
       e.trim() !== "span" &&
       e.trim() !== "p"

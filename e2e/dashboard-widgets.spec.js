@@ -184,6 +184,7 @@ test.beforeEach(async ({ page }) => {
     "**/api/metrics/repo-explorer**",
     "**/api/metrics/pr-review-time**",
     "**/api/metrics/achievement-progress**",
+    "**/api/metrics/contributions**",
   ];
 
   for (const pattern of metricRoutes) {
@@ -282,9 +283,9 @@ test("goal form posts a new goal", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30000 });
-  await page.getByLabel("Goal title").first().fill("Ship one PR");
-  await page.getByLabel("Target").first().fill("1");
-  await page.getByLabel("Unit").first().selectOption("prs");
+  await page.getByLabel("Goal title", { exact: true }).first().fill("Ship one PR");
+  await page.getByLabel("Target", { exact: true }).first().fill("1");
+  await page.getByLabel("Unit", { exact: true }).first().selectOption("prs");
   await page.getByRole("button", { name: "Create goal" }).first().click();
 
   await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);
@@ -440,6 +441,17 @@ function mockMetricResponse(url) {
   }
   if (url.includes("/api/metrics/pr-review-time")) {
     return { avgReviewHours: 0, avgFirstReviewHours: 0 };
+  }
+  if (url.includes("/api/metrics/contributions")) {
+    return {
+      days: 30,
+      total: 10,
+      data: {
+        "2026-05-16": 3,
+        "2026-05-17": 5,
+        "2026-05-18": 2,
+      },
+    };
   }
   return {};
 }

@@ -102,13 +102,12 @@ export default function NotificationBell() {
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node) &&
-        triggerRef.current &&
-        !triggerRef.current.contains(e.target as Node)
+        (dropdownRef.current && dropdownRef.current.contains(e.target as Node)) ||
+        (triggerRef.current && triggerRef.current.contains(e.target as Node))
       ) {
-        setOpen(false);
+        return;
       }
+      setOpen(false);
     }
 
     document.addEventListener("pointerdown", handleClickOutside);
@@ -185,7 +184,7 @@ export default function NotificationBell() {
   }, [clearing, notifications.length, refetch]);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       {/* Dynamic announcement live region */}
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {unreadCount > 0 ? `${unreadCount} unread notifications` : "No unread notifications"}
@@ -199,6 +198,7 @@ export default function NotificationBell() {
         className="relative rounded-lg p-2 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-all hover:opacity-90 active:scale-95"
         aria-label="Notifications"
         title="Notifications"
+        data-testid="notification-bell-button"
         suppressHydrationWarning
       >
         {/* icon */}
@@ -238,7 +238,7 @@ export default function NotificationBell() {
           className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl"
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-            <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+            <h3 className="text-sm font-semibold text-[var(--card-foreground)]" data-testid="notifications-heading">
               Notifications
             </h3>
             <div className="flex items-center gap-2">

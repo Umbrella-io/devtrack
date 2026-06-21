@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef, useId } from "react";
 import { useSession } from "next-auth/react";
 import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
 import { submitGoalWithRefresh } from "@/lib/goal-tracker";
@@ -310,6 +310,10 @@ export function useGoalTracker() {
 }
 
 export default function GoalTracker() {
+  const uid = useId();
+  const titleId = `${uid}-goal-title`;
+  const targetId = `${uid}-goal-target`;
+  const unitId = `${uid}-goal-unit`;
 
 
   const {
@@ -756,20 +760,22 @@ export default function GoalTracker() {
 
       {/* Goal Creation Form */}
       <form
-        id="create-goal-form"
+        id={`${uid}-create-goal-form`}
+        data-testid="goal-creation-form"
         onSubmit={handleCreate}
         className="mt-6 space-y-3 border-t border-[var(--border)] pt-4"
       >
 
         <div>
           <label
-            htmlFor="goal-title"
+            htmlFor={titleId}
             className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
           >
             Goal title
           </label>
           <input
-            id="goal-title"
+            id={titleId}
+            aria-label="Goal title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)} maxLength={100}
@@ -783,13 +789,14 @@ export default function GoalTracker() {
         <div className="flex gap-3">
           <div className="flex-1">
             <label
-              htmlFor="goal-target"
+              htmlFor={targetId}
               className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
             >
               Target
             </label>
             <input
-              id="goal-target"
+              id={targetId}
+              aria-label="Target"
               type="number"
               min={1}
               max={10000}
@@ -801,13 +808,14 @@ export default function GoalTracker() {
           </div>
           <div className="flex-1">
             <label
-              htmlFor="goal-unit"
+              htmlFor={unitId}
               className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
             >
               Unit
             </label>
             <select
-              id="goal-unit"
+              id={unitId}
+              aria-label="Unit"
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               disabled={creating}
