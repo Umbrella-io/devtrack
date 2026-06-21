@@ -176,7 +176,7 @@ export default async function DashboardPage() {
 
         {/* -- Row 2: PR metrics + Community metrics -- */}
         <div id="pull-requests" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 md:grid-cols-2">
-          <PRMetrics />
+          <PRMetrics  />
           <CommunityMetrics />
         </div>
 

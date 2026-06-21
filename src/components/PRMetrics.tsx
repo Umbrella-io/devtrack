@@ -46,10 +46,15 @@ function formatReviewCycle(hours: number | null): string {
   return `${Math.round((hours / 24) * 10) / 10}d`;
 }
 
-export default function PRMetrics() {
+interface PRMetricsProps {
+  isLoading?: boolean;
+}
+
+export default function PRMetrics({ isLoading }: PRMetricsProps = {}) {
   const { selectedAccount } = useAccount();
   const [metrics, setMetrics] = useState<PRData | null>(null);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = isLoading !== undefined ? isLoading : loading;
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -60,8 +65,8 @@ export default function PRMetrics() {
   const { setSummary, setIsUpdating } = useDashboardWidgetA11y("pr-metrics");
 
   useEffect(() => {
-    setIsUpdating(loading);
-  }, [loading, setIsUpdating]);
+    setIsUpdating(showSkeleton);
+  }, [showSkeleton, setIsUpdating]);
 
   useEffect(() => {
     if (!metrics) {
@@ -243,29 +248,24 @@ export default function PRMetrics() {
         </div>
       </div>
 
-      {loading ? (
+      {showSkeleton ? (
         <div
           role="status"
           aria-live="polite"
           aria-busy="true"
-          className="space-y-4"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse"
         >
           <span className="sr-only">Loading PR analytics</span>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-            {[1, 2, 3, 4, 5, 6,7].map((i) => (
-              <div
-                key={i}
-                aria-hidden="true"
-                className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
-              />
-            ))}
-          </div>
-          <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
-          <div
-            className="h-[220px] rounded-lg bg-[var(--card-muted)] animate-pulse"
-            aria-hidden="true"
-          />
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              aria-hidden="true"
+              className="rounded-lg p-4 bg-muted border border-[var(--border)] h-24 flex flex-col justify-center space-y-2"
+            >
+              <div className="h-6 w-16 rounded bg-[var(--card-muted)] opacity-60" />
+              <div className="h-4 w-24 rounded bg-[var(--card-muted)] opacity-60" />
+            </div>
+          ))}
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
@@ -385,7 +385,7 @@ export default function PRMetrics() {
         </div>
       )}
 
-      {lastUpdated && (
+      {lastUpdated && !showSkeleton && (
         <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
           {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
         </p>

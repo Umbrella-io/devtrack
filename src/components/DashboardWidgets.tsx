@@ -72,7 +72,7 @@ function DashboardWidgets() { return (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <WidgetErrorBoundary>
-            <ContributionGraph />
+            <ContributionGraph isLoading={true} />
           </WidgetErrorBoundary>
 
           <div className="mt-6">
@@ -84,7 +84,7 @@ function DashboardWidgets() { return (
 
         <div className="flex flex-col gap-6">
           <WidgetErrorBoundary>
-            <StreakTracker />
+            <StreakTracker isLoading={true} />
           </WidgetErrorBoundary>
 
           <WidgetErrorBoundary>
@@ -96,7 +96,7 @@ function DashboardWidgets() { return (
       {/* Row 2 */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <WidgetErrorBoundary>
-          <PRMetrics />
+          <PRMetrics isLoading={true} />
         </WidgetErrorBoundary>
 
         <WidgetErrorBoundary>
@@ -132,7 +132,7 @@ function DashboardWidgets() { return (
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <LazyWidget fallback={<Skeleton className="h-48 w-full" />}>
           <WidgetErrorBoundary>
-            <TopRepos />
+            <TopRepos isLoading={true} />
           </WidgetErrorBoundary>
         </LazyWidget>
 
@@ -144,7 +144,7 @@ function DashboardWidgets() { return (
 
         <LazyWidget fallback={<Skeleton className="h-48 w-full" />}>
           <WidgetErrorBoundary>
-            <GoalTracker />
+            <GoalTracker  isLoading={true} />
           </WidgetErrorBoundary>
         </LazyWidget>
       </div>
