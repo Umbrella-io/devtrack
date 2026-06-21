@@ -9,6 +9,8 @@ describe('gradeForScore', () => {
     avgPrOpenTimeHours: 9999,
     openIssuesCount: 9999,
     daysSinceLastCommit: 9999,
+    contributorCount: 0,
+    documentationScore: 0,
   };
 
   const bestSignals: RepoHealthSignals = {
@@ -17,6 +19,8 @@ describe('gradeForScore', () => {
     avgPrOpenTimeHours: 0,
     openIssuesCount: 0,
     daysSinceLastCommit: 0,
+    contributorCount: 10,
+    documentationScore: 100,
   };
 
   it('returns red for worst signals', () => {

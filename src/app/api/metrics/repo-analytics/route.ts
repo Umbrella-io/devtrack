@@ -128,6 +128,8 @@ export async function GET(req: NextRequest) {
         avgPrOpenTimeHours: 24,
         openIssuesCount: repoData.open_issues_count || 0,
         daysSinceLastCommit: 1,
+        contributorCount: 0,
+        documentationScore: 0,
       };
 
       const health = computeHealthScore(repoData.name, healthSignals);
