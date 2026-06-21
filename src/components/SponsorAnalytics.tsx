@@ -98,13 +98,13 @@ export default function SponsorAnalytics() {
 
   // Sponsor Tier Categorization
   const categorizedSponsors = useMemo(() => {
-    if (!data?.sponsors) return { gold: [], silver: [], bronze: [] };
-
+    const sponsorsList = data?.sponsors ?? [];
     const gold: ActiveSponsor[] = [];
     const silver: ActiveSponsor[] = [];
     const bronze: ActiveSponsor[] = [];
 
-    data.sponsors.forEach((sponsor) => {
+    sponsorsList.forEach((sponsor) => {
+      if (!sponsor) return;
       const price = (sponsor.monthlyPriceInCents ?? 0) / 100;
       if (price >= 50) {
         gold.push(sponsor);
@@ -120,8 +120,7 @@ export default function SponsorAnalytics() {
 
   // Goal milestone calculation
   const goalProgress = useMemo(() => {
-    if (!data) return { current: 0, next: 100, percent: 0 };
-    const current = data.mrr;
+    const current = data?.mrr ?? 0;
     const next = Math.ceil((current + 1) / 100) * 100 || 100;
     const percent = Math.min(Math.round((current / next) * 100), 100);
     return { current, next, percent };
@@ -173,6 +172,12 @@ export default function SponsorAnalytics() {
     );
   }
 
+  const sponsors = data?.sponsors ?? [];
+  const mrr = data?.mrr ?? 0;
+  const activeCount = data?.activeCount ?? 0;
+  const growthTrend = data?.growthTrend ?? 0;
+  const sparklineData = data?.sparklineData ?? [];
+
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-6">
       {/* Header */}
@@ -203,18 +208,18 @@ export default function SponsorAnalytics() {
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-[var(--card-foreground)]">
-              {data.activeCount}
+              {activeCount}
             </span>
-            {data.growthTrend !== 0 && (
+            {growthTrend !== 0 && (
               <span
                 className={`text-xs font-semibold ${
-                  data.growthTrend > 0
+                  growthTrend > 0
                     ? "text-green-600 dark:text-green-400"
                     : "text-red-600 dark:text-red-400"
                 }`}
               >
-                {data.growthTrend > 0 ? "+" : ""}
-                {data.growthTrend.toFixed(0)}% (30d)
+                {growthTrend > 0 ? "+" : ""}
+                {growthTrend.toFixed(0)}% (30d)
               </span>
             )}
           </div>
@@ -228,7 +233,7 @@ export default function SponsorAnalytics() {
           </div>
           <div className="mt-2">
             <span className="text-2xl font-bold text-[var(--card-foreground)]">
-              ${data.mrr}
+              ${mrr}
               <span className="text-xs font-normal text-[var(--muted-foreground)]">/mo</span>
             </span>
           </div>
@@ -265,7 +270,7 @@ export default function SponsorAnalytics() {
         </h3>
         <div className="h-28 w-full bg-[var(--control)] rounded-lg p-3 border border-[var(--border)]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.sparklineData} margin={{ top: 5, right: 10, left: -25, bottom: -5 }}>
+            <LineChart data={sparklineData} margin={{ top: 5, right: 10, left: -25, bottom: -5 }}>
               <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={9} tickLine={false} axisLine={false} />
               <YAxis stroke="var(--muted-foreground)" fontSize={9} tickLine={false} axisLine={false} allowDecimals={false} />
               <Tooltip content={<CustomTooltip />} cursor={{ stroke: "var(--border)", strokeWidth: 1, strokeDasharray: "4 4" }} />
@@ -288,7 +293,7 @@ export default function SponsorAnalytics() {
           Sponsors Wall
         </h3>
 
-        {data.sponsors.length === 0 ? (
+        {sponsors.length === 0 ? (
           <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center space-y-2">
             <Heart className="mx-auto h-8 w-8 text-[var(--muted-foreground)] opacity-40" />
             <p className="text-xs text-[var(--muted-foreground)]">No active sponsors found.</p>
