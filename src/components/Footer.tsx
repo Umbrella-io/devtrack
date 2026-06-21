@@ -26,6 +26,13 @@ const LEGAL_LINKS = [
   { label: "Documentation", href: "https://github.com/Priyanshu-byte-coder/devtrack/blob/main/DEVELOPMENT.md" },
 ];
 
+const LEGAL_LINKS = [
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Guidelines", href: "/guidelines" },
+  { label: "Documentation", href: "/api-docs" },
+];
+
+
 const SOCIAL_LINKS = [
   {
     label: "GitHub",
@@ -97,11 +104,10 @@ export default function Footer() {
 
   return (
     <footer
-      className={`mt-auto border-t relative overflow-hidden ${
-        isLanding
-          ? "bg-transparent border-slate-900/40"
-          : "border-[var(--border)] bg-[var(--background)]"
-      }`}
+      className={`mt-auto border-t relative overflow-hidden ${isLanding
+        ? "bg-transparent border-slate-900/40"
+        : "border-[var(--border)] bg-[var(--background)]"
+        }`}
       aria-label="Site footer"
     >
       {/* Top gradient accent */}

@@ -68,6 +68,34 @@ async function setupGoalsMocks(page: import("@playwright/test").Page) {
     })
   );
 
+  await page.route("**/api/milestones**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ milestones: [] }),
+    })
+  );
+
+  await page.route("**/api/daily-note**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ todayNote: "", yesterdayNote: "" }),
+    })
+  );
+
+  await page.route("**/api/accounts**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [] }),
+    })
+  );
+
+  await page.route("**/api/user/orgs**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [], config: {} }),
+    })
+  );
+
   await page.route("**/api/stream**", (route) =>
     route.fulfill({
       status: 200,
@@ -143,7 +171,7 @@ test("[Goals E2E] creating a goal sends POST /api/goals with correct payload", a
 
   await titleInput.fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
-  await page.getByLabel("Unit").selectOption("prs");
+  await page.getByLabel("Unit", { exact: true }).selectOption("prs");
   await page.getByRole("button", { name: "Create goal" }).click();
 
   await expect.poll(() => goalPosts.filter(Boolean), { timeout: 10_000 }).toHaveLength(1);
@@ -210,7 +238,7 @@ test("[Goals E2E] newly created goal appears in the goals list", async ({
   // Create a new goal.
   await titleInput.fill("Ship five PRs");
   await page.getByLabel("Target").fill("5");
-  await page.getByLabel("Unit").selectOption("prs");
+  await page.getByLabel("Unit", { exact: true }).selectOption("prs");
   await page.getByRole("button", { name: "Create goal" }).click();
 
   // The new goal should appear without a page reload.

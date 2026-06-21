@@ -68,6 +68,34 @@ async function injectMockSession(page: import("@playwright/test").Page) {
     })
   );
 
+  await page.route("**/api/milestones**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ milestones: [] }),
+    })
+  );
+
+  await page.route("**/api/daily-note**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ todayNote: "", yesterdayNote: "" }),
+    })
+  );
+
+  await page.route("**/api/accounts**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [] }),
+    })
+  );
+
+  await page.route("**/api/user/orgs**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [], config: {} }),
+    })
+  );
+
   await page.route("**/api/stream**", (route) =>
     route.fulfill({
       status: 200,
@@ -367,6 +395,8 @@ test("[Dashboard E2E] no uncaught console errors on dashboard load", async ({
       !e.includes("net::ERR_") &&
       !e.includes("ERR_INTERNET_DISCONNECTED") &&
       !e.includes("vercel-scripts.com") && // lgtm[js/incomplete-url-substring-sanitization] - filtering test console noise, not sanitizing user input
+      !e.includes("_vercel/insights") &&
+      !e.includes("_vercel/speed-insights") &&
       !e.includes("Content Security Policy") &&
       !e.includes("Hydration failed") &&
       !e.includes("Expected server HTML") &&

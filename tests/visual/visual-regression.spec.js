@@ -36,7 +36,6 @@ const VIEWPORT_SCREENSHOT_CLIP = { x: 0, y: 0, width: 1280, height: 900 };
 async function expectViewportScreenshot(page, name) {
   await expect(page).toHaveScreenshot(name, {
     clip: VIEWPORT_SCREENSHOT_CLIP,
-    maxDiffPixelRatio: 0.05,
   });
 }
 
@@ -122,6 +121,34 @@ async function mockDashboardApis(page) {
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({ notifications: [], unreadCount: 0 }),
+      });
+    }
+
+    if (path === "/api/milestones") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ milestones: [] }),
+      });
+    }
+
+    if (path === "/api/daily-note") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ todayNote: "", yesterdayNote: "" }),
+      });
+    }
+
+    if (path === "/api/accounts") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ accounts: [] }),
+      });
+    }
+
+    if (path === "/api/user/orgs") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ accounts: [], config: {} }),
       });
     }
 
@@ -444,7 +471,6 @@ test.describe("visual regression screenshots", () => {
 
     await expect(page).toHaveScreenshot("dashboard-header-dark.png", {
       clip: { x: 0, y: 0, width: 1280, height: 420 },
-      maxDiffPixelRatio: 0.05,
     });
 
     await page.evaluate(() => {
@@ -463,7 +489,6 @@ test.describe("visual regression screenshots", () => {
 
     await expect(page).toHaveScreenshot("dashboard-header-light.png", {
       clip: { x: 0, y: 0, width: 1280, height: 420 },
-      maxDiffPixelRatio: 0.05,
     });
   });
 
