@@ -4,8 +4,8 @@ export interface RepoHealthSignals {
   avgPrOpenTimeHours: number;
   openIssuesCount: number;
   daysSinceLastCommit: number;
-  contributorCount: number;
-  documentationScore: number; // 0-100
+  contributorCount?: number;
+  documentationScore?: number; // 0-100
 }
 
 export interface RepoHealthScore {

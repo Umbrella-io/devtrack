@@ -68,8 +68,8 @@ export function computeHealthScore(
     scoreAvgPrOpenTimeHours(signals.avgPrOpenTimeHours) * 0.8 +
     scoreOpenIssuesCount(signals.openIssuesCount) * 0.8 +
     scoreDaysSinceLastCommit(signals.daysSinceLastCommit) * 0.8 +
-    scoreContributorActivity(signals.contributorCount) +
-    scoreDocumentationQuality(signals.documentationScore);
+    scoreContributorActivity(signals.contributorCount ?? 1) +
+    scoreDocumentationQuality(signals.documentationScore ?? 50);
     
   const rounded = Math.round(score);
   const clampedScore = clamp(rounded, 0, 100);

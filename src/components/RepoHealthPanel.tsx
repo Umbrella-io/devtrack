@@ -59,10 +59,10 @@ export default function RepoHealthPanel({ health, isOpen, onClose }: Props) {
 
   const contributorScore = Math.min(
     20,
-    Math.round((s.contributorCount / 10) * 20)
+    Math.round(((s.contributorCount ?? 1) / 10) * 20)
   );
 
-  const docsScore = Math.round((s.documentationScore / 100) * 20);
+  const docsScore = Math.round(((s.documentationScore ?? 50) / 100) * 20);
 
   const dimensions = [
     {

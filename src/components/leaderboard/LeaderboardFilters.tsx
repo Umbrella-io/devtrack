@@ -5,8 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type Period = "week" | "month" | "all";
 
-const STO
-RAGE_KEY = "leaderboard-filters";
+const STORAGE_KEY = "leaderboard-filters";
 
 const languages = [
   { label: "TypeScript", value: "typescript" },
