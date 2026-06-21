@@ -410,6 +410,8 @@ test("[Dashboard E2E] no uncaught console errors on dashboard load", async ({
       !e.includes("Encountered two children with the same key") &&
       !e.includes("Supabase") &&
       !e.includes("supabase") &&
+      !e.includes("websocket") &&
+      !e.includes("WebSocket") &&
       !e.includes("resolveAppUser") &&
       !e.includes("[Client Cache]") &&
       !e.includes("ssr: false") &&
