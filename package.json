@@ -101,7 +101,7 @@
     "js-yaml": ">=4.1.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.28.0",
