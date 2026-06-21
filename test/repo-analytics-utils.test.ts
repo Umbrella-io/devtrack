@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseRepoParam, REPO_IDENTIFIER_RE } from "../src/lib/repo-analytics-utils";
+import { parseRepoParam, REPO_IDENTIFIER_RE } from "@/lib/repo-analytics-utils";
 
 describe("repo-analytics-utils unit evaluation matrix", () => {
   describe("REPO_IDENTIFIER_RE regex signature checks", () => {
