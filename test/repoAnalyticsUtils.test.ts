@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatDate, formatRelativeDate, formatDisplayDate } from "../src/lib/repoAnalyticsUtils";
+import { formatDate, formatRelativeDate, formatDisplayDate } from "../src/lib/date-utils";
 
 describe("repoAnalyticsUtils", () => {
   describe("formatDate", () => {
