@@ -96,6 +96,11 @@ const PRReviewTrendChart = dynamic(
   { loading: () => <SkeletonCard /> },
 );
 
+const BadgeWidget = dynamic(
+  () => import("@/components/badges/BadgeWidget"),
+  { loading: () => <SkeletonCard /> },
+);
+
 export default async function DashboardPage() {
   // In the production standalone Playwright build, getServerSession can fail to
   // read the test JWT cookie. Decode the cookie directly as a fallback so that
@@ -205,6 +210,13 @@ export default async function DashboardPage() {
               <LocalCodingTime />
               <CodingTimeWidget />
             </div>
+
+          {/* Achievement Badges — full width */}
+          <div className="mt-6">
+            <LazyWidget fallback={<SkeletonCard />}>
+              <BadgeWidget />
+            </LazyWidget>
+          </div>
 
           {/* Repo analytics explorer — full width */}
           <div className="mt-6">
