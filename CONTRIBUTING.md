@@ -8,7 +8,7 @@ Please note that this project is released with a [Code of Conduct](CODE_OF_CONDU
 
 ## ⚡ Quick Start (Setup in < 10 Steps)
 
-1. **Fork the Repo:** Click the "Fork" button at the top-right of the [DevTrack repository](https://github.com/Priyanshu-byte-coder/devtrack).
+1. **Fork the Repo:** Click the "Fork" button at the top-right of the [DevTrack repository](https://github.com/Umbrella-io/devtrack).
 2. **Clone Your Fork:**
    ```bash
    git clone https://github.com/<your-username>/devtrack.git
@@ -16,7 +16,7 @@ Please note that this project is released with a [Code of Conduct](CODE_OF_CONDU
    ```
 3. **Configure Upstream Remote:**
    ```bash
-   git remote add upstream https://github.com/Priyanshu-byte-coder/devtrack.git
+   git remote add upstream https://github.com/Umbrella-io/devtrack.git
    ```
 4. **Install pnpm (Package Manager):** We use `pnpm` for this project. If you don't have it installed:
    ```bash

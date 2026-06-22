@@ -30,6 +30,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://devtrack.vercel.app"),
   title: "DevTrack — Developer Productivity Dashboard",
   description:
     "Track coding habits, visualize GitHub contributions, and hit your goals.",
@@ -73,19 +74,16 @@ export default async function RootLayout({
             __html: `
               (function() {
                 try {
-                  var stored = localStorage.getItem('theme');
-                  var validThemes = ['classic-dark', 'modern-light-blue', 'nordic-frost', 'cyberpunk-matrix'];
-                  var theme;
-                  if (validThemes.indexOf(stored) !== -1) {
-                    // User has a saved preference — honour it
-                    theme = stored;
-                  } else {
-                    // First visit: respect the OS prefers-color-scheme setting
-                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches
-                      ? 'classic-dark'
-                      : 'modern-light-blue';
+                  const stored = localStorage.getItem('theme');
+                  const validThemes = ['classic-dark', 'modern-light-blue', 'nordic-frost', 'cyberpunk-matrix'];
+                  let theme = validThemes.includes(stored || '') ? stored : null;
+
+                  if (!theme) {
+                    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    theme = systemPrefersDark ? 'classic-dark' : 'modern-light-blue';
                   }
-                  var isDark = theme !== 'modern-light-blue';
+
+                  const isDark = theme !== 'modern-light-blue';
 
                   document.documentElement.dataset.theme = theme;
                   document.documentElement.classList.toggle('dark', isDark);
@@ -109,11 +107,10 @@ export default async function RootLayout({
               <Providers>
                 <AppNavbar />
                 {children}
+                <Footer />
               </Providers>
             </NextIntlClientProvider>
           </div>
-
-          <Footer />
 
           <Toaster richColors position="top-right" />
         </div>

@@ -6,19 +6,29 @@
 
 > Track your GitHub activity, commit streaks, PR analytics, and coding goals in one clean, self-hostable dashboard — no enterprise plan, no vendor lock-in.
 
-[![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml)
+[![CI](https://github.com/Umbrella-io/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Umbrella-io/devtrack/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
-[![GSSoC 2026](https://img.shields.io/badge/GSSoC-2026-orange.svg)](https://gssoc.girlscript.tech/)
 [![Stack](https://img.shields.io/badge/stack-Next.js%2016%20%7C%20Supabase%20%7C%20TypeScript-blue)](./DEVELOPMENT.md)
-[![Good First Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22)
-[![Contributors](https://img.shields.io/github/contributors/Priyanshu-byte-coder/devtrack?color=brightgreen)](https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors)
-[![Last Commit](https://img.shields.io/github/last-commit/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/commits/main)
+[![Good First Issues](https://img.shields.io/github/issues/Umbrella-io/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)](https://github.com/Umbrella-io/devtrack/issues?q=label%3A%22good+first+issue%22)
+[![Contributors](https://img.shields.io/github/contributors/Umbrella-io/devtrack?color=brightgreen)](https://github.com/Umbrella-io/devtrack/graphs/contributors)
+[![Last Commit](https://img.shields.io/github/last-commit/Umbrella-io/devtrack)](https://github.com/Umbrella-io/devtrack/commits/main)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/Priyanshu-byte-coder?label=sponsors&color=ea4aaa)](https://github.com/sponsors/Priyanshu-byte-coder)
 
-**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
+**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Umbrella-io/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Umbrella-io/devtrack/issues/new?template=feature_request.md)** · **[Discussions](https://github.com/Umbrella-io/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
 
 </div>
+
+---
+
+## Project Stats
+
+| Metric | Count |
+|---|---|
+| GitHub Stars | 130+ |
+| Forks | 369 |
+| Merged PRs | 800+ |
+| Contributors | 224 |
 
 ---
 
@@ -55,6 +65,7 @@
 ## Table of Contents
 
 - [Why DevTrack?](#why-devtrack)
+- [Project Stats](#project-stats)
 - [Demo](#demo)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
@@ -65,6 +76,7 @@
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [Community](#community)
+- [Built With](#built-with)
 - [Sponsors](#sponsors)
 - [License](#license)
 - [Contributors](#contributors)
@@ -190,7 +202,7 @@ To deploy your own instance, see the **[Self-Hosting Guide](./docs/self-hosting.
 **1. Clone and install**
 
 ```bash
-git clone https://github.com/Priyanshu-byte-coder/devtrack.git
+git clone https://github.com/Umbrella-io/devtrack.git
 cd devtrack
 npm install
 ```
@@ -413,12 +425,12 @@ Want to contribute? Pick an item below and open an issue or start a PR.
 
 | Feature | Difficulty | Issue |
 |---|---|---|
-| Contribution heatmap calendar | Intermediate | [#18](https://github.com/Priyanshu-byte-coder/devtrack/issues/18) |
-| Chart type toggle (bar / line) | Intermediate | [#17](https://github.com/Priyanshu-byte-coder/devtrack/issues/17) |
-| Language breakdown widget | Intermediate | [#32](https://github.com/Priyanshu-byte-coder/devtrack/issues/32) |
-| Activity feed | Intermediate | [#33](https://github.com/Priyanshu-byte-coder/devtrack/issues/33) |
-| Auto-progress goals from commits | Advanced | [#34](https://github.com/Priyanshu-byte-coder/devtrack/issues/34) |
-| GitLab integration | Advanced | [#6](https://github.com/Priyanshu-byte-coder/devtrack/issues/6) |
+| Contribution heatmap calendar | Intermediate | [#18](https://github.com/Umbrella-io/devtrack/issues/18) |
+| Chart type toggle (bar / line) | Intermediate | [#17](https://github.com/Umbrella-io/devtrack/issues/17) |
+| Language breakdown widget | Intermediate | [#32](https://github.com/Umbrella-io/devtrack/issues/32) |
+| Activity feed | Intermediate | [#33](https://github.com/Umbrella-io/devtrack/issues/33) |
+| Auto-progress goals from commits | Advanced | [#34](https://github.com/Umbrella-io/devtrack/issues/34) |
+| GitLab integration | Advanced | [#6](https://github.com/Umbrella-io/devtrack/issues/6) |
 | Jira integration | Advanced | — |
 | Team dashboards | Advanced | — |
 | Embeddable stats widgets | Intermediate | — |
@@ -430,26 +442,47 @@ Want to contribute? Pick an item below and open an issue or start a PR.
 
 ## Contributing
 
-DevTrack actively welcomes contributors of all skill levels, including **GSSoC 2026 participants**.
+DevTrack actively welcomes contributors of all skill levels.
 
 Setup takes under 10 minutes — see [DEVELOPMENT.md](./DEVELOPMENT.md) for the full walkthrough.
 
 ### How to contribute
 
-1. Browse [open issues](https://github.com/Priyanshu-byte-coder/devtrack/issues) — start with `good first issue`
+1. Browse [open issues](https://github.com/Umbrella-io/devtrack/issues) — start with `good first issue`
 2. Comment on the issue to get assigned before starting work
 3. Fork → branch (`feat/issue-42-description`) → PR against `main`
 4. Ensure CI passes: `npm run lint && npm run type-check`
 
 See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for commit style, branch naming, and the review process.
 
-Questions? Open a [Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions).
+Questions? Open a [Discussion](https://github.com/Umbrella-io/devtrack/discussions).
+
+---
+
+## Built With
+
+DevTrack is built on best-in-class open-source infrastructure. Sponsoring helps us keep using these tools and exposes them to 224+ active contributors.
+
+| Partner | Role in DevTrack |
+|---|---|
+| [Supabase](https://supabase.com) | PostgreSQL database, auth, Row Level Security, and Realtime sync |
+| [Vercel](https://vercel.com) | Hosting, CI/CD, and preview deployments |
+| [Groq](https://groq.com) | AI-powered weekly coding insights |
+| [Wakatime](https://wakatime.com) | Coding time tracking and language analytics |
 
 ---
 
 ## Sponsors
 
-DevTrack is free and open source. Sponsoring helps cover infrastructure costs and accelerates new features.
+DevTrack is free and open source, built by **224+ contributors** worldwide. Sponsoring directly funds:
+
+- **Supabase and Vercel infrastructure** — keeping the hosted demo fast and free for every contributor
+- **Groq API costs** — powering AI weekly insights for all users
+- **Maintainer time** — code review, issue triage, and release management
+
+With **130+ stars**, **369 forks**, **800+ merged PRs**, and **224 contributors**, DevTrack is one of the most active open-source developer-productivity projects on GitHub. Your logo here reaches a highly technical, actively coding audience.
+
+### Sponsor Tiers
 
 | Tier | Amount | Perks |
 |---|---|---|
@@ -458,7 +491,13 @@ DevTrack is free and open source. Sponsoring helps cover infrastructure costs an
 | Champion | $50 / mo | Name + logo in README + feature request priority |
 | One-time | $10+ | One-time thanks, no recurring commitment |
 
-**[Sponsor DevTrack on GitHub](https://github.com/sponsors/Priyanshu-byte-coder)**
+### Current Sponsors
+
+> Be the first sponsor — your logo or name will appear here. See tiers above.
+
+**[Sponsor DevTrack on GitHub →](https://github.com/sponsors/Priyanshu-byte-coder)** · **[Buy Me a Chai →](https://www.buymeachai.in/devtrack)**
+
+Want a standalone sponsor brief to share with your company's finance team? See [docs/SPONSORS.md](./docs/SPONSORS.md).
 
 ---
 
@@ -466,9 +505,9 @@ DevTrack is free and open source. Sponsoring helps cover infrastructure costs an
 
 Have questions, ideas, or want to connect with other contributors?
 
-- **[GitHub Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** — ask questions, share ideas, show what you've built
-- **[Open an Issue](https://github.com/Priyanshu-byte-coder/devtrack/issues/new/choose)** — bug reports, feature requests, and good-first-issues
-- **[Email the maintainer](mailto:priyanshu.coder.dev@gmail.com)** — for anything else
+- **[GitHub Discussions](https://github.com/Umbrella-io/devtrack/discussions)** — ask questions, share ideas, show what you've built
+- **[Open an Issue](https://github.com/Umbrella-io/devtrack/issues/new/choose)** — bug reports, feature requests, and good-first-issues
+- **[Email the maintainer](mailto:doshipriyanshu3@gmail.com)** — for anything else
 
 All contributors are expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
@@ -482,12 +521,12 @@ MIT — see [LICENSE](./LICENSE) for details.
 
 ## Contributors
 
-Thanks to everyone who has helped build DevTrack. Want to join the list? See [CONTRIBUTING.md](./CONTRIBUTING.md) and pick a [good first issue](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22).
+Thanks to everyone who has helped build DevTrack. Want to join the list? See [CONTRIBUTING.md](./CONTRIBUTING.md) and pick a [good first issue](https://github.com/Umbrella-io/devtrack/issues?q=label%3A%22good+first+issue%22).
 
 <div align="center">
 
-<a href="https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Priyanshu-byte-coder/devtrack" alt="Contributors" />
+<a href="https://github.com/Umbrella-io/devtrack/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Umbrella-io/devtrack" alt="Contributors" />
 </a>
 
 </div>

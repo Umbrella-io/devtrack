@@ -124,6 +124,8 @@ describe("repo-health scoring utilities", () => {
         avgPrOpenTimeHours: 24,
         openIssuesCount: 0,
         daysSinceLastCommit: 7,
+        contributorCount: 10,
+        documentationScore: 100,
       };
       const result = computeHealthScore("owner/repo", signals);
       expect(result.repo).toBe("owner/repo");
@@ -138,6 +140,8 @@ describe("repo-health scoring utilities", () => {
         avgPrOpenTimeHours: 200,
         openIssuesCount: 25,
         daysSinceLastCommit: 35,
+        contributorCount: 0,
+        documentationScore: 0,
       };
       const result = computeHealthScore("owner/repo", signals);
       expect(result.score).toBe(0);

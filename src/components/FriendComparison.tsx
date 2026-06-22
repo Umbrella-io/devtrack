@@ -34,6 +34,7 @@ function FriendComparison() {
     if (typeof window === "undefined") return "";
     return localStorage.getItem(STORAGE_KEY) ?? "";
   });
+  const [selectedUserAvatar, setSelectedUserAvatar] = useState("");
   const [comparingUser, setComparingUser] = useState("");
   const [myData, setMyData] = useState<CompareData | null>(null);
   const [friendData, setFriendData] = useState<CompareData | null>(null);
@@ -47,7 +48,10 @@ function FriendComparison() {
   const [suppressNextSuggestFetch, setSuppressNextSuggestFetch] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const trimmedFriendUsername = useMemo(() => friendUsername.trim(), [friendUsername]);
+  const trimmedFriendUsername = useMemo(
+    () => friendUsername.trim(),
+    [friendUsername]
+  );
 
   // Fetch my data on mount
   useEffect(() => {
@@ -62,19 +66,19 @@ function FriendComparison() {
   // Auto-compare persisted username on mount
   useEffect(() => {
     const persisted = localStorage.getItem(STORAGE_KEY);
-    if (persisted) {
-      runCompare(persisted);
-    }
+    if (persisted) runCompare(persisted);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Debounce search input for suggestions
   useEffect(() => {
-    const timer = setTimeout(() => setSuggestQuery(friendUsername), SUGGEST_DEBOUNCE_MS);
+    const timer = setTimeout(
+      () => setSuggestQuery(friendUsername),
+      SUGGEST_DEBOUNCE_MS
+    );
     return () => clearTimeout(timer);
   }, [friendUsername]);
 
-  // Fetch suggestions
+  // suggestions
   useEffect(() => {
     const q = suggestQuery.trim();
     if (q.length < 2) {
@@ -96,7 +100,7 @@ function FriendComparison() {
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        const users = Array.isArray(data?.users) ? (data.users as SuggestedUser[]) : [];
+        const users = Array.isArray(data?.users) ? data.users : [];
         setSuggestions(users);
         setSuggestOpen(users.length > 0);
         setActiveIndex(-1);
@@ -117,7 +121,7 @@ function FriendComparison() {
     };
   }, [suggestQuery, suppressNextSuggestFetch]);
 
-  // Close suggestions on outside click
+  // outside click
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       const container = containerRef.current;
@@ -132,6 +136,7 @@ function FriendComparison() {
 
   const chooseSuggestion = (user: SuggestedUser) => {
     setFriendUsername(user.username);
+    setSelectedUserAvatar(user.avatarUrl);
     setSuppressNextSuggestFetch(true);
     setSuggestions([]);
     setSuggestOpen(false);
@@ -146,11 +151,11 @@ function FriendComparison() {
     setError("");
     setFriendData(null);
     setComparingUser(trimmed);
-    setSuggestOpen(false);
-    setActiveIndex(-1);
 
     try {
-      const res = await fetch(`/api/metrics/compare?username=${encodeURIComponent(trimmed)}`);
+      const res = await fetch(
+        `/api/metrics/compare?username=${encodeURIComponent(trimmed)}`
+      );
       const data = await res.json();
 
       if (!res.ok) {
@@ -163,8 +168,13 @@ function FriendComparison() {
             detail: { username: trimmed },
           })
         );
+        window.dispatchEvent(
+          new CustomEvent("devtrack:show-commit-activity", {
+            detail: { username: trimmed },
+          })
+        );
       }
-    } catch (e) {
+    } catch {
       setError("An error occurred");
     } finally {
       setLoading(false);
@@ -178,231 +188,116 @@ function FriendComparison() {
 
   const clearComparison = () => {
     setFriendUsername("");
+    setSelectedUserAvatar("");
     setComparingUser("");
     setFriendData(null);
     setError("");
-    setSuggestions([]);
-    setSuggestOpen(false);
-    setActiveIndex(-1);
     localStorage.removeItem(STORAGE_KEY);
-    window.dispatchEvent(new CustomEvent("devtrack:clear-compare-user"));
   };
 
   const handleCommitActivityClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    const element = document.getElementById("contribution-activity");
-    if (element) {
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - 100;
-      window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-    }
   };
+
+  const hasNoCompareData =
+    friendData !== null &&
+    friendData.commits30d === 0 &&
+    friendData.streak === 0 &&
+    friendData.prs === 0;
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
+
+      {/* HEADER */}
       <div className="mb-6 space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
-            Friend Comparison
-          </h2>
-        </div>
+        <h2 className="text-lg font-semibold text-[var(--card-foreground)]">
+          Friend Comparison
+        </h2>
 
         <p className="text-sm text-[var(--muted-foreground)]">
           See how you stack up against others
         </p>
 
-        <form
-          onSubmit={handleCompare}
-          className="flex flex-col sm:flex-row gap-2 w-full"
-        >
-          <div ref={containerRef} className="relative min-w-0 flex-1">
+        <form onSubmit={handleCompare} className="flex gap-2">
+          <div ref={containerRef} className="relative flex-1">
             <input
-              type="text"
-              role="combobox"
-              placeholder="GitHub username..."
               value={friendUsername}
               onChange={(e) => setFriendUsername(e.target.value)}
-              onFocus={() => {
-                if (suggestions.length > 0) setSuggestOpen(true);
-              }}
-              onKeyDown={(e) => {
-                if (!suggestOpen || suggestions.length === 0) return;
-
-                if (e.key === "ArrowDown") {
-                  e.preventDefault();
-                  setActiveIndex((prev) => Math.min(prev + 1, suggestions.length - 1));
-                } else if (e.key === "ArrowUp") {
-                  e.preventDefault();
-                  setActiveIndex((prev) => Math.max(prev - 1, 0));
-                } else if (e.key === "Enter") {
-                  if (activeIndex >= 0 && activeIndex < suggestions.length) {
-                    e.preventDefault();
-                    chooseSuggestion(suggestions[activeIndex]);
-                  }
-                } else if (e.key === "Escape") {
-                  setSuggestOpen(false);
-                  setActiveIndex(-1);
-                }
-              }}
-              aria-autocomplete="list"
-              aria-expanded={suggestOpen}
-              aria-controls="friend-compare-suggestions"
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus-visible:border-[var(--accent)]"
+              className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+              placeholder="GitHub username..."
             />
-
-            {suggestOpen && suggestions.length > 0 && (
-              <div
-                id="friend-compare-suggestions"
-                role="listbox"
-                className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-[var(--border)] bg-[var(--card)] shadow-lg"
-              >
-                {suggestions.map((u, idx) => (
-                  <button
-                    key={u.username}
-                    type="button"
-                    role="option"
-                    aria-selected={idx === activeIndex}
-                    onMouseEnter={() => setActiveIndex(idx)}
-                    onClick={() => chooseSuggestion(u)}
-                    className={[
-                      "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-                      idx === activeIndex
-                        ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
-                        : "hover:bg-[var(--control)]",
-                    ].join(" ")}
-                  >
-                    <Image
-                      src={u.avatarUrl}
-                      alt={`${u.username} avatar`}
-                      width={20}
-                      height={20}
-                      className="h-5 w-5 rounded-full"
-                      loading="lazy"
-                    />
-                    <span className="truncate">{u.username}</span>
-                  </button>
-                ))}
-
-                {suggestLoading && (
-                  <div className="px-3 py-2 text-xs text-[var(--muted-foreground)]">
-                    Loading…
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           <button
-            type="submit"
             disabled={loading || !trimmedFriendUsername}
-            className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-all disabled:opacity-50 hover:opacity-90 active:scale-95"
+            className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm text-[var(--accent-foreground)]"
           >
-            {loading ? "Loading..." : "Compare"}
+            Compare
           </button>
+
+          {friendData && (
+            <button
+              type="button"
+              onClick={clearComparison}
+              className="w-full sm:w-auto shrink-0 whitespace-nowrap rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-800"
+            >
+              Clear
+            </button>
+          )}
         </form>
       </div>
 
+      {/* ERROR */}
       {error && (
-        <div className="p-4 mb-4 rounded-md border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)] text-sm flex justify-between items-center">
-          <span>{error}</span>
-          <button onClick={() => setError("")} className="hover:underline">
-            Dismiss
-          </button>
+        <div className="mb-4 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">
+          {error}
         </div>
       )}
 
-      {/* Skeleton loader */}
+      {/* LOADING */}
       {loading && (
-        <div className="animate-pulse space-y-2 mt-2" aria-busy="true" aria-label="Loading comparison">
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between p-3 rounded-lg bg-[var(--control)]"
-            >
-              <div className="h-4 w-16 rounded bg-[var(--border)]" />
-              <div className="h-3 w-20 rounded bg-[var(--border)]" />
-              <div className="h-4 w-16 rounded bg-[var(--border)]" />
-            </div>
-          ))}
-          <div className="h-48 rounded-xl bg-[var(--control)] mt-4" />
+        <div className="space-y-2 animate-pulse">
+          <div className="h-20 bg-[var(--control)] rounded" />
+          <div className="h-20 bg-[var(--control)] rounded" />
         </div>
       )}
 
-      {friendData && myData && !loading && (
-        <div className="space-y-4">
-          {friendData.fromCache && (
-            <p className="text-xs text-[var(--muted-foreground)] text-right">
-              Cached result for today
-            </p>
-          )}
-
-          <div className="overflow-x-auto pb-2 scrollbar-thin">
-            <div className="min-w-[400px]">
-              <div className="flex justify-between items-center text-sm font-medium text-[var(--muted-foreground)] px-2 mb-4">
-                <div className="w-1/3 text-left">You ({myData.username})</div>
-                <div className="w-1/3 text-center uppercase tracking-wider text-xs">Metric</div>
-                <div className="w-1/3 text-right">Them ({friendData.username})</div>
-              </div>
-
-              <div className="space-y-2">
-                <ComparisonRow
-                  label="Current Streak"
-                  myValue={myData.streak}
-                  theirValue={friendData.streak}
-                  suffix=" days"
-                />
-                <ComparisonRow
-                  label="Commits (30d)"
-                  myValue={myData.commits30d}
-                  theirValue={friendData.commits30d}
-                />
-                <ComparisonRow
-                  label="Pull Requests"
-                  myValue={myData.prs}
-                  theirValue={friendData.prs}
-                />
-                <ComparisonRow
-                  label="Top Language"
-                  myValue={myData.topLanguage}
-                  theirValue={friendData.topLanguage}
-                  isString
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Chart overlay — only renders when both have weekly data */}
-          {myData.weeklyCommits && friendData.weeklyCommits && (
-            <ComparisonChart
-              myUsername={myData.username}
-              friendUsername={friendData.username}
-              myWeeklyCommits={myData.weeklyCommits}
-              friendWeeklyCommits={friendData.weeklyCommits}
-            />
-          )}
-
-          <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 pt-4">
-            <a
-              href="#contribution-activity"
-              onClick={handleCommitActivityClick}
-              className="text-center rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
-            >
-              View Commit Activity
-            </a>
-            <button
-              onClick={clearComparison}
-              className="rounded-full bg-[var(--control)] px-4 py-2 text-sm text-[var(--foreground)] transition-all hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)] hover:opacity-90 active:scale-95"
-            >
-              Clear Comparison
-            </button>
-          </div>
+      {/* EMPTY STATE (NEW FIX) */}
+      {!loading && !friendData && !error && (
+        <div className="flex h-32 items-center justify-center border-2 border-dashed border-[var(--border)] rounded-lg text-sm text-[var(--muted-foreground)]">
+          Enter a username to start comparing
         </div>
       )}
 
-      {!friendData && !loading && !error && (
-        <div className="flex items-center justify-center h-32 border-2 border-dashed border-[var(--border)] rounded-lg text-[var(--muted-foreground)] text-sm">
-          Enter a username above to start comparing
+      {/* NO DATA STATE (NEW FIX) */}
+      {hasNoCompareData && !loading && (
+        <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-[var(--border)] rounded-lg text-sm text-[var(--muted-foreground)]">
+          <p className="font-medium text-[var(--card-foreground)]">
+            No comparison data available
+          </p>
+          <p className="text-xs mt-1">
+            This user has no activity in the selected period
+          </p>
         </div>
+      )}
+
+      {/* SUCCESS */}
+      {friendData && myData && !loading && !hasNoCompareData && (
+        <div className="mt-4 space-y-3">
+          <ComparisonRow label="Streak" myValue={myData.streak} theirValue={friendData.streak} suffix="d" />
+          <ComparisonRow label="Commits" myValue={myData.commits30d} theirValue={friendData.commits30d} />
+          <ComparisonRow label="PRs" myValue={myData.prs} theirValue={friendData.prs} />
+        </div>
+      )}
+
+      {/* CLEAR */}
+      {friendData && (
+        <button
+          onClick={clearComparison}
+          className="mt-4 text-sm text-[var(--muted-foreground)] hover:text-red-500"
+        >
+          Clear Comparison
+        </button>
       )}
     </div>
   );
@@ -413,43 +308,12 @@ function ComparisonRow({
   myValue,
   theirValue,
   suffix = "",
-  isString = false,
-}: {
-  label: string;
-  myValue: string | number;
-  theirValue: string | number;
-  suffix?: string;
-  isString?: boolean;
-}) {
-  let myWin = false;
-  let theirWin = false;
-
-  if (!isString) {
-    if (Number(myValue) > Number(theirValue)) myWin = true;
-    if (Number(theirValue) > Number(myValue)) theirWin = true;
-  }
-
+}: any) {
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--control)]">
-      <div
-        className={`w-1/3 text-left font-medium ${
-          myWin ? "text-[var(--accent)]" : "text-[var(--foreground)]"
-        }`}
-      >
-        {myValue}
-        {suffix}
-      </div>
-      <div className="w-1/3 text-center text-xs text-[var(--muted-foreground)] font-medium">
-        {label}
-      </div>
-      <div
-        className={`w-1/3 text-right font-medium ${
-          theirWin ? "text-[var(--accent)]" : "text-[var(--foreground)]"
-        }`}
-      >
-        {theirValue}
-        {suffix}
-      </div>
+    <div className="flex justify-between p-2 bg-[var(--control)] rounded">
+      <span>{myValue}{suffix}</span>
+      <span className="text-xs text-[var(--muted-foreground)]">{label}</span>
+      <span>{theirValue}{suffix}</span>
     </div>
   );
 }

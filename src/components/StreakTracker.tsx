@@ -2,6 +2,7 @@
 import SectionHeader from "./SectionHeader";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { useCountUp } from "@/hooks/useCountUp";
 import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
@@ -9,7 +10,7 @@ import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
 import { Flame, Trophy, Calendar, Zap, Copy, CheckCircle, Medal, Star, Sparkles } from "lucide-react";
-
+import ConfirmModal from "@/components/ConfirmModal";
 
 const DATA_WINDOW_DAYS = 90;
 const dataWindowLabel = `Last ${DATA_WINDOW_DAYS} days`;
@@ -53,6 +54,7 @@ export function useStreakTracker() {
   const [freezeLoading, setFreezeLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [showFreezeConfirm, setShowFreezeConfirm] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -360,6 +362,8 @@ export function useStreakTracker() {
     setCancelling,
     confirmCancel,
     setConfirmCancel,
+    showFreezeConfirm,
+    setShowFreezeConfirm,
     isDownloading,
     setIsDownloading,
     containerRef,
@@ -405,6 +409,8 @@ export default function StreakTracker() {
     setFreezeLoading,
     cancelling,
     confirmCancel,
+    showFreezeConfirm,
+    setShowFreezeConfirm,
     setConfirmCancel,
     isDownloading,
     containerRef,
@@ -420,6 +426,22 @@ export default function StreakTracker() {
     handleDismissBanner,
     handleCopy,
   } = useStreakTracker();
+
+  const { setSummary, setIsUpdating } = useDashboardWidgetA11y("streak-tracker");
+
+  useEffect(() => {
+    setIsUpdating(loading);
+  }, [loading, setIsUpdating]);
+
+  useEffect(() => {
+    if (!data) {
+      setSummary(null);
+      return;
+    }
+    setSummary(
+      `Current streak: ${data.current} days. Longest streak: ${data.longest} days.`,
+    );
+  }, [data, setSummary]);
 
   if (loading) {
     return (
@@ -602,21 +624,21 @@ export default function StreakTracker() {
             </div>
             {data && <div className="h-8 w-24" />}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 xs:gap-3">
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className={`rounded-lg p-4 text-center ${stat.highlight
+                className={`rounded-lg p-3 text-center ${stat.highlight
                   ? "border border-[var(--accent)]/40 bg-[var(--accent-soft)]"
                   : "bg-[var(--control)]"
                   }`}
                 aria-label={stat.tooltip}
               >
                 <div className="flex justify-center mb-1">
-                  <stat.icon size={24} className="text-[var(--accent)]" aria-hidden="true" />
+                  <stat.icon size={20} className="text-[var(--accent)]" aria-hidden="true" />
                 </div>
                 <div
-                  className={`text-2xl font-bold ${stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
+                  className={`text-lg font-bold leading-tight break-all ${stat.highlight ? "text-[var(--accent)]" : "text-[var(--accent)]"
                     }`}
                 >
                   {stat.value}
@@ -631,7 +653,8 @@ export default function StreakTracker() {
 
                   <button
                     type="button"
-                    aria-label={stat.tooltip}
+                    aria-label={`More info about ${stat.label}`}
+                    title={stat.tooltip}
                     className="text-[var(--muted-foreground)] hover:text-[var(--accent)]"
                   >
                     <svg
@@ -783,7 +806,7 @@ export default function StreakTracker() {
               <button
                 type="button"
                 data-testid="streak-freeze-button"
-                onClick={handleApplyFreeze}
+                onClick={() => setShowFreezeConfirm(true)}
                 disabled={freezeLoading || freeze?.hasFreeze}
                 className={`rounded-md px-3 py-1 text-xs font-medium transition ${freezeLoading || freeze?.hasFreeze
                   ? "cursor-not-allowed opacity-50 bg-[var(--accent)]"
@@ -818,6 +841,19 @@ export default function StreakTracker() {
           ) : null}
         </div>
       </div>
+      <ConfirmModal
+      isOpen={showFreezeConfirm}
+      title="❄️ Use a Streak Freeze?"
+      message={`This will consume 1 of your available freezes. Your streak will be protected for today.`}
+      confirmLabel="Yes, Freeze"
+      cancelLabel="Cancel"
+      onConfirm={() => {
+        setShowFreezeConfirm(false);
+        handleApplyFreeze();
+      }}
+      onCancel={() => setShowFreezeConfirm(false)}
+      disabled={freezeLoading}
+    />
     </>
   );
 }
