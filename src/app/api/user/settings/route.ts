@@ -146,8 +146,8 @@ async function fetchUserSettings(userId: string) {
   }
 
   return {
-    data: { id: userId, github_login: "" },
-    error: null,
+    data: null,
+    error: res3.error || res2.error || res1.error || new Error("Unknown database error"),
     hasLeaderboardOptIn: false,
     hasPinnedRepos: false,
     hasWakatimeKey: false,
@@ -193,6 +193,10 @@ export async function GET(req: NextRequest) {
   }
 
   const result = await fetchUserSettings(user.id);
+  
+  if (result.error) {
+    return NextResponse.json({ error: "Failed to fetch user settings" }, { status: 500 });
+  }
 
   const responseData = {
     id: user.id,
@@ -239,6 +243,10 @@ export async function PATCH(req: NextRequest) {
   const { is_public, show_weekly_goals, leaderboard_opt_in, weekly_digest_opt_in, pinned_repos, wakatime_api_key, discord_webhook_url, timezone, bio, webhook_url, discord_muted_until, public_widgets, seen_onboarding, preferred_locale } = body;
 
   const settingsResult = await fetchUserSettings(user.id);
+  if (settingsResult.error) {
+    return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
+  }
+  
   const { hasLeaderboardOptIn, hasPinnedRepos, hasWakatimeKey, hasWeeklyDigestOptIn, hasDiscordSettings, hasBio, hasWebhookUrl, hasDiscordMutedUntil, hasPublicWidgets, hasPreferredLocale } = settingsResult;
   const updates: any = {};
 
@@ -313,6 +321,14 @@ export async function PATCH(req: NextRequest) {
   }
 
   await supabaseAdmin.from("users").update(updates).eq("id", user.id);
+
+  if (updates.is_public !== undefined || updates.leaderboard_opt_in !== undefined) {
+    try {
+      await clearLeaderboardCache();
+    } catch (err) {
+      logError("Failed to clear leaderboard cache", { endpoint: "user/settings", operation: "clearLeaderboardCache", userId: user.id });
+    }
+  }
 
   return settingsResponse({
     id: user.id,
