@@ -48,6 +48,7 @@
     "@typescript-eslint/eslint-plugin": "^8.60.0",
     "@typescript-eslint/parser": "^8.60.0",
     "autoprefixer": "^10.4.19",
+    "babel-loader": "^10.1.1",
     "eslint": "^8",
     "eslint-config-next": "^14.2.35",
     "jsdom": "^29.1.1",
@@ -59,6 +60,6 @@
     "vitest": "^1.6.0"
   },
   "engines": {
-  "node": ">=20.0.0"
+    "node": ">=20.0.0"
   }
 }
