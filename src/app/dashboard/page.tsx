@@ -250,7 +250,7 @@ export default async function DashboardPage() {
             </LazyWidget>
           </div>
 
-          {/* -- Row 3: Issues (2/3) + CI analytics (1/3) -- */}
+          {/* -- Row 3: Goals & Integrations (1/3) -- */}
           <div id="goals" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <LazyWidget fallback={<SkeletonCard />}>
@@ -258,31 +258,13 @@ export default async function DashboardPage() {
               </LazyWidget>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-              <div className="flex flex-col gap-6 w-full overflow-hidden">
-                <PRMetrics />
-                <LazyWidget fallback={<SkeletonCard />}>
-                  <PRBreakdownChart />
-                </LazyWidget>
-                <LazyWidget fallback={<SkeletonCard />}>
-                  <PRReviewTrendChart />
-                </LazyWidget>
+            <div className="flex flex-col gap-6 w-full overflow-hidden">
                 <LazyWidget fallback={<SkeletonCard />}>
                   <DiscussionsWidget />
-                </LazyWidget>
-              </div>
-              <div className="flex flex-col gap-6 w-full overflow-hidden">
-                <CommunityMetrics />
-                <LazyWidget fallback={<SkeletonCard />}>
-                  <PinnedReposWidget />
-                </LazyWidget>
-                <LazyWidget fallback={<SkeletonCard />}>
-                  <TopRepos />
                 </LazyWidget>
                 <LazyWidget fallback={<SkeletonCard />}>
                   <InactiveRepositoriesCard />
                 </LazyWidget>
-              </div>
             </div>
           </div>
 

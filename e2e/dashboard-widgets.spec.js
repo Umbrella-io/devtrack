@@ -208,14 +208,14 @@ test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Dashboard", exact: true })
   ).toBeVisible({ timeout: 30000 });
-  await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible(
+  await expect(page.getByRole("heading", { name: "Your Commits" }).first()).toBeVisible(
     { timeout: 10000 }
   );
-  await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible(
+  await expect(page.getByRole("heading", { name: "PR Analytics" }).first()).toBeVisible(
     { timeout: 10000 }
   );
   await expect(
-    page.getByRole("heading", { name: "Goals", exact: true })
+    page.getByRole("heading", { name: "Goals", exact: true }).first()
   ).toBeVisible({ timeout: 10000 });
   await expect(page.getByText("Make 10 commits")).toBeVisible({
     timeout: 10000,
@@ -263,7 +263,7 @@ test("goal form posts a new goal", async ({ page }) => {
   ).toBeVisible({ timeout: 30000 });
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
-  await page.getByLabel("Unit").selectOption("prs");
+  await page.getByLabel("Unit", { exact: true }).selectOption("prs");
   await page.getByRole("button", { name: "Create goal" }).click();
 
   await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);
