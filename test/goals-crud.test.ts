@@ -221,32 +221,35 @@ describe("POST /api/goals", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns 400 when unit is omitted", async () => {
+  it("should accept missing unit and default to commits", async () => {
+    const createdGoal = buildGoal({ title: "No unit", target: 5, unit: "commits" });
+    mocks.supabaseFrom.mockReturnValue({
+      select: vi.fn()
+        .mockReturnValueOnce({
+          eq: vi.fn().mockReturnValue({
+            ilike: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        })
+        .mockReturnValueOnce({
+          eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
+        }),
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: createdGoal, error: null }),
+        }),
+      }),
+    });
     const [req] = makePostRequest({ title: "No unit", target: 5 });
     const res = await POST(req);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.error).toBe("unit must be commits, prs, hours, streak, or language");
+    expect(body.goal.unit).toBe("commits");
   });
 
   it("returns 400 when unit is invalid", async () => {
     const [req] = makePostRequest({ title: "Invalid unit", target: 5, unit: "invalid-unit" });
-    const res = await POST(req);
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toBe("unit must be commits, prs, hours, streak, or language");
-  });
-
-  it("should reject invalid unit", async () => {
-    const [req] = makePostRequest({ title: "Invalid unit", target: 5, unit: "invalid-unit" });
-    const res = await POST(req);
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toBe("unit must be commits, prs, hours, streak, or language");
-  });
-
-  it("should reject missing unit", async () => {
-    const [req] = makePostRequest({ title: "No unit", target: 5 });
     const res = await POST(req);
     expect(res.status).toBe(400);
     const body = await res.json();

@@ -105,7 +105,10 @@ export async function PATCH(
     );
   }
 
-  if (typeof current === "number" && current > existingGoal.target) {
+  const finalTarget = target !== undefined ? target : existingGoal.target;
+  const finalCurrent = current !== undefined ? current : existingGoal.current;
+
+  if (finalCurrent > finalTarget) {
     return Response.json(
       { error: "current cannot exceed target" },
       { status: 400 }

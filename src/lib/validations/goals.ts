@@ -18,9 +18,11 @@ export const createGoalSchema = z
       .int({ message: "target must be an integer between 1 and 10000" })
       .min(1, { message: "target must be an integer between 1 and 10000" })
       .max(10000, { message: "target must be an integer between 1 and 10000" }),
-    unit: z.enum(VALID_UNITS, {
-      message: "unit must be commits, prs, hours, streak, or language",
-    }),
+    unit: z
+      .enum(VALID_UNITS, {
+        message: "unit must be commits, prs, hours, streak, or language",
+      })
+      .default("commits"),
     recurrence: z
       .enum(VALID_RECURRENCES, {
         message: "recurrence must be 'none', 'weekly', or 'monthly'",
@@ -76,6 +78,15 @@ export const patchGoalSchema = z
         message: "is_public must be a boolean",
       })
       .optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.current !== undefined && val.target !== undefined && val.current > val.target) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "current cannot exceed target",
+        path: ["current"],
+      });
+    }
   });
 
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;
