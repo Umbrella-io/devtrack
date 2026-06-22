@@ -215,10 +215,10 @@ export default function DashboardHeader() {
   useEffect(() => {
     const computeCurrentGreeting = () => {
       const currentHour = new Date().getHours();
-      if (currentHour >= 5 && currentHour < 12) return "Good morning ☀️";
-      if (currentHour >= 12 && currentHour < 17) return "Good afternoon 🌤️";
-      if (currentHour >= 17 && currentHour < 22) return "Good evening 🌙";
-      return "Burning the midnight oil 🦉";
+     if (currentHour >= 5 && currentHour < 12) return "Good morning ☀️";
+if (currentHour >= 12 && currentHour < 17) return "Good afternoon 🌤️";
+if (currentHour >= 17 && currentHour < 22) return "Good evening 🌙";
+return "Burning the midnight oil 🦉";
     };
     setGreeting(computeCurrentGreeting());
   }, []);
