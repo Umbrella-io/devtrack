@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { setResponseCacheHeader } from "@/lib/response-cache";
+import { setResponseCacheHeader } from "../src/lib/response-cache";
 
 describe("response-cache core headers validation matrix", () => {
   it("should successfully apply valid cache-control headers when matching valid parameters", () => {
@@ -8,7 +8,7 @@ describe("response-cache core headers validation matrix", () => {
       headers: mockHeaders,
     };
 
-    // Cast explicitly inside the invocation parameter argument to isolate extended edge methods safely
+    // Cast response parameter explicitly to satisfy extended framework type interfaces safely
     setResponseCacheHeader(mockResponse as unknown as Response, 3600);
 
     expect(mockHeaders.get("Cache-Control")).toBe("public, max-age=3600, s-maxage=3600, stale-while-revalidate=60");
@@ -39,3 +39,5 @@ describe("response-cache core headers validation matrix", () => {
     expect(mockResponse.headers.get("Cache-Control")).toContain("max-age=86400");
   });
 });
+
+
