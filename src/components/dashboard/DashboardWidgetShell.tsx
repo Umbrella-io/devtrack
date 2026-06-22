@@ -50,7 +50,7 @@ export default function DashboardWidgetShell({
       aria-describedby={summary ? summaryId : undefined}
       aria-busy={isUpdating || undefined}
       onKeyDown={handleKeyDown}
-      className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+      className="w-full min-w-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
     >
       <h3 id={titleId} className="sr-only">
         {title}
@@ -67,7 +67,7 @@ export default function DashboardWidgetShell({
         </p>
       ) : null}
 
-      {children}
+      <div className="w-full min-w-0">{children}</div>
     </div>
   );
 }
