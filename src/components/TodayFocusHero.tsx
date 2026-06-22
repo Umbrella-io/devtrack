@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type TodayFocusHeroProps = {
   userName?: string | null;
@@ -44,6 +45,7 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const isMobile = useIsMobile();
 
   const greetingLabel = useMemo(() => {
     const base =
@@ -52,8 +54,11 @@ export default function TodayFocusHero({ userName }: TodayFocusHeroProps) {
         : greeting === "afternoon"
           ? "Good afternoon"
           : "Good evening";
+   if (isMobile && userName?.trim()) {
+    return `${base}, ${userName.trim().split(" ")[0]}`; 
+  }
     return userName?.trim() ? `${base}, ${userName.trim()}` : base;
-  }, [greeting, userName]);
+  }, [greeting, userName, isMobile]);
 
   useEffect(() => {
     const now = new Date();
