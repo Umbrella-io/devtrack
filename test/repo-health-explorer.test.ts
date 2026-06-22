@@ -42,6 +42,8 @@ const perfectSignals: RepoHealthSignals = {
   avgPrOpenTimeHours: 0,
   openIssuesCount: 0,
   daysSinceLastCommit: 0,
+  contributorCount: 10,
+  documentationScore: 100,
 };
 
 const worstSignals: RepoHealthSignals = {
@@ -50,6 +52,8 @@ const worstSignals: RepoHealthSignals = {
   avgPrOpenTimeHours: 9999,
   openIssuesCount: 999,
   daysSinceLastCommit: 9999,
+  contributorCount: 0,
+  documentationScore: 0,
 };
 
 const midSignals: RepoHealthSignals = {
@@ -58,6 +62,8 @@ const midSignals: RepoHealthSignals = {
   avgPrOpenTimeHours: 48,
   openIssuesCount: 8,
   daysSinceLastCommit: 10,
+  contributorCount: 5,
+  documentationScore: 50,
 };
 
 // ---------------------------------------------------------------------------

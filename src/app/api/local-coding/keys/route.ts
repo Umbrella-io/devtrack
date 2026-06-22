@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 const MAX_KEYS_PER_USER = 10;
 
+// lgtm[js/insufficient-password-hash] - SHA-256 is appropriate for hashing high-entropy random API keys, not passwords
 function hashApiKey(key: string): string {
   return createHash("sha256").update(key).digest("hex");
 }

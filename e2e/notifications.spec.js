@@ -166,6 +166,27 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({ contentType: "application/json", body: JSON.stringify({ notifications: [], unreadCount: 0 }) });
   });
 
+  await page.route("**/api/milestones**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ milestones: [] }),
+    });
+  });
+
+  await page.route("**/api/accounts**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [] }),
+    });
+  });
+
+  await page.route("**/api/user/orgs**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [], config: {} }),
+    });
+  });
+
   await page.route("**/api/user/github-accounts", async (route) => {
     await route.fulfill({
       contentType: "application/json",
@@ -332,4 +353,73 @@ test("notification bell opens and closes drawer", async ({ page }) => {
   // Click again to close
   await bellButton.click();
   await expect(drawerHeading).not.toBeVisible({ timeout: 5000 });
+});
+
+test("notification search filters and highlights correctly", async ({ page }) => {
+  await page.route("**/api/notifications**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        notifications: [
+          {
+            id: "1",
+            type: "info",
+            message: "Alpha notification message",
+            read: false,
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: "2",
+            type: "info",
+            message: "Beta alert message",
+            read: false,
+            created_at: new Date().toISOString(),
+          },
+        ],
+        unreadCount: 2,
+      }),
+    });
+  });
+
+  await page.goto("/dashboard", { waitUntil: "load" });
+
+  // Wait for the dashboard to fully render
+  await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible({ timeout: 30000 });
+
+  // Open the notifications drawer
+  const bellButton = page.getByRole("button", { name: /Notifications/ });
+  await bellButton.click();
+
+  // Verify both notifications are visible initially
+  await expect(page.getByText("Alpha notification message")).toBeVisible();
+  await expect(page.getByText("Beta alert message")).toBeVisible();
+
+  // Verify search input is autodefocussed (focused)
+  const searchInput = page.getByPlaceholder("Search notifications...");
+  await expect(searchInput).toBeFocused();
+
+  // Type "Alpha" into search
+  await searchInput.fill("Alpha");
+  // Wait for debounce (150ms)
+  await page.waitForTimeout(250);
+
+  // Alpha should be visible with highlighted matching text, Beta should not
+  await expect(page.getByText("Alpha notification message")).toBeVisible();
+  await expect(page.getByText("Beta alert message")).not.toBeVisible();
+  await expect(page.locator("mark").filter({ hasText: "Alpha" })).toBeVisible();
+
+  // Test special character input in search query (should not crash page)
+  await searchInput.fill("Alpha (test)");
+  await page.waitForTimeout(250);
+  await expect(page.getByText("No results for 'Alpha (test)'")).toBeVisible();
+
+  // Test clear search button
+  const clearButton = page.getByRole("button", { name: "Clear search" });
+  await expect(clearButton).toBeVisible();
+  await clearButton.click();
+
+  // Verify search query is cleared and both are visible again
+  await expect(searchInput).toHaveValue("");
+  await expect(page.getByText("Alpha notification message")).toBeVisible();
+  await expect(page.getByText("Beta alert message")).toBeVisible();
 });

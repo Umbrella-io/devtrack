@@ -21,6 +21,7 @@ export async function sendDiscordWebhook(
   retryCount = 0
 ) {
   validateWebhookUrl(webhookUrl);
+  // lgtm[js/request-forgery] - URL is validated by validateWebhookUrl() against a strict Discord-only regex
   const res = await fetch(webhookUrl, {
     method: "POST",
     headers: {

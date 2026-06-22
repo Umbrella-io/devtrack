@@ -49,6 +49,7 @@ vi.mock("@/lib/supabase", () => ({
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
+// lgtm[js/insufficient-password-hash] - SHA-256 is appropriate for hashing high-entropy random API keys in tests
 function sha256(input: string): string {
   return createHash("sha256").update(input).digest("hex");
 }

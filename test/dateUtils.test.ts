@@ -4,7 +4,7 @@ import {
   dateDiffDays,
   getThisWeekRange,
   getLastWeekRange,
-} from "../src/lib/dateUtils";
+} from "../src/lib/date-utils";
 
 // 每个测试后恢复真实时间
 afterEach(() => {

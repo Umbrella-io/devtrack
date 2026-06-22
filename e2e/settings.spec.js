@@ -80,6 +80,34 @@ test.beforeEach(async ({ page }) => {
       body: JSON.stringify({ accounts: [] }),
     });
   });
+
+  await page.route("**/api/milestones**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ milestones: [] }),
+    });
+  });
+
+  await page.route("**/api/daily-note**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ todayNote: "", yesterdayNote: "" }),
+    });
+  });
+
+  await page.route("**/api/accounts**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [] }),
+    });
+  });
+
+  await page.route("**/api/user/orgs**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [], config: {} }),
+    });
+  });
 });
 
 test("settings page saves and reflects changes", async ({ page }) => {
