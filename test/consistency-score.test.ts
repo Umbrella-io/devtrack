@@ -3,6 +3,9 @@ import {
   getImprovementTip,
   isRecentlyActiveFromScore,
   calculateConsistencyScore,
+  computeWeeklyConsistency,
+  computeMonthlyTrend,
+  computeLongestGap,
   ConsistencyScoreResult
 } from "../src/lib/consistency-score";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -161,6 +164,96 @@ describe("consistency-score utility functions", () => {
       // Total diff = 45 days.
       // Gap is diff - 1 = 44 days.
       expect(result.longestGap).toBe(44);
+    });
+  });
+
+  describe("computeWeeklyConsistency", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2023-10-20T12:00:00Z"));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("should return 0 for empty dates", () => {
+      expect(computeWeeklyConsistency(new Set())).toBe(0);
+    });
+
+    it("should correctly compute percentage for dates within the last 12 weeks", () => {
+      // 12 weeks total. Each week with activity = 1 / 12 = ~8.33%
+      // 2 weeks = 16.66% -> Math.round -> 17
+      const dates = new Set([
+        "2023-10-18", // this week
+        "2023-10-10", // last week
+      ]);
+      expect(computeWeeklyConsistency(dates)).toBe(17);
+      
+      // All 12 weeks
+      const fullDates = new Set<string>();
+      for (let i = 0; i < 12; i++) {
+        const d = new Date("2023-10-20T12:00:00Z");
+        d.setDate(d.getDate() - i * 7);
+        fullDates.add(d.toISOString().split("T")[0]);
+      }
+      expect(computeWeeklyConsistency(fullDates)).toBe(100);
+    });
+  });
+
+  describe("computeMonthlyTrend", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2023-10-20T12:00:00Z"));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("should return correct month labels and trend data", () => {
+      const dates = new Set([
+        "2023-10-18",
+        "2023-10-19",
+        "2023-09-15",
+        "2023-08-01",
+      ]);
+      
+      const trend = computeMonthlyTrend(dates);
+      expect(trend).toHaveLength(6);
+      
+      // Sorted oldest to newest
+      // Oct is index 5
+      expect(trend[5].month).toBe("Oct 2023");
+      expect(trend[5].activeDays).toBe(2);
+      
+      // Sept is index 4
+      expect(trend[4].month).toBe("Sep 2023");
+      expect(trend[4].activeDays).toBe(1);
+      
+      // Aug is index 3
+      expect(trend[3].month).toBe("Aug 2023");
+      expect(trend[3].activeDays).toBe(1);
+      
+      // July is index 2
+      expect(trend[2].month).toBe("Jul 2023");
+      expect(trend[2].activeDays).toBe(0);
+    });
+  });
+
+  describe("computeLongestGap", () => {
+    it("should return 0 for fewer than 2 dates", () => {
+      expect(computeLongestGap([])).toBe(0);
+      expect(computeLongestGap(["2023-10-20"])).toBe(0);
+    });
+
+    it("should compute gaps for continuous dates", () => {
+      expect(computeLongestGap(["2023-10-18", "2023-10-19", "2023-10-20"])).toBe(0);
+    });
+
+    it("should compute gap correctly", () => {
+      expect(computeLongestGap(["2023-10-18", "2023-10-20"])).toBe(1); // 19th is missing
+      expect(computeLongestGap(["2023-01-01", "2023-01-11"])).toBe(9); 
     });
   });
 });
