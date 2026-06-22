@@ -21,6 +21,13 @@ const COMMUNITY_LINKS = [
   { label: "Contributing Guide", href: "https://github.com/Priyanshu-byte-coder/devtrack/blob/main/CONTRIBUTING.md" },
 ];
 
+const LEGAL_LINKS = [
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Guidelines", href: "/guidelines" },
+  { label: "Documentation", href: "/api-docs" },
+];
+
+
 const SOCIAL_LINKS = [
   {
     label: "GitHub",
@@ -92,11 +99,10 @@ export default function Footer() {
 
   return (
     <footer
-      className={`mt-auto border-t relative overflow-hidden ${
-        isLanding
-          ? "bg-transparent border-slate-900/40"
-          : "border-[var(--border)] bg-[var(--background)]"
-      }`}
+      className={`mt-auto border-t relative overflow-hidden ${isLanding
+        ? "bg-transparent border-slate-900/40"
+        : "border-[var(--border)] bg-[var(--background)]"
+        }`}
       aria-label="Site footer"
     >
       {/* Top gradient accent */}
@@ -114,7 +120,7 @@ export default function Footer() {
       <div className="relative mx-auto w-full max-w-7xl px-6 py-12 sm:px-8 lg:px-12">
 
         {/* Main grid */}
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.8fr_1fr_1fr_1fr]">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.8fr_1fr_1fr_1fr_1fr]">
 
           {/* Brand column */}
           <div>
@@ -214,6 +220,27 @@ export default function Footer() {
             </nav>
           </div>
 
+          <div>
+            <h3
+              className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--foreground)]"
+              style={{
+                fontFamily: "var(--font-jetbrains, ui-monospace, monospace)",
+              }}
+            >
+              Legal Links
+            </h3>
+
+            <nav
+              aria-label="Legal links"
+              className="mt-6 flex flex-col gap-3"
+            >
+              {LEGAL_LINKS.map(({ label, href }) => (
+                <FooterLink key={label} href={href}>
+                  {label}
+                </FooterLink>
+              ))}
+            </nav>
+          </div>
           {/* Stats column */}
           <div>
             <h3

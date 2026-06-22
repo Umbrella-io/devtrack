@@ -107,39 +107,38 @@ export async function PATCH() {
   }
 }
 
-
-    // DELETE — dismiss (delete) all notifications for the current user
+// DELETE — clear (delete) all notifications for the current user
 export async function DELETE() {
-    try {
-          const session = await getServerAuthSession();
-          if (!session?.githubId) {
-                  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-          }
-
-      const userId = await getUserId(session.githubId);
-          if (!userId) {
-                  return NextResponse.json({ success: true });
-          }
-
-      const { error } = await supabaseAdmin
-            .from("notifications")
-            .delete()
-            .eq("user_id", userId);
-
-      if (error) {
-              console.error("Failed to delete notifications:", error);
-              return NextResponse.json(
-                { error: "Failed to delete notifications" },
-                { status: 500 }
-                      );
-      }
-
-      return NextResponse.json({ success: true });
-    } catch (error) {
-          console.error("Unexpected error in notifications DELETE:", error);
-          return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-                );
+  try {
+    const session = await getServerAuthSession();
+    if (!session?.githubId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const userId = await getUserId(session.githubId);
+    if (!userId) {
+      return NextResponse.json({ success: true });
+    }
+
+    const { error } = await supabaseAdmin
+      .from("notifications")
+      .delete()
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Failed to delete notifications:", error);
+      return NextResponse.json(
+        { error: "Failed to delete notifications" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Unexpected error in notifications DELETE:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

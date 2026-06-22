@@ -65,6 +65,10 @@ export async function POST(req: NextRequest) {
     if (!match) return NextResponse.json({ error: "Invalid GitHub URL" }, { status: 400 });
 
     const [, owner, repo] = match;
+    // Validate owner and repo are valid GitHub identifiers to prevent path traversal
+    const githubIdentifier = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]{0,97}[a-zA-Z0-9])?$/;
+    if (!githubIdentifier.test(owner) || !githubIdentifier.test(repo.replace(/\.git$/, "")))
+      return NextResponse.json({ error: "Invalid GitHub URL" }, { status: 400 });
     const { repoData, readmeContent, languages } = await fetchRepoData(owner, repo);
 
     const techStack = Object.keys(languages).join(", ") || "Unknown";

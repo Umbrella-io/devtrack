@@ -27,19 +27,21 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [theme, updateTheme] = useState<ThemeId | undefined>(undefined);
 
-  useSafeLayoutEffect(() => {
-    try {
-      const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-      if (isThemeId(storedTheme)) {
-        updateTheme(storedTheme);
-        return;
-      }
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const storedTheme = localStorage.getItem("theme") || localStorage.getItem(THEME_STORAGE_KEY);
+        if (isThemeId(storedTheme)) {
+          updateTheme(storedTheme);
+          return;
+        }
 
-      // Respect prefers-color-scheme on first load
-      const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      updateTheme(systemPrefersDark ? "classic-dark" : "modern-light-blue");
-    } catch (e) {
-      updateTheme(DEFAULT_THEME);
+        // Respect prefers-color-scheme on first load
+        const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        updateTheme(systemPrefersDark ? "classic-dark" : "modern-light-blue");
+      } catch (e) {
+        updateTheme(DEFAULT_THEME);
+      }
     }
   }, []);
 
@@ -57,6 +59,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   const setTheme = useCallback((nextTheme: ThemeId) => {
     updateTheme(nextTheme);
     try {
+      localStorage.setItem("theme", nextTheme);
       localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
     } catch (e) {}
   }, []);
@@ -65,6 +68,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     updateTheme((prev) => {
       const next = nextThemeId(prev ?? DEFAULT_THEME);
       try {
+        localStorage.setItem("theme", next);
         localStorage.setItem(THEME_STORAGE_KEY, next);
       } catch (e) {}
       return next;

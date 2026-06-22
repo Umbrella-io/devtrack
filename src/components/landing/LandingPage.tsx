@@ -966,7 +966,6 @@ const WHY_DEVTRACK = [
 
 function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
   const [ref, vis] = useScrollReveal(0.15);
-  const [tiltRef, tiltStyle] = use3DTilt(12);
   const Icon = f.icon as LucideIcon;
 
   return (
@@ -974,39 +973,32 @@ function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
       ref={(el) => {
         // @ts-ignore
         ref.current = el;
-        // @ts-ignore
-        tiltRef.current = el;
       }}
-      className="group relative overflow-hidden transition-all duration-300 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10"
+      className="relative overflow-hidden"
       style={{
         display: 'flex', flexDirection: 'column', gap: 16,
-        padding: '32px 24px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b',
+        padding: '28px 24px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b',
         borderRadius: 16, boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
         opacity: vis ? 1 : 0,
         transformStyle: 'preserve-3d',
-        transform: vis ? tiltStyle.transform : `translateY(12px)`,
-        transition: vis ? tiltStyle.transition : 'opacity 500ms cubic-bezier(0.4, 0, 0.2, 1), transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
+        transform: vis ? 'translateY(0)' : 'translateY(12px)',
+        transition: 'opacity 500ms cubic-bezier(0.4, 0, 0.2, 1), transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
         transitionDelay: vis ? '0ms' : `${index * 50}ms`,
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        cursor: 'pointer',
+        
       }}
     >
-      <div 
-        className="absolute -inset-full w-[200%] h-[200%] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at center, rgba(129,140,248,0.06) 0%, transparent 40%)',
-          transform: 'translate(-25%, -25%)'
-        }}
-      />
+      
       <div style={{ 
         width: 56, height: 56, marginBottom: 12,
         transition: 'transform 0.4s cubic-bezier(0.16,1,0.3,1)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
         borderRadius: 12,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(129,140,248,0.1)'
-      }} className="group-hover:scale-110">
+        background: 'rgba(129,140,248,0.04)',
+        border: '1px solid rgba(129,140,248,0.08)'
+      }}>
         <Icon size={28} strokeWidth={1.5} color="#818cf8" />
       </div>
       <h3 style={{
@@ -1030,9 +1022,36 @@ function FeaturesSection() {
       borderTop: '1px solid #1e293b',
       maxWidth: 1200, margin: '0 auto',
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 50, textAlign: 'center', background: 'linear-gradient(90deg, #818cf8, #2dd4bf)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', width: '100%' }}>
-        FEATURES
+      <div style={{
+        fontFamily: MONO,
+        fontSize: 13,
+        fontWeight: 700,
+        letterSpacing: '0.15em',
+        textTransform: 'uppercase',
+        marginBottom: 16,
+        textAlign: 'center',
+        background: 'linear-gradient(90deg, #818cf8, #2dd4bf)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        display: 'inline-block',
+        width: '100%'
+        }}>
+        FEATURE PREVIEW
       </div>
+      <p
+        style={{
+          textAlign: 'center',
+          color: MUTED,
+          maxWidth: 600,
+          margin: '0 auto 50px auto',
+          lineHeight: 1.6,
+          fontSize: 15
+        }}
+       >
+        Sign in with GitHub to access analytics, streak tracking,
+        goals and repository insights.
+      </p>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
         {FEATURES.map((f, i) => (
           <FeatureCard key={f.title} f={f} index={i} />

@@ -228,8 +228,8 @@ async function fetchPRMetrics(
   gqlSearchQ += ` created:>${since}`;
 
   const query = `
-    query {
-      search(query: "${gqlSearchQ}", type: ISSUE, first: 100) {
+    query($queryString: String!) {
+      search(query: $queryString, type: ISSUE, first: 100) {
         nodes {
           ... on PullRequest {
             createdAt
@@ -249,7 +249,7 @@ async function fetchPRMetrics(
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, variables: { queryString: gqlSearchQ } }),
     cache: "no-store",
   });
 

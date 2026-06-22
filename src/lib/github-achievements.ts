@@ -74,12 +74,13 @@ function logGitHubAchievements(
  * @returns The decoded string.
  */
 export function decodeHtml(value: string): string {
+  // Decode &amp; last to avoid double-decoding entity sequences like &amp;lt;
   return value
-    .replace(/&amp;/g, "&")
     .replace(/&quot;/g, "\"")
     .replace(/&#39;/g, "'")
     .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
 }
 
 /**
