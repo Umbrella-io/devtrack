@@ -35,7 +35,7 @@ function mondayOfWeek(dateStr: string): string {
   return format(monday, "yyyy-MM-dd");
 }
 
-function hasActivityInLastNDays(
+export function hasActivityInLastNDays(
   activeDates: Set<string>,
   days: number,
   today: string,
@@ -49,7 +49,7 @@ function hasActivityInLastNDays(
   return false;
 }
 
-function computeWeeklyConsistency(activeDates: Set<string>): number {
+export function computeWeeklyConsistency(activeDates: Set<string>): number {
   const activeWeeks = new Set<string>();
   for (const dateStr of activeDates) {
     activeWeeks.add(mondayOfWeek(dateStr));
@@ -68,7 +68,7 @@ function computeWeeklyConsistency(activeDates: Set<string>): number {
   return Math.round((weeksWithActivity / 12) * 100);
 }
 
-function computeMonthlyTrend(
+export function computeMonthlyTrend(
   activeDates: Set<string>,
 ): { month: string; activeDays: number }[] {
   const trend: { month: string; activeDays: number }[] = [];
@@ -91,7 +91,7 @@ function computeMonthlyTrend(
   return trend;
 }
 
-function computeLongestGap(sortedDates: string[]): number {
+export function computeLongestGap(sortedDates: string[]): number {
   if (sortedDates.length < 2) {
     return 0;
   }
@@ -105,7 +105,7 @@ function computeLongestGap(sortedDates: string[]): number {
   return longestGap;
 }
 
-function scoreToGrade(score: number): ConsistencyScoreResult["grade"] {
+export function scoreToGrade(score: number): ConsistencyScoreResult["grade"] {
   if (score >= 90) return "S";
   if (score >= 75) return "A";
   if (score >= 60) return "B";
@@ -113,7 +113,7 @@ function scoreToGrade(score: number): ConsistencyScoreResult["grade"] {
   return "D";
 }
 
-function getImprovementTip(score: number): string {
+export function getImprovementTip(score: number): string {
   if (score < 40) {
     return "Try committing at least once every 2-3 days to build consistency";
   }
