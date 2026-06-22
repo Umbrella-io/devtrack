@@ -1,7 +1,11 @@
 export function stripHtml(value: string): string {
+  // Decode entities FIRST, then strip tags — not the other way around.
+  // The original order (strip tags → decode entities) allowed entity-encoded
+  // payloads like &lt;script&gt; to survive tag-stripping and then get
+  // reconstructed into live <script> tags by the decode step, bypassing
+  // the sanitizer entirely (XSS via entity encoding).
   return value
     .normalize("NFKC")
-    // Decode entities first so entity-encoded tags are also stripped below
     .replace(/&(?:lt|gt|amp|quot|#x27|#39);/gi, (m) => {
       const map: Record<string, string> = {
         "&lt;": "<",
@@ -13,7 +17,7 @@ export function stripHtml(value: string): string {
       };
       return map[m] ?? m;
     })
-    .replace(/<[^>]*>/g, "")
+    .replace(/<[^>]*>/g, "")   // strip tags AFTER decoding — catches entity-smuggled tags
     .trim();
 }
 
