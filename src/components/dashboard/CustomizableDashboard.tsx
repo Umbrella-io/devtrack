@@ -65,9 +65,9 @@ export const RepoWidgetSkeleton = () => (
     role="status"
     aria-busy="true"
     aria-label="Loading repository widget"
-    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
+    className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm sm:p-6"
   >
-    <div className="flex items-center justify-between mb-6" aria-hidden="true">
+    <div className="mb-4 flex items-center justify-between gap-3 sm:mb-6" aria-hidden="true">
       <div className="h-6 w-40 bg-[var(--card-muted)] rounded animate-pulse" />
       <div className="h-6 w-20 bg-[var(--card-muted)] rounded animate-pulse" />
     </div>
@@ -92,10 +92,10 @@ export const ChartSkeleton = () => (
     role="status"
     aria-busy="true"
     aria-label="Loading chart"
-    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
+    className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm sm:p-6"
   >
-    <div className="h-6 w-32 bg-[var(--card-muted)] rounded mb-6 animate-pulse" aria-hidden="true" />
-    <div className="h-48 w-full bg-[var(--card-muted)] rounded-lg animate-pulse" aria-hidden="true" />
+    <div className="mb-4 h-6 w-32 rounded bg-[var(--card-muted)] animate-pulse sm:mb-6" aria-hidden="true" />
+    <div className="h-40 w-full rounded-lg bg-[var(--card-muted)] animate-pulse sm:h-48" aria-hidden="true" />
   </div>
 );
 
@@ -104,10 +104,10 @@ export const StatsGridSkeleton = () => (
     role="status"
     aria-busy="true"
     aria-label="Loading statistics"
-    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
+    className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm sm:p-6"
   >
-    <div className="h-6 w-40 bg-[var(--card-muted)] rounded mb-6 animate-pulse" aria-hidden="true" />
-    <div className="grid grid-cols-2 gap-4" aria-hidden="true">
+    <div className="mb-4 h-6 w-40 rounded bg-[var(--card-muted)] animate-pulse sm:mb-6" aria-hidden="true" />
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4" aria-hidden="true">
       {[1, 2, 3, 4].map((i) => (
         <div key={i} className="h-24 bg-[var(--card-muted)] rounded-lg animate-pulse" />
       ))}
@@ -120,10 +120,10 @@ export const SkeletonCard = () => (
     role="status"
     aria-busy="true"
     aria-label="Loading widget"
-    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+    className="min-w-0 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm sm:p-6"
   >
-    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-4 animate-pulse" aria-hidden="true" />
-    <div className="h-40 bg-[var(--card-muted)] rounded animate-pulse" aria-hidden="true" />
+    <div className="mb-4 h-6 w-40 max-w-full rounded bg-[var(--card-muted)] animate-pulse sm:w-48" aria-hidden="true" />
+    <div className="h-36 rounded bg-[var(--card-muted)] animate-pulse sm:h-40" aria-hidden="true" />
   </div>
 );
 
@@ -132,9 +132,9 @@ export const ContributionHeatmapSkeleton = () => (
     role="status"
     aria-busy="true"
     aria-label="Loading contribution heatmap"
-    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm flex flex-col h-full"
+    className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm sm:p-6"
   >
-    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-6 animate-pulse" aria-hidden="true" />
+    <div className="mb-4 h-6 w-40 max-w-full rounded bg-[var(--card-muted)] animate-pulse sm:mb-6 sm:w-48" aria-hidden="true" />
     <div className="grid grid-cols-7 gap-1" aria-hidden="true">
       {Array.from({ length: 35 }).map((_, i) => (
         <div key={i} className="aspect-square rounded-sm bg-[var(--card-muted)] animate-pulse" />
@@ -228,10 +228,10 @@ const SECTION_ACCENT_CLASSES: Record<DashboardSectionId, string> = {
 };
 
 const SECTION_GRID_CLASSES: Record<DashboardSectionId, string> = {
-  overview: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full",
-  activity: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full",
-  analytics: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 w-full",
-  goals: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full",
+  overview: "grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6",
+  activity: "grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3",
+  analytics: "grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3",
+  goals: "grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3",
 };
 
 const WIDGET_SPAN_CLASSES: Partial<Record<DashboardWidgetId, string>> = {
@@ -278,7 +278,7 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
 
     case "contribution-graph":
       return (
-        <div className="w-full overflow-x-auto pb-2">
+        <div className="w-full min-w-0 overflow-x-auto pb-2">
           <WidgetErrorBoundary>
             <ContributionGraph />
           </WidgetErrorBoundary>
@@ -287,7 +287,7 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
 
     case "contribution-heatmap":
       return (
-        <div className="w-full overflow-x-auto pb-2">
+        <div className="w-full min-w-0 overflow-x-auto pb-2">
           <ContributionHeatmap />
         </div>
       );
@@ -623,7 +623,7 @@ export default function CustomizableDashboard() {
   };
 
   return (
-    <div className="mt-10 px-0.5">
+    <div className="mt-8 min-w-0 overflow-x-hidden px-0 sm:mt-10 sm:px-0.5">
       <DashboardLayoutToolbar
         isEditing={isEditing}
         hiddenWidgets={layout.hidden}
@@ -651,19 +651,19 @@ export default function CustomizableDashboard() {
             <section
               key={sectionId}
               id={SECTION_ANCHOR_IDS[sectionId]}
-              className={`scroll-mt-28 ${
-                sectionId === "goals" ? "mb-16" : "mb-14"
+              className={`min-w-0 scroll-mt-24 sm:scroll-mt-28 ${
+                sectionId === "goals" ? "mb-12 sm:mb-16" : "mb-10 sm:mb-14"
               }`}
             >
-              <div className="space-y-2 mb-6">
+              <div className="mb-4 min-w-0 space-y-2 sm:mb-6">
                 <div
                   className={`w-12 ${SECTION_ACCENT_CLASSES[sectionId]}`}
                 />
                 <div>
-                  <h2 className="text-3xl font-bold tracking-tight text-[var(--foreground)]">
+                  <h2 className="text-2xl font-bold tracking-tight text-[var(--foreground)] sm:text-3xl">
                     {DASHBOARD_SECTION_LABELS[sectionId]}
                   </h2>
-                  <p className="mt-1 text-sm text-[var(--muted-foreground)] font-medium">
+                  <p className="mt-1 max-w-2xl text-sm font-medium text-[var(--muted-foreground)]">
                     {sectionId === "overview" && "Quick summary of your development profile"}
                     {sectionId === "activity" && "Your coding patterns and contributions"}
                     {sectionId === "analytics" && "In-depth analysis of your repositories and code"}
@@ -676,7 +676,7 @@ export default function CustomizableDashboard() {
                 items={sectionWidgets}
                 strategy={rectSortingStrategy}
               >
-                <div className={`${SECTION_GRID_CLASSES[sectionId]} auto-rows-max`}>
+                <div className={`${SECTION_GRID_CLASSES[sectionId]} auto-rows-max items-stretch`}>
                   {sectionWidgets.map((widgetId) => (
                     <SortableDashboardWidget
                       key={widgetId}
@@ -684,7 +684,7 @@ export default function CustomizableDashboard() {
                       title={DASHBOARD_WIDGET_LABELS[widgetId]}
                       isEditing={isEditing}
                       onHide={handleHideWidget}
-                      className={WIDGET_SPAN_CLASSES[widgetId] ?? ""}
+                      className={`min-w-0 ${WIDGET_SPAN_CLASSES[widgetId] ?? ""}`.trim()}
                     >
                       {renderDashboardWidget(widgetId)}
                     </SortableDashboardWidget>

@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { GripVertical, EyeOff } from "lucide-react";
+import { EyeOff, GripVertical } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { DashboardWidgetId } from "@/lib/dashboard-layout";
@@ -46,17 +46,17 @@ export default function SortableDashboardWidget({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative min-w-0 ${className} ${
-        isDragging ? "opacity-60 scale-95" : ""
+      className={`relative w-full min-w-0 ${className} ${
+        isDragging ? "scale-95 opacity-60" : ""
       } transition-all duration-150`}
     >
       {isEditing ? (
-        <div className="absolute right-2 top-2 z-20 flex items-center gap-1.5">
+        <div className="absolute right-2 top-2 z-20 flex max-w-[calc(100%-1rem)] items-center gap-1.5">
           <button
             type="button"
             aria-label={`Drag widget: ${title}`}
             title={`Drag to reorder ${title}`}
-            className="touch-none rounded-lg border border-[var(--border)] bg-[var(--card)]/95 p-2 text-[var(--muted-foreground)] shadow-sm backdrop-blur transition-all hover:text-[var(--foreground)] hover:shadow-md hover:border-[var(--accent)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] cursor-grab active:cursor-grabbing"
+            className="touch-none rounded-lg border border-[var(--border)] bg-[var(--card)]/95 p-2 text-[var(--muted-foreground)] shadow-sm backdrop-blur transition-all hover:border-[var(--accent)]/50 hover:text-[var(--foreground)] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--accent)] active:cursor-grabbing sm:cursor-grab"
             {...attributes}
             {...listeners}
           >
@@ -68,7 +68,7 @@ export default function SortableDashboardWidget({
             aria-label={`Hide widget: ${title}`}
             title={`Hide ${title}`}
             onClick={() => onHide(id)}
-            className="rounded-lg border border-[var(--border)] bg-[var(--card)]/95 p-2 text-[var(--muted-foreground)] shadow-sm backdrop-blur transition-all hover:text-red-500 hover:shadow-md hover:border-red-500/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            className="rounded-lg border border-[var(--border)] bg-[var(--card)]/95 p-2 text-[var(--muted-foreground)] shadow-sm backdrop-blur transition-all hover:border-red-500/50 hover:text-red-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
           >
             <EyeOff className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -78,15 +78,11 @@ export default function SortableDashboardWidget({
       <div
         className={
           isEditing
-            ? "rounded-xl outline outline-2 outline-dashed outline-[var(--accent)]/40 outline-offset-2 transition-all"
-            : "transition-shadow duration-200 hover:shadow-lg"
+            ? "min-w-0 rounded-xl outline outline-2 outline-dashed outline-[var(--accent)]/40 outline-offset-2 transition-all"
+            : "min-w-0 transition-shadow duration-200 hover:shadow-lg"
         }
       >
-        <DashboardWidgetShell
-          widgetId={id}
-          title={title}
-          isEditing={isEditing}
-        >
+        <DashboardWidgetShell widgetId={id} title={title} isEditing={isEditing}>
           {children}
         </DashboardWidgetShell>
       </div>
