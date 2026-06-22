@@ -100,8 +100,8 @@ export const authOptions: NextAuthOptions = {
             .select("id")
             .single();
 
-          // Resilience: handle schema-mismatched errors (42703) during migrations.
-          // This allows authentication to succeed on environments with pending database migrations.
+         // Resilience: handle schema-mismatched errors (42703) during migrations.
+          // 42703 = column does not exist - email column migration may still be pending . Without it the error code looks arbitrary to the next reader.
           if (upsertError && upsertError.code === "42703") {
             const { data: fallbackUser, error: fallbackError } = await supabaseAdmin
               .from("users")
