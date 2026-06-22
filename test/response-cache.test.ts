@@ -8,8 +8,8 @@ describe("response-cache core headers validation matrix", () => {
       headers: mockHeaders,
     };
 
-    // Cast response parameter explicitly to satisfy extended framework type interfaces safely
-    setResponseCacheHeader(mockResponse as unknown as Response, 3600);
+    // Force-cast as any to bypass extended monorepo Edge/Next response interface constraints entirely
+    setResponseCacheHeader(mockResponse as any, 3600);
 
     expect(mockHeaders.get("Cache-Control")).toBe("public, max-age=3600, s-maxage=3600, stale-while-revalidate=60");
   });
@@ -20,7 +20,7 @@ describe("response-cache core headers validation matrix", () => {
       headers: mockHeaders,
     };
 
-    setResponseCacheHeader(mockResponse as unknown as Response, 0);
+    setResponseCacheHeader(mockResponse as any, 0);
 
     expect(mockHeaders.get("Cache-Control")).toBe("public, max-age=0, s-maxage=0, stale-while-revalidate=60");
   });
@@ -34,10 +34,9 @@ describe("response-cache core headers validation matrix", () => {
       },
     };
 
-    setResponseCacheHeader(mockResponse as unknown as Response, 86400);
+    setResponseCacheHeader(mockResponse as any, 86400);
 
     expect(mockResponse.headers.get("Cache-Control")).toContain("max-age=86400");
   });
 });
-
 
