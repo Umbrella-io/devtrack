@@ -101,6 +101,11 @@ const BadgeWidget = dynamic(
   { loading: () => <SkeletonCard /> },
 );
 
+const GuidedBreathingTool = dynamic(
+  () => import("@/components/GuidedBreathingTool"),
+  { loading: () => <SkeletonCard /> },
+);
+
 export default async function DashboardPage() {
   // In the production standalone Playwright build, getServerSession can fail to
   // read the test JWT cookie. Decode the cookie directly as a fallback so that
@@ -245,6 +250,13 @@ export default async function DashboardPage() {
           <div className="mt-6">
             <LazyWidget fallback={<SkeletonCard />}>
               <ActivityRingChart />
+            </LazyWidget>
+          </div>
+
+          {/* Guided Breathing Tool — full width */}
+          <div className="mt-6">
+            <LazyWidget fallback={<SkeletonCard />}>
+              <GuidedBreathingTool />
             </LazyWidget>
           </div>
 
