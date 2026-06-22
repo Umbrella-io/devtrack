@@ -14,6 +14,8 @@ const BEST_SIGNALS: RepoHealthSignals = {
   avgPrOpenTimeHours: 0,
   openIssuesCount: 0,
   daysSinceLastCommit: 0,
+  contributorCount: 10,
+  documentationScore: 100,
 };
 
 const WORST_SIGNALS: RepoHealthSignals = {
@@ -22,6 +24,8 @@ const WORST_SIGNALS: RepoHealthSignals = {
   avgPrOpenTimeHours: 9999,
   openIssuesCount: 9999,
   daysSinceLastCommit: 9999,
+  contributorCount: 0,
+  documentationScore: 0,
 };
 
 describe("gradeLetter", () => {

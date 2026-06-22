@@ -9,22 +9,22 @@ Everything you need to run DevTrack locally from scratch in under 10 minutes.
 | Tool | Version | Check |
 |------|---------|-------|
 | Node.js | >= 20 | `node -v` |
-| pnpm | >= 9 | `pnpm -v` |
+| npm | >= 10 | `npm -v` |
 | Git | any | `git --version` |
 
 You also need free accounts on:
 - [Supabase](https://supabase.com) — for the database
 - GitHub — for OAuth (you already have this)
-- [Resend](https://resend.com) — for the contact form backend
+- [Resend](https://resend.com) — for the contact form and weekly digest emails
 
 ---
 
 ## 1. Clone and install
 
 ```bash
-git clone https://github.com/Priyanshu-byte-coder/devtrack.git
+git clone https://github.com/Umbrella-io/devtrack.git
 cd devtrack
-pnpm install
+npm install
 ```
 
 ---
@@ -90,19 +90,37 @@ NEXTAUTH_SECRET=generate_with_openssl_rand_base64_32
 GITHUB_ID=Ov23...
 GITHUB_SECRET=your_github_client_secret
 
-# Contact form email delivery
+# Encryption key — required for OAuth token encryption
+# Generate with: openssl rand -hex 32
+ENCRYPTION_KEY=your_64_hex_char_key
+
+# Cron secret — required for scheduled cron endpoints
+# Generate with: openssl rand -hex 32
+CRON_SECRET=your_cron_secret
+
+# Contact form email delivery (optional)
 RESEND_API_KEY=re_xxx...
 RESEND_FROM_EMAIL="DevTrack <contact@your-domain.com>"
 CONTACT_TO_EMAIL=you@example.com
+
+# AI features (optional)
+GROQ_API_KEY=your_groq_api_key
+# ANTHROPIC_API_KEY=sk-ant-...
+
+# Upstash Redis caching (optional)
+# UPSTASH_REDIS_REST_URL=your_upstash_url
+# UPSTASH_REDIS_REST_TOKEN=your_upstash_token
 ```
 
-Generate `NEXTAUTH_SECRET`:
+Generate `NEXTAUTH_SECRET` and `ENCRYPTION_KEY`:
 ```bash
 # macOS / Linux
-openssl rand -base64 32
+openssl rand -base64 32   # for NEXTAUTH_SECRET
+openssl rand -hex 32      # for ENCRYPTION_KEY and CRON_SECRET
 
 # Windows PowerShell
 [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
+-join ((1..32) | ForEach-Object { "{0:x2}" -f (Get-Random -Maximum 256) })
 ```
 
 ---
@@ -110,7 +128,7 @@ openssl rand -base64 32
 ## 5. Run the dev server
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Click **Sign in with GitHub**.
@@ -123,112 +141,226 @@ Open [http://localhost:3000](http://localhost:3000). Click **Sign in with GitHub
 src/
 ├── app/
 │   ├── api/
+│   │   ├── ai/                          # AI roast and weekly summary
+│   │   │   ├── roast/
+│   │   │   └── weekly-summary/
+│   │   ├── ai-insights/                 # AI insights endpoint
 │   │   ├── auth/
-│   │   │   ├── [...nextauth]/        # GitHub OAuth via NextAuth
-│   │   │   └── link-github/          # Link additional GitHub accounts
+│   │   │   ├── [...nextauth]/           # GitHub OAuth via NextAuth
+│   │   │   └── link-github/             # Link additional GitHub accounts
 │   │   │       └── callback/
 │   │   ├── badge/
-│   │   │   ├── badge-utils.ts        # Shared badge helpers
-│   │   │   ├── commits/              # GET commit-count badge
-│   │   │   └── streak-shield/        # GET streak shield (shields.io)
+│   │   │   ├── commits/                 # GET commit-count SVG badge
+│   │   │   └── streak-shield/           # GET streak shield (shields.io format)
+│   │   ├── contact/                     # POST contact form
+│   │   ├── cron/
+│   │   │   ├── sync/                    # Scheduled GitHub/WakaTime refresh
+│   │   │   └── weekly-digest/           # Scheduled weekly digest emails
+│   │   ├── cv/
+│   │   │   ├── analyze/                 # POST CV analysis
+│   │   │   ├── export/                  # POST CV export
+│   │   │   └── generate/               # POST AI CV generation
+│   │   ├── daily-focus/                 # Daily focus goal
+│   │   ├── daily-note/                  # Daily notes CRUD
+│   │   ├── debug/
+│   │   │   └── health/                  # GET health check
 │   │   ├── goals/
-│   │   │   ├── route.ts              # GET + POST /api/goals
-│   │   │   └── [id]/route.ts         # DELETE /api/goals/:id
-│   │   ├── leaderboard/route.ts      # GET public leaderboard data
+│   │   │   ├── route.ts                 # GET + POST /api/goals
+│   │   │   ├── [id]/route.ts            # PATCH + DELETE /api/goals/:id
+│   │   │   ├── history/                 # GET goal history
+│   │   │   └── sync/                    # POST sync goal progress
+│   │   ├── integrations/
+│   │   │   └── jira/
+│   │   │       └── credentials/         # GET + POST + DELETE Jira credentials
+│   │   ├── leaderboard/
+│   │   │   ├── route.ts                 # GET public leaderboard
+│   │   │   ├── rebuild/                 # POST trigger leaderboard rebuild
+│   │   │   └── refresh/                 # POST refresh leaderboard
+│   │   ├── local-coding/
+│   │   │   ├── keys/                    # GET + POST + DELETE API keys
+│   │   │   ├── stats/                   # GET local coding stats
+│   │   │   └── sync/                    # POST ingest coding sessions
 │   │   ├── metrics/
-│   │   │   ├── ci/                   # GET CI build analytics
-│   │   │   ├── compare/              # GET side-by-side user comparison
-│   │   │   ├── contributions/        # GET /api/metrics/contributions?days=30
-│   │   │   ├── issues/               # GET issue open/close metrics
-│   │   │   ├── languages/            # GET language breakdown
-│   │   │   ├── pinned-repos/         # GET pinned repositories
-│   │   │   ├── pr-breakdown/         # GET PR open/merged/closed counts
-│   │   │   ├── pr-review-time/       # GET PR review time trend
-│   │   │   ├── prs/                  # GET /api/metrics/prs
-│   │   │   ├── repo-health/          # GET repository health score
-│   │   │   ├── repos/                # GET /api/metrics/repos?days=30
-│   │   │   ├── streak/               # GET /api/metrics/streak
-│   │   │   └── weekly-summary/       # GET weekly activity digest
-│   │   ├── public/[username]/        # GET public profile data
+│   │   │   ├── achievement-progress/    # GET GitHub achievement progress
+│   │   │   ├── achievements/            # GET GitHub achievements
+│   │   │   ├── activity/               # GET recent activity feed
+│   │   │   ├── ci/                      # GET CI build analytics
+│   │   │   ├── coding-activity-insights/# GET coding activity insights
+│   │   │   ├── commit-times/           # GET commits by hour of day
+│   │   │   ├── community-engagement/   # GET community engagement score
+│   │   │   ├── compare/                # GET side-by-side user comparison
+│   │   │   ├── consistency-score/      # GET consistency score
+│   │   │   ├── contributions/           # GET contributions
+│   │   │   │   ├── daily/              # GET daily contribution breakdown
+│   │   │   │   └── hourly/             # GET hourly contribution breakdown
+│   │   │   ├── devtrack-badges/        # GET DevTrack badge set
+│   │   │   ├── discussions/            # GET GitHub Discussions stats
+│   │   │   ├── inactive-repos/         # GET inactive repositories
+│   │   │   ├── issues/                 # GET issue metrics
+│   │   │   ├── languages/              # GET language breakdown
+│   │   │   ├── pinned-repos/           # GET pinned repositories
+│   │   │   ├── pr-breakdown/           # GET PR status breakdown
+│   │   │   ├── pr-review-time/         # GET PR review time trend
+│   │   │   ├── productive-hours/       # GET most productive hours
+│   │   │   ├── prs/                    # GET PR summary stats
+│   │   │   ├── repo-analytics/         # GET detailed repo analytics
+│   │   │   ├── repo-explorer/          # GET repo explorer data
+│   │   │   ├── repo-health/            # GET repository health score
+│   │   │   ├── repos/                  # GET top repositories
+│   │   │   │   └── [owner]/[name]/     # GET specific repo data and commits
+│   │   │   ├── sponsors/               # GET GitHub sponsors
+│   │   │   ├── streak/                 # GET commit streak
+│   │   │   └── weekly-summary/         # GET weekly activity digest
+│   │   ├── milestones/
+│   │   │   ├── route.ts                # GET + POST milestones
+│   │   │   └── [id]/route.ts           # PATCH + DELETE /api/milestones/:id
+│   │   ├── notifications/
+│   │   │   ├── route.ts                # GET + PATCH notifications
+│   │   │   ├── [id]/route.ts           # PATCH specific notification
+│   │   │   ├── discord-sync/           # POST sync to Discord webhook
+│   │   │   └── weekly/                 # GET weekly notification summary
+│   │   ├── og/
+│   │   │   └── user/                   # GET OG image for user profile
+│   │   ├── personality/                # POST AI Code Personality Report
+│   │   ├── project-tutor/             # POST AI Project Tutor (Groq)
+│   │   ├── public/
+│   │   │   ├── [username]/             # GET public profile data
+│   │   │   └── privacy/                # GET/PATCH public profile privacy
+│   │   ├── rooms/
+│   │   │   ├── route.ts                # GET + POST rooms
+│   │   │   └── [roomId]/
+│   │   │       ├── route.ts            # GET + PATCH + DELETE room
+│   │   │       ├── invite/             # POST generate invite
+│   │   │       ├── members/            # GET + POST members
+│   │   │       │   └── [username]/     # DELETE member
+│   │   │       └── messages/           # GET + POST messages
+│   │   ├── sponsors/                   # GET sponsors data
+│   │   │   └── sync/                   # POST sync sponsors
 │   │   ├── streak/
-│   │   │   └── freeze/route.ts       # POST streak freeze
+│   │   │   └── freeze/                 # POST activate streak freeze
+│   │   ├── stream/                     # GET SSE stream for real-time pushes
+│   │   ├── unsubscribe/                # POST email unsubscribe
 │   │   ├── user/
-│   │   │   ├── github-accounts/      # GET + POST linked accounts
-│   │   │   │   └── [githubId]/       # DELETE a linked account
-│   │   │   └── settings/route.ts     # GET + PATCH user settings
-│   │   └── webhooks/github/route.ts  # GitHub push webhook receiver
+│   │   │   ├── dashboard-layout/       # GET + PATCH dashboard layout
+│   │   │   ├── data-export/            # GET full data export
+│   │   │   ├── export/                 # GET alternative data export
+│   │   │   ├── github-accounts/        # GET + POST linked accounts
+│   │   │   │   └── [githubId]/         # DELETE linked account
+│   │   │   ├── github-orgs/            # GET GitHub org memberships
+│   │   │   ├── orgs/                   # GET org list
+│   │   │   ├── pinned-repos/           # GET + PATCH pinned repos
+│   │   │   │   └── details/            # GET pinned repo details
+│   │   │   └── settings/               # GET + PATCH user settings
+│   │   │       └── discord-test/       # POST test Discord webhook
+│   │   ├── users/
+│   │   │   └── search/                 # GET search users
+│   │   ├── wakatime/                   # GET + DELETE WakaTime connection
+│   │   │   └── sync/                   # POST sync WakaTime data
+│   │   └── webhooks/
+│   │       ├── custom/                 # GET + POST custom webhooks
+│   │       │   └── [id]/               # GET + PATCH + DELETE webhook
+│   │       │       ├── deliveries/     # GET delivery history
+│   │       │       │   └── [deliveryId]/
+│   │       │       │       └── retry/  # POST retry delivery
+│   │       │       ├── rotate-secret/  # POST rotate signing secret
+│   │       │       └── test/           # POST test webhook
+│   │       ├── dispatch/
+│   │       │   └── metrics/            # POST trigger metric SSE push
+│   │       └── github/                 # POST GitHub push webhook receiver
+│   │   └── wrapped/
+│   │       ├── route.ts                # GET Year in Code wrapped data
+│   │       └── og/                     # GET wrapped OG image
+│   ├── auth/signin/                    # GitHub sign-in page
+│   ├── compare/[users]/               # Side-by-side user comparison page
+│   ├── contact/                        # Contact form page
 │   ├── dashboard/
-│   │   ├── page.tsx                  # Dashboard layout — add new widgets here
-│   │   └── settings/page.tsx         # User settings page
-│   ├── leaderboard/page.tsx          # Public leaderboard page
-│   ├── u/[username]/page.tsx         # Public profile page
-│   ├── error.tsx                     # Global error boundary
-│   ├── layout.tsx                    # Root layout
-│   ├── not-found.tsx                 # 404 page
-│   ├── page.tsx                      # Landing page
-│   └── providers.tsx                 # Session + theme providers
+│   │   ├── page.tsx                    # Main dashboard
+│   │   ├── layout.tsx                  # Dashboard layout
+│   │   ├── settings/                   # User settings page
+│   │   ├── career-intelligence/        # Career Intelligence page
+│   │   ├── personality/                # AI Code Personality Report page
+│   │   ├── repo-comparison/            # Repo comparison page
+│   │   └── repo-health/                # Repo health page
+│   ├── friend-compare/                 # Friend comparison page
+│   ├── leaderboard/                    # Public leaderboard page
+│   ├── project-tutor/                  # AI Project Tutor page
+│   ├── rooms/                          # Rooms list page
+│   │   └── [roomId]/                   # Individual room page
+│   ├── u/[username]/                   # Public profile page
+│   │   ├── feed.xml/                   # RSS feed for public profile
+│   │   └── goals/                      # Public goals page
+│   ├── wrapped/                        # Year in Code wrapped page
+│   ├── api-docs/                       # Swagger UI page
+│   ├── error.tsx                       # Global error boundary
+│   ├── layout.tsx                      # Root layout
+│   ├── not-found.tsx                   # 404 page
+│   ├── page.tsx                        # Landing page
+│   └── providers.tsx                   # Session + theme providers
 ├── components/
-│   ├── AccountContext.tsx            # Multi-account state context
-│   ├── AccountToggle.tsx             # Switch between linked accounts
-│   ├── BackToTopButton.tsx           # Scroll-to-top button
-│   ├── BadgeSection.tsx              # Embeddable badge display
-│   ├── CIAnalytics.tsx               # CI build success/failure chart
-│   ├── CommitTimeChart.tsx           # Commits by hour-of-day bar chart
-│   ├── ContributionGraph.tsx         # Bar chart with time range selector
-│   ├── ContributionHeatmap.tsx       # GitHub-style activity heatmap
-│   ├── CopyLinkButton.tsx            # Copy-to-clipboard helper
-│   ├── DashboardHeader.tsx           # Top bar with user avatar + sign out
-│   ├── ExportButton.tsx              # Export metrics to PDF
-│   ├── FriendComparison.tsx          # Side-by-side user comparison
-│   ├── GoalTracker.tsx               # Weekly goals progress bars
-│   ├── IssueMetrics.tsx              # Issue open/close stats
-│   ├── KeyboardShortcuts.tsx         # Global keyboard shortcut handler
-│   ├── LanguageBreakdown.tsx         # Language usage breakdown chart
-│   ├── PRBreakdownChart.tsx          # PR status pie chart
-│   ├── PRMetrics.tsx                 # PR stats card grid
-│   ├── PRReviewTrendChart.tsx        # PR review time trend line chart
-│   ├── PRStatusDonutChart.tsx        # PR open/merged/closed donut
-│   ├── PersonalRecords.tsx           # All-time personal bests widget
-│   ├── PinnedRepos.tsx               # User's pinned repositories list
-│   ├── ShortcutsModal.tsx            # Keyboard shortcuts reference modal
-│   ├── SignOutButton.tsx             # Sign-out button
-│   ├── StatsCard.tsx                 # Shareable stats card (PNG export)
-│   ├── StreakAtRiskBanner.tsx        # Warning banner when streak is at risk
-│   ├── StreakTracker.tsx             # Current + longest commit streak
-│   ├── ThemeContext.tsx              # Light/dark theme context
-│   ├── ThemeToggle.tsx               # Light/dark mode toggle button
-│   ├── TopRepos.tsx                  # Most active repos ranked list
-│   ├── UserAvatar.tsx                # User avatar image
-│   └── WeeklySummaryCard.tsx         # Weekly activity digest card
+│   ├── dashboard/                      # Customizable dashboard system
+│   │   ├── CustomizableDashboard.tsx   # Drag-and-drop widget layout
+│   │   ├── DashboardLayoutToolbar.tsx
+│   │   ├── DashboardWidgetShell.tsx
+│   │   └── SortableDashboardWidget.tsx
+│   ├── career-intelligence/            # Career Intelligence feature components
+│   ├── landing/                        # Landing page components
+│   ├── leaderboard/                    # Leaderboard filter components
+│   ├── personality/                    # Personality report components
+│   ├── repo-analytics/                 # Repo analytics explorer components
+│   ├── repo-health/                    # Repo health display components
+│   ├── rooms/                          # Room chat and member components
+│   ├── ui/                             # Primitive UI components (button, card, etc.)
+│   ├── webhook/                        # Webhook manager component
+│   └── *.tsx                           # Shared dashboard widget components
 ├── hooks/
-│   ├── useCountUp.ts                 # Animated number count-up hook
-│   └── useHeatmapTheme.ts            # Heatmap colour theme hook
+│   ├── useCountUp.ts                   # Animated number count-up hook
+│   └── useHeatmapTheme.ts              # Heatmap colour theme hook
 ├── lib/
-│   ├── auth.ts                       # NextAuth config, GitHub scopes, Supabase upsert
-│   ├── crypto.ts                     # HMAC/signature utilities
-│   ├── dateUtils.ts                  # Shared date helpers
-│   ├── github-accounts.ts            # Multi-account GitHub API helpers
-│   ├── github.ts                     # GitHub REST API client
-│   ├── metrics-cache.ts              # Server-side metrics cache layer
-│   ├── repo-health.ts                # Repository health score logic
-│   ├── resolve-user.ts               # Resolve session to Supabase user
-│   └── supabase.ts                   # Supabase admin client (server-only)
-├── middleware.ts                     # Auth middleware (route protection)
+│   ├── auth.ts                         # NextAuth config, GitHub scopes, Supabase upsert
+│   ├── ai-mentor.ts                    # AI mentor prompt orchestration
+│   ├── ai-prompts.ts                   # Shared AI prompt templates
+│   ├── crypto.ts                       # AES-256-GCM encryption for OAuth tokens
+│   ├── cv/                             # CV generation utilities
+│   │   ├── cv-ai-generator.ts
+│   │   ├── cv-classifier.ts
+│   │   ├── cv-github-fetcher.ts
+│   │   └── cv-prompts.ts
+│   ├── date-utils.ts                   # Date formatting, arithmetic, week ranges, streak utils
+│   ├── github.ts                       # GitHub REST API client
+│   ├── github-accounts.ts              # Multi-account GitHub helpers
+│   ├── jira-utils.ts                   # Jira credential helpers
+│   ├── leaderboard-cache.ts            # Leaderboard cache TTL helpers
+│   ├── metrics-cache.ts                # Server-side TTL cache (memory + Redis)
+│   ├── personality-analysis.ts         # Deterministic personality scoring
+│   ├── repo-analytics-types.ts         # Type definitions for repo analytics
+│   ├── repo-health.ts                  # Repository health score logic
+│   ├── resolve-user.ts                 # Resolve session to Supabase user
+│   ├── response-cache.ts               # Cache-Control header helpers
+│   ├── redis-cache-helper.ts           # Upstash Redis get/set helpers
+│   ├── rooms.ts                        # Room username normalization utilities
+│   ├── sanitize.ts                     # Input sanitization helpers
+│   ├── sse.ts                          # Server-Sent Events connection registry
+│   ├── ssrf-protection.ts              # SSRF URL validation for webhook targets
+│   ├── supabase.ts                     # Supabase admin client (server-only)
+│   └── webhooks.ts                     # Webhook HMAC signing and dispatch
+├── middleware.ts                        # Auth middleware (route protection)
 └── types/
-    ├── next-auth.d.ts                # NextAuth session type extensions
-    └── repo-health.ts                # RepoHealth type definitions
+    ├── next-auth.d.ts                   # NextAuth session type extensions
+    └── repo-health.ts                   # RepoHealth type definitions
 supabase/
-└── schema.sql                        # DB schema — run once in Supabase SQL Editor
+├── schema.sql                           # Full DB schema — run once in Supabase SQL Editor
+└── migrations/                          # Incremental migration files
 ```
 
 ### How data flows
 
 ```
 Browser → Next.js API route → GitHub API (with user's OAuth token)
-                           → Supabase (for goals, user records)
+                           → Supabase (for goals, user records, rooms)
+                           → Groq/Anthropic (for AI features, optional)
 ```
 
-All GitHub API calls use the signed-in user's OAuth token — stored in the session via NextAuth. No shared API key.
+All GitHub API calls use the signed-in user's OAuth token — stored in the session via NextAuth. No shared API key is required (though `GITHUB_TOKEN` can be set to raise rate limits for unauthenticated endpoints).
 
 ---
 
@@ -236,14 +368,18 @@ All GitHub API calls use the signed-in user's OAuth token — stored in the sess
 
 | Command | What it does |
 |---------|-------------|
-| `pnpm dev` | Start dev server at localhost:3000 |
-| `pnpm build` | Production build |
-| `pnpm lint` | ESLint |
-| `pnpm type-check` | TypeScript compiler check (no emit) |
+| `npm run dev` | Start dev server at localhost:3000 |
+| `npm run build` | Validate env, then production build |
+| `npm start` | Start production server |
+| `npm run lint` | ESLint across `src/` |
+| `npm run type-check` | TypeScript compiler check (no emit) |
+| `npm test` | Run unit tests with Vitest |
+| `npm run test:coverage` | Run tests with coverage report |
+| `npm run test:e2e` | Run Playwright end-to-end tests |
 
 Run lint and type-check before pushing:
 ```bash
-pnpm lint && pnpm type-check
+npm run lint && npm run type-check
 ```
 
 ---
@@ -346,12 +482,12 @@ On Windows PowerShell:
 Next.js reads `.env.local` only at startup. After any change, stop and restart:
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 #### 5. Check the server console for the real error
 
-The browser only shows `error=github` — the actual error is printed to the **terminal running `pnpm dev`**. Look for lines starting with `[next-auth]` or `signIn:`.
+The browser only shows `error=github` — the actual error is printed to the **terminal running `npm run dev`**. Look for lines starting with `[next-auth]` or `signIn:`.
 
 ---
 
@@ -454,7 +590,7 @@ A simple rule: append the new migration SQL into `supabase/schema.sql` (includin
 
 ## Questions?
 
-Open a [GitHub Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions) — not an issue.
+Open a [GitHub Discussion](https://github.com/Umbrella-io/devtrack/discussions) — not an issue.
 
 
 

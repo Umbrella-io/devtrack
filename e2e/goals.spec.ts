@@ -68,6 +68,34 @@ async function setupGoalsMocks(page: import("@playwright/test").Page) {
     })
   );
 
+  await page.route("**/api/milestones**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ milestones: [] }),
+    })
+  );
+
+  await page.route("**/api/daily-note**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ todayNote: "", yesterdayNote: "" }),
+    })
+  );
+
+  await page.route("**/api/accounts**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [] }),
+    })
+  );
+
+  await page.route("**/api/user/orgs**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [], config: {} }),
+    })
+  );
+
   await page.route("**/api/stream**", (route) =>
     route.fulfill({
       status: 200,

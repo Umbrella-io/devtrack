@@ -74,6 +74,27 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
+  await page.route("**/api/milestones**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ milestones: [] }),
+    });
+  });
+
+  await page.route("**/api/accounts**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [] }),
+    });
+  });
+
+  await page.route("**/api/user/orgs**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [], config: {} }),
+    });
+  });
+
   await page.route("**/api/user/settings", async (route) => {
     await route.fulfill({
       contentType: "application/json",
