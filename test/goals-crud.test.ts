@@ -18,10 +18,6 @@ vi.mock("@/lib/supabase", () => ({
 vi.mock("@/lib/webhooks", () => ({
   dispatchToAllWebhooks: mocks.dispatchToAllWebhooks,
 }));
-vi.mock("@/lib/sanitize", () => ({
-  stripHtml: vi.fn((s: string) => s.replace(/<[^>]*>/g, "")),
-}));
-
 function buildGoal(overrides: Record<string, unknown> = {}) {
   return {
     id: "goal-1",
