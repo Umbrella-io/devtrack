@@ -10,14 +10,16 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { owner: string; name: string } }
+  { params }: { params: Promise<{ owner: string; name: string }> }
 ) {
+  const resolvedParams = await params;
+
   const session = await getServerSession(authOptions);
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const repoFullName = `${params.owner}/${params.name}`;
+  const repoFullName = `${resolvedParams.owner}/${resolvedParams.name}`;
   const accountId = req.nextUrl.searchParams.get("accountId");
   
   let token = session.accessToken;

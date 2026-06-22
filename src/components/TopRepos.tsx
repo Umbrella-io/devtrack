@@ -6,11 +6,13 @@ import { useAccount } from "@/components/AccountContext";
 import type { RepoHealthScore } from "@/types/repo-health";
 import RepoHealthPanel from "@/components/RepoHealthPanel";
 import RepoActivityDrawer from "@/components/RepoActivityDrawer";
+import { Search, Bookmark } from "lucide-react";
 
 interface RepoItemProps {
   repo: Repo;
   idx: number;
   isPinned: boolean;
+  isBookmarked: boolean;
   barWidth: number;
   shortName: string;
   health: RepoHealthScore | undefined;
@@ -18,12 +20,14 @@ interface RepoItemProps {
   onSelectActivity: (name: string) => void;
   onSelectHealth: (name: string) => void;
   onTogglePin: (name: string) => void;
+  onToggleBookmark: (name: string) => void;
 }
 
 const RepoItem = memo(({
   repo,
   idx,
   isPinned,
+  isBookmarked,
   barWidth,
   shortName,
   health,
@@ -31,6 +35,7 @@ const RepoItem = memo(({
   onSelectActivity,
   onSelectHealth,
   onTogglePin,
+  onToggleBookmark,
 }: RepoItemProps) => {
   const badgeTitle = health
     ? `Commits: ${health.signals.commitFrequency} | PR Merge Rate: ${Math.round(
@@ -57,7 +62,7 @@ const RepoItem = memo(({
             type="button"
             onClick={() => onSelectActivity(repo.name)}
             className="truncate text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] text-left font-medium"
-            title={repo.description || `View activity for ${repo.name}`}
+            title={[repo.name,repo.description ?? "No description",repo.languages?.[0] ? `Language: ${repo.languages[0].name}` : null,].filter(Boolean).join("\n")}
           >
             <span className="mr-1 text-[var(--muted-foreground)] font-normal">#{idx + 1}</span>
             {shortName}
@@ -104,8 +109,19 @@ const RepoItem = memo(({
           </span>
           <button
             type="button"
-            onClick={() => onTogglePin(repo.name)}
+            onClick={() => onToggleBookmark(repo.name)}
             className="ml-1 p-1 hover:bg-[var(--card-muted)] rounded-md transition-colors"
+            title={isBookmarked ? `Remove ${shortName} from bookmarks` : `Bookmark ${shortName}`}
+            aria-label={isBookmarked ? `Remove ${repo.name} from bookmarks` : `Bookmark ${repo.name}`}
+          >
+            <Bookmark
+              className={`w-3.5 h-3.5 transition-colors ${isBookmarked ? "text-[var(--accent)] fill-[var(--accent)]" : "text-[var(--muted-foreground)]"}`}
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => onTogglePin(repo.name)}
+            className="p-1 hover:bg-[var(--card-muted)] rounded-md transition-colors"
             title={
               isPinned
                 ? `Unpin ${shortName} repository`
@@ -165,6 +181,7 @@ const RepoItem = memo(({
     prevProps.repo.commits === nextProps.repo.commits &&
     prevProps.idx === nextProps.idx &&
     prevProps.isPinned === nextProps.isPinned &&
+    prevProps.isBookmarked === nextProps.isBookmarked &&
     prevProps.barWidth === nextProps.barWidth &&
     prevProps.shortName === nextProps.shortName &&
     prevProps.healthLoading === nextProps.healthLoading &&
@@ -212,18 +229,18 @@ function getVisibleLanguages(languages: RepoLanguage[]): RepoLanguage[] {
 
   if (sorted.length <= 3) {
    const total = sorted.reduce((sum, lang) => sum + lang.percentage, 0);
-const otherPercentage = Math.round((100 - total) * 10) / 10;
+   const otherPercentage = Math.round((100 - total) * 10) / 10;
 
-if (total < 100 && sorted.length > 0 && otherPercentage > 0) {
-  return [
-    ...sorted,
-    {
-      name: "Other",
-      bytes: 0,
-      percentage: otherPercentage,
-    },
-  ];
-}
+   if (total < 100 && sorted.length > 0 && otherPercentage > 0) {
+     return [
+       ...sorted,
+       {
+         name: "Other",
+         bytes: 0,
+         percentage: otherPercentage,
+       },
+     ];
+   }
     return sorted;
   }
 
@@ -259,11 +276,52 @@ export default function TopRepos() {
   const [activeHealthRepo, setActiveHealthRepo] = useState<string | null>(null);
   const [selectedRepoForActivity, setSelectedRepoForActivity] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
+
+  // --- PERSISTENCE LOGIC ---
+  const [bookmarkedRepos, setBookmarkedRepos] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = window.localStorage.getItem("devtrack_bookmarked_repos");
+        return stored ? JSON.parse(stored) : [];
+      } catch (err) {
+        console.error("Failed to parse bookmarked repos", err);
+        return [];
+      }
+    }
+    return [];
+  });
+
   useEffect(() => {
     fetch("/api/user/settings")
       .then((r) => r.json())
       .then((d) => setPinnedRepos(d.pinned_repos || []))
       .catch((err) => console.error("Failed to load pinned repos", err));
+  }, []);
+
+  useEffect(() => {
+    const savedDays = localStorage.getItem("devtrack_dashboard_range");
+    if (savedDays) {
+      setDays(Number(savedDays));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("devtrack_dashboard_range", String(days));
+  }, [days]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("devtrack_bookmarked_repos", JSON.stringify(bookmarkedRepos));
+    }
+  }, [bookmarkedRepos]);
+
+  const handleToggleBookmark = useCallback((repoName: string) => {
+    setBookmarkedRepos((prev) =>
+      prev.includes(repoName)
+        ? prev.filter((name) => name !== repoName)
+        : [...prev, repoName]
+    );
   }, []);
 
   const togglePin = async (repoFullName: string) => {
@@ -350,7 +408,6 @@ export default function TopRepos() {
     fetchHealthScores();
   }, [fetchRepos, fetchHealthScores, selectedAccount]);
 
-  // toggle sort: same column flips direction, new column resets to desc
   const handleSort = (column: "commits" | "name") => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -360,7 +417,6 @@ export default function TopRepos() {
     }
   };
 
-  // sort and filter repos cached via useMemo to avoid UI thread thrashing
   const { filteredRepos, maxCommits } = useMemo(() => {
     const baseSorted = [...repos].sort((a, b) => {
       if (sortColumn === "name") {
@@ -380,24 +436,28 @@ export default function TopRepos() {
       ...baseSorted.filter(r => !pinnedRepos.includes(r.name))
     ];
 
+    const tabFiltered = activeTab === 'saved'
+      ? sorted.filter((r) => bookmarkedRepos.includes(r.name))
+      : sorted;
+
     const filtered = searchQuery.trim()
-      ? sorted.filter((r) =>
+      ? tabFiltered.filter((r) =>
           r.name.toLowerCase().includes(searchQuery.toLowerCase())
         )
-      : sorted;
+      : tabFiltered;
 
     const max = repos.reduce((m, r) => Math.max(m, r.commits), 1);
 
     return { filteredRepos: filtered, maxCommits: max };
-  }, [repos, sortColumn, sortDirection, pinnedRepos, searchQuery]);
+  }, [repos, sortColumn, sortDirection, pinnedRepos, searchQuery, activeTab, bookmarkedRepos]);
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <SectionHeader
-    title={`Top Repositories${!loading && repos.length > 0 ? ` (${repos.length})` : ""}`}
-  />
+            title={`Top Repositories${!loading && repos.length > 0 ? ` (${repos.length})` : ""}`}
+          />
 
           {pinError && (
             <p className="text-xs text-[var(--destructive)]">{pinError}</p>
@@ -407,28 +467,63 @@ export default function TopRepos() {
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
           aria-label="Select time range for top repositories"
-          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)] focus:outline-none focus:border-[var(--accent)]"
+          className="rounded-lg border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--card-foreground)]"
         >
           <option value={7}>Last 7d</option>
           <option value={30}>Last 30d</option>
           <option value={90}>Last 90d</option>
         </select>
       </div>
+
+      <div className="flex p-1 space-x-1 rounded-lg bg-[var(--control)] w-fit mb-4 border border-[var(--border)]">
+        <button
+          onClick={() => setActiveTab('all')}
+          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+            activeTab === 'all'
+              ? 'bg-[var(--card)] text-[var(--card-foreground)] shadow-sm'
+              : 'text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]'
+          }`}
+        >
+          All Recommended
+        </button>
+        <button
+          onClick={() => setActiveTab('saved')}
+          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center space-x-2 ${
+            activeTab === 'saved'
+              ? 'bg-[var(--card)] text-[var(--card-foreground)] shadow-sm'
+              : 'text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]'
+          }`}
+        >
+          <span>Saved Projects</span>
+          {bookmarkedRepos.length > 0 && (
+            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-[var(--card-muted)] text-[var(--card-foreground)]">
+              {bookmarkedRepos.length}
+            </span>
+          )}
+        </button>
+      </div>
+
       {loading ? (
         <div
           role="status"
           aria-live="polite"
           aria-busy="true"
-          className="space-y-3"
+          className="space-y-5 mt-4"
         >
           <span className="sr-only">Loading top repositories</span>
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              aria-hidden="true"
-              className="h-10 rounded bg-[var(--card-muted)] animate-pulse"
-            />
-          ))}
+          <div aria-hidden="true" className="space-y-5">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="h-4 w-1/3 bg-[var(--card-muted)] rounded animate-pulse" />
+                  <div className="h-4 w-16 bg-[var(--card-muted)] rounded animate-pulse" />
+                </div>
+                <div className="h-1.5 w-full bg-[var(--control)] rounded-full overflow-hidden">
+                  <div className="h-full bg-[var(--card-muted)] animate-pulse w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
@@ -442,32 +537,51 @@ export default function TopRepos() {
           </button>
         </div>
       ) : repos.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">No commits in the last {days} days.</p>
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="mb-3 text-4xl">📦</div>
+      
+          <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+            No repositories found
+          </h3>
+      
+          <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
+            Push your first commit on GitHub to get started and see repository activity here.
+          </p>
+      
+          <a
+            href="https://github.com/new"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--control)]"
+          >
+            Create Repository
+          </a>
+        </div>
       ) : (
       <>
-      {repos.length > 10 && (
-  <div className="relative mb-3">
-    <input
-      type="text"
-      value={searchQuery}
-      onChange={(e) => setSearchQuery(e.target.value)}
-      placeholder="Search repositories…"
-      aria-label="Search repositories"
-      className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
-    />
 
-    {searchQuery.length > 0 && (
-      <button
-        type="button"
-        onClick={() => setSearchQuery("")}
-        aria-label="Clear search"
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
-      >
-        ✕
-      </button>
-    )}
-  </div>
-)}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--muted-foreground)]" aria-hidden="true" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search repositories…"
+            aria-label="Search repositories by name"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-9 py-1.5 pr-10 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:outline-none focus:border-[var(--accent)]"
+          />
+          {searchQuery.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--card-foreground)]"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      
         <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)] mb-2 px-0">
           <button
             type="button"
@@ -492,55 +606,68 @@ export default function TopRepos() {
             </span>
           </button>
         </div>
-        <ul className="space-y-3">
-          {filteredRepos.length === 0 ? (
-            <p className="text-sm text-[var(--muted-foreground)] py-4 text-center">
-              No repos match your search.
-            </p>
-          ) : filteredRepos.map((repo, idx) => {
-            const isPinned = pinnedRepos.includes(repo.name);
-            const barWidth = Math.max(
-              Math.round((repo.commits / maxCommits) * 100),
-              4
-            );
-            const shortName = repo.name.split("/")[1] ?? repo.name;
-            const health = healthScores[repo.name];
-            return (
-              <RepoItem
-                key={repo.name}
-                repo={repo}
-                idx={idx}
-                isPinned={isPinned}
-                barWidth={barWidth}
-                shortName={shortName}
-                health={health}
-                healthLoading={healthLoading}
-                onSelectActivity={setSelectedRepoForActivity}
-                onSelectHealth={setActiveHealthRepo}
-                onTogglePin={togglePin}
-              />
-            );
-          })}
-        </ul>
-      </>
-      )}
-      {lastUpdated && (
-        <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
-         {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
-        </p>
-     )}
-      {activeHealthRepo && healthScores[activeHealthRepo] && (
-        <RepoHealthPanel
-          health={healthScores[activeHealthRepo]}
-          isOpen={true}
-          onClose={() => setActiveHealthRepo(null)}
+<ul className="space-y-3">
+  {filteredRepos.length === 0 ? (
+    <p className="text-sm text-[var(--muted-foreground)] py-4 text-center">
+      No repos match your search.
+    </p>
+  ) : (
+    filteredRepos.map((repo, idx) => {
+      const isPinned = pinnedRepos.includes(repo.name);
+
+      const barWidth = Math.max(
+        Math.round((repo.commits / maxCommits) * 100),
+        4
+      );
+
+      const shortName = repo.name.split("/")[1] ?? repo.name;
+      const health = healthScores[repo.name];
+
+      return (
+        <RepoItem
+          key={repo.name}
+          repo={repo}
+          idx={idx}
+          isPinned={isPinned}
+          isBookmarked={bookmarkedRepos.includes(repo.name)}
+          barWidth={barWidth}
+          shortName={shortName}
+          health={health}
+          healthLoading={healthLoading}
+          onSelectActivity={setSelectedRepoForActivity}
+          onSelectHealth={setActiveHealthRepo}
+          onTogglePin={togglePin}
+          onToggleBookmark={handleToggleBookmark}
         />
-      )}
-      <RepoActivityDrawer
-        repoName={selectedRepoForActivity || ""}
-        isOpen={!!selectedRepoForActivity}
-        onClose={() => setSelectedRepoForActivity(null)}
-      />
+      );
+    })
+  )}
+</ul>
+
+</>
+)}
+
+{lastUpdated && (
+  <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
+    {minutesAgo === 0
+      ? "Updated just now"
+      : `Updated ${minutesAgo} min ago`}
+  </p>
+)}
+
+{activeHealthRepo && healthScores[activeHealthRepo] && (
+  <RepoHealthPanel
+    health={healthScores[activeHealthRepo]}
+    isOpen={true}
+    onClose={() => setActiveHealthRepo(null)}
+  />
+)}
+
+<RepoActivityDrawer
+  repoName={selectedRepoForActivity || ""}
+  isOpen={!!selectedRepoForActivity}
+  onClose={() => setSelectedRepoForActivity(null)}
+/>
     </div>
   );
 }

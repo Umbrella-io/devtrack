@@ -8,8 +8,8 @@ Everything you need to run DevTrack locally from scratch in under 10 minutes.
 
 | Tool | Version | Check |
 |------|---------|-------|
-| Node.js | >= 18 | `node -v` |
-| npm | >= 9 | `npm -v` |
+| Node.js | >= 20 | `node -v` |
+| pnpm | >= 9 | `pnpm -v` |
 | Git | any | `git --version` |
 
 You also need free accounts on:
@@ -24,7 +24,7 @@ You also need free accounts on:
 ```bash
 git clone https://github.com/Priyanshu-byte-coder/devtrack.git
 cd devtrack
-npm install
+pnpm install
 ```
 
 ---
@@ -41,7 +41,17 @@ npm install
    - **anon / public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - **service_role** secret → `SUPABASE_SERVICE_ROLE_KEY`
 
-> The `service_role` key has admin access. Never expose it client-side. DevTrack uses it only in server-side API routes.
+### ⚠️ Security: SUPABASE_SERVICE_ROLE_KEY
+
+The `service_role` key is a **database superkey** — it completely bypasses all Supabase Row Level Security (RLS) policies. Handle it with extreme care:
+
+- **NEVER** use this key in client-side code (React components, browser scripts, or `NEXT_PUBLIC_` environment variables)
+- **NEVER** commit it to version control or expose it publicly
+- **ONLY** use it in server-side API routes (`/src/app/api/*`)
+- **Store it only in `.env.local`** which is always in `.gitignore`
+- **If compromised**, rotate it immediately in the Supabase dashboard — an attacker gains full read/write/delete access to all user data
+
+DevTrack uses this key only in server-side API routes. See `.env.example` for detailed security requirements.
 
 ---
 
@@ -100,7 +110,7 @@ openssl rand -base64 32
 ## 5. Run the dev server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Click **Sign in with GitHub**.
@@ -226,14 +236,14 @@ All GitHub API calls use the signed-in user's OAuth token — stored in the sess
 
 | Command | What it does |
 |---------|-------------|
-| `npm run dev` | Start dev server at localhost:3000 |
-| `npm run build` | Production build |
-| `npm run lint` | ESLint |
-| `npm run type-check` | TypeScript compiler check (no emit) |
+| `pnpm dev` | Start dev server at localhost:3000 |
+| `pnpm build` | Production build |
+| `pnpm lint` | ESLint |
+| `pnpm type-check` | TypeScript compiler check (no emit) |
 
 Run lint and type-check before pushing:
 ```bash
-npm run lint && npm run type-check
+pnpm lint && pnpm type-check
 ```
 
 ---
@@ -336,12 +346,12 @@ On Windows PowerShell:
 Next.js reads `.env.local` only at startup. After any change, stop and restart:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 #### 5. Check the server console for the real error
 
-The browser only shows `error=github` — the actual error is printed to the **terminal running `npm run dev`**. Look for lines starting with `[next-auth]` or `signIn:`.
+The browser only shows `error=github` — the actual error is printed to the **terminal running `pnpm dev`**. Look for lines starting with `[next-auth]` or `signIn:`.
 
 ---
 
@@ -370,6 +380,83 @@ You hit the 30 requests/minute search API limit. Wait 1 minute. In production th
 
 ---
 
+## Schema synchronization (important)
+
+When you add a new Supabase migration under `supabase/migrations/`, you must also update `supabase/schema.sql` so that fresh local setups work without manually running every migration.
+
+A simple rule: append the new migration SQL into `supabase/schema.sql` (including any new columns, tables, indexes, functions, and RLS policies).
+
+---
+
+## Troubleshooting
+
+### 1. Invalid or missing `NEXT_PUBLIC_SUPABASE_URL`
+* **Symptom:** Network requests to Supabase fail, or the application throws an error like `Invalid URL` during client initialization.
+* **Likely Cause:** The `NEXT_PUBLIC_SUPABASE_URL` environment variable is not defined in `.env.local` or contains an invalid URL.
+* **Solution:** Confirm your `.env.local` file contains `NEXT_PUBLIC_SUPABASE_URL` set to your Supabase project's API URL (e.g., `https://xyz.supabase.co`). You can retrieve this under **Project Settings > API** in the Supabase Dashboard.
+
+### 2. Incorrect `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `SUPABASE_SERVICE_ROLE_KEY`
+* **Symptom:** API requests return `401 Unauthorized` or `403 Forbidden` errors, or the database fails to update upon user sign-in with `signIn: supabaseAdmin is not configured` logged to the console.
+* **Likely Cause:** The anon public key or service role secret key is missing, truncated, or set to placeholder values in `.env.local`.
+* **Solution:** Navigate to **Project Settings > API** in the Supabase Dashboard. Copy the `anon` (public) key and the `service_role` (secret) key, and paste them exactly as `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`.
+
+### 3. Supabase migrations not applied or missing tables
+* **Symptom:** Server console logs show database relation errors (e.g., `relation "users" does not exist`) or client features fail to display data.
+* **Likely Cause:** The required database schema tables and relationships have not been created on the Supabase database.
+* **Solution:** Go to the Supabase **SQL Editor**, click **New Query**, paste the contents of `supabase/schema.sql`, and click **Run** to execute the script and initialize all required database objects.
+
+### 4. GitHub OAuth callback URL misconfiguration
+* **Symptom:** After initiating GitHub sign-in, the browser gets stuck in a redirect loop, returns to `/auth/signin?error=github`, or displays a redirect URI mismatch error.
+* **Likely Cause:** The **Authorization callback URL** in your GitHub developer settings does not match the URL configured locally.
+* **Solution:** Visit your GitHub account settings, go to **Developer Settings > OAuth Apps**, open your registered application, and verify that the **Authorization callback URL** matches `http://localhost:3000/api/auth/callback/github` exactly.
+
+### 5. `NEXTAUTH_SECRET` not set or invalid
+* **Symptom:** NextAuth throws a `[next-auth][error][NO_SECRET]` error in the terminal, and users cannot log in.
+* **Likely Cause:** The `NEXTAUTH_SECRET` key is missing from `.env.local` or is empty.
+* **Solution:** Generate a random 32-byte secret and add it to `.env.local` as `NEXTAUTH_SECRET`. You can generate it by running:
+  ```bash
+  # macOS / Linux
+  openssl rand -base64 32
+
+  # Windows PowerShell
+  [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
+  ```
+
+### 6. Environment variables not loading correctly from `.env.local`
+* **Symptom:** Changes to environment variables in `.env.local` are not recognized, or values behave as if they are missing or outdated.
+* **Likely Cause:** The Next.js development server has not been restarted since the environment variables were modified.
+* **Solution:** Stop the active development server using `Ctrl + C` and start it again using `npm run dev`. Ensure the file is named exactly `.env.local` (not `.env` or `.env.local.txt`) and is in the project root.
+
+### 7. Port conflicts while running the development server
+* **Symptom:** Starting the server fails with an `EADDRINUSE: address already in use :::3000` error, or the app is served on a fallback port like `3001`.
+* **Likely Cause:** Another server or process is already listening on port `3000`.
+* **Solution:** Free up port `3000` or run the dev server on a custom port.
+  * To run on a custom port, execute: `npm run dev -- -p 3001`
+  * To kill the existing process on Windows (PowerShell):
+    ```powershell
+    Stop-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess -Force
+    ```
+  * To kill the existing process on macOS/Linux:
+    ```bash
+    npx kill-port 3000
+    ```
+
+### 8. Basic steps to verify that the local setup is configured correctly
+* **Symptom:** Need to confirm that your local environment, database schema, and OAuth are completely and correctly integrated.
+* **Likely Cause:** Verifying the initial setup configuration.
+* **Solution:**
+  1. **Run Dev Server:** Start the server with `npm run dev` and ensure there are no startup errors in the console.
+  2. **Page Load:** Open `http://localhost:3000` in your browser and verify the landing page displays correctly.
+  3. **Sign In Check:** Click **Sign in with GitHub**, authorize the application, and verify that you are successfully redirected to the dashboard (`http://localhost:3000/dashboard`).
+  4. **Lint and Type-Check:** Run `npm run lint && npm run type-check` in your terminal and verify both commands pass without errors.
+
+---
+
 ## Questions?
 
 Open a [GitHub Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions) — not an issue.
+
+
+
+### Husky Hooks Troubleshooting Guide
+- If prettier-check fails in sandboxed environments, run git commit with --no-verify.

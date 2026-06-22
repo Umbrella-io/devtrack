@@ -99,7 +99,7 @@ export default function PinnedRepos() {
   }, [pinnedRepos]);
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
         Pinned Repositories
       </h2>
@@ -115,7 +115,7 @@ export default function PinnedRepos() {
             <div
               key={i}
               aria-hidden="true"
-              className="h-24 rounded-lg bg-[var(--card-muted)] animate-pulse"
+              className="h-24 rounded-lg skeleton-shimmer"
             />
           ))}
         </div>
