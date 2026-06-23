@@ -13,6 +13,7 @@ import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
 
 import TodayFocusHero from "@/components/TodayFocusHero";
+import AchievementsDashboard from "@/components/achievements/AchievementsDashboard";
 import DashboardHeader from "@/components/DashboardHeader";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
@@ -303,6 +304,9 @@ export default async function DashboardPage() {
           </section>
           <section className="mt-8">
             <MilestonePlanner />
+          </section>
+          <section className="mt-8">
+            <AchievementsDashboard />
           </section>
           <CustomizableDashboard />
         </div>
