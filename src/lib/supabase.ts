@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 export const isSupabaseAdminAvailable =
   !!supabaseUrl &&
   !!serviceRoleKey &&
@@ -22,130 +23,28 @@ function createUnavailableSupabaseAdmin(): SupabaseAdminClient {
   } as unknown as SupabaseAdminClient;
 }
 
-// Do not throw here - build-time rendering can touch this module before
-// runtime environment variables are present. Guard call sites instead.
 export const supabaseAdmin: SupabaseAdminClient =
   isSupabaseAdminAvailable
-? createClient(supabaseUrl!, serviceRoleKey!)
+    ? createClient(supabaseUrl!, serviceRoleKey!)
     : createUnavailableSupabaseAdmin();
 
-
-interface User {
-  id: string;
-  github_id: string;
-  github_login: string;
-  bio: string | null;
-  is_public: boolean;
-  pinned_repos?: string[];
-  created_at: string;
-  updated_at: string;
-  is_sponsor?: boolean;
-}
-
 /**
- * Look up a user by GitHub username only if their profile is public.
- * Returns the user row if found and is_public is true, otherwise null.
+ * @deprecated Import directly from the appropriate module instead:
+ *
+ *   - Server-only (admin/service role):  `@/lib/supabase-admin`
+ *   - Browser-safe (anon key):           `@/lib/supabase-browser`
+ *
+ * This re-export barrel exists for backward compatibility while call sites
+ * are migrated. It will be removed in a future release.
  */
-export async function getUserByUsername(
-  username: string
-): Promise<User | null> {
-  if (!username || !username.trim()) {
-    return null;
-  }
-  try {
-    const { data, error } = await supabaseAdmin
-      .from("users")
-      .select("id,github_id,github_login,bio,is_public,pinned_repos,created_at,updated_at,is_sponsor")
-      .ilike("github_login", username)
-      .eq("is_public", true)
-      .single();
+export {
+  getUserByUsername,
+  getUserByGithubId,
+  updateUserPublicFlag,
+} from "@/lib/supabase-admin";
 
-    if (error) {
-      if (error.code === "PGRST116") {
-        return null;
-      }
-      // Optional columns (pinned_repos, is_sponsor) may not exist yet — fall back
-      if (error.code === "42703") {
-        const { data: minimal, error: minError } = await supabaseAdmin
-          .from("users")
-          .select("id,github_id,github_login,is_public,created_at,updated_at")
-          .ilike("github_login", username)
-          .eq("is_public", true)
-          .single();
-
-        if (minError) {
-          if (minError.code === "PGRST116") return null;
-          console.error("Error fetching user (minimal):", minError);
-          return null;
-        }
-
-        return { ...(minimal as User), bio: null };
-      }
-      console.error("Error fetching user:", error);
-      return null;
-    }
-
-    return data as User;
-  } catch (err) {
-    console.error("Unexpected error fetching user:", err);
-    return null;
-  }
-}
-
-/**
- * Look up a user by GitHub id. Used for authenticated server-rendered pages
- * where the session has an id but may not have the login claim populated.
- */
-export async function getUserByGithubId(
-  githubId: string
-): Promise<User | null> {
-  if (!supabaseAdmin) return null;
-
-  try {
-    const { data, error } = await supabaseAdmin
-      .from("users")
-      .select("id,github_id,github_login,is_public,created_at,updated_at")
-      .eq("github_id", githubId)
-      .single();
-
-    if (error) {
-      if (error.code === "PGRST116") {
-        return null;
-      }
-      console.error("Error fetching user by GitHub id:", error);
-      return null;
-    }
-
-    return data as User;
-  } catch (err) {
-    console.error("Unexpected error fetching user by GitHub id:", err);
-    return null;
-  }
-}
-
-/**
- * Update the is_public flag for a user.
- */
-export async function updateUserPublicFlag(
-  userId: string,
-  isPublic: boolean
-): Promise<User | null> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from("users")
-      .update({ is_public: isPublic })
-      .eq("id", userId)
-      .select("id,github_id,github_login,bio,is_public,created_at,updated_at")
-      .single();
-
-    if (error) {
-      console.error("Error updating user public flag:", error);
-      return null;
-    }
-
-    return data as User;
-  } catch (err) {
-    console.error("Unexpected error updating public flag:", err);
-    return null;
-  }
-}
+export {
+  supabaseBrowser,
+  isBrowserClientAvailable,
+  BROWSER_CLIENT_UNAVAILABLE_MESSAGE,
+} from "@/lib/supabase-browser";

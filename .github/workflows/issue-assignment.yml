@@ -15,7 +15,7 @@ jobs:
     if: github.event.issue.pull_request == null
     steps:
       - name: Handle assignment request
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -70,6 +70,9 @@ jobs:
               return;
             }
 
+            // NOTE: per-contributor issue limit is temporarily disabled
+            // TODO: re-enable when needed by restoring the block below
+            /*
             // Limit: max 2 open issues assigned per contributor
             const allAssigned = await github.paginate(github.rest.issues.listForRepo, {
               owner, repo, assignee: commenter, state: 'open', per_page: 50,
@@ -83,6 +86,7 @@ jobs:
               });
               return;
             }
+            */
 
             // Assign
             await github.rest.issues.addAssignees({

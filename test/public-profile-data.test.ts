@@ -4,6 +4,7 @@ import {
   fetchPublicContributions,
   fetchPublicStreak,
   fetchTopLanguage,
+  fetchPublicGists,
 } from "../src/lib/public-profile-data";
 
 describe("public-profile-data", () => {
@@ -43,6 +44,27 @@ describe("public-profile-data", () => {
 
       const repos = await fetchPublicTopRepos("user123");
       expect(repos).toEqual([]);
+    });
+  });
+
+  describe("fetchPublicGists", () => {
+    it("should return the public gist count on successful API response", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ public_gists: 7 }),
+      });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const gists = await fetchPublicGists("user123");
+      expect(gists).toBe(7);
+    });
+
+    it("should return zero on failed API response", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const gists = await fetchPublicGists("user123");
+      expect(gists).toBe(0);
     });
   });
 

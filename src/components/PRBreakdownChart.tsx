@@ -54,16 +54,16 @@ export default function PRBreakdownChart() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading PR breakdown</span>
           <div
             aria-hidden="true"
-            className="mb-4 h-5 w-40 rounded bg-[var(--card-muted)] animate-pulse"
+            className="mb-4 h-5 w-40 rounded skeleton-shimmer"
           />
           <div
             aria-hidden="true"
-            className="h-[200px] rounded bg-[var(--card-muted)] animate-pulse"
+            className="h-[200px] rounded skeleton-shimmer"
           />
         </div>
       </div>
@@ -72,7 +72,7 @@ export default function PRBreakdownChart() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Breakdown</h2>
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
@@ -96,7 +96,7 @@ export default function PRBreakdownChart() {
     : [];
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Breakdown</h2>
       {total === 0 ? (
         <p className="flex h-[200px] items-center justify-center text-sm text-[var(--muted-foreground)]">
@@ -119,18 +119,18 @@ export default function PRBreakdownChart() {
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip
+               <Tooltip
   contentStyle={{
-    backgroundColor: getCSSVariable('--card'),
+    backgroundColor: getCSSVariable('--tooltip'),
     border: `1px solid ${getCSSVariable('--border')}`,
     borderRadius: "10px",
-    color: getCSSVariable('--foreground'),
+    color: getCSSVariable('--tooltip-foreground'),
   }}
   itemStyle={{
-    color: getCSSVariable('--foreground'),
+    color: getCSSVariable('--tooltip-foreground'),
   }}
   labelStyle={{
-    color: getCSSVariable('--foreground'),
+    color: getCSSVariable('--tooltip-foreground'),
   }}
 />
             </PieChart>

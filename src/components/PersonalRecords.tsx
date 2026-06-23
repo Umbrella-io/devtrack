@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { Trophy, Zap, Flame, Calendar, Star } from "lucide-react";
 
@@ -158,7 +158,7 @@ export default function PersonalRecords() {
       setStreak(streakData);
       setContributions(contribData);
       setRepos(reposData.repos ?? []);
-    } catch {
+    } catch (e) {
       setError("We couldn't load your personal records right now. Please try again in a moment.");
     } finally {
       setLoading(false);
@@ -167,6 +167,48 @@ export default function PersonalRecords() {
   useEffect(() => {
     fetchRecords();
   }, [fetchRecords]);
+
+  useEffect(() => {
+    if (loading || error || !streak || !contributions) return;
+
+    const currentRecords = {
+      longest_streak: streak.longest ?? 0,
+      best_day: getBestDay(contributions.data ?? {}).count,
+      best_week: getBestWeek(contributions.data ?? {}).count,
+      best_month: getBestMonth(contributions.data ?? {}).count,
+      busiest_repo: getBusiestRepo(repos).count,
+    };
+
+    let triggerConfetti = false;
+    const storagePrefix = `devtrack_records_${selectedAccount ?? "default"}_`;
+
+    for (const [key, currentValue] of Object.entries(currentRecords)) {
+      const storageKey = `${storagePrefix}${key}`;
+      const prevValueStr = sessionStorage.getItem(storageKey);
+
+      if (prevValueStr === null) {
+        sessionStorage.setItem(storageKey, String(currentValue));
+      } else {
+        const prevValue = Number(prevValueStr);
+        if (currentValue > prevValue) {
+          triggerConfetti = true;
+          sessionStorage.setItem(storageKey, String(currentValue));
+        } else if (currentValue < prevValue) {
+          sessionStorage.setItem(storageKey, String(currentValue));
+        }
+      }
+    }
+
+    if (triggerConfetti) {
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!prefersReducedMotion) {
+        import("canvas-confetti").then((module) => {
+          const confetti = module.default;
+          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        });
+      }
+    }
+  }, [loading, error, streak, contributions, repos, selectedAccount]);
   const bestDay = getBestDay(contributions?.data ?? {});
   const bestWeek = getBestWeek(contributions?.data ?? {});
   const bestMonth = getBestMonth(contributions?.data ?? {});
@@ -219,7 +261,7 @@ export default function PersonalRecords() {
     },
   ];
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
         Personal Records
       </h2>
@@ -236,7 +278,7 @@ export default function PersonalRecords() {
             <div
               key={i}
               aria-hidden="true"
-              className="h-32 rounded-lg bg-[var(--card-muted)] p-4 animate-pulse"
+              className="h-32 rounded-lg skeleton-shimmer p-4"
             />
           ))}
         </div>
@@ -252,11 +294,11 @@ export default function PersonalRecords() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-stretch">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-stretch stagger-children">
           {records.map((rec) => (
             <div
               key={rec.label}
-              className="h-full rounded-lg bg-[var(--control)] p-4 text-center flex flex-col justify-between border border-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[var(--accent)]/30"
+              className="h-full rounded-lg bg-[var(--control)] p-4 text-center flex flex-col justify-between border border-transparent stat-cell animate-fade-in-up hover:border-[var(--accent)]/30"
             >
               <div>
                 <div className="text-xl mb-2 flex justify-center">

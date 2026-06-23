@@ -40,8 +40,19 @@ export async function GET(req: NextRequest) {
     .order("date", { ascending: false });
 
   if (error) {
+    if (error.code === "42P01") {
+      // Table may not exist in all deployments — degrade gracefully
+      return Response.json({
+        dailyData: [],
+        totals: { totalSeconds: 0, totalDays: 0, avgSecondsPerDay: 0 },
+        hasData: false,
+      });
+    }
     console.error("Failed to fetch local coding stats:", error);
-    return Response.json({ error: "Failed to fetch local coding stats" }, { status: 500 });
+    return Response.json(
+      { error: "Failed to fetch local coding stats" },
+      { status: 500 }
+    );
   }
 
   if (!sessions || sessions.length === 0) {

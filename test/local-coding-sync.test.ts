@@ -8,9 +8,12 @@ const mockRpc = vi.fn();
 const mockSingle = vi.fn();
 const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
 const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
-const mockKeyLookupOr = vi.fn().mockReturnValue({ single: mockSingle });
-const mockUpdateOr = vi.fn().mockResolvedValue({ error: null });
-const mockUpdate = vi.fn().mockReturnValue({ or: mockUpdateOr });
+const mockKeyLookupEq = vi.fn().mockReturnValue({ single: mockSingle });
+const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
+const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEq });
+const mockSessionCountEq = vi.fn();
+const mockExistingDatesIn = vi.fn();
+const mockExistingDatesEq = vi.fn().mockReturnValue({ in: mockExistingDatesIn });
 const mockFrom = vi.fn().mockReturnValue({
   select: mockSelect,
   update: mockUpdate,
@@ -31,23 +34,29 @@ describe("Local Coding Sync POST API Endpoint", () => {
       data: { user_id: "test-user-id" },
       error: null,
     });
+    mockSessionCountEq.mockResolvedValue({ count: 5, data: null, error: null });
+    mockExistingDatesIn.mockResolvedValue({ data: [], error: null });
+    mockExistingDatesEq.mockReturnValue({ in: mockExistingDatesIn });
 
     // Setup standard mock behavior
     mockFrom.mockImplementation((table: string) => {
       if (table === "local_coding_api_keys") {
         return {
           select: vi.fn().mockReturnValue({
-            or: mockKeyLookupOr,
+            eq: mockKeyLookupEq,
           }),
           update: vi.fn().mockReturnValue({
-            or: mockUpdateOr,
+            eq: mockUpdateEq,
           }),
         };
       }
       if (table === "local_coding_sessions") {
         return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ count: 5, data: null, error: null }),
+          select: vi.fn((_columns: string, options?: { count?: string; head?: boolean }) => {
+            if (options?.count) {
+              return { eq: mockSessionCountEq };
+            }
+            return { eq: mockExistingDatesEq };
           }),
         };
       }
@@ -165,7 +174,7 @@ describe("Local Coding Sync POST API Endpoint", () => {
       if (table === "local_coding_api_keys") {
         return {
           select: vi.fn().mockReturnValue({
-            or: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
               single: mockSingle.mockResolvedValue({
                 data: { user_id: "test-user-id" },
                 error: null,
@@ -173,14 +182,21 @@ describe("Local Coding Sync POST API Endpoint", () => {
             }),
           }),
           update: vi.fn().mockReturnValue({
-            or: vi.fn().mockResolvedValue({ error: null }),
+            eq: vi.fn().mockResolvedValue({ error: null }),
           }),
         };
       }
       if (table === "local_coding_sessions") {
         return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ count: 360, data: null, error: null }),
+          select: vi.fn((_columns: string, options?: { count?: string; head?: boolean }) => {
+            if (options?.count) {
+              return { eq: vi.fn().mockResolvedValue({ count: 360, data: null, error: null }) };
+            }
+            return {
+              eq: vi.fn().mockReturnValue({
+                in: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            };
           }),
         };
       }
@@ -206,6 +222,42 @@ describe("Local Coding Sync POST API Endpoint", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("Session limit reached");
+  });
+
+  it("allows near-limit resyncs when incoming dates already exist", async () => {
+    const existingDates = Array.from({ length: 10 }, (_, i) => `2026-05-${10 + i}`);
+
+    mockSessionCountEq.mockResolvedValue({ count: 360, data: null, error: null });
+    mockExistingDatesIn.mockResolvedValue({
+      data: existingDates.map((date) => ({ date })),
+      error: null,
+    });
+
+    const sessions = existingDates.map((date) => ({
+      date,
+      totalSeconds: 100,
+    }));
+    const req = new NextRequest("http://localhost/api/local-coding/sync", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer test-key",
+      },
+      body: JSON.stringify({ sessions }),
+    });
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(mockExistingDatesIn).toHaveBeenCalledWith("date", existingDates);
+    expect(mockRpc).toHaveBeenCalledWith("batch_upsert_sessions", {
+      sessions: existingDates.map((date) => ({
+        user_id: "test-user-id",
+        date,
+        total_seconds: 100,
+        file_count: 0,
+        project_count: 0,
+      })),
+    });
   });
 
   it("successfully syncs sessions via batch_upsert_sessions RPC", async () => {
@@ -240,7 +292,7 @@ describe("Local Coding Sync POST API Endpoint", () => {
     });
   });
 
-  it("authenticates against both api_key_hash and legacy api_key columns", async () => {
+  it("authenticates only against api_key_hash -- no fallback to api_key column", async () => {
     const sessions = [{ date: "2026-05-27", totalSeconds: 3600, fileCount: 2, projectCount: 1 }];
     const req = new NextRequest("http://localhost/api/local-coding/sync", {
       method: "POST",
@@ -252,11 +304,10 @@ describe("Local Coding Sync POST API Endpoint", () => {
 
     const res = await POST(req);
     const keyHash = createHash("sha256").update("test-key").digest("hex");
-    const expectedFilter = `api_key_hash.eq.${keyHash},api_key.eq.${keyHash}`;
 
     expect(res.status).toBe(200);
-    expect(mockKeyLookupOr).toHaveBeenCalledWith(expectedFilter);
-    expect(mockUpdateOr).toHaveBeenCalledWith(expectedFilter);
+    expect(mockKeyLookupEq).toHaveBeenCalledWith("api_key_hash", keyHash);
+    expect(mockUpdateEq).toHaveBeenCalledWith("api_key_hash", keyHash);
   });
 
   it("returns 500 error if batch_upsert_sessions RPC fails", async () => {

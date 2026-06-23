@@ -22,8 +22,7 @@ export default function UserAvatar() {
       aria-label={`Open GitHub profile for ${name}`}
       target="_blank"
       rel="noopener noreferrer"
-      tabIndex={0}
-      className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 text-sm text-[var(--card-foreground)] hover:bg-[var(--control)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+      className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 text-sm text-[var(--card-foreground)] hover:bg-[var(--control)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
     >
       <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[var(--control)] text-sm font-semibold text-[var(--card-foreground)]">
         {showImage ? (

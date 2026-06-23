@@ -43,6 +43,15 @@ export function scoreDaysSinceLastCommit(days: number): number {
   return clamp(normalized, 0, 1) * 15;
 }
 
+export function scoreContributorActivity(contributors: number): number {
+  // 10+ contributors => full 10 points
+  return clamp(contributors / 10, 0, 1) * 10;
+}
+
+export function scoreDocumentationQuality(docScore: number): number {
+  // documentationScore already ranges from 0-100
+  return clamp(docScore / 100, 0, 1) * 10;
+}
 export function gradeForScore(score: number): RepoHealthScore["grade"] {
   if (score >= 70) return "green";
   if (score >= 40) return "yellow";
@@ -54,12 +63,14 @@ export function computeHealthScore(
   signals: RepoHealthSignals
 ): RepoHealthScore {
   const score =
-    scoreCommitFrequency(signals.commitFrequency) +
-    scorePrMergeRate(signals.prMergeRate) +
-    scoreAvgPrOpenTimeHours(signals.avgPrOpenTimeHours) +
-    scoreOpenIssuesCount(signals.openIssuesCount) +
-    scoreDaysSinceLastCommit(signals.daysSinceLastCommit);
-
+    scoreCommitFrequency(signals.commitFrequency) * 0.8 +
+    scorePrMergeRate(signals.prMergeRate) * 0.8 +
+    scoreAvgPrOpenTimeHours(signals.avgPrOpenTimeHours) * 0.8 +
+    scoreOpenIssuesCount(signals.openIssuesCount) * 0.8 +
+    scoreDaysSinceLastCommit(signals.daysSinceLastCommit) * 0.8 +
+    scoreContributorActivity(signals.contributorCount) +
+    scoreDocumentationQuality(signals.documentationScore);
+    
   const rounded = Math.round(score);
   const clampedScore = clamp(rounded, 0, 100);
 

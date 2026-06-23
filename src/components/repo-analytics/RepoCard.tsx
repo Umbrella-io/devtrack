@@ -8,11 +8,12 @@ import {
   XAxis,
 } from "recharts";
 
-import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
+import { ExplorerRepoCardData } from "@/lib/repo-analytics-types";
 import {
   formatRelativeDate,
   formatDate,
-} from "@/lib/repoAnalyticsUtils";
+} from "@/lib/date-utils";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 interface RepoCardProps {
   repo: ExplorerRepoCardData;
@@ -31,7 +32,7 @@ export default function RepoCard({
 
   return (
     <article
-      className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm backdrop-blur-xl animate-slide-up"
+      className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm backdrop-blur-xl animate-slide-up transition-all duration-300 hover:shadow-md hover:-translate-y-1"
     >
       {/* Border Glow */}
       <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-[var(--border)]" />
@@ -140,18 +141,17 @@ export default function RepoCard({
             href={repo.htmlUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm font-medium text-[var(--card-foreground)] transition hover:bg-[color:color-mix(in_srgb,var(--card)_80%,var(--accent)_20%)]"
+            className={buttonVariants({ variant: "outline" })}
           >
             Repo
           </a>
 
-          <button
-            type="button"
+          <Button
+            variant="outline"
             onClick={() => onViewAnalytics(repo)}
-            className="flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm font-medium text-[var(--card-foreground)] transition hover:bg-[color:color-mix(in_srgb,var(--card)_80%,var(--accent)_20%)]"
           >
             View
-          </button>
+          </Button>
         </div>
       </div>
     </article>

@@ -4,7 +4,7 @@ import {
   dateDiffDays,
   getThisWeekRange,
   getLastWeekRange,
-} from "../src/lib/dateUtils";
+} from "../src/lib/date-utils";
 
 // 每个测试后恢复真实时间
 afterEach(() => {
@@ -13,18 +13,18 @@ afterEach(() => {
 
 describe("toDateStr", () => {
   it("should convert a Date to ISO date string (YYYY-MM-DD)", () => {
-    const date = new Date("2024-03-15T12:30:00Z");
+    const date = new Date(Date.UTC(2024, 2, 15, 12, 30, 0)); // UTC Date
     expect(toDateStr(date)).toBe("2024-03-15");
   });
 
   it("should handle end-of-year boundary", () => {
-    const newYear = new Date("2023-12-31T23:59:59Z");
+    const newYear = new Date(Date.UTC(2023, 11, 31, 23, 59, 59)); // UTC Date
     expect(toDateStr(newYear)).toBe("2023-12-31");
   });
 
-  it("should produce UTC date (not locale)", () => {
-    const date = new Date(Date.UTC(2024, 0, 1, 1, 0, 0));
-    expect(toDateStr(date)).toBe("2024-01-01");
+  it("should format single-digit months/days with zero padding", () => {
+    const date = new Date(Date.UTC(2024, 0, 9)); // UTC Jan 9
+    expect(toDateStr(date)).toBe("2024-01-09");
   });
 });
 

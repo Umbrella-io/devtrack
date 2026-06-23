@@ -1,6 +1,7 @@
 export function stripHtml(value: string): string {
   return value
-    .replace(/<[^>]*>/g, "")
+    .normalize("NFKC")
+    // Decode entities first so entity-encoded tags are also stripped below
     .replace(/&(?:lt|gt|amp|quot|#x27|#39);/gi, (m) => {
       const map: Record<string, string> = {
         "&lt;": "<",
@@ -12,6 +13,7 @@ export function stripHtml(value: string): string {
       };
       return map[m] ?? m;
     })
+    .replace(/<[^>]*>/g, "")
     .trim();
 }
 

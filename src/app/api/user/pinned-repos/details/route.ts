@@ -19,7 +19,18 @@ export async function GET() {
       .eq("github_id", session.githubId)
       .single();
 
-    if (error || !userRow) {
+    if (error) {
+      if (error.code === "PGRST116") {
+        return Response.json({ pinnedRepos: [] });
+      }
+      console.error("Failed to fetch pinned repos from database:", error);
+      return Response.json(
+        { error: "Failed to load pinned repositories" },
+        { status: 500 }
+      );
+    }
+
+    if (!userRow) {
       return Response.json({ pinnedRepos: [] });
     }
 
