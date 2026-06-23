@@ -11,7 +11,7 @@ import MilestonePlanner from "@/components/MilestonePlanner";
 import LazyWidget from "@/components/LazyWidget";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
-import GoalTracker from "@/components/GoalTracker";
+
 import TodayFocusHero from "@/components/TodayFocusHero";
 import DashboardHeader from "@/components/DashboardHeader";
 import ExportButton from "@/components/ExportButton";
