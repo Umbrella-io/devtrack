@@ -8,7 +8,7 @@ import ContributionGraph from "@/components/ContributionGraph";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PRMetrics from "@/components/PRMetrics";
 import PRBreakdownChart from "@/components/PRBreakdownChart";
-import GoalTracker from "@/components/GoalTracker";
+import GoalsSection from "@/components/goals/GoalsSection";
 import DashboardHeader from "@/components/DashboardHeader";
 import StreakTracker from "@/components/StreakTracker";
 import TopRepos from "@/components/TopRepos";
@@ -144,7 +144,7 @@ function DashboardWidgets() { return (
 
         <LazyWidget fallback={<Skeleton className="h-48 w-full" />}>
           <WidgetErrorBoundary>
-            <GoalTracker />
+            <GoalsSection />
           </WidgetErrorBoundary>
         </LazyWidget>
       </div>
