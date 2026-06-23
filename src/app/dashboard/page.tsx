@@ -62,6 +62,11 @@ const CodingActivityInsightsCard = dynamic(
   { loading: () => <SkeletonCard /> },
 );
 
+const WeeklyCodingInsightsCard = dynamic(
+  () => import("@/components/WeeklyCodingInsightsCard"),
+  { loading: () => <SkeletonCard /> },
+);
+
 const ActivityRingChart = dynamic(
   () => import("@/components/ActivityRingChart"),
   { loading: () => <SkeletonCard /> },
@@ -169,6 +174,13 @@ export default async function DashboardPage() {
           {/* Today Focus Section */}
           <section className="mt-10 mb-10">
             <TodayFocusHero userName={session.user?.name ?? null} />
+          </section>
+
+          {/* Weekly Coding Insights */}
+          <section className="mb-10" data-export-id="weekly-coding-insights">
+            <LazyWidget fallback={<SkeletonCard />}>
+              <WeeklyCodingInsightsCard />
+            </LazyWidget>
           </section>
 
           {/* Featured Section */}
