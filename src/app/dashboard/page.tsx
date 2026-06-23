@@ -129,7 +129,7 @@ export default async function DashboardPage() {
   return (
     <DashboardSSEProvider>
       <DashboardWidgetA11yProvider>
-        <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
+        <div id="dashboard-content" className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
           <DashboardHeader />
 
           {/* Quick actions */}
@@ -201,13 +201,12 @@ export default async function DashboardPage() {
                   failedGoals: 1
                 }} 
               />
-              <StreakTracker />
+              <div data-export-id="streak-tracker"><StreakTracker /></div>
               <LocalCodingTime />
               <CodingTimeWidget />
             </div>
 
-          {/* Repo analytics explorer — full width */}
-          <div className="mt-6">
+          <div className="mt-6" data-export-id="repo-analytics">
             <LazyWidget fallback={<SkeletonCard />}>
               <RepoAnalyticsExplorer />
             </LazyWidget>
@@ -215,8 +214,8 @@ export default async function DashboardPage() {
 
           {/* -- Row 2: PR metrics + Community metrics -- */}
           <div id="pull-requests" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 md:grid-cols-2">
-            <PRMetrics />
-            <CommunityMetrics />
+            <div data-export-id="pr-metrics"><PRMetrics /></div>
+            <div data-export-id="community-metrics"><CommunityMetrics /></div>
           </div>
 
           {/* PR breakdown + commit time — 2-col so charts have room */}
@@ -230,14 +229,14 @@ export default async function DashboardPage() {
           </div>
 
           {/* Activity ring — full width */}
-          <div className="mt-6">
+          <div className="mt-6" data-export-id="activity-ring">
             <LazyWidget fallback={<SkeletonCard />}>
               <ActivityRingChart />
             </LazyWidget>
           </div>
 
           {/* Coding activity insights — full width */}
-          <div className="mt-6">
+          <div className="mt-6" data-export-id="coding-insights">
             <LazyWidget fallback={<SkeletonCard />}>
               <CodingActivityInsightsCard />
             </LazyWidget>
