@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import RepoCard from "./RepoCard";
 import RepoAnalyticsSheet from "./RepoAnalyticsSheet";
 import { ExplorerRepoCardData } from "@/lib/repo-analytics-types";
+import { useFavorites } from "@/hooks/useFavorites";
 
 export default function RepoGrid({ repos }: { repos: ExplorerRepoCardData[] }) {
+  const { isFavorite, toggleFavorite } = useFavorites();
   const PAGE_SIZE = 3;
   const [query, setQuery] = useState("");
   const [languageFilter, setLanguageFilter] = useState("all");
@@ -48,7 +50,15 @@ export default function RepoGrid({ repos }: { repos: ExplorerRepoCardData[] }) {
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--card-muted)] p-6 text-center text-sm text-[var(--muted-foreground)]">No repositories found for this filter.</div>
       ) : (
         <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {pageRepos.map((repo) => <RepoCard key={repo.id} repo={repo} onViewAnalytics={setSelectedRepo} />)}
+          {pageRepos.map((repo) => (
+            <RepoCard
+              key={repo.id}
+              repo={repo}
+              onViewAnalytics={setSelectedRepo}
+              isFavorite={isFavorite(repo.fullName)}
+              onToggleFavorite={toggleFavorite}
+            />
+          ))}
         </div>
       )}
 

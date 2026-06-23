@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import RepoCard from "./RepoCard";
 import RepoAnalyticsSheet from "./RepoAnalyticsSheet";
 import { ExplorerRepoCardData } from "@/lib/repo-analytics-types";
+import { useFavorites } from "@/hooks/useFavorites";
 
 export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] }) {
+  const { isFavorite, toggleFavorite } = useFavorites();
   const PAGE_SIZE = 3;
   const [page, setPage] = useState(1);
   const [selectedRepo, setSelectedRepo] = useState<ExplorerRepoCardData | null>(null);
@@ -134,7 +136,12 @@ export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] 
               className="fade-up transition-all duration-500 hover:-translate-y-1.5"
               style={{ animationDelay: `${idx * 75}ms` }}
             >
-              <RepoCard repo={repo} onViewAnalytics={setSelectedRepo} />
+              <RepoCard
+                repo={repo}
+                onViewAnalytics={setSelectedRepo}
+                isFavorite={isFavorite(repo.fullName)}
+                onToggleFavorite={toggleFavorite}
+              />
             </div>
           ))}
         </div>

@@ -14,15 +14,20 @@ import {
   formatDate,
 } from "@/lib/date-utils";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Star } from "lucide-react";
 
 interface RepoCardProps {
   repo: ExplorerRepoCardData;
   onViewAnalytics: (repo: ExplorerRepoCardData) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (repoFullName: string) => void;
 }
 
 export default function RepoCard({
   repo,
   onViewAnalytics,
+  isFavorite = false,
+  onToggleFavorite,
 }: RepoCardProps) {
   const activityData = Array.isArray(repo.activity7d) ? repo.activity7d : [];
   const activeDays = activityData.filter((day) => day.commits > 0).length;
@@ -40,10 +45,33 @@ export default function RepoCard({
       <div className="relative flex flex-col gap-5">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h3 className="truncate text-lg font-semibold tracking-tight text-[var(--card-foreground)]">
-              {repo.name}
-            </h3>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="truncate text-lg font-semibold tracking-tight text-[var(--card-foreground)]">
+                {repo.name}
+              </h3>
+              {onToggleFavorite && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite(repo.fullName);
+                  }}
+                  className="p-1 hover:bg-[var(--card-muted)] rounded-md transition-all duration-200 shrink-0 active:scale-95"
+                  title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+                  aria-label={isFavorite ? `Remove ${repo.name} from favorites` : `Favorite ${repo.name}`}
+                >
+                  <Star
+                    size={16}
+                    className={`transition-colors duration-200 ${
+                      isFavorite
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "text-[var(--muted-foreground)] hover:text-yellow-400"
+                    }`}
+                  />
+                </button>
+              )}
+            </div>
 
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--muted-foreground)]">
               <span className="rounded-full border border-[var(--border)] bg-[var(--control)] px-2.5 py-1">
