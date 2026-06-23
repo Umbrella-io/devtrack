@@ -79,6 +79,7 @@
 - [Built With](#built-with)
 - [Sponsors](#sponsors)
 - [License](#license)
+- [Maintainers](#maintainers)
 - [Contributors](#contributors)
 
 ---
@@ -516,6 +517,15 @@ All contributors are expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.
 ## License
 
 MIT — see [LICENSE](./LICENSE) for details.
+
+---
+
+## Maintainers
+
+| Name | GitHub | Role |
+|---|---|---|
+| Priyanshu Doshi | [@Priyanshu-byte-coder](https://github.com/Priyanshu-byte-coder) | Founder & Maintainer |
+| Saahil Doshi | [@Legit-Ox](https://github.com/Legit-Ox) | Maintainer |
 
 ---
 
