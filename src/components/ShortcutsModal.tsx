@@ -13,8 +13,12 @@ interface ShortcutItem {
   action: string;
 }
 
+// Use a sentinel value so the renderer can substitute the correct
+// platform-specific label (Mac: Cmd, Windows/Linux: Ctrl).
+const THEME_SHORTCUT_SENTINEL = "__THEME__";
+
 const SHORTCUTS: ShortcutItem[] = [
-  { key: "Alt + T", action: "Toggle theme" },
+  { key: THEME_SHORTCUT_SENTINEL, action: "Toggle theme" },
   { key: "B", action: "Toggle chart" },
   { key: "R", action: "Reload data" },
   { key: "G + D", action: "Go to Dashboard" },
@@ -175,7 +179,11 @@ export default function ShortcutsModal({
               {item.action}
             </span>
             <kbd className="min-w-[28px] rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-center text-xs font-semibold text-[var(--card-foreground)] shadow-sm">
-              {item.key === "T" ? (isMac ? "Option + T" : "Alt + T") : item.key}
+              {item.key === THEME_SHORTCUT_SENTINEL
+                ? isMac
+                  ? "⌘ Shift T / ⌥ T"
+                  : "Ctrl Shift T / Alt T"
+                : item.key}
             </kbd>
           </div>
         ))}
