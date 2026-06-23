@@ -1,4 +1,5 @@
 import StreakTracker from "@/components/StreakTracker";
+import WeeklyProductivitySummary from "@/components/dashboard/WeeklyProductivitySummary";
 import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
 import PinnedReposWidget from "@/components/PinnedReposWidget";
 import InactiveRepositoriesCard from "@/components/InactiveRepositoriesCard";
@@ -170,6 +171,8 @@ export default async function DashboardPage() {
           <section className="mt-10 mb-10">
             <TodayFocusHero userName={session.user?.name ?? null} />
           </section>
+
+          <WeeklyProductivitySummary />
 
           {/* Featured Section */}
           <section className="mt-10 mb-12">
