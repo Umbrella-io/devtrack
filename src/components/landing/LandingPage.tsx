@@ -574,7 +574,7 @@ function HeroSection() {
 
         {/* Tagline */}
         <p style={{
-          fontSize: 'clamp(16px,2vw,18px)', color: 'var(--foreground)',
+          fontSize: 'clamp(16px,2vw,18px)', color: 'var(--muted-foreground)',
           lineHeight: 1.6, maxWidth: 420, margin: '0 0 40px',
           fontWeight: 400, letterSpacing: '0.01em', opacity: 0.85,
         }}>
@@ -780,7 +780,7 @@ function AboutSection() {
           transform: vis ? 'translateY(0)' : 'translateY(18px)',
           transition: 'opacity 0.6s ease, transform 0.6s ease',
         }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
             ABOUT DEVTRACK
           </div>
           <h2
@@ -824,15 +824,15 @@ function HeatmapSection() {
   return (
     <section ref={ref} style={{ padding: '64px clamp(20px,4vw,48px)', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--foreground)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           52 weeks of contributions
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted-foreground)' }}>less</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--foreground)' }}>less</span>
           {HC.map((c, i) => (
             <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: c, border: `1px solid ${BORDER}` }} />
           ))}
-          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted-foreground)' }}>more</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--foreground)' }}>more</span>
         </div>
       </div>
       <div style={{
@@ -1137,7 +1137,7 @@ function WhyDevTrackSection() {
               <p
                 style={{
                   color: MUTED,
-                  fontSize: 14,
+                  fontSize: 15,
                   lineHeight: 1.6,
                 }}
               >
@@ -1252,7 +1252,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
       }}
     >
       {/* Label */}
-      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
         OPEN SOURCE
       </div>
 
@@ -1266,7 +1266,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#94a3b8', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted-foreground)', letterSpacing: '0.1em', marginBottom: 10 }}>
               {s.icon} {s.label}
             </div>
             <div style={{
@@ -1402,7 +1402,7 @@ function LandingFooter() {
         justifyContent: 'space-between', alignItems: 'center',
       }}
     >
-      <span style={{ fontFamily: MONO, fontSize: 11, color: MUTED }}>
+      <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted-foreground)' }}>
         © {new Date().getFullYear()} DEVTRACK
       </span>
       <div style={{ display: 'flex', gap: 20 }}>
