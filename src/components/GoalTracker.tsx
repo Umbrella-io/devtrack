@@ -96,7 +96,7 @@ export function useGoalTracker() {
             "GitHub sync failed: Expired token or missing repo scope."
           );
         } else {
-          setSyncError(errData.error ?? "Sync failed. Please try again.");
+          setSyncError(msg);
         }
         return;
       }

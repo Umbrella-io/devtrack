@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import { DEFAULT_WIDGET_PREFS } from "@/lib/widget-prefs";
 import CommitHeatmap from "@/components/CommitHeatmap";
 import {
   closestCenter,
@@ -213,6 +214,11 @@ const SponsorAnalytics = dynamic(
   { ssr: false, loading: () => <SkeletonCard /> },
 );
 
+const AchievementBadges = dynamic(
+  () => import("@/components/AchievementBadges"),
+  { ssr: false, loading: () => <SkeletonCard /> },
+);
+
 const SECTION_ANCHOR_IDS: Record<DashboardSectionId, string> = {
   overview: "overview",
   activity: "streaks",
@@ -232,6 +238,18 @@ const SECTION_GRID_CLASSES: Record<DashboardSectionId, string> = {
   activity: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full",
   analytics: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 w-full",
   goals: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full",
+};
+
+const WIDGET_ID_TO_PREF: Partial<Record<DashboardWidgetId, string>> = {
+  "contribution-graph": "contributionGraph",
+  "streak-tracker": "streakTracker",
+  "pr-metrics": "prMetrics",
+  "top-repos": "topRepos",
+  "language-breakdown": "languageBreakdown",
+  "goal-tracker": "goals",
+  "ci-analytics": "ciAnalytics",
+  "issue-metrics": "issuesTracker",
+  "friend-comparison": "friendComparison",
 };
 
 const WIDGET_SPAN_CLASSES: Partial<Record<DashboardWidgetId, string>> = {
@@ -460,6 +478,13 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
         </WidgetErrorBoundary>
       );
 
+    case "devtrack-badges":
+      return (
+        <LazyWidget fallback={<SkeletonCard />}>
+          <AchievementBadges />
+        </LazyWidget>
+      );
+
     default:
       return null;
   }
@@ -472,6 +497,7 @@ export default function CustomizableDashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [hasLoadedRemoteLayout, setHasLoadedRemoteLayout] = useState(false);
+  const [widgetPrefs, setWidgetPrefs] = useState<Record<string, boolean>>({ ...DEFAULT_WIDGET_PREFS });
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -543,6 +569,17 @@ export default function CustomizableDashboard() {
       JSON.stringify(layout),
     );
   }, [isHydrated, layout]);
+
+  useEffect(() => {
+    fetch("/api/user/settings")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.user_widget_prefs && typeof data.user_widget_prefs === "object") {
+          setWidgetPrefs({ ...DEFAULT_WIDGET_PREFS, ...data.user_widget_prefs });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const visibleWidgetCount = useMemo(
     () =>
@@ -677,7 +714,10 @@ export default function CustomizableDashboard() {
                 strategy={rectSortingStrategy}
               >
                 <div className={`${SECTION_GRID_CLASSES[sectionId]} auto-rows-max`}>
-                  {sectionWidgets.map((widgetId) => (
+                  {sectionWidgets.filter((widgetId) => {
+                    const prefKey = WIDGET_ID_TO_PREF[widgetId];
+                    return !prefKey || widgetPrefs[prefKey] !== false;
+                  }).map((widgetId) => (
                     <SortableDashboardWidget
                       key={widgetId}
                       id={widgetId}

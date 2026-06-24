@@ -402,11 +402,11 @@ export async function GET(req: NextRequest) {
 
   if (accountId && accountId.startsWith("org:")) {
     const parts = accountId.split(":");
-    targetAccountId = parts[1];
-    orgName = parts[2];
-    if (!targetAccountId || !orgName) {
-      return Response.json({ error: "Invalid organization account ID" }, { status: 400 });
+    orgName = parts[1] || null;
+    if (!orgName) {
+      return Response.json({ error: "Invalid org parameter" }, { status: 400 });
     }
+    targetAccountId = null;
   }
 
   // Load excluded organizations config

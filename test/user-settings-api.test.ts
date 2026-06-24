@@ -158,6 +158,17 @@ describe("User Settings API Endpoints", () => {
         discord_muted_until: null,
         preferred_locale: "en",
         public_widgets: ["streak", "contributions"],
+        user_widget_prefs: {
+          contributionGraph: true,
+          streakTracker: true,
+          prMetrics: true,
+          topRepos: true,
+          languageBreakdown: true,
+          goals: true,
+          ciAnalytics: true,
+          issuesTracker: true,
+          friendComparison: true,
+        },
       });
     });
   });
@@ -249,8 +260,19 @@ describe("User Settings API Endpoints", () => {
         discord_muted_until: null,
         preferred_locale: "en",
         public_widgets: ["streak", "contributions"],
+        user_widget_prefs: {
+          contributionGraph: true,
+          streakTracker: true,
+          prMetrics: true,
+          topRepos: true,
+          languageBreakdown: true,
+          goals: true,
+          ciAnalytics: true,
+          issuesTracker: true,
+          friendComparison: true,
+        },
       });
-      
+
       // Verify that no database updates were triggered (mockUpdate not called because updates is empty)
       expect(mockUpdate).not.toHaveBeenCalled();
     });
@@ -282,6 +304,17 @@ describe("User Settings API Endpoints", () => {
         discord_muted_until: null,
         preferred_locale: "en",
         public_widgets: ["streak", "contributions"],
+        user_widget_prefs: {
+          contributionGraph: true,
+          streakTracker: true,
+          prMetrics: true,
+          topRepos: true,
+          languageBreakdown: true,
+          goals: true,
+          ciAnalytics: true,
+          issuesTracker: true,
+          friendComparison: true,
+        },
       });
       
       expect(mockUpdate).toHaveBeenCalledWith({

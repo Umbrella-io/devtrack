@@ -59,7 +59,7 @@ vi.mock("@anthropic-ai/sdk", () => {
   }
 
   const MockAnthropic = vi.fn(
-    () => ({ messages: { create: messagesCreate } })
+    function() { return { messages: { create: messagesCreate } }; }
   ) as unknown as (new () => object) & { APIError: typeof FakeAPIError };
   MockAnthropic.APIError = FakeAPIError;
 
