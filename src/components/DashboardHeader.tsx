@@ -16,6 +16,7 @@ import SignOutButton from "@/components/SignOutButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
+import SyncButton from "@/components/SyncButton";
 
 type DashboardSyncContextValue = {
   lastSynced: Date | null;
@@ -93,20 +94,21 @@ export default function DashboardHeader() {
   useEffect(() => {
     const computeCurrentGreeting = () => {
       const currentHour = new Date().getHours();
-      
+
       if (currentHour >= 5 && currentHour < 12) {
-        return "Good morning ☀️";
+        return "Good morning \u2600\ufe0f";
       } else if (currentHour >= 12 && currentHour < 17) {
-        return "Good afternoon 🌤️";
+        return "Good afternoon \uD83C\uDF24\uFE0F";
       } else if (currentHour >= 17 && currentHour < 22) {
-        return "Good evening 🌙";
+        return "Good evening \uD83C\uDF19";
       } else {
-        return "Burning the midnight oil 🦉";
+        return "Burning the midnight oil \uD83E\uDD89";
       }
     };
 
     setGreeting(computeCurrentGreeting());
   }, []);
+
   const { lastSynced } = useDashboardSync();
   const [now, setNow] = useState(() => Date.now());
 
@@ -136,7 +138,9 @@ export default function DashboardHeader() {
   }, [session]);
 
   // Extract a fallback username parameter from active session data strings
-  const displayName = session?.user?.name || session?.githubLogin || "Developer";
+  const displayName =
+    session?.user?.name || session?.githubLogin || "Developer";
+
   useEffect(() => {
     if (!lastSynced) return;
 
@@ -181,7 +185,9 @@ export default function DashboardHeader() {
           </p>
           {minutesAgo !== null && (
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-              {minutesAgo <= 0 ? "Synced just now" : `Synced ${minutesAgo} min ago`}
+              {minutesAgo <= 0
+                ? "Synced just now"
+                : `Synced ${minutesAgo} min ago`}
             </p>
           )}
         </div>
@@ -200,6 +206,9 @@ export default function DashboardHeader() {
                 Share Profile
               </a>
             )}
+
+            {/* Sync Data button — issue #2406 */}
+            <SyncButton />
 
             <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
               <div className="transition-transform duration-200 hover:scale-[1.05]">
