@@ -99,8 +99,12 @@ const ABOUT_HIGHLIGHTS: Array<{
    ═══════════════════════════════════════════════════════════ */
 function useScrollReveal(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
-  const [vis, setVis] = useState(false);
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [vis, setVis] = useState(prefersReducedMotion);
   useEffect(() => {
+    if (prefersReducedMotion) return;
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver(
@@ -111,7 +115,7 @@ function useScrollReveal(threshold = 0.15) {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [threshold]);
+  }, [threshold, prefersReducedMotion]);
   return [ref, vis] as const;
 }
 

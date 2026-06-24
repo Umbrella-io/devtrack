@@ -716,6 +716,26 @@ body {
   .hover\:-translate-y-1:hover {
     transform: none !important;
   }
+
+  .primary-button:hover,
+  .secondary-button:hover {
+    transform: none !important;
+  }
+
+  .lnd-cta-primary:hover,
+  .lnd-cta-primary:active,
+  .lnd-cta-secondary:hover {
+    transform: none !important;
+  }
+
+  .lnd-ticker {
+    transform: none !important;
+  }
+
+  .skeleton-shimmer,
+  .animate-shimmer {
+    animation: none !important;
+  }
 }
 
 @keyframes shimmer {
