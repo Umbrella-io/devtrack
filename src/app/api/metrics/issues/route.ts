@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerSession, type Session } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { fetchIssuesMetrics } from "@/lib/github";
@@ -117,10 +117,10 @@ export async function GET(req: NextRequest) {
   }
 }
 async function getCombinedIssuesMetrics(
-  session: { accessToken: string; githubId?: string | null; githubLogin: string },
+  session: Session,
   req: NextRequest
 ) {
-  if (!session.githubId) {
+  if (!session.githubId || !session.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 import EmptyState from "@/components/EmptyState";
 import LeaderboardFilters from "@/components/leaderboard/LeaderboardFilters";
-import LeaderboardSkeleton from "@/components/leaderboard/LeaderboardSkeleton";
+import LeaderboardSkeleton from "@/app/leaderboard/LeaderboardSkeleton";
 import SponsorBadge from "@/components/SponsorBadge";
 import { getLeaderboardData, filterLeaderboardByLanguage, type LeaderboardPayload } from "@/lib/leaderboard";
 
