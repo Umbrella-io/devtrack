@@ -1,5 +1,4 @@
 "use client";
-
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import PRStatusDonutChart from "./PRStatusDonutChart";
@@ -138,7 +137,18 @@ export default function PRMetrics() {
               />
             ))}
           </div>
+ HEAD
           <div className="h-[324px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
+
+ HEAD
+          <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
+          <div
+            className="h-[220px] rounded-lg bg-[var(--card-muted)] animate-pulse"
+            aria-hidden="true"
+          />
+
+          <div className="h-[324px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
+ d4871b4 (Adjust dashboard skeleton 5ffa832 (Adjust dashboard skeleton heights)
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
