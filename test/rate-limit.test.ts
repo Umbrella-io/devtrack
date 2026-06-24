@@ -17,7 +17,7 @@ describe("getClientIp", () => {
       headers: {
         get: (name: string): string | undefined => headers[name] ?? undefined,
       },
-    };
+    } as Parameters<typeof getClientIp>[0];
   }
 
   it("prefers cf-connecting-ip", () => {
@@ -51,7 +51,7 @@ describe("createMemoryFixedWindowRateLimiter", () => {
   let now: number;
 
   beforeEach(() => {
-    now = 1_700_000_000_000; // fixed timestamp
+    now = 1_700_000_000_000;
     vi.spyOn(Date, "now").mockReturnValue(now);
     limiter = createMemoryFixedWindowRateLimiter({ windowMs: 60_000 });
   });
@@ -89,7 +89,7 @@ describe("createMemoryFixedWindowRateLimiter", () => {
 
   it("resets the window after the expiry period", () => {
     for (let i = 0; i < 5; i++) limiter.check("client-a", 5);
-    advance(60_000); // past the window
+    advance(60_000);
     const result = limiter.check("client-a", 5);
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(4);
@@ -98,8 +98,8 @@ describe("createMemoryFixedWindowRateLimiter", () => {
   it("maintains independent buckets per key", () => {
     limiter.check("client-a", 5);
     limiter.check("client-a", 5);
-    limiter.check("client-a", 5); // 3 used
-    const b = limiter.check("client-b", 5); // fresh key
+    limiter.check("client-a", 5);
+    const b = limiter.check("client-b", 5);
     expect(b.allowed).toBe(true);
     expect(b.remaining).toBe(4);
   });
