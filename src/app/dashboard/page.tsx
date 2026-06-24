@@ -1,18 +1,11 @@
-import StreakTracker from "@/components/StreakTracker";
-import RepoAnalyticsExplorer from "@/components/repo-analytics/RepoAnalyticsExplorer";
-import dynamic from "next/dynamic";
 import StreakAtRiskBanner from "@/components/StreakAtRiskBanner";
 import ThrottleBanner from "@/components/ThrottleBanner";
 import CustomizableDashboard from "@/components/dashboard/CustomizableDashboard";
 import MilestonePlanner from "@/components/MilestonePlanner";
-import LazyWidget from "@/components/LazyWidget";
-import CommunityMetrics from "@/components/CommunityMetrics";
 import TodayFocusHero from "@/components/TodayFocusHero";
 import DashboardHeader from "@/components/DashboardHeader";
 import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
-import LocalCodingTime from "@/components/LocalCodingTime";
-import CodingTimeWidget from "@/components/CodingTimeWidget";
 import { ChevronRight } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
@@ -22,54 +15,6 @@ import { redirect } from "next/navigation";
 import DashboardSSEProvider from "@/components/DashboardSSEProvider";
 import { DashboardWidgetA11yProvider } from "@/components/dashboard/DashboardWidgetA11yContext";
 import RoastHypeWidget from "./RoastHypeWidget";
-
-const SkeletonCard = () => (
-  <div
-    role="status"
-    aria-busy="true"
-    aria-live="polite"
-    className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
-  >
-    <div className="h-6 w-48 bg-[var(--card-muted)] rounded mb-4 animate-pulse" />
-    <div className="h-40 bg-[var(--card-muted)] rounded animate-pulse" />
-  </div>
-);
-
-const PRMetricsSkeleton = () => (
-  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-    <h2 className="text-lg font-semibold text-[var(--card-foreground)]">PR Analytics</h2>
-    <div className="mt-3 h-40 rounded bg-[var(--card-muted)] animate-pulse" />
-  </div>
-);
-
-const CodingActivityInsightsCard = dynamic(
-  () => import("@/components/CodingActivityInsightsCard"),
-  { loading: () => <SkeletonCard /> },
-);
-
-const ActivityRingChart = dynamic(
-  () => import("@/components/ActivityRingChart"),
-  { loading: () => <SkeletonCard /> },
-);
-
-const PRMetrics = dynamic(() => import("@/components/PRMetrics"), {
-  loading: () => <PRMetricsSkeleton />,
-});
-
-const PRBreakdownChart = dynamic(
-  () => import("@/components/PRBreakdownChart"),
-  { loading: () => <SkeletonCard /> },
-);
-
-const CommitTimeChart = dynamic(
-  () => import("@/components/CommitTimeChart"),
-  { loading: () => <SkeletonCard /> },
-);
-
-const PRReviewTrendChart = dynamic(
-  () => import("@/components/PRReviewTrendChart"),
-  { loading: () => <SkeletonCard /> },
-);
 
 export default async function DashboardPage() {
   // In the production standalone Playwright build, getServerSession can fail to
@@ -166,56 +111,20 @@ export default async function DashboardPage() {
               </div>
             </section>
 
-            {/* Main content + sidebar */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
-              {/* Left: main widgets */}
-              <div className="space-y-8">
-                <LazyWidget fallback={<SkeletonCard />}>
-                  <RepoAnalyticsExplorer />
-                </LazyWidget>
+            {/* Roast/Hype Widget */}
+            <section>
+              <RoastHypeWidget
+                stats={{
+                  commits: 42,
+                  languages: ["TypeScript", "Python"],
+                  mergedPRs: 5,
+                  failedGoals: 1,
+                }}
+              />
+            </section>
 
-                <div id="pull-requests" className="grid grid-cols-1 gap-8 scroll-mt-24 md:grid-cols-2">
-                  <PRMetrics />
-                  <CommunityMetrics />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <LazyWidget fallback={<SkeletonCard />}>
-                    <PRBreakdownChart />
-                  </LazyWidget>
-                  <LazyWidget fallback={<SkeletonCard />}>
-                    <CommitTimeChart />
-                  </LazyWidget>
-                </div>
-
-                <LazyWidget fallback={<SkeletonCard />}>
-                  <ActivityRingChart />
-                </LazyWidget>
-
-                <LazyWidget fallback={<SkeletonCard />}>
-                  <CodingActivityInsightsCard />
-                </LazyWidget>
-
-                <LazyWidget fallback={<SkeletonCard />}>
-                  <PRReviewTrendChart />
-                </LazyWidget>
-              </div>
-
-              {/* Right: sidebar */}
-              <div className="flex flex-col gap-8">
-                <RoastHypeWidget
-                  stats={{
-                    commits: 42,
-                    languages: ["TypeScript", "Python"],
-                    mergedPRs: 5,
-                    failedGoals: 1,
-                  }}
-                />
-                <StreakTracker />
-                <LocalCodingTime />
-                <CodingTimeWidget />
-              </div>
-            </div>
+            {/* All dashboard widgets (drag-and-drop customizable) */}
+            <CustomizableDashboard />
 
             {/* Goals & Insights */}
             <section id="goals-insights" className="space-y-6 scroll-mt-24">
@@ -235,8 +144,6 @@ export default async function DashboardPage() {
             <section>
               <MilestonePlanner />
             </section>
-
-            <CustomizableDashboard />
           </div>
         </div>
       </DashboardWidgetA11yProvider>
