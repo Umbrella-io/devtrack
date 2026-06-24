@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip, 
   ResponsiveContainer,
   Legend,
 } from "recharts";
@@ -135,11 +135,11 @@ function mergeContributionSources(
   return merged;
 }
 
-export default function ContributionGraph( { isLoading }: ContributionGraphProps = {}) {
+export default function ContributionGraph({ isLoading }: ContributionGraphProps = {}) {
   const { selectedAccount } = useAccount();
   const [data, setData] = useState<DayData[]>([]);
   const [loading, setLoading] = useState(true);
-    const showSkeleton = isLoading !== undefined ? isLoading : loading;
+  const showSkeleton = isLoading !== undefined ? isLoading : loading;
   const [days, setDays] = useState<number>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -490,12 +490,10 @@ export default function ContributionGraph( { isLoading }: ContributionGraphProps
           {compareMode && compareError && (
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">{compareError}</p>
           )}
-           {compareMode && compareLoading && (
-          <p className="text-xs text-[var(--muted-foreground)] mt-1">
-           Loading friend data...
-             </p>
-              )}
-          {!compareMode && !loading && !error && (
+          {compareMode && compareLoading && (
+            <p className="text-xs text-[var(--muted-foreground)] mt-1">Loading friend data...</p>
+          )}
+          {!compareMode && !showSkeleton && !error && (
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">
               {totalCommits} commit{totalCommits === 1 ? "" : "s"}
             </p>
@@ -652,20 +650,31 @@ export default function ContributionGraph( { isLoading }: ContributionGraphProps
         </div>
       </div>
 
-       {showSkeleton ? (
-       <div role="status" aria-live="polite" aria-busy="true">
-  <span className="sr-only">Loading contribution graph</span>
-
-  <div className="flex items-end gap-2 h-[220px]">
-    {[40, 80, 60, 120, 90, 160, 110, 70, 140, 100].map((height, i) => (
-      <div
-        key={i}
-        style={{ height }}
-        className="flex-1 rounded-sm bg-[var(--card-muted)] animate-pulse"
-      />
-    ))}
-  </div>
-</div>
+      {showSkeleton ? (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="flex h-[220px] items-end justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4"
+        >
+          <span className="sr-only">Loading contribution graph</span>
+          <div className="h-1/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-2/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-3/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-2/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-4/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-3/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-2/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-4/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-3/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-1/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-2/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-4/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-3/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-1/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-2/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-3/5 w-full rounded-sm bg-muted animate-pulse" />
+        </div>
       ) : error ? (
         <div className="flex h-[220px] items-center rounded-lg border border-[var(--border)] bg-[var(--background)] px-4">
           <p className="text-sm text-[var(--muted-foreground)]">
@@ -867,7 +876,7 @@ export default function ContributionGraph( { isLoading }: ContributionGraphProps
       )}
 
       {!compareMode && (
-         <CommitSearchPanel commits={commits} loading={showSkeleton} />
+        <CommitSearchPanel commits={commits} loading={showSkeleton} />
       )}
     </div>
   );

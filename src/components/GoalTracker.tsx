@@ -11,7 +11,7 @@ import EmptyState from "@/components/EmptyState";
 
 
 type Recurrence = "none" | "weekly" | "monthly";
-
+ 
 interface Goal {
   id: string;
   title: string;
@@ -312,7 +312,7 @@ interface GoalTrackerProps {
   isLoading?: boolean;
 }
 
-export default function GoalTracker({ isLoading }: GoalTrackerProps) {
+export default function GoalTracker({ isLoading }: GoalTrackerProps = {}) {
 
 
   const {
@@ -350,7 +350,9 @@ export default function GoalTracker({ isLoading }: GoalTrackerProps) {
   } = useGoalTracker();
 
   const { setSummary, setIsUpdating } = useDashboardWidgetA11y("goal-tracker");
+
   const showSkeleton = isLoading !== undefined ? isLoading : loading;
+
   useEffect(() => {
     setIsUpdating(showSkeleton);
   }, [showSkeleton, setIsUpdating]);
@@ -436,17 +438,14 @@ export default function GoalTracker({ isLoading }: GoalTrackerProps) {
       <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm animate-pulse">
         <div role="status" aria-live="polite" aria-busy="true" className="space-y-4">
           <span className="sr-only">Loading weekly goals</span>
-         <div className="h-5 w-32 rounded bg-muted" />
+          <div className="h-5 w-32 rounded bg-muted" />
           {[1, 2, 3].map((i) => (
             <div key={i} aria-hidden="true" className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="h-4 w-1/3 bg-muted rounded" />
                 <div className="h-4 w-12 bg-muted rounded" />
               </div>
-              <div className="h-2 w-full bg-[var(--control)] rounded-full overflow-hidden">
-                <div className="h-full bg-muted w-1/3 rounded-full" />
-              </div>
-               </div>
+            </div>
           ))}
         </div>
       </div>

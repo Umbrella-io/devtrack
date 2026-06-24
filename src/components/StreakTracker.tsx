@@ -17,7 +17,7 @@ const dataWindowLabel = `Last ${DATA_WINDOW_DAYS} days`;
 
 
 const STREAK_MILESTONES = [7, 30, 50, 100, 200, 365];
-
+ 
 interface StreakData {
   current: number;
   longest: number;
@@ -382,12 +382,11 @@ export function useStreakTracker() {
   };
 }
 
-interface StreakTrackerProps{
+interface StreakTrackerProps {
   isLoading?: boolean;
 }
 
-
-export default function StreakTracker({isLoading}: StreakTrackerProps) {
+export default function StreakTracker({ isLoading }: StreakTrackerProps = {}) {
   const {
     selectedAccount,
     isStreakLive,
@@ -439,7 +438,6 @@ export default function StreakTracker({isLoading}: StreakTrackerProps) {
     setIsUpdating(showSkeleton);
   }, [showSkeleton, setIsUpdating]);
 
-
   useEffect(() => {
     if (!data) {
       setSummary(null);
@@ -452,13 +450,12 @@ export default function StreakTracker({isLoading}: StreakTrackerProps) {
 
   if (showSkeleton) {
     return (
-       
-        <div className="bg-[var(--card)] rounded-xl border border-[var(--border)] p-6 animate-pulse"> 
+      <div className="bg-[var(--card)] rounded-xl border border-[var(--border)] p-6 animate-pulse">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading streak tracker</span>
-            <div className="h-6 w-36 bg-muted rounded-md mb-6" />
+          <div className="h-6 w-36 bg-muted rounded-md mb-6" />
           <div aria-hidden="true" className="grid grid-cols-2 gap-3">
-             {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
                 className="rounded-lg p-4 bg-muted border border-[var(--border)] h-[108px] flex flex-col items-center justify-center space-y-2"
@@ -467,7 +464,7 @@ export default function StreakTracker({isLoading}: StreakTrackerProps) {
                 <div className="h-6 w-12 rounded bg-[var(--card-muted)] opacity-60" />
                 <div className="h-3.5 w-16 rounded bg-[var(--card-muted)] opacity-60" />
               </div>
-              ))}
+            ))}
           </div>
         </div>
       </div>

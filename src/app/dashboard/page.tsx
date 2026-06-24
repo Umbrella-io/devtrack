@@ -171,6 +171,7 @@ export default async function DashboardPage() {
             <TodayFocusHero userName={session.user?.name ?? null} />
           </section>
 
+<<<<<<< HEAD
           {/* Featured Section */}
           <section className="mt-10 mb-12">
             <div className="relative overflow-hidden rounded-xl border border-[var(--border)] bg-gradient-to-r from-violet-950/20 via-indigo-950/10 to-transparent p-8 shadow-lg hover:shadow-xl transition-shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
@@ -183,6 +184,13 @@ export default async function DashboardPage() {
                     AI Resume Generator
                   </span>
                 </div>
+=======
+        {/* -- Row 2: PR metrics + Community metrics -- */}
+        <div id="pull-requests" className="mt-6 grid grid-cols-1 gap-6 scroll-mt-24 md:grid-cols-2">
+          <PRMetrics  />
+          <CommunityMetrics />
+        </div>
+>>>>>>> a16f7e120c2037355a3142e8eece9b5d809cb784
 
                 <h3 className="text-xl font-bold text-[var(--foreground)] leading-tight">
                   Generate an ATS-Friendly CV Backed by Your Real Code

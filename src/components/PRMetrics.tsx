@@ -3,7 +3,7 @@ import SectionHeader from "./SectionHeader";
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
- 
+import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import PRStatusDonutChart from "./PRStatusDonutChart";
 import MiniPRTrendChart from "./MiniPRTrendChart";
@@ -17,7 +17,7 @@ interface PRMetricsSummary {
   totalDeletions?: number;
   avgReviewHours: number;
   avgFirstReviewHours: number | null;
-  mergeRate: string;
+  mergeRate: string; 
   avgCycleTime?: number;
   weeklyTrend?: { week: string; avgHours: number }[];
   slowestRepos?: { repo: string; avgHours: number }[];
@@ -50,7 +50,7 @@ function formatReviewCycle(hours: number | null): string {
   return `${Math.round((hours / 24) * 10) / 10}d`;
 }
 
-export default function PRMetrics({ isLoading  }: PRMetricsProps) {
+export default function PRMetrics({ isLoading }: PRMetricsProps = {}) {
   const { selectedAccount } = useAccount();
   const [metrics, setMetrics] = useState<PRData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,6 +62,21 @@ export default function PRMetrics({ isLoading  }: PRMetricsProps) {
   const [prFilter, setPrFilter] = useState<"all" | "merged" | "open">("all");
   const [range, setRange] = useState<"7d" | "30d" | "90d">("30d");
   const [staleThresholdDays, setStaleThresholdDays] = useState(14);
+  const { setSummary, setIsUpdating } = useDashboardWidgetA11y("pr-metrics");
+
+  useEffect(() => {
+    setIsUpdating(showSkeleton);
+  }, [showSkeleton, setIsUpdating]);
+
+  useEffect(() => {
+    if (!metrics) {
+      setSummary(null);
+      return;
+    }
+    setSummary(
+      `${metrics.open} open PRs. ${metrics.merged} merged in the last 30 days.`,
+    );
+  }, [metrics, setSummary]);
 
   const fetchMetrics = useCallback(() => {
     if (isLoading === undefined) {
@@ -279,37 +294,24 @@ export default function PRMetrics({ isLoading  }: PRMetricsProps) {
             
       </div>
 
-      {showSkeleton  ? (
+      {showSkeleton ? (
         <div
           role="status"
           aria-live="polite"
           aria-busy="true"
-          className="space-y-4"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse"
         >
           <span className="sr-only">Loading PR analytics</span>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-           {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                aria-hidden="true"
-                className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
-              />
-            ))}
-          </div>
-          <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
-          <div
-            className="h-[220px] rounded-lg bg-[var(--card-muted)] animate-pulse"
-            aria-hidden="true"
-          />
-           <div className="space-y-2">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div
-          key={i}
-          className="h-12 rounded-md bg-[var(--card-muted)] animate-pulse"
-        />
-      ))}
-    </div>
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              aria-hidden="true"
+              className="rounded-lg p-4 bg-muted border border-[var(--border)] h-24 flex flex-col justify-center space-y-2"
+            >
+              <div className="h-6 w-16 rounded bg-[var(--card-muted)] opacity-60" />
+              <div className="h-4 w-24 rounded bg-[var(--card-muted)] opacity-60" />
+            </div>
+          ))}
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
@@ -428,7 +430,7 @@ export default function PRMetrics({ isLoading  }: PRMetricsProps) {
         </div>
       )}
 
-      {lastUpdated && (
+      {lastUpdated && !showSkeleton && (
         <p className="text-xs text-[var(--muted-foreground)] mt-2 text-right">
           {minutesAgo === 0 ? "Updated just now" : `Updated ${minutesAgo} min ago`}
         </p>
