@@ -16,6 +16,7 @@ function isActivePath(pathname: string, href: string) {
     const [base] = href.split("#");
     return pathname === base;
   }
+  if (href === "/dashboard") return pathname === "/dashboard";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -46,9 +47,10 @@ export default function AppNavbar() {
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
+    fn();
     window.addEventListener("scroll", fn, { passive: true });
     return () => window.removeEventListener("scroll", fn);
-  }, []);
+  }, [pathname]);
 
   const isAuthenticated = status === "authenticated" && Boolean(session);
   const isDashboardRoute = pathname.startsWith("/dashboard");
@@ -61,6 +63,7 @@ export default function AppNavbar() {
       return [
         { href: "/dashboard", label: t("overview") },
         { href: "/dashboard/career-intelligence", label: t("resume") },
+        { href: "/dashboard/personality", label: t("personality") },
         { href: "/leaderboard", label: t("leaderboard") },
       ];
     }
@@ -71,8 +74,8 @@ export default function AppNavbar() {
     ];
   }, [isAuthenticated, t]);
 
-  // Hide the global navbar on pages that have their own navigation structure
-  if (pathname === "/" || pathname === "/wrapped") return null;
+  // The wrapped experience provides its own navigation
+  if (pathname === "/wrapped") return null;
 
   const headerStyle: React.CSSProperties = {
     position: "sticky",
@@ -215,7 +218,7 @@ export default function AppNavbar() {
                 </Link>
               );
             })}
-            
+
             {isAuthenticated && (
               <Link
                 href="/dashboard/settings"

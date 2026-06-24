@@ -148,13 +148,28 @@ export default function LanguageBreakdown() {
         <p className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           {error}
         </p>
-      ) : languages.length === 0 ? (
-        <div className="flex min-h-[200px] items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card-muted)]">
-          <p className="text-sm text-[var(--muted-foreground)]">
-            No language data available.
-          </p>
-        </div>
-      ) : (
+    ) : languages.length === 0 ? (
+  <div className="flex flex-col items-center justify-center py-10 text-center">
+    <div className="mb-3 text-4xl">🧩</div>
+
+    <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+      No language data available
+    </h3>
+
+    <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
+      Start committing code to repositories and we&apos;ll analyze the language distribution across your projects.
+    </p>
+
+    <a
+      href="https://github.com/new"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-4 inline-flex rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--control)]"
+    >
+      Create Repository
+    </a>
+  </div>
+) : (
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-8">
           {/* Donut chart */}
           <div
@@ -207,11 +222,11 @@ export default function LanguageBreakdown() {
                 className="flex items-center gap-2 text-sm"
               >
                 <span
-                  className="shrink-0 rounded-full"
+                  className="h-3 w-3 shrink-0 rounded-full"
                   style={{
-                    width: "0.5rem",
-                    height: "0.5rem",
                     backgroundColor: getColor(lang.name),
+                    minWidth: "12px",
+                    minHeight: "12px",
                   }}
                   role="img"
                   aria-label={lang.name}

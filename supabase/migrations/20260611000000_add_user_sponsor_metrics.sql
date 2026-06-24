@@ -16,6 +16,13 @@ CREATE TABLE IF NOT EXISTS user_sponsor_metrics (
 
 ALTER TABLE user_sponsor_metrics ENABLE ROW LEVEL SECURITY;
 
+-- Drop policies if they already exist to prevent duplicate errors
+DROP POLICY IF EXISTS "Users can read own sponsor metrics" ON user_sponsor_metrics;
+DROP POLICY IF EXISTS "Users can insert own sponsor metrics" ON user_sponsor_metrics;
+DROP POLICY IF EXISTS "Users can update own sponsor metrics" ON user_sponsor_metrics;
+DROP POLICY IF EXISTS "Users can delete own sponsor metrics" ON user_sponsor_metrics;
+
+-- Create policies cleanly
 CREATE POLICY "Users can read own sponsor metrics"
   ON user_sponsor_metrics FOR SELECT
   USING (auth.uid()::text = user_id);

@@ -28,16 +28,18 @@ function isRateLimited(ip: string): boolean {
   return false;
 }
 
-export async function GET(req: NextRequest, ctx: { params: { nextauth: string[] } }) {
-  return handler(req, ctx);
+export async function GET(req: NextRequest, ctx: { params: Promise<{ nextauth: string[] }> }) {
+  const params = await ctx.params;
+  return handler(req, { params });
 }
 
-export async function POST(req: NextRequest, ctx: { params: { nextauth: string[] } }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ nextauth: string[] }> }) {
   const ip = getClientIP(req);
   if (isRateLimited(ip)) {
     return NextResponse.redirect(
       new URL("/auth/signin?error=RateLimitError", req.url)
     );
   }
-  return handler(req, ctx);
+  const params = await ctx.params;
+  return handler(req, { params });
 }

@@ -14,6 +14,7 @@ import {
 export const runtime = "nodejs";
 
 const isDev = process.env.NODE_ENV === "development";
+const memoryBuckets = new Map<string, number[]>();
 const WINDOW_SECONDS = 60;
 
 /* ============================================================
@@ -46,20 +47,25 @@ const RATE_LIMIT_CONFIG = {
   /**
    * Maximum allowed API metrics requests for authenticated users in the window.
    */
-  AUTHENTICATED_LIMIT: isDev ? 5000 : 60,
+  AUTHENTICATED_LIMIT: isTest ? 5000 : 60,
 
   /**
    * Maximum allowed API metrics requests for anonymous users in the window.
    */
-  ANONYMOUS_LIMIT: isDev ? 1000 : 10,
+  ANONYMOUS_LIMIT: isTest ? 1000 : 10,
 
   /**
    * Maximum allowed sign-in attempts for authentication routes in the window.
    */
-  AUTH_LIMIT: isDev ? 1000 : AUTH_LIMIT,
+  AUTH_LIMIT: isTest ? 1000 : AUTH_LIMIT,
 } as const;
 
-// Warn in production if Upstash Redis is not configured (rates reset on cold starts)if (process.env.NODE_ENV === "production" && !process.env.UPSTASH_REDIS_REST_URL) {
+// Warn in production if Upstash Redis is not configured (rates reset on cold starts)
+if (process.env.NODE_ENV === "production" && !process.env.UPSTASH_REDIS_REST_URL) {
+  console.warn(
+    "UPSTASH_REDIS_REST_URL is not set – rate limits will use in-memory storage and reset on cold starts."
+  );
+}
 
 type RateLimitResult = {
   allowed: boolean;
@@ -92,6 +98,12 @@ function buildHeaders(result: RateLimitResult) {
 
   return headers;
 }
+
+/**
+ * In-memory sliding-window rate-limit store.
+ * Each key maps to an array of request timestamps (milliseconds).
+ * Entries are pruned once the map exceeds 500 keys.
+ */
 
 function pruneMemoryBuckets(now: number) {
   if (memoryBuckets.size < 500) {
@@ -296,6 +308,18 @@ export async function middleware(req: NextRequest) {
     if (!authResult.allowed) {
       console.warn("auth_rate_limit_hit", { ip, path: pathname });
       const headers = buildHeaders({ ...authResult, limit: authLimit });
+
+      const acceptHeader = req.headers.get("accept") ?? "";
+      if (acceptHeader.includes("text/html")) {
+        const url = req.nextUrl.clone();
+        url.pathname = "/auth/signin";
+        url.search = "?error=RateLimit";
+        return NextResponse.redirect(url, {
+          status: 307,
+          headers,
+        });
+      }
+
       return NextResponse.json(
         { error: "Too many authentication attempts. Please try again later." },
         { status: 429, headers }

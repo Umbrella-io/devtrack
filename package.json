@@ -10,6 +10,7 @@
     "lint": "eslint src",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "supabase:generate-types": "npx supabase@latest gen types typescript --local > src/types/supabase.ts"
   },
@@ -19,6 +20,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@google/generative-ai": "^0.24.1",
     "@sentry/nextjs": "^10",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.106.2",
@@ -30,9 +32,10 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
-    "dompurify": "^3.1.6",
+    "dompurify": "^3.4.11",
     "driver.js": "^1.4.0",
     "fflate": "^0.8.3",
+    "groq-sdk": "^1.2.1",
     "html-to-image": "^1.11.13",
     "idb-keyval": "^6.2.5",
     "jspdf": "^4.2.1",
@@ -86,13 +89,19 @@
   },
   "overrides": {
     "glob": ">=10.5.0",
-    "serialize-javascript": "^6.0.2",
+    "serialize-javascript": ">=7.0.3",
     "esbuild": ">=0.25.0",
     "uuid": ">=9.0.1",
-    "swagger-client": "3.36.2"
+    "swagger-client": "3.36.2",
+    "undici": ">=7.28.0",
+    "form-data": ">=4.0.6",
+    "@opentelemetry/core": ">=2.8.0",
+    "@opentelemetry/sdk-trace-base": ">=2.8.0",
+    "@opentelemetry/resources": ">=2.8.0",
+    "js-yaml": ">=4.1.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.28.0",
