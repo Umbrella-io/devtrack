@@ -128,7 +128,12 @@ export default function WeeklyCodingInsightsCard() {
     );
   }
 
-  const hasActivity = summary && (summary.commits.current > 0 || summary.prs.thisWeek.opened > 0 || summary.prs.thisWeek.merged > 0 || summary.issues.thisWeek > 0);
+  const hasActivity = summary && summary.commits && summary.prs && summary.issues && (
+    summary.commits.current > 0 || 
+    summary.prs.thisWeek.opened > 0 || 
+    summary.prs.thisWeek.merged > 0 || 
+    summary.issues.thisWeek > 0
+  );
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
