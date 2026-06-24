@@ -7,15 +7,15 @@ import ShortcutsModal from "./ShortcutsModal";
 export default function GlobalKeyboardShortcuts() {
   const [isOpen, setIsOpen] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-  const { theme, toggleTheme } = useTheme();
+  const { theme, themeDefinition, toggleTheme } = useTheme();
   const keyboardToggleRef = useRef(false);
 
   useEffect(() => {
     if (keyboardToggleRef.current && theme !== undefined) {
-      setAnnouncement(theme === "dark" ? "Dark mode enabled" : "Light mode enabled");
+      setAnnouncement(`${themeDefinition?.name ?? "Theme"} enabled`);
     }
     keyboardToggleRef.current = false;
-  }, [theme]);
+  }, [theme, themeDefinition]);
 
   useEffect(() => {
     const handleOpenShortcuts = () => {

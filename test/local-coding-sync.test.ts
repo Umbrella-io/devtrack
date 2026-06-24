@@ -8,9 +8,9 @@ const mockRpc = vi.fn();
 const mockSingle = vi.fn();
 const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
 const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
-const mockKeyLookupOr = vi.fn().mockReturnValue({ single: mockSingle });
-const mockUpdateOr = vi.fn().mockResolvedValue({ error: null });
-const mockUpdate = vi.fn().mockReturnValue({ or: mockUpdateOr });
+const mockKeyLookupEq = vi.fn().mockReturnValue({ single: mockSingle });
+const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
+const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEq });
 const mockSessionCountEq = vi.fn();
 const mockExistingDatesIn = vi.fn();
 const mockExistingDatesEq = vi.fn().mockReturnValue({ in: mockExistingDatesIn });
@@ -43,10 +43,10 @@ describe("Local Coding Sync POST API Endpoint", () => {
       if (table === "local_coding_api_keys") {
         return {
           select: vi.fn().mockReturnValue({
-            or: mockKeyLookupOr,
+            eq: mockKeyLookupEq,
           }),
           update: vi.fn().mockReturnValue({
-            or: mockUpdateOr,
+            eq: mockUpdateEq,
           }),
         };
       }
@@ -174,7 +174,7 @@ describe("Local Coding Sync POST API Endpoint", () => {
       if (table === "local_coding_api_keys") {
         return {
           select: vi.fn().mockReturnValue({
-            or: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
               single: mockSingle.mockResolvedValue({
                 data: { user_id: "test-user-id" },
                 error: null,
@@ -182,7 +182,7 @@ describe("Local Coding Sync POST API Endpoint", () => {
             }),
           }),
           update: vi.fn().mockReturnValue({
-            or: vi.fn().mockResolvedValue({ error: null }),
+            eq: vi.fn().mockResolvedValue({ error: null }),
           }),
         };
       }
@@ -292,7 +292,7 @@ describe("Local Coding Sync POST API Endpoint", () => {
     });
   });
 
-  it("authenticates against both api_key_hash and legacy api_key columns", async () => {
+  it("authenticates only against api_key_hash -- no fallback to api_key column", async () => {
     const sessions = [{ date: "2026-05-27", totalSeconds: 3600, fileCount: 2, projectCount: 1 }];
     const req = new NextRequest("http://localhost/api/local-coding/sync", {
       method: "POST",
@@ -304,11 +304,10 @@ describe("Local Coding Sync POST API Endpoint", () => {
 
     const res = await POST(req);
     const keyHash = createHash("sha256").update("test-key").digest("hex");
-    const expectedFilter = `api_key_hash.eq.${keyHash},api_key.eq.${keyHash}`;
 
     expect(res.status).toBe(200);
-    expect(mockKeyLookupOr).toHaveBeenCalledWith(expectedFilter);
-    expect(mockUpdateOr).toHaveBeenCalledWith(expectedFilter);
+    expect(mockKeyLookupEq).toHaveBeenCalledWith("api_key_hash", keyHash);
+    expect(mockUpdateEq).toHaveBeenCalledWith("api_key_hash", keyHash);
   });
 
   it("returns 500 error if batch_upsert_sessions RPC fails", async () => {
@@ -326,4 +325,92 @@ describe("Local Coding Sync POST API Endpoint", () => {
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Failed to sync sessions" });
   });
+
+  it("authenticates via legacy fallback and triggers silent upgrade", async () => {
+    let callCount = 0;
+    mockSingle.mockImplementation(async () => {
+      callCount++;
+      if (callCount === 1) {
+        return { data: null, error: { message: "Not found" } };
+      } else {
+        return { data: { id: "legacy-key-id", user_id: "legacy-user-id" }, error: null };
+      }
+    });
+
+    const mockUpdateFields = vi.fn();
+    const mockUpdateEqLocal = vi.fn().mockResolvedValue({ error: null });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "local_coding_api_keys") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: mockKeyLookupEq,
+          }),
+          update: vi.fn((fields) => {
+            mockUpdateFields(fields);
+            return {
+              eq: mockUpdateEqLocal,
+            };
+          }),
+        };
+      }
+      if (table === "local_coding_sessions") {
+        return {
+          select: vi.fn((_columns: string, options?: { count?: string; head?: boolean }) => {
+            if (options?.count) {
+              return { eq: mockSessionCountEq };
+            }
+            return { eq: mockExistingDatesEq };
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      };
+    });
+
+    const sessions = [{ date: "2026-05-27", totalSeconds: 3600 }];
+    const req = new NextRequest("http://localhost/api/local-coding/sync", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer legacy-raw-key",
+      },
+      body: JSON.stringify({ sessions }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+
+    const keyHash = createHash("sha256").update("legacy-raw-key").digest("hex");
+
+    expect(mockKeyLookupEq).toHaveBeenCalledWith("api_key_hash", keyHash);
+    expect(mockKeyLookupEq).toHaveBeenCalledWith("api_key", "legacy-raw-key");
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mockUpdateFields).toHaveBeenCalledWith({
+      api_key_hash: keyHash,
+      api_key: null,
+      last_used_at: expect.any(String),
+    });
+    expect(mockUpdateEqLocal).toHaveBeenCalledWith("id", "legacy-key-id");
+  });
+
+  it("rejects request if both standard match and legacy fallback fail", async () => {
+    mockSingle.mockResolvedValue({ data: null, error: { message: "Not found" } });
+
+    const req = new NextRequest("http://localhost/api/local-coding/sync", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer invalid-key",
+      },
+      body: JSON.stringify({ sessions: [] }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "Invalid API key" });
+  });
 });
+

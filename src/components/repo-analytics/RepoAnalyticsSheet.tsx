@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import ContributorStats from "./ContributorStats";
 import RepoTimelineChart from "./RepoTimelineChart";
 import RepoHealthMetrics from "./RepoHealthMetrics";
-import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
-import { formatDisplayDate } from "@/lib/repoAnalyticsUtils";
+import { RepoAnalyticsResponse } from "@/lib/repo-analytics-types";
+import { formatDisplayDate } from "@/lib/date-utils";
 
 interface RepoAnalyticsSheetProps {
   repoFullName: string | null;
@@ -61,6 +61,7 @@ export default function RepoAnalyticsSheet({ repoFullName, open, onClose }: Repo
         }`}
         style={{ backgroundColor: "color-mix(in srgb, var(--card) 60%, transparent)" }}
         onClick={onClose}
+        aria-hidden="true"
       />
       <aside
         className={`fixed inset-y-0 right-0 z-50 w-full max-w-3xl overflow-y-auto border-l border-[var(--border)] bg-[var(--card)] p-5 shadow-2xl shadow-black/60 sm:p-6 transition-transform duration-300 ease-out`}

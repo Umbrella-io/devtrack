@@ -1,65 +1,83 @@
 ## Summary
 
-Enhanced the existing `PULL_REQUEST_TEMPLATE.md` to improve contribution quality, accessibility awareness, and reviewer guidance.
+<!-- Briefly describe what this PR does and why. 1–3 sentences is enough. -->
 
-Closes #1107
+Closes #<!-- issue number -->
 
 ---
 
 ## Type of Change
 
-- [ ] Bug fix
-- [ ] New feature
-- [x] Documentation update
-- [ ] Refactor / code cleanup
+<!-- Check all that apply -->
+
+- [ ] 🐛 Bug fix (non-breaking change that fixes an issue)
+- [ ] ✨ New feature (non-breaking change that adds functionality)
+- [ ] 💥 Breaking change (fix or feature that changes existing behavior)
+- [ ] 📝 Documentation update
+- [ ] ♻️ Refactor / code cleanup (no functional change)
+- [ ] ⚡ Performance improvement
+- [ ] 🔒 Security fix
+- [ ] 🧪 Tests only
 
 ---
 
-## Changes Made
+## What Changed
 
-- Improved PR template structure and readability
-- Added accessibility checklist section
-- Added additional notes section
-- Enhanced contributor guidance for testing and review
-- Improved consistency for future pull requests
+<!-- List the key changes made. Be specific — mention file names or functions where helpful. -->
+
+-
+-
+-
 
 ---
 
 ## How to Test
 
-Steps for the reviewer to verify this works:
+<!-- Steps a reviewer can follow to verify your changes work correctly. -->
 
-1. Create a new pull request
-2. Verify the updated PR template appears automatically
-3. Check that all checklist sections render properly
-4. Ensure markdown formatting works correctly
+1.
+2.
+3.
+
+**Expected result:**
 
 ---
 
-## Screenshots (if UI change)
+## Screenshots / Recordings
 
-N/A
+<!-- For UI changes, attach before/after screenshots or a short screen recording. Delete this section if not applicable. -->
+
+| Before | After |
+|--------|-------|
+|        |       |
 
 ---
 
 ## Checklist
 
-- [x] Linked issue in summary
-- [x] `npm run lint` passes locally
-- [x] No TypeScript errors (`npm run type-check`)
-- [x] Self-reviewed the diff
-- [ ] Added/updated tests if applicable
+<!-- Complete before requesting review. -->
+
+- [ ] Linked the related issue above
+- [ ] Self-reviewed my own diff
+- [ ] No unnecessary `console.log`, debug code, or commented-out blocks
+- [ ] `npm run lint` passes locally
+- [ ] No TypeScript errors (`npm run type-check`)
+- [ ] Added or updated tests where applicable
+- [ ] Updated documentation / comments if behavior changed
 
 ---
 
-## Accessibility Checklist
+## Accessibility (UI changes only)
 
-- [x] Proper keyboard navigation tested
-- [x] Responsive UI verified
-- [x] Accessibility labels added where needed
+<!-- Skip this section if your PR has no UI impact. -->
+
+- [ ] Keyboard navigation works correctly
+- [ ] Color contrast meets WCAG AA standard
+- [ ] ARIA labels / roles added where needed
+- [ ] Tested on mobile / responsive layout
 
 ---
 
-## Additional Notes
+## Additional Context
 
-This update standardizes pull request submissions and helps maintain consistent review quality across contributions.
+<!-- Anything else reviewers should know: trade-offs made, follow-up issues, related PRs, etc. Leave blank if none. -->

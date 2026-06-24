@@ -152,6 +152,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
+  const format = req.nextUrl.searchParams.get("format"); // "csv" | null (default: json)
+
   // --- Rate limiting ---------------------------------------------------
   const lastExport = await getRecentExport(user.id);
   if (lastExport) {
@@ -201,6 +203,13 @@ export async function GET(req: NextRequest) {
     .eq("user_id", user.id);
   sections.goals = goals || [];
 
+  const { data: goalHistory } = await supabaseAdmin
+    .from("goal_history")
+    .select("id, goal_id, user_id, period_start, period_end, target, achieved, completed, created_at")
+    .eq("user_id", user.id)
+    .order("period_end", { ascending: false });
+  sections.goalHistory = goalHistory || [];
+
   const { data: snapshots } = await supabaseAdmin
     .from("metric_snapshots")
     .select(
@@ -238,7 +247,7 @@ export async function GET(req: NextRequest) {
 
   const { data: streakMilestones } = await supabaseAdmin
     .from("streak_milestones")
-    .select("id, user_id, streak_length, milestone_type, achieved_at")
+    .select("id, user_id, streak_count, achieved_at")
     .eq("user_id", user.id);
   sections.streakMilestones = streakMilestones || [];
 
@@ -262,12 +271,30 @@ export async function GET(req: NextRequest) {
   // --- Redact any sensitive fields that slipped through the column selects --
   const redactedSections = redactSensitiveFields(sections) as Record<string, unknown>;
 
-  return NextResponse.json({
+  const exportPayload = {
     exportedAt: new Date().toISOString(),
     userId: user.id,
     githubLogin: session.githubLogin,
     sections: redactedSections,
-  });
+  };
+
+  if (format === "csv") {
+    // Flatten goals section to CSV
+    const goals = (redactedSections as any)?.goals ?? [];
+    const headers = ["id", "title", "target", "current", "unit", "recurrence", "deadline", "created_at"];
+    const rows = goals.map((g: Record<string, unknown>) =>
+      headers.map((h) => JSON.stringify(g[h] ?? "")).join(",")
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv",
+        "Content-Disposition": `attachment; filename="devtrack-export-${session.githubLogin}.csv"`,
+      },
+    });
+  }
+
+  return NextResponse.json(exportPayload);
 }
 
 // ---------------------------------------------------------------------------
@@ -301,17 +328,43 @@ export async function DELETE(req: NextRequest) {
   await writeAuditLog(user.id, "delete", req);
 
   // --- Data deletion ---------------------------------------------------
+  // Delete webhook_deliveries first — they reference webhook_configs via
+  // webhook_id (not user_id), so we must resolve the IDs before removing
+  // the parent webhook_configs rows.
+  const { data: userWebhooks } = await supabaseAdmin
+    .from("webhook_configs")
+    .select("id")
+    .eq("user_id", user.id);
+
+  const webhookIds = userWebhooks?.map((w) => w.id) ?? [];
+  if (webhookIds.length > 0) {
+    await supabaseAdmin
+      .from("webhook_deliveries")
+      .delete()
+      .in("webhook_id", webhookIds);
+  }
+
+  // Tables with a direct user_id foreign key, ordered to respect any
+  // potential FK constraints (children before parents).
+  // ai_insights is included explicitly here even though ON DELETE CASCADE on
+  // the foreign key would remove those rows when the users row is deleted.
+  // The explicit delete is a defense-in-depth measure that works regardless
+  // of whether the FK migration has been applied to a given environment.
   const tablesToDelete = [
-  "streak_freezes",
-  "streak_milestones",
-  "local_coding_sessions",
-  "local_coding_api_keys",
-  "jira_credentials",
-  "webhook_configs",
-  "user_github_accounts",
-  "goals",
-  "metric_snapshots",
-];
+    "notifications",
+    "ai_insights",
+    "data_export_audit",
+    "streak_freezes",
+    "streak_milestones",
+    "local_coding_sessions",
+    "local_coding_api_keys",
+    "jira_credentials",
+    "webhook_configs",
+    "user_github_accounts",
+    "goal_history",
+    "goals",
+    "metric_snapshots",
+  ];
 
   for (const table of tablesToDelete) {
     await supabaseAdmin.from(table).delete().eq("user_id", user.id);

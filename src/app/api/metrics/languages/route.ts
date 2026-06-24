@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     const data = await withMetricsCache({ bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.languages }, async () => {
       const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" };
       const since = new Date();
-      since.setDate(since.getDate() - 90);
+      const rawDays = parseInt(req.nextUrl.searchParams.get("days") ?? "90", 10);    const days = Number.isFinite(rawDays) && rawDays > 0 ? Math.min(rawDays, 365) : 90;
 
       const searchRes = await fetch(
         `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${since.toISOString().slice(0, 10)}&per_page=100&sort=author-date&order=desc`,
@@ -66,10 +66,12 @@ export async function GET(req: NextRequest) {
 
       const raw = await searchRes.json();
       const repoNames = Array.from(new Set<string>(raw.items.map((i: any) => i.repository.full_name)));
+      const topRepoNames = repoNames.slice(0, 20);
       const langTotals: Record<string, number> = {};
+      const failedRepos: Array<{ name: string; statusCode?: number; error: string }> = [];
 
       await Promise.all(
-        repoNames.map(async (repoName) => {
+        topRepoNames.map(async (repoName) => {
           try {
               const repoCacheKey = metricsCacheKey(
                 userId,
@@ -89,7 +91,14 @@ export async function GET(req: NextRequest) {
                     { headers, cache: "no-store" },
                   );
 
-                  if (!res.ok) return {};
+                  if (!res.ok) {
+                    failedRepos.push({
+                      name: repoName,
+                      statusCode: res.status,
+                      error: `GitHub API returned ${res.status}`,
+                    });
+                    return {};
+                  }
 
                   return await res.json();
                 },
@@ -97,7 +106,17 @@ export async function GET(req: NextRequest) {
             for (const [lang, bytes] of Object.entries(langs)) {
               langTotals[lang] = (langTotals[lang] ?? 0) + (bytes as number);
             }
-          } catch { }
+          } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : "Unknown error";
+            failedRepos.push({
+              name: repoName,
+              error: errorMessage,
+            });
+            console.warn(
+              `[METRICS] Failed to fetch languages for ${repoName}: ${errorMessage}`,
+              { userId, githubLogin }
+            );
+          }
         })
       );
 
@@ -107,10 +126,22 @@ export async function GET(req: NextRequest) {
         .sort((a, b) => b.percentage - a.percentage)
         .slice(0, 6);
 
-      return { languages };
+      const isComplete = failedRepos.length === 0;
+      
+      return {
+        languages,
+        isComplete,
+        failedRepositoriesCount: failedRepos.length,
+        ...(process.env.NODE_ENV === "development" && { failedRepositories: failedRepos }),
+      };
     });
     return Response.json(data);
-  } catch {
-    return Response.json({ error: "GitHub API error" }, { status: 502 });
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : "Unknown error";
+    console.error("[METRICS] Language metrics endpoint error", {
+      userId: session.githubId ?? session.githubLogin,
+      error: errorMessage,
+    });
+    return Response.json({ error: "GitHub API error", isComplete: false }, { status: 502 });
   }
 }

@@ -51,6 +51,7 @@ export default function ProjectMetrics() {
   });
   const [connecting, setConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -103,7 +104,7 @@ export default function ProjectMetrics() {
       setShowForm(false);
       setFormData({ jiraDomain: "", email: "", apiToken: "", projectKey: "" });
       fetchData();
-    } catch {
+    } catch (e) {
       setConnectionError("Connection failed");
     } finally {
       setConnecting(false);
@@ -111,11 +112,18 @@ export default function ProjectMetrics() {
   }
 
   async function handleDisconnect() {
-    await fetch("/api/integrations/jira/credentials", {
-      method: "DELETE",
-    });
-    setData(null);
-    setError(null);
+    setDisconnecting(true);
+    try {
+      await fetch("/api/integrations/jira/credentials", {
+        method: "DELETE",
+      });
+      setData(null);
+      setError(null);
+    } catch (e) {
+      console.error("Failed to disconnect Jira:", e);
+    } finally {
+      setDisconnecting(false);
+    }
   }
 
   if (loading) {
@@ -175,11 +183,12 @@ export default function ProjectMetrics() {
               </h3>
               <form onSubmit={handleConnect} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="jiraDomain" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Jira Domain
                   </label>
                   <input
                     type="text"
+                    id="jiraDomain"
                     placeholder="your-company.atlassian.net"
                     value={formData.jiraDomain}
                     onChange={(e) =>
@@ -190,10 +199,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="email" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Email
                   </label>
                   <input
+                    id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) =>
@@ -204,10 +214,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="apiToken" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     API Token
                   </label>
                   <input
+                    id="apiToken"
                     type="password"
                     placeholder="Get from id.atlassian.com/manage-profile"
                     value={formData.apiToken}
@@ -219,11 +230,12 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="projectKey" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Project Key (optional)
                   </label>
                   <input
                     type="text"
+                    id="projectKey"
                     placeholder="e.g. PROJ"
                     value={formData.projectKey}
                     onChange={(e) =>
@@ -293,11 +305,12 @@ export default function ProjectMetrics() {
               </h3>
               <form onSubmit={handleConnect} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="jiraDomain" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Jira Domain
                   </label>
                   <input
                     type="text"
+                    id="jiraDomain"
                     placeholder="your-company.atlassian.net"
                     value={formData.jiraDomain}
                     onChange={(e) =>
@@ -308,10 +321,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="email" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Email
                   </label>
                   <input
+                    id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) =>
@@ -322,10 +336,11 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="apiToken" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     API Token
                   </label>
                   <input
+                    id="apiToken"
                     type="password"
                     placeholder="Get from id.atlassian.com/manage-profile"
                     value={formData.apiToken}
@@ -337,11 +352,12 @@ export default function ProjectMetrics() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
+                  <label htmlFor="projectKey" className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                     Project Key (optional)
                   </label>
                   <input
                     type="text"
+                    id="projectKey"
                     placeholder="e.g. PROJ"
                     value={formData.projectKey}
                     onChange={(e) =>
@@ -396,9 +412,10 @@ export default function ProjectMetrics() {
         <button
           type="button"
           onClick={handleDisconnect}
-          className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+          disabled={disconnecting}
+          className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Disconnect
+          {disconnecting ? "Disconnecting..." : "Disconnect"}
         </button>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

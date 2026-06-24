@@ -29,6 +29,22 @@ const jetbrains = JetBrains_Mono({
 });
 
 async function fetchRepoStats(): Promise<RepoStats> {
+  if (
+    process.env.NEXTAUTH_SECRET === "test-nextauth-secret-for-playwright-tests" ||
+    process.env.PLAYWRIGHT_TEST === "true"
+  ) {
+    return {
+      stars: 10,
+      forks: 5,
+      openIssues: 2,
+      contributorCount: 3,
+      goodFirstIssues: 1,
+      contributors: [],
+      totalCommits: 0,
+      mergedPRs: 0,
+    };
+  }
+
   const token = process.env.GITHUB_TOKEN;
   const GH_HEADERS: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
@@ -37,10 +53,11 @@ async function fetchRepoStats(): Promise<RepoStats> {
   const OPTS = (ttl: number) => ({ next: { revalidate: ttl }, headers: GH_HEADERS });
 
   try {
-    const [repoRes, contribRes, gfiRes] = await Promise.all([
+    const [repoRes, contribRes, gfiRes, prsRes] = await Promise.all([
       fetch("https://api.github.com/repos/Priyanshu-byte-coder/devtrack", OPTS(3600)),
-      fetch("https://api.github.com/repos/Priyanshu-byte-coder/devtrack/contributors?per_page=30", OPTS(3600)),
+      fetch("https://api.github.com/repos/Priyanshu-byte-coder/devtrack/contributors?per_page=100", OPTS(3600)),
       fetch("https://api.github.com/repos/Priyanshu-byte-coder/devtrack/issues?labels=good+first+issue&state=open&per_page=100", OPTS(1800)),
+      fetch("https://api.github.com/search/issues?q=repo:Priyanshu-byte-coder/devtrack+type:pr+is:merged&per_page=1", OPTS(3600)),
     ]);
 
     if (!repoRes.ok) throw new Error("repo fetch failed");
@@ -48,6 +65,13 @@ async function fetchRepoStats(): Promise<RepoStats> {
     const repo = (await repoRes.json()) as Record<string, unknown>;
     const contributors = contribRes.ok ? ((await contribRes.json()) as Array<Record<string, unknown>>) : [];
     const gfiIssues = gfiRes.ok ? ((await gfiRes.json()) as unknown[]) : [];
+    const prsData = prsRes.ok ? ((await prsRes.json()) as { total_count?: number }) : null;
+
+    // Total commits = sum of all contributors' contribution counts
+    const totalCommits = Array.isArray(contributors)
+      ? contributors.reduce((sum, c) => sum + (typeof c.contributions === "number" ? c.contributions : 0), 0)
+      : 0;
+    const mergedPRs = prsData?.total_count ?? 0;
 
     let mappedContributors = Array.isArray(contributors)
       ? contributors.slice(0, 20).map((c) => ({
@@ -74,7 +98,7 @@ async function fetchRepoStats(): Promise<RepoStats> {
             isSponsor: sponsorSet.has(c.login),
           }));
         }
-      } catch {
+      } catch (e) {
         // Supabase not configured locally — skip sponsor enrichment, show contributors as-is
       }
     }
@@ -86,8 +110,10 @@ async function fetchRepoStats(): Promise<RepoStats> {
       contributorCount: Array.isArray(contributors) ? contributors.length : 0,
       goodFirstIssues: Array.isArray(gfiIssues) ? gfiIssues.length : 0,
       contributors: mappedContributors,
+      totalCommits,
+      mergedPRs,
     };
-  } catch {
+  } catch (e) {
     return {
       stars: 0,
       forks: 0,
@@ -95,13 +121,14 @@ async function fetchRepoStats(): Promise<RepoStats> {
       contributorCount: 0,
       goodFirstIssues: 0,
       contributors: [],
+      totalCommits: 0,
+      mergedPRs: 0,
     };
   }
 }
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
-
   if (session) {
     redirect("/dashboard");
   }

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
   try {
     payload = (await request.json()) as ContactPayload;
-  } catch {
+  } catch (e) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
@@ -58,8 +58,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Name, email, and message are required." }, { status: 400 });
   }
 
+  // Bound length before regex to prevent ReDoS on pathological inputs
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailPattern.test(email)) {
+  if (email.length > 254 || !emailPattern.test(email)) {
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
   }
 

@@ -1,11 +1,12 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin, isSupabaseAdminAvailable } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
 async function getUserId(githubId: string): Promise<string | null> {
+  if (!isSupabaseAdminAvailable) return null;
   try {
     const { data, error } = await supabaseAdmin
       .from("users")
@@ -40,10 +41,7 @@ export async function GET() {
 
     const userId = await getUserId(session.githubId);
     if (!userId) {
-      console.error("Failed to get user ID for notifications GET:", {
-        githubId: session.githubId,
-      });
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ notifications: [], unreadCount: 0 });
     }
 
     const { data, error } = await supabaseAdmin
@@ -54,7 +52,7 @@ export async function GET() {
       .limit(10);
 
     if (error) {
-      console.error("Error fetching notifications:", error);
+      console.error("Failed to fetch notifications:", error);
       return NextResponse.json(
         { error: "Failed to fetch notifications" },
         { status: 500 }
@@ -82,10 +80,7 @@ export async function PATCH() {
 
     const userId = await getUserId(session.githubId);
     if (!userId) {
-      console.error("Failed to get user ID for notifications PATCH:", {
-        githubId: session.githubId,
-      });
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ success: true });
     }
 
     const { error } = await supabaseAdmin
@@ -95,7 +90,7 @@ export async function PATCH() {
       .eq("read", false);
 
     if (error) {
-      console.error("Error updating notification read status:", error);
+      console.error("Failed to mark notifications as read:", error);
       return NextResponse.json(
         { error: "Failed to update notifications" },
         { status: 500 }
@@ -105,6 +100,42 @@ export async function PATCH() {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Unexpected error in notifications PATCH:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE — clear (delete) all notifications for the current user
+export async function DELETE() {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.githubId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = await getUserId(session.githubId);
+    if (!userId) {
+      return NextResponse.json({ success: true });
+    }
+
+    const { error } = await supabaseAdmin
+      .from("notifications")
+      .delete()
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Failed to delete notifications:", error);
+      return NextResponse.json(
+        { error: "Failed to delete notifications" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Unexpected error in notifications DELETE:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

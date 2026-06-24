@@ -1,6 +1,6 @@
 "use client";
 
-import { HeatmapPoint } from "@/lib/repoAnalytics";
+import { HeatmapPoint } from "@/lib/repo-analytics-types";
 
 const colorForCount = (count: number) => {
   if (count === 0) return "var(--card)";

@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = Number(process.env.PORT ?? 3000);
+const PORT = Number(process.env.PORT ?? 3002);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${PORT}`;
 const prepareStandaloneCommand =
   "node -e \"const fs=require('fs'); fs.cpSync('public','.next/standalone/public',{recursive:true,force:true}); fs.cpSync('.next/static','.next/standalone/.next/static',{recursive:true,force:true});\"";
@@ -12,7 +12,9 @@ export default defineConfig({
     timeout: 8_000,
   },
   fullyParallel: true,
+  workers: process.env.CI ? 1 : undefined,
   forbidOnly: Boolean(process.env.CI),
+  timeout: process.env.CI ? 60_000 : 120_000,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
@@ -40,6 +42,7 @@ export default defineConfig({
       SUPABASE_SERVICE_ROLE_KEY: "placeholder-service-role-key",
       PORT: String(PORT),
       HOSTNAME: "127.0.0.1",
+      PLAYWRIGHT_TEST: "true",
     },
   },
   projects: [

@@ -160,7 +160,7 @@ async function fetchTopLanguages(token: string, repos: string[]) {
         for (const [language, bytes] of Object.entries(languages)) {
           langTotals[language] = (langTotals[language] ?? 0) + bytes;
         }
-      } catch {
+      } catch (e) {
         // Language data is nice-to-have for the recap. The rest of the wrapped
         // experience should still render if one repository cannot be read.
       }
@@ -231,7 +231,7 @@ export async function GET(req: NextRequest) {
       generatedAt: new Date().toISOString(),
       partial,
     });
-  } catch {
+  } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

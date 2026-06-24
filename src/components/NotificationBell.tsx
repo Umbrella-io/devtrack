@@ -1,51 +1,78 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
-interface Notification {
-  id: string;
-  type: string;
-  message: string;
-  read: boolean;
-  created_at: string;
-}
+
+import { useNotifications } from "@/hooks/useNotifications";
+
+const EMPTY_NOTIFICATIONS: any[] = [];
 
 export default function NotificationBell() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading, error, refetch } = useNotifications();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
 
-  const fetchNotifications = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  useEffect(() => { setMounted(true); }, []);
 
-    try {
-      const res = await fetch("/api/notifications");
-      if (!res.ok) {
-        throw new Error("Failed to load notifications");
-      }
 
-      const data = await res.json();
+  const notifications = data?.notifications ?? EMPTY_NOTIFICATIONS;
+  const unreadCountFromApi = data?.unreadCount ?? 0;
 
-      if (!data || !Array.isArray(data.notifications)) {
-        throw new Error("Invalid notifications response");
-      }
+  const [unreadCount, setUnreadCount] = useState(0);
 
-      setNotifications(data.notifications ?? []);
-      const count = data.unreadCount ?? 0;
-      setUnreadCount(count);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("devtrack:unread-notification-count", count.toString());
-      }
-    } catch {
-      setError("Failed to load notifications. Please try again later.");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    setUnreadCount(unreadCountFromApi);
+  }, [unreadCountFromApi]);
+
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 150);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  // Recompute anchor position whenever the dropdown opens or window resizes
+  useEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const calculate = () => {
+      const rect = triggerRef.current!.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    };
+    calculate();
+    window.addEventListener("resize", calculate);
+    window.addEventListener("scroll", calculate, true);
+    return () => {
+      window.removeEventListener("resize", calculate);
+      window.removeEventListener("scroll", calculate, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      // Small delay to ensure it's rendered before focus
+      setTimeout(() => searchInputRef.current?.focus(), 10);
+    } else {
+      setSearchQuery("");
+      setDebouncedSearchQuery("");
     }
-  }, []);
+  }, [open]);
+
+  const filteredNotifications = notifications.filter((n) =>
+    debouncedSearchQuery
+      ? n.message.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+      : true
+  );
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -57,22 +84,28 @@ export default function NotificationBell() {
         }
       }
     }
-    fetchNotifications();
 
     const handleNotifications = () => {
-      fetchNotifications();
+      void refetch();
     };
 
+    // initial load
+    void refetch();
+
     window.addEventListener("devtrack:notifications", handleNotifications);
+
     return () =>
       window.removeEventListener("devtrack:notifications", handleNotifications);
-  }, [fetchNotifications]);
+  }, [refetch]);
+
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
+        !dropdownRef.current.contains(e.target as Node) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target as Node)
       ) {
         setOpen(false);
       }
@@ -84,6 +117,7 @@ export default function NotificationBell() {
   }, []);
 
   const handleOpen = useCallback(async () => {
+
     setOpen((prev) => {
       const next = !prev;
 
@@ -95,26 +129,24 @@ export default function NotificationBell() {
         if (typeof window !== "undefined") {
           localStorage.setItem("devtrack:unread-notification-count", "0");
         }
-        setNotifications((prev) =>
-          prev.map((n) => ({ ...n, read: true }))
-        );
-
         fetch("/api/notifications", { method: "PATCH" }).catch(() => {
           setUnreadCount(previousUnreadCount);
-          setNotifications(previousNotifications);
-          setError("Failed to update notifications. Please try again later.");
+          // data will be revalidated by the hook
           if (typeof window !== "undefined") {
             localStorage.setItem(
               "devtrack:unread-notification-count",
               previousUnreadCount.toString()
             );
           }
+        }).finally(() => {
+          void refetch();
         });
+
       }
 
       return next;
     });
-  }, [notifications, unreadCount]);
+  }, [notifications, unreadCount, refetch]);
 
   function timeAgo(iso: string): string {
     const mins = Math.floor(
@@ -130,6 +162,28 @@ export default function NotificationBell() {
     return `${Math.floor(hrs / 24)}d ago`;
   }
 
+  const [clearing, setClearing] = useState(false);
+
+  const handleClearAll = useCallback(async () => {
+    if (clearing || notifications.length === 0) return;
+
+    setClearing(true);
+    try {
+      const res = await fetch("/api/notifications", { method: "DELETE" });
+      if (!res.ok) throw new Error(`Failed to clear notifications (${res.status})`);
+
+      setUnreadCount(0);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("devtrack:unread-notification-count", "0");
+      }
+    } catch (e) {
+      console.error("Failed to clear notifications:", e);
+    } finally {
+      setClearing(false);
+      void refetch();
+    }
+  }, [clearing, notifications.length, refetch]);
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Dynamic announcement live region */}
@@ -139,9 +193,10 @@ export default function NotificationBell() {
 
       {/* Bell button */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={handleOpen}
-        className="relative rounded-lg p-2 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-colors"
+        className="relative rounded-lg p-2 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-all hover:opacity-90 active:scale-95"
         aria-label="Notifications"
         title="Notifications"
         suppressHydrationWarning
@@ -169,9 +224,19 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {/* dropdown */}
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl z-50">
+      {/* dropdown via portal so it escapes overflow:hidden ancestors */}
+      {open && mounted && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{
+            position: "fixed",
+            top: dropdownPos?.top ?? 64,
+            right: dropdownPos?.right ?? 16,
+            zIndex: 9999,
+            width: 320,
+          }}
+          className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl"
+        >
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
             <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
               Notifications
@@ -181,6 +246,18 @@ export default function NotificationBell() {
                 <span className="text-xs text-[var(--muted-foreground)]">
                   All caught up
                 </span>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  disabled={clearing}
+                  className="text-xs font-medium text-[var(--muted-foreground)] hover:text-[var(--card-foreground)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Clear all notifications"
+                  title="Clear all notifications"
+                >
+                  {clearing ? "Clearing…" : "Clear all"}
+                </button>
               )}
               <button
                 type="button"
@@ -205,29 +282,63 @@ export default function NotificationBell() {
             </div>
           </div>
 
-          <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--border)]  scrollbar-thin">
+          <div className="p-3 border-b border-[var(--border)] relative">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search notifications..."
+              aria-label="Search notifications"
+              className="w-full pl-3 pr-8 py-1.5 text-sm bg-[var(--control)] text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] border border-[var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-shadow"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--card-foreground)] text-lg leading-none p-1"
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--border)] scrollbar-thin">
             {loading ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
                 Loading notifications…
               </li>
             ) : error ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--destructive)]">
-                {error}
+                {error.message}
               </li>
-            ) : notifications.length === 0 ? (
+            ) : filteredNotifications.length === 0 ? (
               <li className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
-                No notifications yet
+                {debouncedSearchQuery ? `No results for '${debouncedSearchQuery}'` : "No notifications yet"}
               </li>
             ) : (
-              notifications.map((n) => (
+              filteredNotifications.map((n) => (
                 <li
                   key={n.id}
-                  className={`px-4 py-3 ${
-                    !n.read ? "bg-[var(--accent)]/5" : ""
-                  }`}
+                  className={`px-4 py-3 ${!n.read ? "bg-[var(--accent)]/5" : ""
+                    }`}
                 >
                   <p className="text-sm text-[var(--card-foreground)]">
-                    {n.message}
+                    {debouncedSearchQuery ? (() => {
+                      const escapedQuery = debouncedSearchQuery.replace(/[/\-\\^$*+?.()|[\]{}]/g, "\\$&");
+                      return n.message.split(new RegExp(`(${escapedQuery})`, "gi")).map((part: string, i: number) =>
+                        part.toLowerCase() === debouncedSearchQuery.toLowerCase() ? (
+                          <mark key={i} className="bg-[var(--accent)]/20 text-inherit rounded-sm px-0.5">
+                            {part}
+                          </mark>
+                        ) : (
+                          <span key={i}>{part}</span>
+                        )
+                      );
+                    })() : (
+                      n.message
+                    )}
                   </p>
                   <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
                     {timeAgo(n.created_at)}
@@ -236,7 +347,8 @@ export default function NotificationBell() {
               ))
             )}
           </ul>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

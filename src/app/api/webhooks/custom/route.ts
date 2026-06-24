@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser, AppUser } from "@/lib/resolve-user";
 import { generateSecretKey, encryptSecretKey } from "@/lib/webhooks";
 import { isSafeUrl } from "@/lib/ssrf-protection";
+import { validateTextInput } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -36,13 +37,21 @@ export async function GET(req: NextRequest) {
   const result = await requireUser();
   if ("error" in result) return result.error;
 
-  const { data: webhooks } = await supabaseAdmin
+  const { data: webhooks, error } = await supabaseAdmin
     .from("webhook_configs")
     .select("id, name, url, events, is_enabled, created_at, updated_at")
     .eq("user_id", result.user.id)
     .order("created_at", { ascending: false });
 
-  return Response.json({ webhooks: webhooks || [] });
+  if (error) {
+    console.error("Failed to fetch webhooks:", error);
+    return Response.json(
+      { error: "Failed to fetch webhooks" },
+      { status: 500 }
+    );
+  }
+
+  return Response.json({ webhooks: webhooks ?? [] });
 }
 
 export async function POST(req: NextRequest) {
@@ -58,8 +67,13 @@ export async function POST(req: NextRequest) {
 
   const { name, url, events } = body;
 
-  if (!name || !name.trim()) {
-    return Response.json({ error: "Webhook name is required" }, { status: 400 });
+  const validatedName = validateTextInput(name, "Webhook name", 100);
+
+  if (!validatedName.ok) {
+    return Response.json(
+      { error: validatedName.error },
+      { status: 400 }
+    );
   }
 
   if (!url) {
@@ -120,7 +134,7 @@ export async function POST(req: NextRequest) {
     .from("webhook_configs")
     .insert({
       user_id: result.user.id,
-      name: name.trim(),
+      name: validatedName.value,
       url,
       events,
       secret_key: encrypted,
