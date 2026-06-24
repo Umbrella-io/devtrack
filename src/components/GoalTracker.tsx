@@ -11,7 +11,7 @@ import EmptyState from "@/components/EmptyState";
 
 
 type Recurrence = "none" | "weekly" | "monthly";
-
+ 
 interface Goal {
   id: string;
   title: string;
@@ -308,7 +308,11 @@ export function useGoalTracker() {
   };
 }
 
-export default function GoalTracker() {
+interface GoalTrackerProps {
+  isLoading?: boolean;
+}
+
+export default function GoalTracker({ isLoading }: GoalTrackerProps = {}) {
 
 
   const {
@@ -347,9 +351,11 @@ export default function GoalTracker() {
 
   const { setSummary, setIsUpdating } = useDashboardWidgetA11y("goal-tracker");
 
+  const showSkeleton = isLoading !== undefined ? isLoading : loading;
+
   useEffect(() => {
-    setIsUpdating(loading);
-  }, [loading, setIsUpdating]);
+    setIsUpdating(showSkeleton);
+  }, [showSkeleton, setIsUpdating]);
 
   useEffect(() => {
     const activeCount = goals.filter((goal) => goal.current < goal.target).length;
@@ -427,19 +433,18 @@ export default function GoalTracker() {
 
   const activeConfirmingGoal = goals.find((g) => g.id === confirmingId);
 
-  if (loading) {
+  if (showSkeleton) {
     return (
-      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
-        <div role="status" aria-live="polite" aria-busy="true">
+      <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm animate-pulse">
+        <div role="status" aria-live="polite" aria-busy="true" className="space-y-4">
           <span className="sr-only">Loading weekly goals</span>
-          <div
-            aria-hidden="true"
-            className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse"
-          />
+          <div className="h-5 w-32 rounded bg-muted" />
           {[1, 2, 3].map((i) => (
-            <div key={i} aria-hidden="true" className="mb-4">
-              <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
-              <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
+            <div key={i} aria-hidden="true" className="space-y-2">
+              <div className="flex justify-between items-center">
+                <div className="h-4 w-1/3 bg-muted rounded" />
+                <div className="h-4 w-12 bg-muted rounded" />
+              </div>
             </div>
           ))}
         </div>

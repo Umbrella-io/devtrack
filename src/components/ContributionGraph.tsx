@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip, 
   ResponsiveContainer,
   Legend,
 } from "recharts";
@@ -43,6 +43,12 @@ interface ContributionResponse {
   commits?: CommitItem[];
   sources?: ContributionSources;
 }
+
+
+interface ContributionGraphProps {
+  isLoading?: boolean;
+}
+
 
 type ViewMode = "bar" | "line" | "area";
 
@@ -129,10 +135,11 @@ function mergeContributionSources(
   return merged;
 }
 
-export default function ContributionGraph() {
+export default function ContributionGraph({ isLoading }: ContributionGraphProps = {}) {
   const { selectedAccount } = useAccount();
   const [data, setData] = useState<DayData[]>([]);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = isLoading !== undefined ? isLoading : loading;
   const [days, setDays] = useState<number>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -180,7 +187,7 @@ export default function ContributionGraph() {
           localStorage.setItem("devtrack:contribution-range", "30");
           setDays(30);
         }
-      } catch (e) {
+      } catch  (e) {
         setDays(30);
       }
     }
@@ -486,7 +493,7 @@ export default function ContributionGraph() {
           {compareMode && compareLoading && (
             <p className="text-xs text-[var(--muted-foreground)] mt-1">Loading friend data...</p>
           )}
-          {!compareMode && !loading && !error && (
+          {!compareMode && !showSkeleton && !error && (
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">
               {totalCommits} commit{totalCommits === 1 ? "" : "s"}
             </p>
@@ -643,17 +650,30 @@ export default function ContributionGraph() {
         </div>
       </div>
 
-      {loading ? (
+      {showSkeleton ? (
         <div
           role="status"
           aria-live="polite"
           aria-busy="true"
+          className="flex h-[220px] items-end justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4"
         >
           <span className="sr-only">Loading contribution graph</span>
-          <div
-            aria-hidden="true"
-            className="h-[220px] rounded border border-[var(--border)] bg-[var(--background)] animate-pulse"
-          />
+          <div className="h-1/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-2/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-3/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-2/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-4/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-3/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-2/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-4/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-3/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-1/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-2/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-4/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-3/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-1/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-2/5 w-full rounded-sm bg-muted animate-pulse" />
+          <div className="h-3/5 w-full rounded-sm bg-muted animate-pulse" />
         </div>
       ) : error ? (
         <div className="flex h-[220px] items-center rounded-lg border border-[var(--border)] bg-[var(--background)] px-4">
@@ -856,7 +876,7 @@ export default function ContributionGraph() {
       )}
 
       {!compareMode && (
-        <CommitSearchPanel commits={commits} loading={loading} />
+        <CommitSearchPanel commits={commits} loading={showSkeleton} />
       )}
     </div>
   );
