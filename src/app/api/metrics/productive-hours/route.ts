@@ -6,7 +6,8 @@ import {
   getAllAccounts,
   mergeMetrics,
 } from "@/lib/github-accounts";
-import { GITHUB_API, GitHubCommitSearchItem } from "@/lib/github";
+import { GITHUB_API, GitHubCommitSearchItem, GitHubAuthError } from "@/lib/github";
+import { githubAuthErrorResponse } from "@/lib/github-fetch";
 import {
   isMetricsCacheBypassed,
   METRICS_CACHE_TTL_SECONDS,
@@ -89,6 +90,7 @@ async function fetchProductiveHoursForAccount(
         });
 
         if (!searchRes.ok) {
+          if (searchRes.status === 401) throw new GitHubAuthError();
           // Graceful degradation on rate-limit — return partial data already collected.
           if (searchRes.status === 429 || searchRes.status === 403) {
             if (allItems.length === 0) {
@@ -196,6 +198,9 @@ export async function GET(req: NextRequest) {
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.error === "TokenRevoked") {
+    return githubAuthErrorResponse();
+  }
 
   const searchParams = req.nextUrl.searchParams;
 
@@ -236,7 +241,8 @@ export async function GET(req: NextRequest) {
         repoParam
       );
       return Response.json(result);
-    } catch {
+    } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -296,7 +302,8 @@ export async function GET(req: NextRequest) {
         repoParam
       );
       return Response.json(result);
-    } catch {
+    } catch (e) {
+      if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
       return Response.json({ error: "GitHub API error" }, { status: 502 });
     }
   }
@@ -329,7 +336,8 @@ export async function GET(req: NextRequest) {
       repoParam
     );
     return Response.json(result);
-  } catch {
+  } catch (e) {
+    if (e instanceof GitHubAuthError) return githubAuthErrorResponse();
     return Response.json({ error: "GitHub API error" }, { status: 502 });
   }
 }

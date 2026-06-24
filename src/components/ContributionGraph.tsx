@@ -612,13 +612,19 @@ export default function ContributionGraph() {
                   type="button"
                   onClick={() => setChartType(chart.key)}
                   aria-pressed={chartType === chart.key}
-                  className={`px-3 py-1 rounded-md transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                  className={`relative px-3 py-1 rounded-md transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                     chartType === chart.key
-                      ? "bg-[var(--accent)] text-[var(--background)]"
+                      ? "bg-[var(--accent)] text-[var(--background)] font-semibold"
                       : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                   }`}
                 >
                   {chart.label}
+                  {chartType === chart.key && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[3px] h-0.5 w-4 rounded-full bg-[var(--background)]"
+                    />
+                  )}
                 </button>
               ))}
             </div>

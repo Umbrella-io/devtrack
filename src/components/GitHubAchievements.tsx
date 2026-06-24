@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { GitHubAchievement } from "@/lib/github-achievements";
+import { useTranslations } from "next-intl";
 
 interface GitHubAchievementsProps {
   achievements: GitHubAchievement[];
@@ -12,10 +13,12 @@ export default function GitHubAchievements({
   loading = false,
   error = null,
 }: GitHubAchievementsProps) {
+  const t = useTranslations("achievements");
+
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
-        GitHub Achievements
+        {t("title")}
       </h2>
 
       {loading ? (
@@ -25,7 +28,7 @@ export default function GitHubAchievements({
           aria-busy="true"
           className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
         >
-          <span className="sr-only">Loading GitHub achievements</span>
+          <span className="sr-only">{t("loading")}</span>
           {[1, 2, 3, 4, 5, 6].map((item) => (
             <div
               key={item}
@@ -36,11 +39,11 @@ export default function GitHubAchievements({
         </div>
       ) : error && achievements.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
-          GitHub achievements could not be loaded right now.
+          {t("loadFailed")}
         </p>
       ) : achievements.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
-          No public GitHub achievements available yet.
+          {t("empty")}
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
@@ -55,7 +58,7 @@ export default function GitHubAchievements({
             >
               <Image
                 src={achievement.imageUrl}
-                alt={`${achievement.title} GitHub achievement badge`}
+                alt={t("badgeAlt", { title: achievement.title })}
                 width={56}
                 height={56}
                 className="mx-auto h-14 w-14 object-contain"

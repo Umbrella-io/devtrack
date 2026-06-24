@@ -48,23 +48,23 @@ function makePostRequest(body: unknown): [Request] {
   ];
 }
 
-function makePatchRequest(body: unknown, goalId = "goal-1"): [Request, { params: { id: string } }] {
+function makePatchRequest(body: unknown, goalId = "goal-1"): [Request, { params: Promise<{ id: string }> }] {
   return [
     new Request(`http://localhost/api/goals/${goalId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
-    { params: { id: goalId } },
+    { params: Promise.resolve({ id: goalId }) },
   ];
 }
 
-function makeDeleteRequest(goalId = "goal-1"): [Request, { params: { id: string } }] {
+function makeDeleteRequest(goalId = "goal-1"): [Request, { params: Promise<{ id: string }> }] {
   return [
     new Request(`http://localhost/api/goals/${goalId}`, {
       method: "DELETE",
     }),
-    { params: { id: goalId } },
+    { params: Promise.resolve({ id: goalId }) },
   ];
 }
 
@@ -95,9 +95,25 @@ describe("GET /api/goals", () => {
     const limitFn = vi.fn().mockResolvedValue({ data: goals, error: null });
     const orderFn = vi.fn().mockReturnValue({ limit: limitFn });
     const eqFn = vi.fn().mockReturnValue({ order: orderFn });
-    mocks.supabaseFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({ eq: eqFn }),
+
+    const inOrderFn = vi.fn().mockResolvedValue({ data: [], error: null });
+    const inFn = vi.fn().mockReturnValue({ order: inOrderFn });
+    const eqFn2 = vi.fn().mockReturnValue({ in: inFn });
+
+    mocks.supabaseFrom.mockImplementation((table: string) => {
+      if (table === "goals") {
+        return {
+          select: vi.fn().mockReturnValue({ eq: eqFn }),
+        };
+      }
+      if (table === "goal_history") {
+        return {
+          select: vi.fn().mockReturnValue({ eq: eqFn2 }),
+        };
+      }
+      return {};
     });
+
     const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -135,9 +151,17 @@ describe("POST /api/goals", () => {
   it("creates a goal and returns it with status 201", async () => {
     const createdGoal = buildGoal({ title: "New goal", target: 5, unit: "prs" });
     mocks.supabaseFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
-      }),
+      select: vi.fn()
+        .mockReturnValueOnce({
+          eq: vi.fn().mockReturnValue({
+            ilike: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        })
+        .mockReturnValueOnce({
+          eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
+        }),
       insert: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           single: vi.fn().mockResolvedValue({ data: createdGoal, error: null }),
@@ -164,11 +188,37 @@ describe("POST /api/goals", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns 400 when the user already has the maximum number of goals", async () => {
+  it("returns 400 when a goal with the same title already exists", async () => {
     mocks.supabaseFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
+        eq: vi.fn().mockReturnValue({
+          ilike: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { id: "goal-existing" }, error: null }),
+          }),
+        }),
       }),
+    });
+    const [req] = makePostRequest({ title: "Read docs", target: 10 });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("Task with this title already exists");
+    expect(body.code).toBe("DUPLICATE_TASK_TITLE");
+  });
+
+  it("returns 400 when the user already has the maximum number of goals", async () => {
+    mocks.supabaseFrom.mockReturnValue({
+      select: vi.fn()
+        .mockReturnValueOnce({
+          eq: vi.fn().mockReturnValue({
+            ilike: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        })
+        .mockReturnValueOnce({
+          eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
+        }),
     });
     const [req] = makePostRequest({ title: "Another goal", target: 10 });
     const res = await POST(req);
@@ -233,7 +283,7 @@ describe("PATCH /api/goals/[id]", () => {
       headers: { "Content-Type": "application/json" },
       body: "not-json",
     });
-    const res = await PATCH(req, { params: { id: "goal-1" } });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "goal-1" }) });
     expect(res.status).toBe(400);
   });
 });

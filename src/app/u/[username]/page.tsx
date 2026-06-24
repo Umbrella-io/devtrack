@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic";
-
+import QrCodeButton from "@/components/QrCodeButton";
 import ProfileThemeWrapper from "@/components/ProfileThemeWrapper";
 import { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import BadgeSection from "@/components/BadgeSection";
@@ -14,11 +15,8 @@ import PinnedReposWidget from "@/components/PinnedReposWidget";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import { Moon, Sun } from "lucide-react";
 import { authOptions } from "@/lib/auth";
-import { getUserByGithubId, getUserByUsername } from "@/lib/supabase";
-import {
-  fetchPublicProfile as fetchPublicProfileLib,
-  type PublicProfileData,
-} from "@/lib/public-profile-data";
+import { getUserByGithubId } from "@/lib/supabase";
+import type { PublicProfileData } from "@/lib/public-profile-data";
 
 // Extend tracking structures to forward gamification flags seamlessly downstream
 interface ExtendedPublicProfileData extends PublicProfileData {
@@ -27,42 +25,53 @@ interface ExtendedPublicProfileData extends PublicProfileData {
   isEarlyBird: boolean;
 }
 
+function getBaseUrl() {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000"
+  );
+}
+
 async function fetchPublicProfile(
   username: string,
   options: { includeAchievements?: boolean } = {}
 ): Promise<ExtendedPublicProfileData | null> {
-  const user = await getUserByUsername(username);
+  try {
+    const url = new URL(`/api/public/${encodeURIComponent(username)}`, getBaseUrl());
+    if (options.includeAchievements) url.searchParams.set("achievements", "1");
 
-  if (!user) return null;
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return null;
 
-  const canonicalUsername = user.github_login.toLowerCase();
+    const base: PublicProfileData = await res.json();
 
-  if (username !== canonicalUsername) {
-    redirect(`/u/${canonicalUsername}`);
-  }
-
-  const base = await fetchPublicProfileLib(username, options);
-
-  if (!base) return null;
-
-  // Compute Night Owl / Early Bird from repos
-  let nightOwlCount = 0;
-  let earlyBirdCount = 0;
-
-  (base.repos || []).forEach((repo: any) => {
-    if (repo.last_commit_date || repo.updatedAt) {
-      const commitHour = new Date(repo.last_commit_date || repo.updatedAt).getHours();
-      if (commitHour >= 0 && commitHour <= 4) nightOwlCount++;
-      if (commitHour >= 5 && commitHour <= 8) earlyBirdCount++;
+    const canonicalUsername = base.username.toLowerCase();
+    if (username !== canonicalUsername) {
+      redirect(`/u/${canonicalUsername}`);
     }
-  });
 
-  return {
-    ...base,
-    userId: user.id,
-    isNightOwl: nightOwlCount >= 1,
-    isEarlyBird: earlyBirdCount >= 1,
-  };
+    // Compute Night Owl / Early Bird from repos
+    let nightOwlCount = 0;
+    let earlyBirdCount = 0;
+
+    (base.repos || []).forEach((repo: any) => {
+      if (repo.last_commit_date || repo.updatedAt) {
+        const commitHour = new Date(repo.last_commit_date || repo.updatedAt).getHours();
+        if (commitHour >= 0 && commitHour <= 4) nightOwlCount++;
+        if (commitHour >= 5 && commitHour <= 8) earlyBirdCount++;
+      }
+    });
+
+    return {
+      ...base,
+      userId: "",
+      isNightOwl: nightOwlCount >= 1,
+      isEarlyBird: earlyBirdCount >= 1,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function getLoggedInGitHubUsername() {
@@ -81,12 +90,7 @@ async function getLoggedInGitHubUsername() {
 }
 
 function getProfileUrl(username: string) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXTAUTH_URL ||
-    "http://localhost:3000";
-
-  return `${baseUrl}/u/${username}`;
+  return `${getBaseUrl()}/u/${username}`;
 }
 
 export async function generateMetadata({
@@ -95,29 +99,35 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  const user = await getUserByUsername(username);
   const profileUrl = getProfileUrl(username);
 
-  if (!user) {
+  let userExists = false;
+  try {
+    const res = await fetch(
+      new URL(`/api/public/${encodeURIComponent(username)}`, getBaseUrl()).toString(),
+      { cache: "no-store" }
+    );
+    userExists = res.ok;
+  } catch {
+    userExists = false;
+  }
+
+  if (!userExists) {
     return {
       title: "Profile Not Found",
       description: "This profile is not available or is private.",
     };
   }
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXTAUTH_URL ||
-    "http://localhost:3000";
+  const baseUrl = getBaseUrl();
 
-  // Build dynamic OG image URL
   const ogImageUrl = new URL(`${baseUrl}/api/og/user`);
-ogImageUrl.searchParams.set("username", username);
-ogImageUrl.searchParams.set("name", username);
-ogImageUrl.searchParams.set("avatar", `https://avatars.githubusercontent.com/${username}`);
-ogImageUrl.searchParams.set("topLang", "Code");
-ogImageUrl.searchParams.set("streak", "0");
-ogImageUrl.searchParams.set("commits", "0");
+  ogImageUrl.searchParams.set("username", username);
+  ogImageUrl.searchParams.set("name", username);
+  ogImageUrl.searchParams.set("avatar", `https://avatars.githubusercontent.com/${username}`);
+  ogImageUrl.searchParams.set("topLang", "Code");
+  ogImageUrl.searchParams.set("streak", "0");
+  ogImageUrl.searchParams.set("commits", "0");
 
   const title = `${username}'s DevTrack Profile`;
   const description = `GitHub stats and coding activity for ${username}. View commits, streaks, and top repositories.`;
@@ -201,6 +211,7 @@ export default async function PublicProfilePage({
   const avatarUrl = `https://avatars.githubusercontent.com/${profile.username}`;
   const topRepo = profile.repos[0]?.name ?? "";
   const gistsUrl = `https://gist.github.com/${profile.username}`;
+  const githubUrl = `https://github.com/${profile.username}`;
   const showCompareButton =
     loggedInUsername !== null &&
     loggedInUsername.toLowerCase() !== profile.username.toLowerCase();
@@ -211,20 +222,48 @@ export default async function PublicProfilePage({
     `/u/${profile.username}`
   )}`;
 
+  const widgets = profile.publicWidgets ?? ["streak", "contributions"];
+  const showStreak = widgets.includes("streak");
+  const showContributions = widgets.includes("contributions");
+  const showLanguages = widgets.includes("languages");
+  const showPRs = widgets.includes("prs");
+
+  const memberSinceFormatted = profile.memberSince
+    ? new Date(profile.memberSince).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+
   return (
     <ProfileThemeWrapper>
     <div className="min-h-screen bg-[var(--background)] p-4 text-[var(--foreground)] transition-colors md:p-8">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
+
+      {/* ── Header: Avatar + Identity ── */}
+      <div className="mb-8 flex flex-wrap items-start gap-5">
+        {/* GitHub avatar */}
+        <div className="shrink-0">
+          <Image
+            src={avatarUrl}
+            alt={`${profile.username}'s GitHub avatar`}
+            width={80}
+            height={80}
+            className="rounded-full border-2 border-[var(--border)] shadow-md"
+            unoptimized
+          />
+        </div>
+
+        {/* Identity block */}
+        <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] flex flex-wrap items-center gap-2">
-              <span>@{profile.username}&apos;s Profile</span>
+              <span>@{profile.username}</span>
               {profile.isSponsor && <SponsorBadge />}
-              
-              {/* 🎯 Render Server-Calculated Time Distribution Badges Safely on Public Profile View */}
+
+              {/* Night Owl / Early Bird badges */}
               {profile.isNightOwl && (
-                <span 
-                  title="Night Owl Milestone Badge" 
+                <span
+                  title="Night Owl Milestone Badge"
                   className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 px-2.5 py-0.5 text-xs font-bold text-indigo-400"
                 >
                   <Moon className="h-3 w-3" />
@@ -232,8 +271,8 @@ export default async function PublicProfilePage({
                 </span>
               )}
               {profile.isEarlyBird && (
-                <span 
-                  title="Early Bird Milestone Badge" 
+                <span
+                  title="Early Bird Milestone Badge"
                   className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-xs font-bold text-amber-400"
                 >
                   <Sun className="h-3 w-3" />
@@ -243,41 +282,62 @@ export default async function PublicProfilePage({
             </h1>
             <CopyLinkButton url={profileUrl} />
           </div>
-          <p className="mt-2 text-[var(--muted-foreground)]">
+
+          <p className="mt-1 text-[var(--muted-foreground)]">
             GitHub activity and coding stats
           </p>
-          {profile.publicGists > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+
+          {/* Member since + View on GitHub */}
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-[var(--muted-foreground)]">
+            {memberSinceFormatted && (
+              <span>Member since {memberSinceFormatted}</span>
+            )}
+            <a
+              href={githubUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--control)] px-3 py-1 text-xs font-medium text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)] hover:border-[var(--accent)]"
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+              </svg>
+              View on GitHub
+            </a>
+            {profile.publicGists > 0 && (
               <a
                 href={gistsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-3 py-1.5 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+                className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--control)] px-3 py-1 text-xs font-medium text-[var(--card-foreground)] transition-colors hover:text-[var(--accent)]"
               >
                 {profile.publicGists} Gists
               </a>
-            </div>
-          )}
-          {compareHref && (
-            <Link
-              href={compareHref}
-              className="primary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
-            >
-              Compare with me
-            </Link>
-          )}
-          {!loggedInUsername && (
-            <Link
-              href={signInToCompareHref}
-              className="secondary-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
-            >
-              Log in to compare
-            </Link>
-          )}
+            )}
+          </div>
+
+          {/* Compare buttons */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {compareHref && (
+              <Link
+                href={compareHref}
+                className="primary-button inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
+              >
+                Compare with me
+              </Link>
+            )}
+            {!loggedInUsername && (
+              <Link
+                href={signInToCompareHref}
+                className="secondary-button inline-flex rounded-lg px-4 py-2 text-sm font-semibold"
+              >
+                Log in to compare
+              </Link>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-        {/* Download stats card button — client component */}
-        <div className="flex flex-wrap items-center gap-3">
+
+        {/* Stats card download */}
+        <div className="shrink-0">
           <StatsCard
             username={profile.username}
             avatarUrl={avatarUrl}
@@ -287,26 +347,50 @@ export default async function PublicProfilePage({
             topRepo={topRepo}
           />
         </div>
-        </div>
       </div>
 
+      {/* Share section */}
       <div className="mb-8">
         <ShareProfileSection
           username={profile.username}
           streak={profile.streak.current}
           profileUrl={profileUrl}
         />
+          <div className="mt-3">
+            <QrCodeButton profileUrl={profileUrl} username={profile.username} />
+          </div>
+
       </div>
 
-      {/* Row 1: Contribution graph + Streak */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <PublicContributionGraph data={profile.contributions} />
+      {/* Row 1: Contribution graph + Streak (gated by public_widgets) */}
+      {(showContributions || showStreak) && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {showContributions && (
+            <div className="lg:col-span-2">
+              <PublicContributionGraph data={profile.contributions} />
+            </div>
+          )}
+          {showStreak && (
+            <div className={showContributions ? "" : "lg:col-span-3"}>
+              <PublicStreakTracker streak={profile.streak} />
+            </div>
+          )}
         </div>
-        <div className="flex flex-col gap-6">
-          <PublicStreakTracker streak={profile.streak} />
+      )}
+
+      {/* Languages (gated) */}
+      {showLanguages && profile.topLanguages.length > 0 && (
+        <div className="mt-6">
+          <PublicLanguageBreakdown languages={profile.topLanguages} />
         </div>
-      </div>
+      )}
+
+      {/* Pull Requests (gated) */}
+      {showPRs && (
+        <div className="mt-6">
+          <PublicPRCount pullRequests={profile.pullRequests} />
+        </div>
+      )}
 
       {/* Custom Spotlight Repositories */}
       {profile.spotlightRepos?.length ? (
@@ -325,12 +409,12 @@ export default async function PublicProfilePage({
         </div>
       )}
 
-      {/* Row 2: Top repos */}
+      {/* Top repos */}
       <div className="mt-6">
         <PublicTopRepos repos={profile.repos} />
       </div>
 
-      {/* Row 3: GitHub achievements */}
+      {/* GitHub achievements */}
       <div className="mt-6">
         <GitHubAchievements
           achievements={profile.achievements}
@@ -338,9 +422,24 @@ export default async function PublicProfilePage({
         />
       </div>
 
-      {/* Row 4: Get your badge */}
+      {/* Get your badge */}
       <div className="mt-6">
         <BadgeSection username={profile.username} />
+      </div>
+
+      {/* Powered by DevTrack footer badge */}
+      <div className="mt-10 flex justify-center">
+        <a
+          href="https://devtrack-delta.vercel.app"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)] hover:border-[var(--accent)]"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 text-[var(--accent)]" aria-hidden="true">
+            <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Powered by DevTrack
+        </a>
       </div>
     </div>
     </ProfileThemeWrapper>
@@ -470,6 +569,50 @@ function PublicStreakTracker({ streak }: { streak: any }) {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function PublicLanguageBreakdown({
+  languages,
+}: {
+  languages: Array<{ name: string; count: number; percentage: number }>;
+}) {
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
+        Top Languages
+      </h2>
+      <div className="space-y-3">
+        {languages.map((lang) => (
+          <div key={lang.name}>
+            <div className="flex items-center justify-between text-sm mb-1">
+              <span className="font-medium text-[var(--card-foreground)]">{lang.name}</span>
+              <span className="text-[var(--muted-foreground)]">{lang.percentage}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-[var(--control)]">
+              <div
+                className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
+                style={{ width: `${lang.percentage}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PublicPRCount({ pullRequests }: { pullRequests: number }) {
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-soft)]">
+      <h2 className="mb-2 text-lg font-semibold text-[var(--card-foreground)]">
+        Pull Requests
+      </h2>
+      <div className="flex items-end gap-2">
+        <span className="text-4xl font-bold text-[var(--accent)]">{pullRequests.toLocaleString()}</span>
+        <span className="mb-1 text-sm text-[var(--muted-foreground)]">total PRs authored</span>
       </div>
     </div>
   );

@@ -2,10 +2,9 @@ import { describe, it, expect } from "vitest";
 import { createMemoryFixedWindowRateLimiter, getClientIp } from "./rate-limit";
 
 describe("getClientIp", () => {
-  it("prefers req.ip when present", () => {
+  it("prefers cf-connecting-ip as first priority", () => {
     const req = {
-      ip: "203.0.113.1",
-      headers: new Headers({ "x-forwarded-for": "1.1.1.1" }),
+      headers: new Headers({ "cf-connecting-ip": "203.0.113.1", "x-forwarded-for": "1.1.1.1" }),
     };
     expect(getClientIp(req as any)).toBe("203.0.113.1");
   });

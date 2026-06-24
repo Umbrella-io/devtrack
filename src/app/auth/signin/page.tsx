@@ -4,9 +4,8 @@ import { signIn } from "next-auth/react";
 import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 
-const A = "#818cf8";
-const ERR = "#f87171";
 const MONO = "var(--font-jetbrains, ui-monospace, monospace)";
 const DISP = "var(--font-syne, system-ui, sans-serif)";
 
@@ -24,6 +23,10 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
     "Access was denied. You may have cancelled the GitHub authorization.",
   Verification:
     "The sign-in link has expired or has already been used.",
+  RateLimit:
+    "Too many login attempts. Please try again later.",
+  RateLimitError:
+    "Too many authentication attempts. Please wait a minute and try again.",
   Default:
     "An unexpected authentication error occurred. Please try again.",
 };
@@ -42,8 +45,8 @@ function AuthErrorBanner({ error }: { error: string }) {
         marginBottom: 24,
         padding: "12px 16px",
         borderRadius: 8,
-        background: "rgba(248,113,113,0.08)",
-        border: `1px solid rgba(248,113,113,0.25)`,
+        background: "var(--destructive-muted)",
+        border: `1px solid var(--destructive-muted-border)`,
         textAlign: "left",
       }}
     >
@@ -52,7 +55,7 @@ function AuthErrorBanner({ error }: { error: string }) {
           fontFamily: MONO,
           fontSize: 12,
           fontWeight: 700,
-          color: ERR,
+          color: "var(--destructive)",
           margin: "0 0 4px",
           letterSpacing: "0.04em",
           textTransform: "uppercase",
@@ -64,9 +67,10 @@ function AuthErrorBanner({ error }: { error: string }) {
         style={{
           fontFamily: MONO,
           fontSize: 12,
-          color: "#e87a7a",
+          color: "var(--destructive)",
           margin: 0,
           lineHeight: 1.65,
+          opacity: 0.85,
         }}
       >
         {getErrorMessage(error)}
@@ -95,7 +99,7 @@ function MouseSpotlight() {
         left: 0, top: 0,
         width: 600, height: 600,
         background:
-          "radial-gradient(circle, rgba(129,140,248,0.06) 0%, transparent 70%)",
+          "radial-gradient(circle, color-mix(in srgb, var(--accent) 6%, transparent) 0%, transparent 70%)",
         transform: "translate3d(-50%, -50%, 0)",
         willChange: "transform",
       }}
@@ -124,61 +128,74 @@ function SignInContent() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
-      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] p-8 text-center shadow-[var(--shadow-medium)]">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[var(--accent)]/20 blur-2xl" />
-
+      <MouseSpotlight />
       <div
         style={{
           width: "100%",
           maxWidth: 520,
-          border: "1px solid #1a1a1a",
+          border: "1px solid var(--border)",
           borderRadius: 12,
           padding: "clamp(28px,5vw,48px) clamp(24px,5vw,40px)",
-          background: "#0e0e0e",
+          background: "var(--card)",
           textAlign: "center",
           position: "relative",
           zIndex: 1,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          boxShadow: "var(--shadow-medium)",
         }}
       >
-
-         {/* BACK TO HOME */}
-      <div
-        style={{
-    width: "100%",
-    display: "flex",
-    justifyContent: "flex-start",
-    alignItems:"center",
-    marginBottom: 20,
-  }}
-      >
-        <Link
-          href="/"
+        {/* Accent glow blob */}
+        <div
+          aria-hidden
           style={{
-            fontFamily: MONO,
-    color: "#e8e8e8",
-    textDecoration: "none",
-  fontSize:12 }}
+            pointerEvents: "none",
+            position: "absolute",
+            right: -48,
+            top: -48,
+            width: 144,
+            height: 144,
+            borderRadius: "50%",
+            background: "color-mix(in srgb, var(--accent) 20%, transparent)",
+            filter: "blur(24px)",
+          }}
+        />
+
+        {/* BACK TO HOME */}
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "flex-start",
+            alignItems: "center",
+            marginBottom: 20,
+          }}
         >
-           ← Back to home
-        </Link>
-      </div>
+          <Link
+            href="/"
+            style={{
+              fontFamily: MONO,
+              color: "var(--muted-foreground)",
+              textDecoration: "none",
+              fontSize: 12,
+            }}
+          >
+            ← Back to home
+          </Link>
+        </div>
 
-
-        
         <div style={{ marginBottom: 36 }}>
           <span
             style={{
               fontFamily: MONO,
               fontWeight: 700,
               fontSize: 13,
-              color: "#e8e8e8",
+              color: "var(--foreground)",
               letterSpacing: "-0.02em",
             }}
           >
-            <span style={{ color: A }}>▲</span> DEVTRACK
+            <span style={{ color: "var(--accent)" }}>▲</span> DEVTRACK
           </span>
         </div>
 
@@ -189,18 +206,18 @@ function SignInContent() {
             fontSize: "clamp(34px,6vw,35px)",
             letterSpacing: "-0.04em",
             lineHeight: 1.25,
-            color: "#e8e8e8",
+            color: "var(--foreground)",
             margin: "0 0 16px",
           }}
         >
           WELCOME<br />
-          <span style={{ color: A }}>BACK.</span>
+          <span style={{ color: "var(--accent)" }}>BACK.</span>
         </h1>
 
         <p
           style={{
             fontSize: 14,
-            color: "#9ca3af",
+            color: "var(--muted-foreground)",
             lineHeight: 1.65,
             margin: "0 0 36px",
             fontFamily: MONO,
@@ -213,7 +230,31 @@ function SignInContent() {
 
         <button
           type="button"
-          onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+          onClick={async () => {
+            try {
+              const res = await signIn("github", { callbackUrl: "/dashboard", redirect: false });
+              
+              if (res?.error) {
+                toast.error(getErrorMessage(res.error));
+                return;
+              }
+
+              if (res?.url) {
+                const url = new URL(res.url, window.location.origin);
+                // NextAuth redirects to ?csrf=true or back to the signin page if environment mismatch occurs
+                if (url.searchParams.get("csrf") === "true" || url.pathname === "/auth/signin") {
+                  toast.error(
+                    "Sign-in failed due to a security mismatch. If you're running locally, ensure you access the app via localhost (or the exact NEXTAUTH_URL) and not 127.0.0.1.",
+                    { duration: 10000 }
+                  );
+                } else {
+                  window.location.assign(res.url);
+                }
+              }
+            } catch (err) {
+              toast.error("An unexpected error occurred during sign in.");
+            }
+          }}
           aria-label="Sign in with GitHub"
           className="primary-button relative w-full inline-flex items-center justify-center gap-3 rounded-xl py-3 font-semibold"
         >
@@ -224,14 +265,14 @@ function SignInContent() {
           style={{
             fontFamily: MONO,
             fontSize: 11,
-            color: "#9ca3af",
+            color: "var(--muted-foreground)",
             letterSpacing: "0.06em",
             lineHeight: 1.8,
+            marginTop: 24,
           }}
         >
           MIT License · Self-hostable · Free forever
         </div>
-      </div>
       </div>
     </main>
   );

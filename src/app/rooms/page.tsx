@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { getRoomsForUser } from '@/lib/supabase';
+import { getRoomsForUser } from '@/lib/supabase-rooms';
 import RoomsListClient from './RoomsListClient';
 import Link from 'next/link';
 

@@ -118,7 +118,7 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account, profile, user }) {
       // account is only populated on the initial sign-in; all subsequent JWT
       // refreshes arrive here with account === undefined.
       if (account?.access_token) {
@@ -126,11 +126,17 @@ export const authOptions: NextAuthOptions = {
         // Record when we first obtained and validated this token so we know
         // when the next liveness check is due.
         token.accessTokenValidatedAt = Date.now();
+      } else if (user && (user as any).accessToken) {
+        token.accessToken = (user as any).accessToken;
+        token.accessTokenValidatedAt = Date.now();
       }
       if (profile) {
         const p = profile as { id: number; login: string };
         token.githubId = String(p.id);
         token.githubLogin = p.login;
+      } else if (user) {
+        token.githubId = user.id;
+        token.githubLogin = (user as any).login || "mock-user";
       }
 
       // Periodic token liveness check: if more than TOKEN_VALIDATION_INTERVAL_MS

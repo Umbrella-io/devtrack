@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function DailyNoteWidget(){
 
@@ -34,31 +34,34 @@ export default function DailyNoteWidget(){
 
 
 // auto save with debounce
-const debounceFunction = async()=>{
+// Wrapped in useCallback so the function reference is stable across renders.
+// Without this, the auto-save useEffect would capture a stale closure of
+// debounceFunction on any re-render that isn't caused by `note` changing,
+// silently saving the wrong value or skipping the save entirely.
+const debounceFunction = useCallback(async () => {
+  if (!note.trim()) return;
 
-  if(!note.trim()) return ;
-
-  try{
-    await fetch("/api/daily-note",{
-      method:"POST",
-      headers:{
+  try {
+    await fetch("/api/daily-note", {
+      method: "POST",
+      headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         note,
       }),
     });
-  }catch(error){
+  } catch (error) {
     console.error("Failed to save note");
   }
-}
-useEffect(()=>{
+}, [note]);
 
-  const timeout= setTimeout(()=>{
+useEffect(() => {
+  const timeout = setTimeout(() => {
     debounceFunction();
-  },500);
-  return ()=>clearTimeout(timeout);
-},[note]);
+  }, 500);
+  return () => clearTimeout(timeout);
+}, [note, debounceFunction]);
 
 
 if (loading) {
@@ -115,7 +118,7 @@ if (loading) {
           </p>
           {showYesterday && 
             <p className="mt-1 text-sm text-gray-700">
-            {yesterdayNote || "No plan form yesterday"}
+            {yesterdayNote || "No plan from yesterday"}
           </p>
           }
           

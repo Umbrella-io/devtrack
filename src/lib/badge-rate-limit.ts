@@ -1,11 +1,7 @@
 import { NextRequest } from "next/server";
-import { createMemoryFixedWindowRateLimiter, getClientIp } from "@/lib/rate-limit";
 
 const WINDOW_MS = 60 * 1000;
 const BADGE_LIMIT = 20;
-
-// NOTE: This rate limiter is separate from the API middleware rate limiting.
-// It applies per-IP limiting specifically for badge generation endpoints.
 
 // Sliding window counter entry — O(1) per client instead of O(N) timestamps.
 type Entry = {
@@ -24,7 +20,6 @@ export type BadgeRateLimitResult = {
 
 function pruneStore(now: number): void {
   if (store.size < 500) return;
-  // Entries whose window has fully elapsed contribute nothing and can be freed.
   const cutoff = now - WINDOW_MS;
   for (const [key, entry] of store) {
     if (entry.windowStart < cutoff) store.delete(key);
@@ -37,23 +32,16 @@ export function checkBadgeRateLimit(ip: string): BadgeRateLimitResult {
 
   const key = `badge:${ip}`;
   const windowStart = Math.floor(now / WINDOW_MS) * WINDOW_MS;
-  // Reset time is when the current fixed window boundary ends.
   const reset = Math.ceil((windowStart + WINDOW_MS) / 1000);
 
   let entry = store.get(key);
 
   if (!entry || entry.windowStart < windowStart - WINDOW_MS) {
-    // No history, or history is older than one full window — start fresh.
     entry = { prevCount: 0, currCount: 0, windowStart };
   } else if (entry.windowStart < windowStart) {
-    // Crossed a window boundary — promote current counts to previous.
     entry = { prevCount: entry.currCount, currCount: 0, windowStart };
   }
-  // else: same window — use entry as-is.
 
-  // Weighted contribution from the previous window based on how far into the
-  // current window we are.  At windowStart the previous window counts fully;
-  // at the end of the window its weight approaches zero.
   const elapsed = now - windowStart;
   const prevWeight = 1 - elapsed / WINDOW_MS;
   const estimate = Math.floor(entry.prevCount * prevWeight) + entry.currCount;

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from "next/image";
 import Link from 'next/link';
-import { Activity, GitPullRequest, Goal, Share2, type LucideIcon } from "lucide-react";
+import { Activity, GitPullRequest, Goal, Share2, Flame, FolderGit2, LogIn, LayoutDashboard, Target, Brain, Trophy, Users, Server, type LucideIcon } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 /* ═══════════════════════════════════════════════════════════
    PUBLIC TYPES
@@ -140,6 +141,62 @@ function Counter({ end, active }: { end: number; active: boolean }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   3D TILT HOOK
+   ═══════════════════════════════════════════════════════════ */
+function use3DTilt(aggressiveness = 15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [style, setStyle] = useState<React.CSSProperties>({
+    transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
+    transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)'
+  });
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+
+      const rotateX = ((y - centerY) / centerY) * -aggressiveness;
+      const rotateY = ((x - centerX) / centerX) * aggressiveness;
+
+      el.style.setProperty('--mouse-x', `${x}px`);
+      el.style.setProperty('--mouse-y', `${y}px`);
+
+      setStyle({
+        transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`,
+        transition: 'transform 0.1s ease-out'
+      });
+    };
+
+    const handleMouseLeave = () => {
+      setStyle({
+        transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
+        transition: 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)'
+      });
+    };
+
+    el.addEventListener('mousemove', handleMouseMove, { passive: true });
+    el.addEventListener('mouseleave', handleMouseLeave, { passive: true });
+
+    return () => {
+      el.removeEventListener('mousemove', handleMouseMove);
+      el.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [aggressiveness]);
+
+  return [ref, style] as const;
+}
+
+/* ═══════════════════════════════════════════════════════════
    MOUSE SPOTLIGHT
    ═══════════════════════════════════════════════════════════ */
 function MouseSpotlight() {
@@ -158,10 +215,11 @@ function MouseSpotlight() {
     <div
       ref={ref}
       aria-hidden
+      className="mouse-spotlight"
       style={{
         position: 'fixed', pointerEvents: 'none', zIndex: 0,
         width: 700, height: 700,
-        background: 'radial-gradient(circle, rgba(129,140,248,0.05) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(129,140,248,0.18) 0%, rgba(129,140,248,0.06) 50%, transparent 70%)',
         transform: 'translate(-50%,-50%)',
         transition: 'left 0.15s ease-out, top 0.15s ease-out',
       }}
@@ -182,23 +240,46 @@ const wValue: React.CSSProperties = {
 };
 
 function Cell({
-  children,
-  spanCols = 1,
-  style = {},
+  children, spanCols = 1, style,
 }: {
-  children: React.ReactNode;
-  spanCols?: number;
-  style?: React.CSSProperties;
+  children: React.ReactNode; spanCols?: number; style?: React.CSSProperties
 }) {
+  const [tiltRef, tiltStyle] = use3DTilt(10);
+
   return (
     <div
-      className="lnd-cell"
-      style={{ gridColumn: spanCols > 1 ? `span ${spanCols}` : undefined, ...style }}
+      ref={(el) => {
+        // @ts-ignore
+        tiltRef.current = el;
+      }}
+      className="lnd-cell group relative overflow-hidden transition-all duration-300 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/20"
+      style={{ 
+        gridColumn: spanCols > 1 ? `span ${spanCols}` : undefined, 
+        transformStyle: 'preserve-3d',
+        background: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid rgba(255, 255, 255, 0.05)',
+        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        ...tiltStyle,
+        ...style 
+      }}
     >
-      {children}
+      <div 
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle at center, rgba(129,140,248,0.12) 0%, transparent 70%)',
+          mixBlendMode: 'screen',
+          transform: 'translateZ(1px)',
+        }}
+      />
+      <div style={{ transform: 'translateZ(40px)', transition: 'transform 0.3s ease-out', display: 'flex', flexDirection: 'column', flex: 1, width: '100%', height: '100%', animation: 'zFloat 4s ease-in-out infinite alternate' }}>
+        {children}
+      </div>
     </div>
   );
 }
+
 
 function ChartWidget() {
   const [ref, vis] = useScrollReveal(0);
@@ -343,18 +424,41 @@ function HeatmapMini() {
 
 function BentoGrid() {
   return (
-    <div style={{
-      display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: 5, width: '100%', maxWidth: 380,
-    }}>
-      <ChartWidget />
-      <StreakWidget />
-      <MergeWidget />
-      <GoalWidget />
-      <HeatmapMini />
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 5,
+        width: '100%',
+        maxWidth: 380,
+        overflowX: 'hidden',
+        minWidth: 0,
+      }}
+    >
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media (max-width: 374px) {
+              .lnd-root .lnd-bento-grid {
+                grid-template-columns: 1fr !important;
+                max-width: 100% !important;
+              }
+            }
+          `,
+        }}
+      />
+
+      <div className="lnd-bento-grid" style={{ display: 'contents' }}>
+        <ChartWidget />
+        <StreakWidget />
+        <MergeWidget />
+        <GoalWidget />
+        <HeatmapMini />
+      </div>
     </div>
   );
 }
+
 
 /* ═══════════════════════════════════════════════════════════
    HERO
@@ -365,13 +469,25 @@ function HeroSection() {
       style={{
         minHeight: '100vh',
         display: 'flex', alignItems: 'center',
-        padding: '80px clamp(24px,5vw,64px) 40px',
+        padding: 'clamp(100px, 12vh, 140px) clamp(24px,5vw,64px) 40px',
         gap: 'clamp(32px,5vw,80px)',
         flexWrap: 'wrap', justifyContent: 'center',
         position: 'relative', zIndex: 1,
-        overflow: 'hidden',
+        overflow: 'clip',
       }}
     >
+      {/* Engineering Grid Texture */}
+      <div 
+        style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0V0zm1 1h38v38H1V1z' fill='%23ffffff' fill-opacity='0.02' fill-rule='evenodd'/%3E%3C/svg%3E")`,
+          maskImage: 'radial-gradient(ellipse at top, black 20%, transparent 70%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at top, black 20%, transparent 70%)',
+          pointerEvents: 'none',
+          zIndex: -2,
+        }}
+      />
+
       {/* Ambient Animated Background Glow */}
       <div 
         style={{
@@ -399,7 +515,7 @@ function HeroSection() {
           zIndex: -1,
         }}
       />
-      
+
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes floatGlow {
           0% { transform: translate(0px, 0px) scale(1); opacity: 0.5; }
@@ -409,6 +525,10 @@ function HeroSection() {
           0% { transform: translate(0px, 0px) scale(1); opacity: 0.5; }
           100% { transform: translate(-40px, 40px) scale(1.2); opacity: 0.9; }
         }
+        @keyframes zFloat {
+          0% { transform: translateZ(20px); }
+          100% { transform: translateZ(50px); }
+        }
       `}} />
 
       {/* Left: text */}
@@ -416,7 +536,7 @@ function HeroSection() {
         {/* Badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.25)',
+          background: 'color-mix(in srgb, var(--accent) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 40%, transparent)',
           borderRadius: 24, padding: '6px 14px', marginBottom: 28,
           boxShadow: '0 4px 14px rgba(129,140,248,0.1)',
         }}>
@@ -430,22 +550,30 @@ function HeroSection() {
         <h1
           style={{
             fontFamily: DISP, fontWeight: 800,
-            fontSize: 'clamp(40px,6.5vw,82px)', lineHeight: 0.95,
-            letterSpacing: '-0.04em', color: TEXT, margin: '0 0 24px',
+            fontSize: 'clamp(44px,7vw,82px)', lineHeight: 0.95,
+            letterSpacing: '-0.04em', margin: '0 0 24px',
             animation: 'lndHeroIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both',
-            textShadow: '0 4px 24px rgba(0,0,0,0.4)',
+            background: 'linear-gradient(180deg, var(--foreground) 0%, color-mix(in srgb, var(--foreground) 70%, transparent) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            textShadow: '0 4px 24px rgba(0,0,0,0.8)',
           }}
         >
           YOUR<br />CODE<br />HAS A<br />
-          <span style={{ color: A, textShadow: '0 0 30px rgba(129,140,248,0.3)' }}>PULSE</span>
+          <span style={{ 
+            background: 'linear-gradient(135deg, #818cf8 0%, #c084fc 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            textShadow: '0 0 30px rgba(129,140,248,0.4)',
+          }}>PULSE</span>
           <span style={{ color: 'var(--foreground)' }}>.</span>
         </h1>
 
-        {/* Tagline — NOW HIGH CONTRAST */}
+        {/* Tagline */}
         <p style={{
-          fontSize: 'clamp(16px,2vw,18px)', color: MUTED,
-          lineHeight: 1.6, maxWidth: 420, margin: '0 0 36px',
-          fontWeight: 400,
+          fontSize: 'clamp(16px,2vw,18px)', color: 'var(--foreground)',
+          lineHeight: 1.6, maxWidth: 420, margin: '0 0 40px',
+          fontWeight: 400, letterSpacing: '0.01em', opacity: 0.85,
         }}>
           Open-source developer productivity dashboard. Track GitHub streaks,
           PR velocity, and coding goals — automatically.
@@ -494,9 +622,35 @@ function HeroSection() {
         </div>
       </div>
 
-      {/* Right: bento */}
-      <div style={{ flex: '1 1 340px', display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
-        <BentoGrid />
+      {/* Right: bento window frame */}
+      <div style={{ flex: '1 1 340px', display: 'flex', flexDirection: 'column',alignItems: 'flex-end', gap: 24, position: 'relative', zIndex: 2 }}>
+        <ThemeToggle />
+        <div style={{
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.05)',
+          borderRadius: 16,
+          boxShadow: '0 24px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          overflow: 'hidden',
+          width: '100%',
+          maxWidth: 420,
+        }}>
+          {/* Traffic Lights */}
+          <div style={{
+            display: 'flex', gap: 8, padding: '16px 20px',
+            borderBottom: '1px solid rgba(255,255,255,0.03)',
+            background: 'rgba(0,0,0,0.2)',
+          }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f56' }} />
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ffbd2e' }} />
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#27c93f' }} />
+          </div>
+          {/* Bento Content */}
+          <div style={{ padding: 20 }}>
+            <BentoGrid />
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -508,11 +662,11 @@ function HeroSection() {
 function CommitTicker() {
   const doubled = [...COMMITS, ...COMMITS];
   return (
-    <div style={{
+    <div className="group" style={{
       borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`,
       padding: '10px 0', overflow: 'hidden', background: BG,
     }}>
-      <div className="lnd-ticker" style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap' }}>
+      <div className="lnd-ticker group-hover:[animation-play-state:paused]" style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap' }}>
         {doubled.map((c, i) => (
           <span
             key={i}
@@ -543,35 +697,55 @@ function AboutHighlightCard({
   visible: boolean;
 }) {
   const Icon = item.icon;
+  const [tiltRef, tiltStyle] = use3DTilt(12);
 
   return (
     <article
-      className="lnd-about-card"
+      ref={(el) => {
+        // @ts-ignore
+        tiltRef.current = el;
+      }}
+      className="lnd-about-card group relative overflow-hidden transition-all duration-500 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/20"
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(18px)',
-        transition: `opacity 0.55s ease ${index * 80}ms, transform 0.55s ease ${index * 80}ms, border-color 0.25s ease, background 0.25s ease`,
+        transformStyle: 'preserve-3d',
+        transformOrigin: 'top center',
+        transform: visible ? tiltStyle.transform : `perspective(1000px) rotateX(-90deg)`,
+        transition: visible ? tiltStyle.transition : `opacity 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${index * 80}ms, transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${index * 80}ms`,
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        cursor: 'pointer',
       }}
     >
-      <div style={{
-        width: 42, height: 42, borderRadius: 8,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(129,140,248,0.12)',
-        border: '1px solid rgba(129,140,248,0.28)',
-        color: A, marginBottom: 18,
-      }}>
-        <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+      <div 
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle at center, rgba(129,140,248,0.12) 0%, transparent 70%)',
+          mixBlendMode: 'screen',
+          transform: 'translateZ(1px)',
+        }}
+      />
+      <div style={{ transform: 'translateZ(30px)', transition: 'transform 0.3s ease-out', animation: 'zFloat 4s ease-in-out infinite alternate' }}>
+        <div style={{
+          width: 42, height: 42, borderRadius: 8,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(129,140,248,0.12)',
+          border: '1px solid rgba(129,140,248,0.28)',
+          color: A, marginBottom: 18,
+        }}>
+          <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+        </div>
+        <h3 style={{
+          fontFamily: DISP, fontWeight: 700,
+          fontSize: 19, color: TEXT, margin: '0 0 10px',
+          letterSpacing: 0,
+        }}>
+          {item.title}
+        </h3>
+        <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.65, margin: 0 }}>
+          {item.desc}
+        </p>
       </div>
-      <h3 style={{
-        fontFamily: DISP, fontWeight: 700,
-        fontSize: 19, color: TEXT, margin: '0 0 10px',
-        letterSpacing: 0,
-      }}>
-        {item.title}
-      </h3>
-      <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.65, margin: 0 }}>
-        {item.desc}
-      </p>
     </article>
   );
 }
@@ -586,7 +760,7 @@ function AboutSection() {
       aria-labelledby="about-heading"
       style={{
         padding: '88px clamp(20px,4vw,48px)',
-        borderTop: `1px solid ${BORDER}`,
+        borderTop: '1px solid #1e293b',
         position: 'relative',
         zIndex: 1,
       }}
@@ -694,7 +868,7 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
       style={{
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(16px)',
-        transition: `all 0.5s ease ${delay}ms`,
+        transition: `all 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
       }}
     >
       <div style={{
@@ -722,8 +896,12 @@ function StatsSection({ stats }: { stats: RepoStats }) {
   return (
     <section id="features" style={{
       padding: '64px clamp(20px,4vw,48px)',
-      display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
-        gap: 24, borderTop: `1px solid ${BORDER}`,
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
+      gap: 24,
+      maxWidth: 1180,
+      margin: '0 auto',
+      borderTop: `1px solid ${BORDER}`,
     }}>
       {items.map((s, i) => (
         <StatItem key={s.label} value={s.value} label={s.label} delay={i * 80} />
@@ -737,66 +915,102 @@ function StatsSection({ stats }: { stats: RepoStats }) {
    ═══════════════════════════════════════════════════════════ */
 const FEATURES = [
   {
-    num: '01', title: 'STREAK TRACKING',
-    desc: 'Current streak, longest streak, active coding days. Tracked automatically from your GitHub. Never break the chain.',
+    icon: Flame,
+    title: 'Commit streaks tracker',
+    desc: 'Track your daily GitHub activity.',
   },
   {
-    num: '02', title: 'PR ANALYTICS',
-    desc: 'Review velocity, merge rates, open and closed counts. Understand your pull request lifecycle at a glance.',
+    icon: GitPullRequest,
+    title: 'PR analytics',
+    desc: 'Monitor review velocity and merge rates.',
   },
   {
-    num: '03', title: 'WEEKLY GOALS',
-    desc: 'Set commit and PR targets. Progress bars auto-update from your GitHub activity. Stay accountable.',
+    icon: Goal,
+    title: 'Weekly goals',
+    desc: 'Set commit and PR targets and stay accountable.',
   },
   {
-    num: '04', title: 'CONTRIBUTION HEATMAP',
-    desc: 'Full-year visualization of your coding consistency. See patterns emerge across weeks and months.',
-  },
-  {
-    num: '05', title: 'AI WEEKLY INSIGHTS',
-    desc: 'AI-powered analysis of your coding patterns. Get personalized recommendations to improve your workflow.',
-  },
-  {
-    num: '06', title: 'RESUME GENERATOR',
-    desc: 'Generate an ATS-friendly CV backed by your real GitHub contributions, merged PRs, and lines changed.',
-  },
-  {
-    num: '07', title: 'PUBLIC LEADERBOARD',
-    desc: 'Opt-in leaderboard ranked by streaks, commits, and PRs. See how you compare with the community.',
-  },
-  {
-    num: '08', title: 'PUBLIC PROFILE',
-    desc: 'Shareable stats page with badges, pinned repos, and achievements. Your coding story, visible to anyone.',
+    icon: FolderGit2,
+    title: 'Top repositories',
+    desc: 'See where you contribute the most.',
   },
 ];
 
-function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
+const WHY_DEVTRACK = [
+  {
+    icon: Goal,
+    title: "Goal Tracking",
+    desc: "Set coding goals and track progress automatically."
+  },
+  {
+    icon: Brain,
+    title: "AI Insights",
+    desc: "Get AI-powered summaries and recommendations."
+  },
+  {
+    icon: Trophy,
+    title: "Year Wrapped",
+    desc: "Review your yearly development journey."
+  },
+  {
+    icon: Users,
+    title: "Multi-Account Support",
+    desc: "Manage multiple GitHub profiles in one place."
+  },
+  {
+    icon: Server,
+    title: "Self-Hosting",
+    desc: "Run DevTrack on your own infrastructure."
+  }
+];
+
+function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
   const [ref, vis] = useScrollReveal(0.15);
+  const Icon = f.icon as LucideIcon;
+
   return (
     <div
-      ref={ref}
+      ref={(el) => {
+        // @ts-ignore
+        ref.current = el;
+      }}
+      className="relative overflow-hidden"
       style={{
-        display: 'flex', gap: 'clamp(16px,3vw,32px)',
-        padding: '24px 0', borderBottom: `1px solid ${BORDER}`,
+        display: 'flex', flexDirection: 'column', gap: 16,
+        padding: '28px 24px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b',
+        borderRadius: 16, boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
         opacity: vis ? 1 : 0,
-        transform: vis ? 'translateX(0)' : 'translateX(-12px)',
-        transition: `all 0.5s ease ${index * 50}ms`,
+        transformStyle: 'preserve-3d',
+        transform: vis ? 'translateY(0)' : 'translateY(12px)',
+        transition: 'opacity 500ms cubic-bezier(0.4, 0, 0.2, 1), transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
+        transitionDelay: vis ? '0ms' : `${index * 50}ms`,
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        
       }}
     >
-      <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: A, minWidth: 28, paddingTop: 3 }}>
-        {f.num}
-      </span>
-      <div>
-        <h3 style={{
-          fontFamily: DISP, fontWeight: 700,
-          fontSize: 'clamp(16px,2.5vw,22px)', color: TEXT,
-          letterSpacing: '-0.02em', margin: '0 0 6px',
-        }}>
-          {f.title}
-        </h3>
-        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>          {f.desc}
-        </p>
+      
+      <div style={{ 
+        width: 56, height: 56, marginBottom: 12,
+        transition: 'transform 0.4s cubic-bezier(0.16,1,0.3,1)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+        borderRadius: 12,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(129,140,248,0.04)',
+        border: '1px solid rgba(129,140,248,0.08)'
+      }}>
+        <Icon size={28} strokeWidth={1.5} color="#818cf8" />
       </div>
+      <h3 style={{
+        fontFamily: DISP, fontWeight: 700,
+        fontSize: 'clamp(18px,2.5vw,22px)', color: TEXT,
+        letterSpacing: '-0.02em', margin: 0,
+      }}>
+        {f.title}
+      </h3>
+      <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.6, margin: 0 }}>
+        {f.desc}
+      </p>
     </div>
   );
 }
@@ -804,70 +1018,192 @@ function FeatureItem({ f, index }: { f: typeof FEATURES[0]; index: number }) {
 function FeaturesSection() {
   return (
     <section style={{
-      padding: '64px clamp(20px,4vw,48px) 80px',
-      borderTop: `1px solid ${BORDER}`,
-      maxWidth: 720, margin: '0 auto',
+      padding: '80px clamp(20px,4vw,48px)',
+      borderTop: '1px solid #1e293b',
+      maxWidth: 1200, margin: '0 auto',
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 40 }}>
-        FEATURES
+      <div style={{
+        fontFamily: MONO,
+        fontSize: 13,
+        fontWeight: 700,
+        letterSpacing: '0.15em',
+        textTransform: 'uppercase',
+        marginBottom: 16,
+        textAlign: 'center',
+        background: 'linear-gradient(90deg, #818cf8, #2dd4bf)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        display: 'inline-block',
+        width: '100%'
+        }}>
+        FEATURE PREVIEW
       </div>
-      {FEATURES.map((f, i) => (
-        <FeatureItem key={f.num} f={f} index={i} />
-      ))}
+      <p
+        style={{
+          textAlign: 'center',
+          color: MUTED,
+          maxWidth: 600,
+          margin: '0 auto 50px auto',
+          lineHeight: 1.6,
+          fontSize: 15
+        }}
+       >
+        Sign in with GitHub to access analytics, streak tracking,
+        goals and repository insights.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
+        {FEATURES.map((f, i) => (
+          <FeatureCard key={f.title} f={f} index={i} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function WhyDevTrackSection() {
+  return (
+    <section
+      style={{
+        padding: "80px clamp(20px,4vw,48px)",
+        borderTop: "1px solid #1e293b",
+        maxWidth: 1200,
+        margin: "0 auto",
+      }}
+    >
+      <div
+        style={{
+          textAlign: "center",
+          marginBottom: 50,
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: DISP,
+            fontSize: "clamp(32px,4vw,48px)",
+            fontWeight: 800,
+            color: TEXT,
+            marginBottom: 12,
+          }}
+        >
+          Why DevTrack?
+        </h2>
+
+        <p
+          style={{
+            color: MUTED,
+            maxWidth: 700,
+            margin: "0 auto",
+          }}
+        >
+          Go beyond GitHub analytics with goal tracking,
+          AI insights, yearly summaries, multi-account
+          support, and self-hosting.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        {WHY_DEVTRACK.map((item) => {
+          const Icon = item.icon;
+
+          return (
+            <div
+              key={item.title}
+              style={{
+                padding: "24px",
+                border: "1px solid #1e293b",
+                borderRadius: "16px",
+                background: "rgba(10,10,12,0.7)",
+              }}
+            >
+              <Icon
+                size={28}
+                color="#818cf8"
+                style={{ marginBottom: 16 }}
+              />
+
+              <h3
+                style={{
+                  color: TEXT,
+                  marginBottom: 10,
+                  fontWeight: 700,
+                }}
+              >
+                {item.title}
+              </h3>
+
+              <p
+                style={{
+                  color: MUTED,
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                }}
+              >
+                {item.desc}
+              </p>
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SETUP SECTION
+   HOW IT WORKS SECTION
    ═══════════════════════════════════════════════════════════ */
-function SetupSection() {
+const STEPS = [
+  { num: '1', title: 'Sign in', desc: 'Authenticate with your GitHub account.', icon: LogIn,href: '/api/auth/signin/github?callbackUrl=/dashboard' },
+  { num: '2', title: 'View dashboard', desc: 'See your automatically generated stats.', icon: LayoutDashboard,href: '/dashboard' },
+  { num: '3', title: 'Set goals', desc: 'Configure weekly targets to keep your streak alive.', icon: Target,href: '/dashboard/settings'
+ },
+];
+
+function HowItWorksSection() {
   const [ref, vis] = useScrollReveal(0.2);
   return (
     <section
-      id="open-source"
+      id="how-it-works"
       ref={ref}
       style={{
         padding: '80px clamp(20px,4vw,48px)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
         opacity: vis ? 1 : 0,
         transform: vis ? 'translateY(0)' : 'translateY(20px)',
-        transition: 'all 0.7s ease',
+        transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)',
+        borderTop: '1px solid #1e293b',
+        position: 'relative',
+        overflow: 'hidden'
       }}
     >
-      <div style={{ fontFamily: MONO, fontSize: 10, color: A, letterSpacing: '0.12em', marginBottom: 24 }}>
-        SETUP
+      <div 
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-64 bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none"
+      />
+      <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 50, textAlign: 'center', background: 'linear-gradient(90deg, #2dd4bf, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', width: '100%', position: 'relative' }}>
+        HOW IT WORKS
       </div>
 
       <div style={{
-        background: 'color-mix(in srgb, var(--card) 40%, transparent)', border: `1px solid ${BORDER}`,
-        borderRadius: 8, padding: '24px 28px', maxWidth: 480, width: '100%',
-        textAlign: 'left', marginBottom: 32,
-        fontFamily: MONO, fontSize: 13, lineHeight: 1.8,
-        boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+        display: 'flex', flexWrap: 'wrap', gap: 32, justifyContent: 'center', maxWidth: 1100, width: '100%', marginBottom: 50, position: 'relative'
       }}>
-        {/* Terminal Header Mock */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }} />
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981' }} />
-        </div>
-        <div style={{ color: '#10b981', fontWeight: 500 }}># start tracking in 30 seconds</div>
-        <div style={{ color: TEXT }}>
-          <span style={{ color: A }}>→</span> sign in at{' '}
-          <span style={{ color: A }}>devtrack.vercel.app</span>
-        </div>
-        <div style={{ color: '#10b981', marginTop: 8, fontWeight: 500 }}># or self-host</div>
-        <div style={{ color: TEXT }}>
-          <span style={{ color: A }}>$</span> git clone github.com/…/devtrack
-        </div>
-        <div style={{ color: TEXT }}>
-          <span style={{ color: A }}>$</span> npm install && npm run dev
-        </div>
+        {STEPS.map((step, i) => {
+          const Icon = step.icon;
+          return (
+          <Link key={i} href={step.href} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
+            <div className="group-hover:border-indigo-500/40 transition-colors duration-300" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, border: '1px solid #1e293b', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(129,140,248,0.05)' }}>
+              <Icon size={64} strokeWidth={1} color="#818cf8" className="group-hover:scale-110 transition-transform duration-700 ease-in-out opacity-90" />
+            </div>
+            <div className="group-hover:bg-indigo-500/20 group-hover:scale-110 transition-all duration-300 group-hover:border-indigo-500/40" style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.2)', color: A, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontFamily: MONO, fontSize: 18, fontWeight: 700 }}>
+              {step.num}
+            </div>
+            <h3 style={{ fontFamily: DISP, fontWeight: 700, fontSize: 20, color: TEXT, margin: '0 0 12px' }}>{step.title}</h3>
+            <p style={{ fontSize: 15, color: MUTED, margin: 0, lineHeight: 1.6 }}>{step.desc}</p>
+          </Link>
+          );
+        })}
       </div>
-
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <Link href="/api/auth/signin/github?callbackUrl=/dashboard" prefetch={false} className="lnd-cta-primary">
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', position: 'relative' }}>
+        <Link href="/api/auth/signin/github?callbackUrl=/dashboard" prefetch={false} className="lnd-cta-primary hover:scale-105 hover:shadow-indigo-500/30 transition-all duration-300">
           Sign in with GitHub
         </Link>
         <a
@@ -907,8 +1243,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
         padding: '80px clamp(20px,4vw,48px)',
         borderTop: `1px solid ${BORDER}`,
         opacity: vis ? 1 : 0,
-        transform: vis ? 'translateY(0)' : 'translateY(24px)',
-        transition: 'all 0.7s ease',
+        transformStyle: 'preserve-3d',
+        transformOrigin: 'top center',
+        transform: vis ? 'perspective(1000px) rotateX(0)' : 'perspective(1000px) rotateX(-90deg)',
+        transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)',
       }}
     >
       {/* Label */}
@@ -926,7 +1264,7 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: '#94a3b8', letterSpacing: '0.1em', marginBottom: 10 }}>
               {s.icon} {s.label}
             </div>
             <div style={{
@@ -952,11 +1290,12 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           BUILT IN PUBLIC.<br />
           <span style={{ color: A }}>SHIP WITH US.</span>
         </h2>
-        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>          DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
+        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>   {/* was '#555' */}
+          DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
           who actually use it. Every widget, every metric, every API was contributed by
           someone in this list. {stats.goodFirstIssues > 0 && (
             <span style={{ color: TEXT }}>
-              {stats.goodFirstIssues} issues are tagged good&nbsp;first&nbsp;issue and waiting right now.
+              {stats.goodFirstIssues}{" "} issues are tagged good&nbsp;first&nbsp;issue and waiting right now.
             </span>
           )}
         </p>
@@ -1005,10 +1344,10 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           {stats.contributorCount > stats.contributors.length && (
             <div style={{
               width: 38, height: 38, borderRadius: '50%',
-              border: `2px solid var(--background)`,
-              background: 'var(--card)', marginLeft: -11,
+              border: `2px solid #000000`,
+              background: '#1e293b', marginLeft: -11,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: MONO, fontSize: 10, color: MUTED, flexShrink: 0,
+              fontFamily: MONO, fontSize: 10, color: '#cbd5e1', flexShrink: 0,
             }}>
               +{stats.contributorCount - stats.contributors.length}
             </div>
@@ -1047,7 +1386,38 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
   );
 }
 
-
+/* ═══════════════════════════════════════════════════════════
+   LANDING FOOTER  (above global Footer)
+   ═══════════════════════════════════════════════════════════ */
+function LandingFooter() {
+  return (
+    <footer 
+      data-testid="landing-footer"
+      style={{
+        borderTop: `1px solid ${BORDER}`,   // was '#111'
+        padding: '24px clamp(20px,4vw,48px)',
+        display: 'flex', flexWrap: 'wrap', gap: '8px 32px',
+        justifyContent: 'space-between', alignItems: 'center',
+      }}
+    >
+      <span style={{ fontFamily: MONO, fontSize: 11, color: '#222' }}>
+        © {new Date().getFullYear()} DEVTRACK
+      </span>
+      <div style={{ display: 'flex', gap: 20 }}>
+        {[
+          { label: 'GitHub', href: 'https://github.com/Priyanshu-byte-coder/devtrack' },
+          { label: 'CONTRIBUTING.md', href: 'https://github.com/Priyanshu-byte-coder/devtrack/blob/main/CONTRIBUTING.md' },
+          { label: 'LICENSE', href: 'https://github.com/Priyanshu-byte-coder/devtrack/blob/main/LICENSE' },
+          { label: 'Issues', href: 'https://github.com/Priyanshu-byte-coder/devtrack/issues' },
+        ].map(l => (
+          <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="lnd-footer-link">
+            {l.label}
+          </a>
+        ))}
+      </div>
+    </footer>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════════
    MAIN EXPORT
@@ -1056,7 +1426,7 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
   return (
     <div
       className="lnd-root"
-      style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}
+      style={{ background: BG, color: TEXT, minHeight: '100vh', position: 'relative', overflowX: 'clip' }}
     >
       <MouseSpotlight />
       <HeroSection />
@@ -1065,8 +1435,10 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <HeatmapSection />
       <StatsSection stats={repoStats} />
       <FeaturesSection />
+      <WhyDevTrackSection />
       <ContributeSection stats={repoStats} />
-      <SetupSection />
+      <HowItWorksSection />
+      <LandingFooter />
     </div>
   );
 }

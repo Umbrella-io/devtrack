@@ -41,7 +41,7 @@ export default function CreateRoomModal({ onClose, onCreated }: Props) {
 
       onCreated(data);
       onClose();
-    } catch (err) {
+    } catch {
       setError('Failed to create room');
     } finally {
       setLoading(false);
@@ -62,6 +62,7 @@ export default function CreateRoomModal({ onClose, onCreated }: Props) {
               placeholder="e.g. Frontend Team"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              maxLength={100}
               required
             />
           </div>
@@ -73,6 +74,9 @@ export default function CreateRoomModal({ onClose, onCreated }: Props) {
               placeholder="e.g. vercel"
               value={form.repo_owner}
               onChange={(e) => setForm({ ...form, repo_owner: e.target.value })}
+              maxLength={39}
+              pattern="[a-zA-Z0-9]([a-zA-Z0-9\-]{0,37}[a-zA-Z0-9])?|[a-zA-Z0-9]"
+              title="Valid GitHub username: 1–39 alphanumeric characters or hyphens, cannot start or end with a hyphen"
               required
             />
           </div>
@@ -84,6 +88,9 @@ export default function CreateRoomModal({ onClose, onCreated }: Props) {
               placeholder="e.g. next.js"
               value={form.repo_name}
               onChange={(e) => setForm({ ...form, repo_name: e.target.value })}
+              maxLength={100}
+              pattern="[a-zA-Z0-9._\-]{1,100}"
+              title="Valid GitHub repository name: 1–100 alphanumeric characters, hyphens, underscores, or dots"
               required
             />
           </div>
@@ -96,6 +103,7 @@ export default function CreateRoomModal({ onClose, onCreated }: Props) {
               placeholder="What is this room for?"
               value={form.description ?? ''}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
+              maxLength={500}
             />
           </div>
 
@@ -120,7 +128,7 @@ export default function CreateRoomModal({ onClose, onCreated }: Props) {
         </form>
       </div>
     </div>
-    
+
     </>
   );
 }

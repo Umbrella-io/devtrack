@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dateDiffDays } from "../src/lib/dateUtils";
+import { dateDiffDays } from "../src/lib/date-utils";
 
 describe("dateUtils dateDiffDays", () => {
   it("returns 0 for same day", () => {

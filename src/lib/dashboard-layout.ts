@@ -10,15 +10,18 @@ export type DashboardWidgetId =
   | "weekly-summary"
   | "personal-records"
   | "ai-mentor"
+  | "sponsor-analytics"
   | "contribution-graph"
   | "contribution-heatmap"
   | "repo-contribution-distribution"
   | "activity-ring"
   | "coding-activity-insights"
   | "streak-tracker"
+  | "consistency-score"
   | "local-coding-time"
   | "coding-time"
   | "commit-time"
+  | "commit-heatmap-time"
   | "productive-hours"
   | "repo-analytics"
   | "pr-metrics"
@@ -35,7 +38,8 @@ export type DashboardWidgetId =
   | "recent-activity"
   | "ci-analytics"
   | "language-breakdown"
-  | "friend-comparison";
+  | "friend-comparison"
+  | "achievement-progress";
 
 export interface DashboardLayoutPreference {
   version: 1;
@@ -62,15 +66,18 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   "weekly-summary": "Weekly Summary",
   "personal-records": "Personal Records",
   "ai-mentor": "AI Mentor",
+  "sponsor-analytics": "Sponsors Analytics",
   "contribution-graph": "Contribution Graph",
   "contribution-heatmap": "Contribution Heatmap",
   "repo-contribution-distribution": "Repository Contribution Distribution",
   "activity-ring": "Activity Ring",
   "coding-activity-insights": "Coding Activity Insights",
   "streak-tracker": "Streak Tracker",
+  "consistency-score": "Consistency Score",
   "local-coding-time": "Local Coding Time",
   "coding-time": "Coding Time",
   "commit-time": "Commit Time",
+  "commit-heatmap-time": "Commit Time Heatmap",
   "productive-hours": "Productive Hours",
   "repo-analytics": "Repository Analytics",
   "pr-metrics": "PR Metrics",
@@ -88,13 +95,14 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   "ci-analytics": "CI Analytics",
   "language-breakdown": "Language Breakdown",
   "friend-comparison": "Friend Comparison",
+  "achievement-progress": "Achievement Progress",
 };
 
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
   version: 1,
   sections: ["overview", "activity", "analytics", "goals"],
   widgets: {
-    overview: ["weekly-summary", "personal-records", "ai-mentor"],
+    overview: ["weekly-summary", "personal-records", "ai-mentor", "sponsor-analytics"],
     activity: [
       "contribution-graph",
       "contribution-heatmap",
@@ -102,9 +110,11 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
       "activity-ring",
       "coding-activity-insights",
       "streak-tracker",
+      "consistency-score",
       "local-coding-time",
       "coding-time",
       "commit-time",
+      "commit-heatmap-time",
       "productive-hours",
     ],
     analytics: [
@@ -126,6 +136,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
       "ci-analytics",
       "language-breakdown",
       "friend-comparison",
+      "achievement-progress",
     ],
   },
   hidden: [],

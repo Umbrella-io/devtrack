@@ -9,7 +9,9 @@ import {
   metricsCacheKey,
   withMetricsCache,
 } from "@/lib/metrics-cache";
-import { resolveAppUser } from "@/lib/resolve-user";
+import { resolveAppUser, type AppUser } from "@/lib/resolve-user";
+import { supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseAdminAvailable } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,8 @@ interface PRMetricsBase {
   merged: number;
   closed: number;
   total: number;
+  totalAdditions: number;
+  totalDeletions: number;
   avgReviewHours: number;
   avgFirstReviewHours: number | null;
   mergeRate: number;
@@ -58,6 +62,8 @@ interface ReviewCommentEvent {
 
 interface GraphQLPullRequestNode {
   createdAt: string;
+  additions: number;
+  deletions: number;
   reviews: {
     nodes: { submittedAt: string }[];
   };
@@ -105,7 +111,7 @@ async function fetchFirstReviewTimestamp(
     Authorization: `Bearer ${token}`,
     Accept: "application/vnd.github+json",
   };
-  
+
   const [reviewsRes, commentsRes] = await Promise.all([
     fetch(`${GITHUB_API}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`, { headers, cache: "no-store" }),
     fetch(`${GITHUB_API}/repos/${repo}/pulls/${pr.number}/comments?per_page=100`, { headers, cache: "no-store" }),
@@ -155,9 +161,33 @@ async function getAverageFirstReviewHours(
   return Math.round(average * 10) / 10;
 }
 
-async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
+async function fetchPRMetrics(
+  token: string,
+  githubLogin?: string,
+  orgName?: string | null,
+  excludedOrgs: string[] = [],
+  range: string = "30d"
+): Promise<PRMetricsBase> {
+  const authorQ = githubLogin ? githubLogin : "@me";
+  let q = `type:pr+author:${authorQ}`;
+  const days =
+    range === "7d" ? 7 :
+      range === "90d" ? 90 :
+        30;
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+
+  const searchSince = cutoff.toISOString().split("T")[0];
+
+  q += `+created:>=${searchSince}`;
+  if (orgName) {
+    q += `+org:${orgName}`;
+  } else if (excludedOrgs.length > 0) {
+    q += excludedOrgs.map((org) => `+-org:${org}`).join("");
+  }
   const searchRes = await fetch(
-    `${GITHUB_API}/search/issues?q=type:pr+author:@me&sort=updated&order=desc&per_page=100`,
+    `${GITHUB_API}/search/issues?q=${q}&sort=updated&order=desc&per_page=100`,
     {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
@@ -175,7 +205,7 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
   const mergedPRs = data.items.filter((pr) => pr.pull_request?.merged_at != null);
   const merged = mergedPRs.length;
   const closed = data.items.filter((pr) => pr.state === "closed" && pr.pull_request?.merged_at == null).length;
-  
+
   const avgReviewMs = mergedPRs.length > 0
     ? mergedPRs.reduce((sum, pr) => sum + (new Date(pr.closed_at!).getTime() - new Date(pr.created_at).getTime()), 0) / mergedPRs.length
     : 0;
@@ -184,16 +214,27 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
   const avgFirstReviewHours = await getAverageFirstReviewHours(token, data.items);
 
   // GraphQL for review cycle time
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-  const since = ninetyDaysAgo.toISOString().split("T")[0];
+  const sinceDate = new Date();
+  sinceDate.setDate(sinceDate.getDate() - days);
+  const since = sinceDate.toISOString().split("T")[0];
+
+  const gqlAuthorQ = githubLogin ? githubLogin : "@me";
+  let gqlSearchQ = `type:pr reviewed-by:${gqlAuthorQ}`;
+  if (orgName) {
+    gqlSearchQ += ` org:${orgName}`;
+  } else if (excludedOrgs.length > 0) {
+    gqlSearchQ += excludedOrgs.map((org) => ` -org:${org}`).join("");
+  }
+  gqlSearchQ += ` created:>${since}`;
 
   const query = `
-    query {
-      search(query: "type:pr reviewed-by:@me created:>${since}", type: ISSUE, first: 100) {
+    query($queryString: String!) {
+      search(query: $queryString, type: ISSUE, first: 100) {
         nodes {
           ... on PullRequest {
             createdAt
+            additions
+            deletions
             reviews(first: 1) { nodes { submittedAt } }
             repository { nameWithOwner }
           }
@@ -208,12 +249,21 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, variables: { queryString: gqlSearchQ } }),
     cache: "no-store",
   });
 
   const gqlJson = (await gqlRes.json()) as GraphQLSearchResponse;
   const prs = gqlJson.data?.search?.nodes ?? [];
+  const totalAdditions = prs.reduce(
+    (sum, pr) => sum + (pr.additions || 0),
+    0
+  );
+
+  const totalDeletions = prs.reduce(
+    (sum, pr) => sum + (pr.deletions || 0),
+    0
+  );
 
   const reviewedPRs = prs.filter((pr) => pr.reviews?.nodes && pr.reviews.nodes.length > 0);
 
@@ -232,7 +282,7 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
     if (!weeklyMap[ct.week]) weeklyMap[ct.week] = [];
     weeklyMap[ct.week].push(ct.hours);
   });
-  
+
   const weeklyTrend = Object.entries(weeklyMap).map(([week, times]) => ({
     week,
     avgHours: Math.round(times.reduce((a, b) => a + b, 0) / times.length),
@@ -243,7 +293,7 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
     if (!repoMap[ct.repo]) repoMap[ct.repo] = [];
     repoMap[ct.repo].push(ct.hours);
   });
-  
+
   const slowestRepos = Object.entries(repoMap)
     .map(([repo, times]) => ({ repo, avgHours: Math.round(times.reduce((a, b) => a + b, 0) / times.length) }))
     .sort((a, b) => b.avgHours - a.avgHours)
@@ -254,6 +304,8 @@ async function fetchPRMetrics(token: string): Promise<PRMetricsBase> {
     merged,
     closed,
     total: data.total_count,
+    totalAdditions,
+    totalDeletions,
     avgReviewHours: Math.round(avgReviewMs / 3600000),
     avgFirstReviewHours,
     mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
@@ -345,6 +397,8 @@ async function fetchGitLabMRMetrics(token: string): Promise<PRMetricsBase> {
     merged,
     closed,
     total: totalCount ?? sampleTotal,
+    totalAdditions: 0,
+    totalDeletions: 0,
     avgReviewHours: Math.round(avgReviewMs / 3600000),
     avgFirstReviewHours: null,
     mergeRate: sampleTotal > 0 ? merged / sampleTotal : 0,
@@ -356,15 +410,23 @@ async function fetchGitLabMRMetrics(token: string): Promise<PRMetricsBase> {
 
 async function fetchCachedPRMetrics(
   token: string,
-  cacheContext: { bypass: boolean; userId: string; staleThresholdDays?: number }
+  cacheContext: { bypass: boolean; userId: string; staleThresholdDays?: number },
+  githubLogin?: string,
+  orgName?: string | null,
+  excludedOrgs: string[] = [],
+  range: string = "30d"
 ): Promise<PRMetricsBase> {
   const key = metricsCacheKey(cacheContext.userId, "prs", {
+    range,
     staleThresholdDays: cacheContext.staleThresholdDays ?? 14,
+    githubLogin,
+    orgName: orgName || undefined,
+    excludedOrgs: excludedOrgs.length > 0 ? excludedOrgs.join(",") : undefined,
   });
 
   return withMetricsCache(
     { bypass: cacheContext.bypass, key, ttlSeconds: METRICS_CACHE_TTL_SECONDS.prs },
-    () => fetchPRMetrics(token)
+    () => fetchPRMetrics(token, githubLogin, orgName, excludedOrgs, range)
   );
 }
 
@@ -392,6 +454,8 @@ function formatPRMetrics(metrics: PRMetricsBase) {
     avgCycleTime: metrics.avgCycleTime,
     weeklyTrend: metrics.weeklyTrend,
     slowestRepos: metrics.slowestRepos,
+    totalAdditions: metrics.totalAdditions,
+    totalDeletions: metrics.totalDeletions,
   };
 }
 
@@ -479,25 +543,65 @@ export async function GET(req: NextRequest) {
 
   const gitlabToken = typeof session.gitlabToken === "string" ? session.gitlabToken : undefined;
   const accountId = req.nextUrl.searchParams.get("accountId");
+  const range = req.nextUrl.searchParams.get("range") || "30d";
   const bypass = isMetricsCacheBypassed(req);
-  
+
   const gitlabCacheContext = {
     bypass,
     userId: session.githubId ?? session.githubLogin ?? "primary",
   };
 
-  if (!accountId) {
+  let orgName: string | null = null;
+  let targetAccountId: string | null = accountId;
+
+  if (accountId && accountId.startsWith("org:")) {
+    const parts = accountId.split(":");
+    targetAccountId = parts[1];
+    orgName = parts[2];
+  }
+
+  // Load excluded organizations config
+  let excludedOrgs: string[] = [];
+  let userRow: AppUser | null = null;
+  if (isSupabaseAdminAvailable && session.githubId) {
+    userRow = await resolveAppUser(session.githubId, session.githubLogin);
+    if (userRow) {
+      try {
+        const { data: dbUser } = await supabaseAdmin
+          .from("users")
+          .select("organizations_config")
+          .eq("id", userRow.id)
+          .single();
+
+        const orgsConfig = (dbUser?.organizations_config || {}) as Record<string, boolean>;
+        excludedOrgs = Object.entries(orgsConfig)
+          .filter(([_, enabled]) => enabled === false)
+          .map(([org]) => org);
+      } catch (err) {
+        console.error("Failed to load excluded orgs config:", err);
+      }
+    }
+  }
+
+  if (!targetAccountId) {
     try {
-      const result = await fetchCachedPRMetrics(session.accessToken, {
-        bypass,
-        userId: session.githubId ?? session.githubLogin ?? "primary",
-      });
-      
+      const result = await fetchCachedPRMetrics(
+        session.accessToken,
+        {
+          bypass,
+          userId: session.githubId ?? session.githubLogin ?? "primary",
+        },
+        session.githubLogin,
+        orgName,
+        excludedOrgs,
+        range
+      );
+
       const [gitlab, reviews] = await Promise.all([
         getGitLabMetrics(gitlabToken, gitlabCacheContext),
         fetchReviewMetrics(session.accessToken).catch(() => null),
       ]);
-      
+
       return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
     } catch {
       // Catches errors from fetchCachedPRMetrics (GitHub Search API failures).
@@ -510,12 +614,11 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userRow = await resolveAppUser(session.githubId, session.githubLogin);
   if (!userRow) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (accountId === "combined") {
+  if (targetAccountId === "combined") {
     try {
       const allAccounts = await getAllAccounts(
         { token: session.accessToken!, githubId: session.githubId, githubLogin: session.githubLogin },
@@ -527,7 +630,7 @@ export async function GET(req: NextRequest) {
           ? session.accessToken
           : await getAccountToken(userRow.id, acc.githubId);
         if (!token) return null;
-        return fetchCachedPRMetrics(token, { bypass, userId: acc.githubId });
+        return fetchCachedPRMetrics(token, { bypass, userId: acc.githubId }, acc.githubLogin, orgName, excludedOrgs, range);
       });
 
       const resultsRaw = await Promise.allSettled(metricsPromises);
@@ -564,7 +667,7 @@ export async function GET(req: NextRequest) {
           weeklyTrendsMap[wt.week].push(wt.avgHours);
         });
       });
-      
+
       const combinedWeeklyTrend = Object.entries(weeklyTrendsMap).map(([week, hoursArray]) => ({
         week,
         avgHours: Math.round(hoursArray.reduce((a, b) => a + b, 0) / hoursArray.length)
@@ -576,6 +679,15 @@ export async function GET(req: NextRequest) {
         .slice(0, 3);
 
       const combinedMetrics: PRMetricsBase = {
+        totalAdditions: results.reduce(
+          (sum, r) => sum + r.totalAdditions,
+          0
+        ),
+
+        totalDeletions: results.reduce(
+          (sum, r) => sum + r.totalDeletions,
+          0
+        ),
         open: combinedOpen,
         merged: combinedMerged,
         closed: combinedClosed,
@@ -592,30 +704,50 @@ export async function GET(req: NextRequest) {
         getGitLabMetrics(gitlabToken, gitlabCacheContext),
         fetchReviewMetrics(session.accessToken).catch(() => null),
       ]);
-      
+
       return Response.json({ ...formatPRMetricsResponse(combinedMetrics, gitlab), reviews });
     } catch {
       return Response.json({ error: "Failed to compile combined profile metrics" }, { status: 502 });
     }
   }
 
-  const token = !accountId || accountId === session.githubId
-      ? session.accessToken
-      : await getAccountToken(userRow.id, accountId);
+  const token = !targetAccountId || targetAccountId === session.githubId
+    ? session.accessToken
+    : await getAccountToken(userRow.id, targetAccountId);
 
   if (!token) return Response.json({ error: "Account not found" }, { status: 404 });
 
+  const { data: accountRow } = await supabaseAdmin
+    .from("user_github_accounts")
+    .select("github_login")
+    .eq("user_id", userRow.id)
+    .eq("github_id", targetAccountId)
+    .single();
+
+  const githubLogin = targetAccountId === session.githubId ? session.githubLogin : accountRow?.github_login;
+
+  if (!githubLogin) {
+    return Response.json({ error: "Account not found" }, { status: 404 });
+  }
+
   try {
-    const result = await fetchCachedPRMetrics(token, {
-      bypass,
-      userId: accountId === session.githubId ? session.githubId : accountId,
-    });
-    
+    const result = await fetchCachedPRMetrics(
+      token,
+      {
+        bypass,
+        userId: targetAccountId === session.githubId ? session.githubId : targetAccountId,
+      },
+      githubLogin,
+      orgName,
+      excludedOrgs,
+      range
+    );
+
     const [gitlab, reviews] = await Promise.all([
       getGitLabMetrics(gitlabToken, gitlabCacheContext),
       fetchReviewMetrics(session.accessToken).catch(() => null),
     ]);
-    
+
     return Response.json({ ...formatPRMetricsResponse(result, gitlab), reviews });
   } catch (e) {
     return Response.json({ error: "GitHub API error" }, { status: 502 });

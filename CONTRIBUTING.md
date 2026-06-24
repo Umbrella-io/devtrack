@@ -8,7 +8,7 @@ Please note that this project is released with a [Code of Conduct](CODE_OF_CONDU
 
 ## ⚡ Quick Start (Setup in < 10 Steps)
 
-1. **Fork the Repo:** Click the "Fork" button at the top-right of the [DevTrack repository](https://github.com/Priyanshu-byte-coder/devtrack).
+1. **Fork the Repo:** Click the "Fork" button at the top-right of the [DevTrack repository](https://github.com/Umbrella-io/devtrack).
 2. **Clone Your Fork:**
    ```bash
    git clone https://github.com/<your-username>/devtrack.git
@@ -16,7 +16,7 @@ Please note that this project is released with a [Code of Conduct](CODE_OF_CONDU
    ```
 3. **Configure Upstream Remote:**
    ```bash
-   git remote add upstream https://github.com/Priyanshu-byte-coder/devtrack.git
+   git remote add upstream https://github.com/Umbrella-io/devtrack.git
    ```
 4. **Install pnpm (Package Manager):** We use `pnpm` for this project. If you don't have it installed:
    ```bash
@@ -216,5 +216,52 @@ Thank you for helping make DevTrack better! Happy coding! 🚀
 
 
 ### GSSoC Git Commit & Branching Conventions
-- Prefix commits with chore:, feat:, or fix:.
-- Keep PRs small and focused on existing files.
+
+To maintain a clean and consistent Git history, contributors must follow these standards.
+
+## 🧾 Commit Message Convention
+
+Use prefixes:
+
+- feat: New feature
+- fix: Bug fix
+- chore: Maintenance tasks (deps, configs, lockfiles)
+- docs: Documentation updates
+- refactor: Code restructuring without behavior change
+- test: Adding or updating tests
+
+### Examples:
+- feat(auth): add GitHub OAuth login
+- fix(ui): resolve navbar alignment issue
+- docs(contributing): update branching guide
+- chore: update dependencies
+
+---
+
+## 🌿 Branch Naming Convention
+
+- feature/<name>
+- fix/<name>
+- docs/<name>
+
+### Examples:
+- feature/login-system
+- fix/header-alignment
+- docs/readme-update
+
+---
+
+## 🔁 PR Guidelines
+
+- Keep PRs small and focused
+- One change per PR
+- Link issue: Closes #1944
+- Ensure all checks pass before submitting
+
+---
+
+## 📌 Best Practices
+
+- Write meaningful commit messages
+- Do not mix unrelated changes
+- Rebase before push if needed

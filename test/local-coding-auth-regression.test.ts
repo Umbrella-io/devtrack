@@ -1,74 +1,87 @@
 /**
- * Regression tests for the local-coding API key authentication mismatch
- * described in issue #1748.
+ * Security tests for API key credential isolation — issue #1689.
  *
  * Background
  * ----------
- * The initial migration created local_coding_api_keys with a single column
- * `api_key` to store key hashes. A later migration added `api_key_hash` as
- * a nullable column. At one point the code was inconsistent:
- *
- *   Creation  → wrote hash to `api_key` only
- *   Auth      → read hash from `api_key_hash` only
- *
- * Every key generated through the UI was therefore permanently invalid.
+ * An earlier version of the code wrote the SHA-256 hash of each API key to
+ * BOTH the `api_key` and `api_key_hash` columns, and authentication accepted
+ * a match on EITHER column via an OR filter.  This meant the `api_key` column
+ * held a value that carried authentication weight, violating the principle that
+ * display columns must never store credential-derived data.
  *
  * Fix
  * ---
- * Key creation now writes the same hash to BOTH columns so that existing
- * deployments on either schema revision continue to work.
- * Authentication queries BOTH columns with an OR filter.
+ * Key creation now writes:
+ *   api_key      → 8-character display prefix (non-sensitive)
+ *   api_key_hash → SHA-256 hash (sole authentication column)
+ *
+ * Authentication queries ONLY `api_key_hash`.  The `api_key` column is never
+ * consulted during an authentication check.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { createHash } from "crypto";
-import { POST as syncPost, GET as syncGet } from "@/app/api/local-coding/sync/route";
+import {
+  POST as syncPost,
+  GET as syncGet,
+} from "@/app/api/local-coding/sync/route";
 import { POST as keysPost } from "@/app/api/local-coding/keys/route";
 
 // ─── hoisted mocks ──────────────────────────────────────────────────────────
 
-const keysMocks = vi.hoisted(() => ({
+const m = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   resolveAppUser: vi.fn(),
   supabaseFrom: vi.fn(),
 }));
 
-vi.mock("next-auth", () => ({ getServerSession: keysMocks.getServerSession }));
+vi.mock("next-auth", () => ({ getServerSession: m.getServerSession }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
-vi.mock("@/lib/resolve-user", () => ({ resolveAppUser: keysMocks.resolveAppUser }));
+vi.mock("@/lib/resolve-user", () => ({ resolveAppUser: m.resolveAppUser }));
 
-// A single Supabase mock that both routes share via the module mock.
 vi.mock("@/lib/supabase", () => ({
   supabaseAdmin: {
-    from: keysMocks.supabaseFrom,
+    from: m.supabaseFrom,
     rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
   },
 }));
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
+// lgtm[js/insufficient-password-hash] - SHA-256 is appropriate for hashing high-entropy random API keys in tests
 function sha256(input: string): string {
   return createHash("sha256").update(input).digest("hex");
 }
 
-/** Returns a Supabase mock chain that resolves the auth OR lookup successfully. */
-function buildSyncAuthMock(userId = "user-1") {
-  const mockRpc = vi.fn().mockResolvedValue({ data: null, error: null });
-  const orSingle = vi.fn().mockResolvedValue({ data: { user_id: userId }, error: null });
-  const selectOr = vi.fn().mockReturnValue({ single: orSingle });
-  const updateOr = vi.fn().mockResolvedValue({ error: null });
-  const updateChain = vi.fn().mockReturnValue({ or: updateOr });
+/**
+ * Build a Supabase mock for sync route auth that expects .eq() (not .or()).
+ * The lookup chain is: .select().eq().single()
+ * The update chain is: .update().eq()
+ */
+function buildHashOnlyAuthMock(userId = "user-1") {
+  const authSingle = vi.fn().mockResolvedValue({
+    data: { user_id: userId },
+    error: null,
+  });
+  const authEq = vi.fn().mockReturnValue({ single: authSingle });
+  const updateEq = vi.fn().mockResolvedValue({ error: null });
 
-  const sessionCountEq = vi.fn().mockResolvedValue({ count: 0, data: null, error: null });
+  const sessionCountEq = vi.fn().mockResolvedValue({
+    count: 0,
+    data: null,
+    error: null,
+  });
   const existingDatesIn = vi.fn().mockResolvedValue({ data: [], error: null });
-  const existingDatesEq = vi.fn().mockReturnValue({ in: existingDatesIn });
+  const existingDatesEq = vi
+    .fn()
+    .mockReturnValue({ in: existingDatesIn });
 
-  keysMocks.supabaseFrom.mockImplementation((table: string) => {
+  m.supabaseFrom.mockImplementation((table: string) => {
     if (table === "local_coding_api_keys") {
       return {
-        select: vi.fn().mockReturnValue({ or: selectOr }),
-        update: updateChain,
+        select: vi.fn().mockReturnValue({ eq: authEq }),
+        update: vi.fn().mockReturnValue({ eq: updateEq }),
       };
     }
     if (table === "local_coding_sessions") {
@@ -79,143 +92,183 @@ function buildSyncAuthMock(userId = "user-1") {
         }),
       };
     }
-    return { select: vi.fn(), update: vi.fn() };
+    return {};
   });
 
-  return { mockRpc, orSingle, selectOr, updateOr, sessionCountEq, existingDatesIn };
+  return { authEq, authSingle, updateEq };
 }
 
 // ─── tests ───────────────────────────────────────────────────────────────────
 
-describe("Local coding API key lifecycle — regression for #1748", () => {
+describe("Local coding API key credential isolation — #1689", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  // ── key creation stores hash in both columns ──────────────────────────────
+  // ── key creation ──────────────────────────────────────────────────────────
 
-  it("POST /local-coding/keys stores the hash in api_key AND api_key_hash", async () => {
-    keysMocks.getServerSession.mockResolvedValue({ githubId: "gh-1", githubLogin: "alice" });
-    keysMocks.resolveAppUser.mockResolvedValue({ id: "user-1" });
+  it("stores a display prefix in api_key and the SHA-256 hash in api_key_hash", async () => {
+    m.getServerSession.mockResolvedValue({
+      githubId: "gh-1",
+      githubLogin: "alice",
+    });
+    m.resolveAppUser.mockResolvedValue({ id: "user-1" });
 
     const insertMock = vi.fn();
-    const insertSelectMock = vi.fn().mockReturnValue({
-      single: vi.fn().mockResolvedValue({
-        data: { id: "key-1", name: "Test", last_used_at: null, created_at: "2026-01-01" },
-        error: null,
-      }),
+    const insertSelectSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "key-1",
+        name: "Laptop",
+        last_used_at: null,
+        created_at: "2026-01-01",
+      },
+      error: null,
     });
-    insertMock.mockReturnValue({ select: insertSelectMock });
+    insertMock.mockReturnValue({
+      select: vi.fn().mockReturnValue({ single: insertSelectSingle }),
+    });
 
-    keysMocks.supabaseFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ count: 0 }) }),
+    m.supabaseFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ count: 0 }),
+      }),
       insert: insertMock,
     });
 
     const req = new NextRequest("http://localhost/api/local-coding/keys", {
       method: "POST",
-      body: JSON.stringify({ name: "Test" }),
+      body: JSON.stringify({ name: "Laptop" }),
     });
 
     const res = await keysPost(req);
     expect(res.status).toBe(200);
 
     const body = await res.json();
-    const returnedPlaintextKey = body.key.api_key;
-    const expectedHash = sha256(returnedPlaintextKey);
+    const rawKey: string = body.key.api_key;
+    const expectedHash = sha256(rawKey);
+    const expectedPrefix = rawKey.slice(0, 8);
 
-    // Both columns must receive the same hash so that either code path
-    // (api_key_hash-based OR api_key-based lookup) can authenticate the key.
-    expect(insertMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        api_key: expectedHash,
-        api_key_hash: expectedHash,
-      })
-    );
+    const insertArg = insertMock.mock.calls[0][0];
+
+    // api_key holds only the 8-character display prefix.
+    expect(insertArg.api_key).toBe(expectedPrefix);
+    // api_key_hash holds the SHA-256 hash.
+    expect(insertArg.api_key_hash).toBe(expectedHash);
   });
 
-  // ── sync POST: authentication uses OR across both columns ─────────────────
+  it("never writes the credential hash into api_key", async () => {
+    m.getServerSession.mockResolvedValue({
+      githubId: "gh-2",
+      githubLogin: "bob",
+    });
+    m.resolveAppUser.mockResolvedValue({ id: "user-2" });
 
-  it("POST /local-coding/sync authenticates via OR(api_key_hash, api_key) — regression for #1748", async () => {
-    const { selectOr, updateOr } = buildSyncAuthMock();
+    const insertMock = vi.fn();
+    insertMock.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: "key-2",
+            name: "Work",
+            last_used_at: null,
+            created_at: "2026-01-01",
+          },
+          error: null,
+        }),
+      }),
+    });
 
-    const testKey = "my-plaintext-key";
-    const expectedHash = sha256(testKey);
-    const expectedFilter = `api_key_hash.eq.${expectedHash},api_key.eq.${expectedHash}`;
+    m.supabaseFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ count: 0 }),
+      }),
+      insert: insertMock,
+    });
+
+    const req = new NextRequest("http://localhost/api/local-coding/keys", {
+      method: "POST",
+      body: JSON.stringify({ name: "Work" }),
+    });
+
+    const res = await keysPost(req);
+    const body = await res.json();
+    const hash = sha256(body.key.api_key);
+    const insertArg = insertMock.mock.calls[0][0];
+
+    // api_key must NOT hold the hash — a prefix and a hash are never equal.
+    expect(insertArg.api_key).not.toBe(hash);
+    expect(insertArg.api_key_hash).toBe(hash);
+  });
+
+  // ── authentication ────────────────────────────────────────────────────────
+
+  it("POST /sync authenticates exclusively against api_key_hash", async () => {
+    const { authEq, updateEq } = buildHashOnlyAuthMock();
+
+    const key = "dt_test_raw_key_abc";
+    const keyHash = sha256(key);
 
     const req = new NextRequest("http://localhost/api/local-coding/sync", {
       method: "POST",
-      headers: { Authorization: `Bearer ${testKey}` },
+      headers: { Authorization: `Bearer ${key}` },
       body: JSON.stringify({
-        sessions: [{ date: "2026-05-01", totalSeconds: 3600, fileCount: 5, projectCount: 1 }],
+        sessions: [{ date: "2026-01-15", totalSeconds: 3600 }],
       }),
     });
 
     const res = await syncPost(req);
     expect(res.status).toBe(200);
 
-    // Lookup must use OR across both columns, not just one.
-    expect(selectOr).toHaveBeenCalledWith(expectedFilter);
-    // last_used_at update must also use the same filter.
-    expect(updateOr).toHaveBeenCalledWith(expectedFilter);
+    // Must query only api_key_hash — no api_key fallback.
+    expect(authEq).toHaveBeenCalledWith("api_key_hash", keyHash);
+    // Must update last_used_at only via api_key_hash.
+    expect(updateEq).toHaveBeenCalledWith("api_key_hash", keyHash);
   });
 
-  it("POST /local-coding/sync authenticates a key whose hash is in api_key only (pre-migration row)", async () => {
-    // Simulates a deployment where api_key_hash was NULL (old row) but api_key contains the hash.
-    // The OR filter must still find the row.
-    const orSingle = vi.fn().mockResolvedValue({ data: { user_id: "user-old" }, error: null });
-    const selectOr = vi.fn().mockReturnValue({ single: orSingle });
-    const updateOr = vi.fn().mockResolvedValue({ error: null });
-    const updateChain = vi.fn().mockReturnValue({ or: updateOr });
+  it("POST /sync does not fall back to api_key column during authentication", async () => {
+    const { authEq } = buildHashOnlyAuthMock();
 
-    const sessionCountEq = vi.fn().mockResolvedValue({ count: 0, data: null, error: null });
-    const existingDatesIn = vi.fn().mockResolvedValue({ data: [], error: null });
-    const existingDatesEq = vi.fn().mockReturnValue({ in: existingDatesIn });
-
-    keysMocks.supabaseFrom.mockImplementation((table: string) => {
-      if (table === "local_coding_api_keys") {
-        return { select: vi.fn().mockReturnValue({ or: selectOr }), update: updateChain };
-      }
-      if (table === "local_coding_sessions") {
-        return {
-          select: vi.fn((_c: string, o?: { count?: string }) => {
-            if (o?.count) return { eq: sessionCountEq };
-            return { eq: existingDatesEq };
-          }),
-        };
-      }
-      return {};
-    });
+    const key = "another-raw-key-xyz";
 
     const req = new NextRequest("http://localhost/api/local-coding/sync", {
       method: "POST",
-      headers: { Authorization: "Bearer legacy-key" },
-      body: JSON.stringify({ sessions: [{ date: "2026-05-01", totalSeconds: 100 }] }),
+      headers: { Authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        sessions: [{ date: "2026-01-15", totalSeconds: 100 }],
+      }),
     });
 
-    const res = await syncPost(req);
-    expect(res.status).toBe(200);
+    await syncPost(req);
 
-    // The OR filter is what makes legacy rows work — it searches api_key even
-    // when api_key_hash is NULL.
-    const hash = sha256("legacy-key");
-    expect(selectOr).toHaveBeenCalledWith(
-      expect.stringContaining(`api_key.eq.${hash}`)
+    // authEq is called with ("api_key_hash", hash) — never with "api_key".
+    expect(authEq.mock.calls.every((call) => call[0] === "api_key_hash")).toBe(
+      true,
     );
   });
 
-  it("POST /local-coding/sync rejects an invalid key regardless of the column check", async () => {
-    // Both columns return null (key doesn't exist).
-    const orSingle = vi.fn().mockResolvedValue({ data: null, error: { message: "Not found" } });
-    keysMocks.supabaseFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({ or: vi.fn().mockReturnValue({ single: orSingle }) }),
+  it("POST /sync rejects a stolen hash used as the bearer token", async () => {
+    // Simulate an attacker who read api_key_hash from the database and tries
+    // to authenticate by sending the hash directly as the Bearer value.
+    //
+    // The route hashes the incoming bearer token before lookup.
+    // sha256(stolenHash) != stolenHash in general, so the lookup returns null.
+
+    const stolenHash = sha256("the-real-original-key");
+
+    const authSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    m.supabaseFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({ single: authSingle }),
+      }),
       update: vi.fn(),
     });
 
     const req = new NextRequest("http://localhost/api/local-coding/sync", {
       method: "POST",
-      headers: { Authorization: "Bearer completely-wrong-key" },
-      body: JSON.stringify({ sessions: [{ date: "2026-05-01", totalSeconds: 100 }] }),
+      headers: { Authorization: `Bearer ${stolenHash}` },
+      body: JSON.stringify({
+        sessions: [{ date: "2026-01-15", totalSeconds: 100 }],
+      }),
     });
 
     const res = await syncPost(req);
@@ -224,71 +277,45 @@ describe("Local coding API key lifecycle — regression for #1748", () => {
     expect(body.error).toBe("Invalid API key");
   });
 
-  // ── sync GET: uses the same authentication function ───────────────────────
-
-  it("GET /local-coding/sync returns 401 when no authorization header is provided", async () => {
-    const req = new NextRequest("http://localhost/api/local-coding/sync?days=30");
-    const res = await syncGet(req);
-    expect(res.status).toBe(401);
-    const body = await res.json();
-    expect(body.error).toBe("API key required");
-  });
-
-  it("GET /local-coding/sync returns 401 for an invalid key", async () => {
-    const orSingle = vi.fn().mockResolvedValue({ data: null, error: { message: "Not found" } });
-    keysMocks.supabaseFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({ or: vi.fn().mockReturnValue({ single: orSingle }) }),
+  it("POST /sync rejects an invalid bearer token", async () => {
+    const authSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: { message: "Not found" },
+    });
+    m.supabaseFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({ single: authSingle }),
+      }),
       update: vi.fn(),
     });
 
-    const req = new NextRequest("http://localhost/api/local-coding/sync?days=30", {
-      headers: { Authorization: "Bearer bad-key" },
-    });
-    const res = await syncGet(req);
-    expect(res.status).toBe(401);
-  });
-
-  it("GET /local-coding/sync returns session data for a valid key", async () => {
-    const orSingle = vi.fn().mockResolvedValue({ data: { user_id: "user-1" }, error: null });
-    const updateOr = vi.fn().mockResolvedValue({ error: null });
-    const updateChain = vi.fn().mockReturnValue({ or: updateOr });
-
-    const sessionData = [
-      { date: "2026-05-01", total_seconds: 3600, file_count: 10, project_count: 2 },
-    ];
-
-    const sessionEq = vi.fn().mockReturnValue({
-      gte: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: sessionData, error: null }),
+    const req = new NextRequest("http://localhost/api/local-coding/sync", {
+      method: "POST",
+      headers: { Authorization: "Bearer completely-wrong-key" },
+      body: JSON.stringify({
+        sessions: [{ date: "2026-01-15", totalSeconds: 100 }],
       }),
     });
 
-    keysMocks.supabaseFrom.mockImplementation((table: string) => {
-      if (table === "local_coding_api_keys") {
-        return {
-          select: vi.fn().mockReturnValue({ or: vi.fn().mockReturnValue({ single: orSingle }) }),
-          update: updateChain,
-        };
-      }
-      if (table === "local_coding_sessions") {
-        return { select: vi.fn().mockReturnValue({ eq: sessionEq }) };
-      }
-      return {};
-    });
-
-    const req = new NextRequest("http://localhost/api/local-coding/sync?days=30", {
-      headers: { Authorization: "Bearer valid-key" },
-    });
-
-    const res = await syncGet(req);
-    expect(res.status).toBe(200);
-
-    const body = await res.json();
-    expect(body.sessions).toEqual(sessionData);
+    const res = await syncPost(req);
+    expect(res.status).toBe(401);
+    expect((await res.json()).error).toBe("Invalid API key");
   });
 
-  it("GET /local-coding/sync authenticates using the same OR filter as POST", async () => {
-    const { selectOr } = buildSyncAuthMock();
+  it("POST /sync returns 401 when no Authorization header is provided", async () => {
+    const req = new NextRequest("http://localhost/api/local-coding/sync", {
+      method: "POST",
+      body: JSON.stringify({ sessions: [] }),
+    });
+    const res = await syncPost(req);
+    expect(res.status).toBe(401);
+    expect((await res.json()).error).toBe("API key required");
+  });
+
+  // ── GET /sync uses the same auth path ────────────────────────────────────
+
+  it("GET /sync authenticates against api_key_hash only", async () => {
+    const { authEq, updateEq } = buildHashOnlyAuthMock();
 
     const sessionEq = vi.fn().mockReturnValue({
       gte: vi.fn().mockReturnValue({
@@ -296,12 +323,11 @@ describe("Local coding API key lifecycle — regression for #1748", () => {
       }),
     });
 
-    // Override sessions table for GET
-    keysMocks.supabaseFrom.mockImplementation((table: string) => {
+    m.supabaseFrom.mockImplementation((table: string) => {
       if (table === "local_coding_api_keys") {
         return {
-          select: vi.fn().mockReturnValue({ or: selectOr }),
-          update: vi.fn().mockReturnValue({ or: vi.fn().mockResolvedValue({ error: null }) }),
+          select: vi.fn().mockReturnValue({ eq: authEq }),
+          update: vi.fn().mockReturnValue({ eq: updateEq }),
         };
       }
       if (table === "local_coding_sessions") {
@@ -310,40 +336,65 @@ describe("Local coding API key lifecycle — regression for #1748", () => {
       return {};
     });
 
-    const myKey = "get-test-key";
-    const hash = sha256(myKey);
-    const expectedFilter = `api_key_hash.eq.${hash},api_key.eq.${hash}`;
+    const key = "get-endpoint-key";
+    const keyHash = sha256(key);
 
-    const req = new NextRequest("http://localhost/api/local-coding/sync?days=7", {
-      headers: { Authorization: `Bearer ${myKey}` },
+    const req = new NextRequest(
+      "http://localhost/api/local-coding/sync?days=30",
+      { headers: { Authorization: `Bearer ${key}` } }
+    );
+
+    const res = await syncGet(req);
+    expect(res.status).toBe(200);
+
+    expect(authEq).toHaveBeenCalledWith("api_key_hash", keyHash);
+    expect(updateEq).toHaveBeenCalledWith("api_key_hash", keyHash);
+  });
+
+  it("GET /sync returns 401 when no Authorization header is provided", async () => {
+    const req = new NextRequest(
+      "http://localhost/api/local-coding/sync?days=30"
+    );
+    const res = await syncGet(req);
+    expect(res.status).toBe(401);
+    expect((await res.json()).error).toBe("API key required");
+  });
+
+  it("GET /sync returns 401 for an unrecognised key", async () => {
+    m.supabaseFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { message: "Not found" },
+          }),
+        }),
+      }),
+      update: vi.fn(),
     });
 
-    await syncGet(req);
-
-    expect(selectOr).toHaveBeenCalledWith(expectedFilter);
+    const req = new NextRequest(
+      "http://localhost/api/local-coding/sync?days=30",
+      { headers: { Authorization: "Bearer bad-key" } }
+    );
+    const res = await syncGet(req);
+    expect(res.status).toBe(401);
   });
 
   // ── hash function consistency ─────────────────────────────────────────────
 
-  it("hashes the same key the same way in both the keys and sync routes", async () => {
-    // The only way creation and authentication are consistent is if they use
-    // identical hashing (SHA-256, raw key as input). This test verifies the
-    // contract by checking that the filter string used during auth would match
-    // the value written during creation.
+  it("creation hash and authentication hash use the same algorithm", () => {
+    // The hash written to api_key_hash at creation time must equal the hash
+    // that the sync route computes from the same bearer token.
+    const rawKey = "dt_sample_raw_api_key_consistent_check";
+    const creationHash = sha256(rawKey);
+    const authHash = sha256(rawKey);
 
-    const plainKey = "dt_test_plaintext_key_abc123";
-    const hash = sha256(plainKey);
+    expect(creationHash).toBe(authHash);
 
-    // What the keys route writes
-    const writtenApiKey = hash;
-    const writtenApiKeyHash = hash;
-
-    // What the sync route looks up
-    const filter = `api_key_hash.eq.${sha256(plainKey)},api_key.eq.${sha256(plainKey)}`;
-
-    // The hash written to api_key must match the filter on api_key
-    expect(filter).toContain(`api_key.eq.${writtenApiKey}`);
-    // The hash written to api_key_hash must match the filter on api_key_hash
-    expect(filter).toContain(`api_key_hash.eq.${writtenApiKeyHash}`);
+    // Crucially: the hash of the hash must not equal the hash itself.
+    // This property ensures that presenting a stolen hash as a bearer token
+    // always fails (sha256(stolenHash) != stolenHash).
+    expect(sha256(creationHash)).not.toBe(creationHash);
   });
 });

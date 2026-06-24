@@ -12,10 +12,9 @@ function normalizeIp(value: string | null | undefined): string | null {
 }
 
 export function getClientIp(
-  req: Pick<NextRequest, "ip" | "headers">
+  req: Pick<NextRequest, "headers">
 ): string {
   return (
-    normalizeIp(req.ip) ??
     normalizeIp(req.headers.get("cf-connecting-ip")) ??
     normalizeIp(req.headers.get("x-real-ip")) ??
     normalizeIp(req.headers.get("x-forwarded-for")?.split(",")[0]) ??
