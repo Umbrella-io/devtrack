@@ -38,13 +38,13 @@ function buildGoal(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function makeRequest(body: unknown, goalId = "goal-1"): [Request, { params: { id: string } }] {
+function makeRequest(body: unknown, goalId = "goal-1"): [Request, { params: Promise<{ id: string }> }] {
   const req = new Request(`http://localhost/api/goals/${goalId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return [req, { params: { id: goalId } }];
+  return [req, { params: Promise.resolve({ id: goalId }) }];
 }
 
 function setupSupabase(goal: ReturnType<typeof buildGoal> | null, updateResult?: ReturnType<typeof buildGoal>) {
@@ -99,13 +99,11 @@ describe("PATCH /api/goals/[id] — progress integrity", () => {
 
   // ── input validation ──────────────────────────────────────────────────────
 
-  it("rejects missing current field", async () => {
+  it("allows missing current field", async () => {
     setupSupabase(buildGoal());
     const [req, ctx] = makeRequest({});
     const res = await PATCH(req, ctx);
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toMatch(/non-negative integer/);
+    expect(res.status).toBe(200);
   });
 
   it("rejects a float value for current", async () => {

@@ -1,4 +1,10 @@
 import { throwIfGitHubRateLimited } from "@/lib/github-rate-limit";
+
+// Re-export the canonical GitHubAuthError class from github-fetch so all
+// callers share the same class reference and instanceof checks work correctly.
+import { GitHubAuthError } from "@/lib/github-fetch";
+export { GitHubAuthError };
+
 export const GITHUB_API = "https://api.github.com";
 
 /**
@@ -20,6 +26,11 @@ async function githubFetch(
   }
 }
 
+/**
+ * Fetches recent events for the authenticated user from the GitHub API.
+ * @param token - The user's GitHub personal access token.
+ * @returns A promise that resolves to an array of GitHub events.
+ */
 export async function fetchUserEvents(token: string): Promise<GitHubEvent[]> {
   const res = await githubFetch(`${GITHUB_API}/user/events?per_page=100`, {
     headers: {
@@ -28,9 +39,10 @@ export async function fetchUserEvents(token: string): Promise<GitHubEvent[]> {
     },
   });
   if (!res.ok) {
-  throwIfGitHubRateLimited(res);
-  throw new Error(`GitHub API error: ${res.status}`);
-}
+    if (res.status === 401) throw new GitHubAuthError();
+    throwIfGitHubRateLimited(res);
+    throw new Error(`GitHub API error: ${res.status}`);
+  }
   return res.json();
 }
 
@@ -39,6 +51,12 @@ interface FetchUserReposOptions {
   maxPages?: number;
 }
 
+/**
+ * Fetches all repositories (public, private, and internal) for the authenticated user.
+ * @param token - The user's GitHub personal access token.
+ * @param options - Pagination options like perPage and maxPages.
+ * @returns A promise that resolves to an array of GitHub repositories.
+ */
 export async function fetchUserRepos(
   token: string,
   options: FetchUserReposOptions = {}
@@ -59,8 +77,9 @@ export async function fetchUserRepos(
     );
 
     if (!res.ok) {
-       throwIfGitHubRateLimited(res);
-       throw new Error(`GitHub API error: ${res.status}`);
+      if (res.status === 401) throw new GitHubAuthError();
+      throwIfGitHubRateLimited(res);
+      throw new Error(`GitHub API error: ${res.status}`);
     }
 
     const pageRepos = (await res.json()) as GitHubRepo[];
@@ -129,8 +148,19 @@ export interface IssuesMetrics {
   mostActiveRepo: string | null;
 }
 
+/**
+ * Fetches issue metrics (opened, closed, etc.) for a user or organization over the last 30 days.
+ * @param token - A GitHub personal access token.
+ * @param githubLogin - The GitHub username to search for (defaults to "@me").
+ * @param orgName - Optional organization name to filter issues.
+ * @param excludedOrgs - Array of organizations to exclude from the search.
+ * @returns A promise that resolves to calculated issue metrics.
+ */
 export async function fetchIssuesMetrics(
-  token: string
+  token: string,
+  githubLogin?: string,
+  orgName?: string | null,
+  excludedOrgs: string[] = []
 ): Promise<IssuesMetrics> {
   const headers = {
     Authorization: `Bearer ${token}`,
@@ -143,14 +173,21 @@ export async function fetchIssuesMetrics(
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const since30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
+  const authorQ = githubLogin ? githubLogin : "@me";
+  let q = `type:issue+author:${authorQ}`;
+  if (orgName) {
+    q += `+org:${orgName}`;
+  } else if (excludedOrgs.length > 0) {
+    q += excludedOrgs.map((org) => `+-org:${org}`).join("");
+  }
+
   const searchRes = await githubFetch(
-    `${GITHUB_API}/search/issues?q=type:issue+author:@me+created:>=${since30d
-      .toISOString()
-      .slice(0, 10)}&per_page=100`,
+    `https://api.github.com/search/issues?q=${q}+created:>=${since30d.toISOString().slice(0, 10)}&per_page=100`,
     { headers, cache: "no-store" }
   );
 
   if (!searchRes.ok) {
+    if (searchRes.status === 401) throw new GitHubAuthError();
     throwIfGitHubRateLimited(searchRes);
     throw new Error(`GitHub API error: ${searchRes.status}`);
   }
@@ -179,24 +216,22 @@ export async function fetchIssuesMetrics(
       : 0;
 
   const thisMonthRes = await githubFetch(
-    `${GITHUB_API}/search/issues?q=type:issue+author:@me+created:>=${thisMonthStart
-      .toISOString()
-      .slice(0, 10)}&per_page=1`,
+    `https://api.github.com/search/issues?q=${q}+created:>=${thisMonthStart.toISOString().slice(0, 10)}&per_page=1`,
     { headers, cache: "no-store" }
   );
 
   const lastMonthRes = await githubFetch(
-    `${GITHUB_API}/search/issues?q=type:issue+author:@me+created:${lastMonthStart
-      .toISOString()
-      .slice(0, 10)}..${lastMonthEnd.toISOString().slice(0, 10)}&per_page=1`,
+    `https://api.github.com/search/issues?q=${q}+created:${lastMonthStart.toISOString().slice(0, 10)}..${lastMonthEnd.toISOString().slice(0, 10)}&per_page=1`,
     { headers, cache: "no-store" }
   );
 
   if (!thisMonthRes.ok) {
+    if (thisMonthRes.status === 401) throw new GitHubAuthError();
     throwIfGitHubRateLimited(thisMonthRes);
   }
 
   if (!lastMonthRes.ok) {
+    if (lastMonthRes.status === 401) throw new GitHubAuthError();
     throwIfGitHubRateLimited(lastMonthRes);
   }
 

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import RepoCard from "./RepoCard";
 import RepoAnalyticsSheet from "./RepoAnalyticsSheet";
-import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
+import { ExplorerRepoCardData } from "@/lib/repo-analytics-types";
 
 export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] }) {
   const PAGE_SIZE = 3;
@@ -13,6 +13,18 @@ export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] 
   const [query, setQuery] = useState("");
   const [languageFilter, setLanguageFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"activity" | "updated">("activity");
+
+  const hasActiveFilters =
+    query !== "" ||
+    languageFilter !== "all" ||
+    sortBy !== "activity";
+
+  const resetFilters = () => {
+    setQuery("");
+    setLanguageFilter("all");
+    setSortBy("activity");
+    setPage(1);
+  };
 
   const languages = useMemo(() => ["all", ...Array.from(new Set(repos.map((r) => r.primaryLanguage).filter(Boolean) as string[]))], [repos]);
 
@@ -35,30 +47,39 @@ export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] 
       {/* Modern Top Navigation Bar */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center justify-between rounded-2xl bg-[var(--card-muted)]/30 p-3 border border-[var(--border)]">
         <div className="flex flex-1 flex-wrap items-center gap-3">
-          <input 
-            value={query} 
-            onChange={(e) => { setQuery(e.target.value); setPage(1); }} 
-            placeholder="Search repos..." 
-            className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] transition-all flex-1 min-w-[200px]"           />
+          <input
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+            placeholder="Search repos..."
+            className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] transition-all flex-1 min-w-[200px]" />
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <select 
-              value={languageFilter} 
-              onChange={(e) => { setLanguageFilter(e.target.value); setPage(1); }} 
+            <select
+              value={languageFilter}
+              onChange={(e) => { setLanguageFilter(e.target.value); setPage(1); }}
               className="rounded-xl border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:border-[var(--accent)] transition-all cursor-pointer flex-1"
             >
               {languages.map((language) => <option key={language} value={language}>{language === "all" ? "All Languages" : language}</option>)}
             </select>
-            <select 
-              value={sortBy} 
-              onChange={(e) => { setSortBy(e.target.value as "activity" | "updated"); setPage(1); }} 
+            <select
+              value={sortBy}
+              onChange={(e) => { setSortBy(e.target.value as "activity" | "updated"); setPage(1); }}
               className="rounded-xl border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus:border-[var(--accent)] transition-all cursor-pointer flex-1"
             >
               <option value="activity">Most Active</option>
               <option value="updated">Recently Updated</option>
             </select>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="rounded-xl border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--card-foreground)] hover:border-[var(--accent)] transition-all"
+              >
+                Reset filters
+              </button>
+            )}
           </div>
         </div>
-        
+
         {/* Pagination Arrows */}
         {filteredRepos.length > PAGE_SIZE && (
           <div className="flex items-center justify-between lg:justify-end gap-4 w-full lg:w-auto">
@@ -108,8 +129,8 @@ export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] 
       ) : (
         <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 relative mt-6">
           {pageRepos.map((repo, idx) => (
-            <div 
-              key={`${repo.id}-${safePage}`} 
+            <div
+              key={`${repo.id}-${safePage}`}
               className="fade-up transition-all duration-500 hover:-translate-y-1.5"
               style={{ animationDelay: `${idx * 75}ms` }}
             >

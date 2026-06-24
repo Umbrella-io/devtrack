@@ -1,17 +1,13 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
+import { normalizeOgUserParams } from "@/lib/og-user-params";
 
 export const runtime = "edge";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-
-  const username  = searchParams.get("username")  ?? "developer";
-  const name      = searchParams.get("name")       ?? username;
-  const avatar    = searchParams.get("avatar")     ?? "";
-  const topLang   = searchParams.get("topLang")    ?? "JavaScript";
-  const streak    = searchParams.get("streak")     ?? "0";
-  const commits   = searchParams.get("commits")    ?? "0";
+  const { username, name, avatar, topLang, streak, commits } =
+    normalizeOgUserParams(searchParams);
 
   return new ImageResponse(
     (
@@ -37,7 +33,7 @@ export async function GET(req: NextRequest) {
           
           <div style={{ display: "flex", alignItems: "center", gap: "28px" }}>
             {avatar ? (
-              <img src={avatar} width={100} height={100} style={{ borderRadius: "50%", border: "3px solid rgba(99,102,241,0.7)", objectFit: "cover" }} />
+              <img src={avatar} alt={`${username} avatar`} width={100} height={100} style={{ borderRadius: "50%", border: "3px solid rgba(99,102,241,0.7)", objectFit: "cover" }} />
             ) : (
               <div style={{ width: "100px", height: "100px", borderRadius: "50%", background: "linear-gradient(135deg,#6366f1,#10b981)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "44px", fontWeight: 700, color: "#fff" }}>
                 {username[0]?.toUpperCase()}
@@ -58,7 +54,7 @@ export async function GET(req: NextRequest) {
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "16px", color: "#94a3b8" }}>📦 Commits</span>
-              <span style={{ fontSize: "30px", fontWeight: 700, color: "#6366f1" }}>{Number(commits).toLocaleString()}</span>
+              <span style={{ fontSize: "30px", fontWeight: 700, color: "#6366f1" }}>{commits.toLocaleString()}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "16px", color: "#94a3b8" }}>⚡ Top Language</span>

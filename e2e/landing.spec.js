@@ -19,12 +19,13 @@ test("[Landing E2E] dashboard stays protected for unauthenticated users", async 
 
 test("[Landing E2E] landing has dashboard link", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("link", { name: "Dashboard" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Dashboard", exact: true }).first()).toBeVisible();
 });
 
 test("[Landing E2E] landing introduces DevTrack in an about section", async ({ page }) => {
   await page.goto("/");
   const about = page.locator("#about");
+  await about.scrollIntoViewIfNeeded();
   await expect(about.getByRole("heading", { name: /developer progress/i })).toBeVisible();
   await expect(about.getByText("Live GitHub Signals")).toBeVisible();
   await expect(about.getByRole("link", { name: "Explore features" })).toHaveAttribute("href", "#features");

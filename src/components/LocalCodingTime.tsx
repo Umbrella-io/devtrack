@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+const DATA_WINDOW_DAYS = 90;
+const dataWindowLabel = `Last ${DATA_WINDOW_DAYS} days`;
+
+
 interface DailyData {
   date: string;
   totalSeconds: number;

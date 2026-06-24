@@ -51,6 +51,7 @@ export default function ProjectMetrics() {
   });
   const [connecting, setConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -111,11 +112,18 @@ export default function ProjectMetrics() {
   }
 
   async function handleDisconnect() {
-    await fetch("/api/integrations/jira/credentials", {
-      method: "DELETE",
-    });
-    setData(null);
-    setError(null);
+    setDisconnecting(true);
+    try {
+      await fetch("/api/integrations/jira/credentials", {
+        method: "DELETE",
+      });
+      setData(null);
+      setError(null);
+    } catch (e) {
+      console.error("Failed to disconnect Jira:", e);
+    } finally {
+      setDisconnecting(false);
+    }
   }
 
   if (loading) {
@@ -404,9 +412,10 @@ export default function ProjectMetrics() {
         <button
           type="button"
           onClick={handleDisconnect}
-          className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+          disabled={disconnecting}
+          className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Disconnect
+          {disconnecting ? "Disconnecting..." : "Disconnect"}
         </button>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

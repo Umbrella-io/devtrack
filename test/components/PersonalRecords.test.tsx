@@ -65,11 +65,10 @@ describe("PersonalRecords Confetti", () => {
     // Wait for the records to load by checking for a record label
     await waitFor(() => {
       expect(screen.getByText("Longest Streak")).toBeInTheDocument();
+      // Check that sessionStorage is initialized with the records
+      expect(sessionStorage.getItem("devtrack_records_test-account_longest_streak")).toBe("5");
+      expect(sessionStorage.getItem("devtrack_records_test-account_best_day")).toBe("10");
     });
-
-    // Check that sessionStorage is initialized with the records
-    expect(sessionStorage.getItem("devtrack_records_test-account_longest_streak")).toBe("5");
-    expect(sessionStorage.getItem("devtrack_records_test-account_best_day")).toBe("10");
 
     // Confetti should not be called on the initial load of the session
     expect(mockConfetti).not.toHaveBeenCalled();
@@ -84,13 +83,9 @@ describe("PersonalRecords Confetti", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Longest Streak")).toBeInTheDocument();
-    });
-
-    // Since 5 > 3 (longest streak) and 10 > 8 (best day), it should trigger confetti and update storage
-    expect(sessionStorage.getItem("devtrack_records_test-account_longest_streak")).toBe("5");
-    expect(sessionStorage.getItem("devtrack_records_test-account_best_day")).toBe("10");
-
-    await waitFor(() => {
+      // Since 5 > 3 (longest streak) and 10 > 8 (best day), it should trigger confetti and update storage
+      expect(sessionStorage.getItem("devtrack_records_test-account_longest_streak")).toBe("5");
+      expect(sessionStorage.getItem("devtrack_records_test-account_best_day")).toBe("10");
       expect(mockConfetti).toHaveBeenCalledTimes(1);
     });
   });
@@ -104,11 +99,10 @@ describe("PersonalRecords Confetti", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Longest Streak")).toBeInTheDocument();
+      // Should sync the lower best_day to sessionStorage without triggering confetti
+      expect(sessionStorage.getItem("devtrack_records_test-account_best_day")).toBe("10");
+      expect(mockConfetti).not.toHaveBeenCalled();
     });
-
-    // Should sync the lower best_day to sessionStorage without triggering confetti
-    expect(sessionStorage.getItem("devtrack_records_test-account_best_day")).toBe("10");
-    expect(mockConfetti).not.toHaveBeenCalled();
   });
 
   it("respects prefers-reduced-motion media query", async () => {
@@ -131,11 +125,10 @@ describe("PersonalRecords Confetti", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Longest Streak")).toBeInTheDocument();
+      // Storage is updated
+      expect(sessionStorage.getItem("devtrack_records_test-account_longest_streak")).toBe("5");
+      // Confetti is suppressed due to prefers-reduced-motion
+      expect(mockConfetti).not.toHaveBeenCalled();
     });
-
-    // Storage is updated
-    expect(sessionStorage.getItem("devtrack_records_test-account_longest_streak")).toBe("5");
-    // Confetti is suppressed due to prefers-reduced-motion
-    expect(mockConfetti).not.toHaveBeenCalled();
   });
 });

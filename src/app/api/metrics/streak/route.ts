@@ -77,7 +77,7 @@ async function fetchActiveDates(
         // Both are thrown here so the outer GET handler returns HTTP 502 to the client,
         // which shows an error state rather than a misleading 0-day streak.
         if (!searchRes.ok) {
-          throw new Error("GitHub API error");
+          const apiErr = Object.assign(new Error("GitHub API error"), { status: searchRes.status }); throw apiErr;
         }
 
         const data = (await searchRes.json()) as {
@@ -116,9 +116,6 @@ async function fetchActiveDates(
 
   return new Set(dates);
 }
-
-
-
 
 async function checkAndRecordMilestone(
   userId: string,

@@ -18,6 +18,7 @@ interface Goal {
   deadline: string | null;
   period_start: string | null;
   created_at: string;
+  goal_reset_version: number;
   is_public: boolean;
 }
 
@@ -67,7 +68,6 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
@@ -95,6 +95,8 @@ export async function GET() {
         : new Date(0);
 
       if (storedPeriodStart < periodStart) {
+        const oldVersion = goal.goal_reset_version ?? 0;
+
         const { error: historyError } = await supabaseAdmin
           .from("goal_history")
           .insert({
@@ -106,27 +108,44 @@ export async function GET() {
             achieved: goal.current,
             completed: goal.current >= goal.target,
           });
-
+        
         if (historyError && historyError.code !== "23505") {
           console.error("Failed to persist goal history before reset:", historyError);
           return goal;
         }
-
-        const { data: updated } = await supabaseAdmin
+        
+        const { data: updated, error } = await supabaseAdmin
           .from("goals")
-          .update({ current: 0, period_start: periodStart.toISOString() })
+          .update({
+            current: 0,
+            period_start: periodStart.toISOString(),
+            goal_reset_version: oldVersion + 1,
+            week_start: periodStart.toISOString().split("T")[0],
+          })
           .eq("id", goal.id)
+          .eq("goal_reset_version", oldVersion)
           .or(`period_start.lt.${periodStart.toISOString()},period_start.is.null`)
           .select()
           .single();
-
-        if (updated) return updated;
-
+      
+        if (updated) {
+          return updated;
+        }
+      
+        if (error) {
+          console.warn("[GOAL_RESET_CONFLICT]", {
+            goalId: goal.id,
+            oldVersion,
+            error,
+          });
+        }
+      
         const { data: current } = await supabaseAdmin
           .from("goals")
           .select("*")
           .eq("id", goal.id)
           .single();
+      
         return current ?? goal;
       }
 
@@ -223,6 +242,23 @@ try {
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
 
+  const { data: existing } = await supabaseAdmin
+    .from("goals")
+    .select("id")
+    .eq("user_id", user.id)
+    .ilike("title", sanitizedTitle)
+    .maybeSingle();
+
+  if (existing) {
+    return Response.json(
+      {
+        error: "Task with this title already exists",
+        code: "DUPLICATE_TASK_TITLE",
+      },
+      { status: 400 }
+    );
+  }
+
   // Pre-check count query using head option for peak performance
   const { count, error: countError } = await supabaseAdmin
     .from("goals")
@@ -239,7 +275,6 @@ try {
       { status: 400 }
     );
   }
-
   const { data: goal, error } = await supabaseAdmin
     .from("goals")
     .insert({
@@ -251,12 +286,14 @@ try {
       period_start: getPeriodStart(safeRecurrence),
       deadline: safeDeadline,
       current: 0,
+      goal_reset_version: 0,
     })
     .select()
     .single();
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
-
+  if (error) {
+  return Response.json({ error: error.message }, { status: 500 });
+}
   dispatchToAllWebhooks(user.id, "goal.created", {
     goalId: goal.id,
     title: goal.title,

@@ -2,6 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  type TooltipProps,
+} from "recharts";
 
 interface Language {
   name: string;
@@ -20,6 +29,16 @@ const LANG_COLORS: Record<string, string> = {
   HTML: "#e34c26",
   Ruby: "#701516",
   Shell: "#89e051",
+  Swift: "#F05138",
+  Kotlin: "#7F52FF",
+  "C++": "#f34b7d",
+  C: "#555555",
+  "C#": "#178600",
+  PHP: "#4F5D95",
+  Dart: "#00B4AB",
+  Scala: "#c22d40",
+  Vue: "#41b883",
+  Other: "#6b7280",
 };
 
 const FALLBACK_COLOR = "#6b7280";
@@ -28,18 +47,17 @@ function getColor(name: string): string {
   return LANG_COLORS[name] ?? FALLBACK_COLOR;
 }
 
-function LanguageDot({ color, label }: { color: string; label: string }) {
+function LanguageTooltip({ active, payload }: TooltipProps<number, string>) {
+  if (!active || !payload || payload.length === 0) return null;
+  const entry = payload[0];
+  if (!entry) return null;
   return (
-    <svg
-      width="0.75rem"
-      height="0.75rem"
-      viewBox="0 0 8 8"
-      className="shrink-0"
-      role="img"
-      aria-label={label}
-    >
-      <circle cx="4" cy="4" r="4" fill={color} />
-    </svg>
+    <div className="rounded-md border border-[var(--border)] bg-[var(--tooltip)] px-3 py-2 text-sm text-[var(--tooltip-foreground)] shadow-lg">
+      <div className="font-medium">{entry.name}</div>
+      <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+        {entry.value}%
+      </div>
+    </div>
   );
 }
 
@@ -48,19 +66,33 @@ export default function LanguageBreakdown() {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { setSummary, setIsUpdating } = useDashboardWidgetA11y("language-breakdown");
+
+  useEffect(() => {
+    setIsUpdating(loading);
+  }, [loading, setIsUpdating]);
+
+  useEffect(() => {
+    if (languages.length === 0) {
+      setSummary(null);
+      return;
+    }
+    const top = languages[0];
+    setSummary(
+      `Top language: ${top.name}, ${top.percentage}%. ${languages.length} language${languages.length === 1 ? "" : "s"} tracked.`,
+    );
+  }, [languages, setSummary]);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    const url = selectedAccount !== null
-      ? `/api/metrics/languages?accountId=${encodeURIComponent(selectedAccount)}`
-      : "/api/metrics/languages";
+    const url =
+      selectedAccount !== null
+        ? `/api/metrics/languages?accountId=${encodeURIComponent(selectedAccount)}`
+        : "/api/metrics/languages";
     fetch(url)
       .then((r) => {
-        if (!r.ok) {
-          throw new Error("API error");
-        }
-
+        if (!r.ok) throw new Error("API error");
         return r.json();
       })
       .then((d: { languages: Language[] }) => setLanguages(d.languages ?? []))
@@ -70,12 +102,15 @@ export default function LanguageBreakdown() {
       .finally(() => setLoading(false));
   }, [selectedAccount]);
 
-  const totalPercentage = languages.reduce((sum, lang) => sum + lang.percentage, 0);
+  const totalPercentage = languages.reduce(
+    (sum, lang) => sum + lang.percentage,
+    0
+  );
   const roundedTotal = Math.round(totalPercentage * 10) / 10;
-  
-  const displayLanguages = [...languages];
-  if (roundedTotal < 100 && languages.length > 0) {
-    displayLanguages.push({
+
+  const chartData: Language[] = [...languages];
+  if (roundedTotal < 99.5 && languages.length > 0) {
+    chartData.push({
       name: "Other",
       bytes: 0,
       percentage: Math.round((100 - roundedTotal) * 10) / 10,
@@ -98,9 +133,12 @@ export default function LanguageBreakdown() {
           <span className="sr-only">Loading language breakdown</span>
           <div
             aria-hidden="true"
-            className="h-6 rounded-full skeleton-shimmer"
+            className="mx-auto h-[180px] w-[180px] rounded-full skeleton-shimmer"
           />
-          <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+          <div
+            aria-hidden="true"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"
+          >
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-5 rounded skeleton-shimmer" />
             ))}
@@ -110,49 +148,99 @@ export default function LanguageBreakdown() {
         <p className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           {error}
         </p>
-      ) : languages.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">
-          No language data available.
-        </p>
-      ) : (
-        <>
-          {/* Stacked bar */}
-          <div className="flex h-6 w-full overflow-hidden rounded-full bg-[var(--control)]">
-            {displayLanguages.map((lang) => (
-              <div
-                key={lang.name}
-                className="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full"
-                style={{
-                  width: `${lang.percentage}%`,
-                  backgroundColor: lang.name === "Other" ? "var(--control)" : getColor(lang.name),
-                  minWidth: lang.percentage > 0 ? "4px" : "0px",
-                }}
-                title={`${lang.name}: ${lang.percentage}%`}
-              />
-            ))}
+    ) : languages.length === 0 ? (
+  <div className="flex flex-col items-center justify-center py-10 text-center">
+    <div className="mb-3 text-4xl">🧩</div>
+
+    <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+      No language data available
+    </h3>
+
+    <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
+      Start committing code to repositories and we&apos;ll analyze the language distribution across your projects.
+    </p>
+
+    <a
+      href="https://github.com/new"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-4 inline-flex rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--control)]"
+    >
+      Create Repository
+    </a>
+  </div>
+) : (
+        <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-8">
+          {/* Donut chart */}
+          <div
+            className="relative shrink-0"
+            role="img"
+            aria-label="Donut chart showing language distribution"
+          >
+            <ResponsiveContainer width={180} height={180}>
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  dataKey="percentage"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={2}
+                  startAngle={90}
+                  endAngle={-270}
+                  strokeWidth={0}
+                >
+                  {chartData.map((entry) => (
+                    <Cell
+                      key={entry.name}
+                      fill={getColor(entry.name)}
+                      opacity={0.9}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<LanguageTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Centre label */}
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xs font-medium text-[var(--muted-foreground)]">
+                Languages
+              </span>
+              <span className="text-lg font-bold text-[var(--card-foreground)]">
+                {chartData.length}
+              </span>
+            </div>
           </div>
 
           {/* Legend */}
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
-            {displayLanguages.map((lang) => (
+          <div className="flex w-full flex-col gap-2 sm:flex-1">
+            {chartData.map((lang) => (
               <div
                 key={lang.name}
-                className="flex min-w-0 max-w-full basis-full items-center gap-2 text-sm sm:basis-[calc(50%-0.5rem)]"
+                className="flex items-center gap-2 text-sm"
               >
-                <LanguageDot 
-                  color={lang.name === "Other" ? "var(--control)" : getColor(lang.name)}
-                  label={`${lang.name}: ${lang.percentage}%`}
+                <span
+                  className="h-3 w-3 shrink-0 rounded-full"
+                  style={{
+                    backgroundColor: getColor(lang.name),
+                    minWidth: "12px",
+                    minHeight: "12px",
+                  }}
+                  role="img"
+                  aria-label={lang.name}
                 />
                 <span className="min-w-0 flex-1 truncate text-[var(--card-foreground)]">
                   {lang.name}
                 </span>
-                <span className="ml-auto shrink-0 text-[var(--muted-foreground)]">
+                <span className="shrink-0 tabular-nums text-[var(--muted-foreground)]">
                   {lang.percentage}%
                 </span>
               </div>
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

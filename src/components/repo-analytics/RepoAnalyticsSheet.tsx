@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import ContributorStats from "./ContributorStats";
 import RepoTimelineChart from "./RepoTimelineChart";
 import RepoHealthMetrics from "./RepoHealthMetrics";
-import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
-import { formatDisplayDate } from "@/lib/repoAnalyticsUtils";
+import { RepoAnalyticsResponse } from "@/lib/repo-analytics-types";
+import { formatDisplayDate } from "@/lib/date-utils";
 
 interface RepoAnalyticsSheetProps {
   repoFullName: string | null;

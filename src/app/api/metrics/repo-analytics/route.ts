@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
 import { computeHealthScore } from "@/lib/repo-health";
-import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
+import { RepoAnalyticsResponse } from "@/lib/repo-analytics-types";
 import { isSafeUrl } from "@/lib/ssrf-protection";
 import { parseRepoParam } from "@/lib/repo-analytics-utils";
 
@@ -90,18 +90,25 @@ export async function GET(req: NextRequest) {
       });
 
       let timeline: { date: string; events: number }[] = [];
-      if (activityRes.ok && activityRes.status === 200) {
+      let statsBuilding = false;
+
+      if (activityRes.status === 202) {
+        // GitHub is computing stats asynchronously; surface this to the caller
+        statsBuilding = true;
+      } else if (activityRes.ok) {
         const activityData = await activityRes.json();
         if (Array.isArray(activityData) && activityData.length > 0) {
           const lastWeek = activityData[activityData.length - 1];
-          const days = lastWeek.days || [];
-          const today = new Date();
+          const days: number[] = lastWeek.days || [];
+          // `lastWeek.week` is a Unix timestamp (seconds) for the Sunday that starts the bucket.
+          // Derive labels from it so they always match the actual calendar days GitHub recorded.
+          const weekStart = new Date((lastWeek.week as number) * 1000);
           for (let i = 0; i < 7; i++) {
-            const d = new Date(today);
-            d.setDate(d.getDate() - (6 - i));
+            const d = new Date(weekStart);
+            d.setUTCDate(d.getUTCDate() + i);
             timeline.push({
-              date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              events: days[i] || 0
+              date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
+              events: days[i] ?? 0,
             });
           }
         }
@@ -121,9 +128,20 @@ export async function GET(req: NextRequest) {
         avgPrOpenTimeHours: 24,
         openIssuesCount: repoData.open_issues_count || 0,
         daysSinceLastCommit: 1,
+        contributorCount: 0,
+        documentationScore: 0,
       };
 
       const health = computeHealthScore(repoData.name, healthSignals);
+
+      // Fetch PR activity for this repo (Issue 1: top repos by PR activity)
+      const prRes = await fetch(`${GITHUB_API}/repos/${safeRepoPath}/pulls?state=all&per_page=1`, {
+        headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      });
+      const prLinkHeader = prRes.headers.get("link") ?? "";
+      const prLastMatch = prLinkHeader.match(/page=(\d+)>; rel="last"/);
+      const totalPrs = prLastMatch ? parseInt(prLastMatch[1], 10) : (prRes.ok ? 1 : 0);
 
       const result: RepoAnalyticsResponse = {
         overview: {
@@ -145,7 +163,9 @@ export async function GET(req: NextRequest) {
         timeline,
         health,
         primaryStack,
-        languageBreakdown
+        languageBreakdown,
+        prActivity: { total: totalPrs },
+        ...(statsBuilding ? { statsBuilding: true } : {}),
       };
 
       return result;

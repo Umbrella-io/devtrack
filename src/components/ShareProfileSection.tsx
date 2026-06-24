@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import { toPng } from "html-to-image";
 import ProfileShareCard from "./ProfileShareCard";
+import { ProfileQrModal } from "@/components/ProfileQrModal";
+import { QrCode } from "lucide-react";
 
 interface ShareProfileSectionProps {
   username: string;
@@ -20,6 +22,7 @@ export default function ShareProfileSection({
   const [canUseNativeShare, setCanUseNativeShare] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   useEffect(() => {
     setCanUseNativeShare(
@@ -99,11 +102,20 @@ return (
               <span>Share</span>
             </button>
           ) : null}
+
+          <button
+            type="button"
+            onClick={() => setShowQrModal(true)}
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 active:scale-95"
+          >
+            <QrCode size={16} aria-hidden="true" />
+            <span>QR Code</span>
+          </button>
         
           <a
             href={xShareUrl}
             target="_blank"
-            rel="noreferrer noopener"
+            rel="noopener noreferrer"
             aria-label={`Share ${username}'s profile on X`}
             className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80"
           >
@@ -114,7 +126,7 @@ return (
           <a
             href={linkedInShareUrl}
             target="_blank"
-            rel="noreferrer noopener"
+            rel="noopener noreferrer"
             aria-label={`Share ${username}'s profile on LinkedIn`}
             className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--control)] px-3 py-2 text-sm font-medium text-[var(--card-foreground)] transition-colors hover:bg-[var(--control)]/80"
           >
@@ -156,6 +168,12 @@ return (
         </div>
       </div>
     )}
+
+    <ProfileQrModal
+      onClose={() => setShowQrModal(false)}
+      username={username}
+      profileUrl={profileUrl}
+    />
   </>
 );
 }

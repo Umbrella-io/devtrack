@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import Link from "next/link";
 import "./ProfileCard.css";
 
 export type SocialLink = {
@@ -15,6 +16,7 @@ type Props = {
   avatarUrl?: string;
   socials?: SocialLink[];
   className?: string;
+  showAddBioHint?: boolean;
 };
 
 export default function ProfileCard({
@@ -25,7 +27,10 @@ export default function ProfileCard({
   avatarUrl,
   socials = [],
   className = "",
+  showAddBioHint = false,
 }: Props) {
+  const displayBio = bio?.trim() ?? "";
+
   return (
     <article className={`profile-card ${className}`.trim()} aria-label={`Profile card: ${name}`}>
       <div className="profile-card__left">
@@ -47,7 +52,13 @@ export default function ProfileCard({
       </div>
 
       <div className="profile-card__body">
-        {bio && <p className="profile-card__bio">{bio}</p>}
+        {displayBio ? (
+          <p className="profile-card__bio">{displayBio}</p>
+        ) : showAddBioHint ? (
+          <p className="profile-card__bio profile-card__bio--empty">
+            <Link href="/dashboard/settings">Add a bio</Link> in Settings.
+          </p>
+        ) : null}
       </div>
 
       {socials.length > 0 && (

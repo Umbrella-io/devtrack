@@ -2,7 +2,7 @@
 "use client";
 
 import ThemePresetPicker from "@/components/ThemePresetPicker";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
@@ -13,6 +13,10 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import WebhookManager from "@/components/webhook/WebhookManager";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useLocale, useTranslations } from "next-intl";
+import { localeMetadata, locales, type AppLocale } from "@/i18n/config";
 
 // ── Max length for the profile bio ──────────────────────────────────────────
 const BIO_MAX = 160;
@@ -24,6 +28,7 @@ interface UserSettings {
   is_public: boolean;
   public_since?: string | null;
   show_weekly_goals?: boolean;
+  public_widgets?: string[];
   leaderboard_opt_in: boolean;
   weekly_digest_opt_in: boolean;
   has_wakatime_key?: boolean;
@@ -31,6 +36,7 @@ interface UserSettings {
   timezone?: string;
   pinned_repos?: string[];
   discord_muted_until?: string | null;
+  preferred_locale?: AppLocale;
 }
 
 interface LinkedAccount {
@@ -159,6 +165,9 @@ function SettingsPageFallback() {
 }
 
 function SettingsPageContent() {
+  const t = useTranslations("settings");
+  const common = useTranslations("common");
+  const activeLocale = useLocale() as AppLocale;
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -183,10 +192,20 @@ function SettingsPageContent() {
   const [discordWebhook, setDiscordWebhook] = useState("");
   const [timezone, setTimezone] = useState("");
   const [savingDiscord, setSavingDiscord] = useState(false);
+  const [preferredLocale, setPreferredLocale] = useState<AppLocale>(activeLocale);
+  const [savingLanguage, setSavingLanguage] = useState(false);
   const [testingDiscord, setTestingDiscord] = useState(false);
   const [discordMutedUntil, setDiscordMutedUntil] = useState<string | null>(null);
   const [muteDuration, setMuteDuration] = useState<number>(1);
+  const copyResetTimerRef = useRef<number | null>(null);
+
+  // GitHub Orgs States
+  const [orgAccounts, setOrgAccounts] = useState<any[]>([]);
+  const [orgsConfig, setOrgsConfig] = useState<Record<string, boolean>>({});
+  const [loadingOrgs, setLoadingOrgs] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
+  const [publicWidgets, setPublicWidgets] = useState<string[]>(["streak", "contributions"]);
+  const [savingWidgets, setSavingWidgets] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
@@ -200,6 +219,15 @@ function SettingsPageContent() {
     () =>
       getStatusMessage(searchParams.get("success"), searchParams.get("error")),
     [searchParams]
+  );
+
+  const publicProfileUsername = session?.githubLogin ?? settings?.github_login ?? "";
+  const profileUrl = useMemo(
+    () =>
+      publicProfileUsername
+        ? `https://devtrack-delta.vercel.app/u/${publicProfileUsername}`
+        : "",
+    [publicProfileUsername]
   );
 
   const { theme, setTheme } = useHeatmapTheme();
@@ -294,6 +322,7 @@ function SettingsPageContent() {
           setTimezone(data.timezone || "UTC");
           setDiscordMutedUntil(data.discord_muted_until ?? null);
           setWebhookUrl(data.webhook_url ?? null);
+          setPublicWidgets(data.public_widgets ?? ["streak", "contributions"]);
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -303,7 +332,78 @@ function SettingsPageContent() {
     }
 
     loadSettings();
-  }, [session, status]);
+  }, [activeLocale, session, status]);
+
+  const handleSaveLanguage = async (value: AppLocale) => {
+    if (!settings) return;
+
+    setPreferredLocale(value);
+    setSavingLanguage(true);
+
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preferred_locale: value }),
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setPreferredLocale(updated.preferred_locale || value);
+        toast.success(t("languageSaved"));
+        router.refresh();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || t("languageSaveFailed"));
+      }
+    } catch {
+      toast.error(t("languageSaveFailed"));
+    } finally {
+      setSavingLanguage(false);
+    }
+  };
+
+  // Load organizations on mount
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    async function loadOrgs() {
+      try {
+        setLoadingOrgs(true);
+        const res = await fetch("/api/user/orgs");
+        if (res.ok) {
+          const data = await res.json();
+          setOrgAccounts(data.accounts || []);
+          setOrgsConfig(data.config || {});
+        }
+      } catch (err) {
+        console.error("Failed to load organizations:", err);
+      } finally {
+        setLoadingOrgs(false);
+      }
+    }
+    loadOrgs();
+  }, [status]);
+
+  const handleToggleOrg = async (orgLogin: string, enabled: boolean) => {
+    const newConfig = { ...orgsConfig, [orgLogin]: enabled };
+    setOrgsConfig(newConfig);
+    try {
+      const res = await fetch("/api/user/orgs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config: newConfig }),
+      });
+      if (res.ok) {
+        toast.success(`Organization ${orgLogin} sync ${enabled ? "enabled" : "disabled"}.`);
+      } else {
+        toast.error("Failed to update organization sync settings.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error updating organization settings.");
+    }
+  };
 
   // Load active repos for spotlight pinning
   useEffect(() => {
@@ -486,6 +586,45 @@ function SettingsPageContent() {
     }
   };
 
+  const WIDGET_OPTIONS = [
+    { key: "streak", label: "Streak stats", description: "Current streak, longest streak, active days" },
+    { key: "contributions", label: "Contribution graph", description: "30-day commit activity heatmap" },
+    { key: "languages", label: "Top languages", description: "Language breakdown from recent repos" },
+    { key: "prs", label: "Pull requests", description: "Total PRs authored" },
+  ] as const;
+
+  const handleToggleWidget = (key: string, checked: boolean) => {
+    setPublicWidgets((prev) =>
+      checked ? [...prev, key] : prev.filter((w) => w !== key)
+    );
+    setIsDirty(true);
+  };
+
+  const handleSaveWidgets = async () => {
+    if (!settings) return;
+    setSavingWidgets(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ public_widgets: publicWidgets }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        setPublicWidgets(updated.public_widgets ?? ["streak", "contributions"]);
+        setIsDirty(false);
+        toast.success("Widget visibility saved!");
+      } else {
+        toast.error("Failed to save widget settings.");
+      }
+    } catch {
+      toast.error("Failed to save widget settings.");
+    } finally {
+      setSavingWidgets(false);
+    }
+  };
+
   const handleSaveWakatime = async () => {
     if (!settings) return;
     setSavingWakatime(true);
@@ -651,15 +790,28 @@ function SettingsPageContent() {
   };
 
   const copyShareLink = () => {
-    if (!settings) return;
-    const link = `${window.location.origin}/u/${settings.github_login}`;
-    navigator.clipboard.writeText(link).then(() => {
+    if (!profileUrl) return;
+
+    if (copyResetTimerRef.current) {
+      window.clearTimeout(copyResetTimerRef.current);
+      copyResetTimerRef.current = null;
+    }
+
+    if (!navigator.clipboard?.writeText) {
+      toast.error("Clipboard access is not available in this browser.");
+      return;
+    }
+
+    navigator.clipboard.writeText(profileUrl).then(() => {
       setCopied(true);
       toast.success("Link copied successfully!");
-      setTimeout(() => setCopied(false), 2000);
+      copyResetTimerRef.current = window.setTimeout(() => {
+        setCopied(false);
+        copyResetTimerRef.current = null;
+      }, 2000);
     }).catch((err) => {
       console.error("Clipboard copy failed:", err);
-      toast.error("Failed to copy link");
+      toast.error("Failed to copy profile URL");
     });
   };
 
@@ -714,44 +866,9 @@ function SettingsPageContent() {
     return (
       <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 text-[var(--foreground)] transition-colors">
         <div className="max-w-2xl mx-auto">
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-8 text-center">
-            <div className="text-3xl mb-4">⚠️</div>
-            <h2 className="text-lg font-semibold text-[var(--card-foreground)] mb-2">
-              Failed to load settings
-            </h2>
-            <p className="text-sm text-[var(--muted-foreground)] mb-6">
-              This usually happens when the database is temporarily throttled. Try again in a moment.
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setLoading(true);
-                  fetch("/api/user/settings")
-                    .then((r) => r.ok ? r.json() : Promise.reject())
-                    .then((data) => {
-                      setSettings(data);
-                      setBioDraft(data.bio ?? "");
-                      setDiscordWebhook(data.discord_webhook_url || "");
-                      setTimezone(data.timezone || "UTC");
-                      setDiscordMutedUntil(data.discord_muted_until ?? null);
-                      setWebhookUrl(data.webhook_url ?? null);
-                    })
-                    .catch(() => toast.error("Still unable to load settings"))
-                    .finally(() => setLoading(false));
-                }}
-                className="rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
-              >
-                Try again
-              </button>
-              <Link
-                href="/dashboard"
-                className="rounded-lg border border-[var(--border)] px-5 py-2.5 text-sm font-medium text-[var(--card-foreground)] hover:bg-[var(--control)] transition-colors"
-              >
-                Back to Dashboard
-              </Link>
-            </div>
-          </div>
+          <p className="text-[var(--muted-foreground)]">
+            Failed to load settings.
+          </p>
         </div>
       </div>
     );
@@ -794,7 +911,7 @@ function SettingsPageContent() {
 
         {/* Public Profile Section */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-          <div className="flex items-start justify-between mb-6 gap-4">
+          <div className="flex items-start justify-between mb-2 gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
                 Public Profile
@@ -830,34 +947,44 @@ function SettingsPageContent() {
           </div>
 
           {/* Share Link Section */}
-          {settings.is_public && (
-            <div className="mt-6 pt-6 border-t border-[var(--border)]">
-              <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
-                Share Your Profile
-              </h3>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={`${window.location.origin}/u/${settings.github_login}`}
-                  readOnly
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)]"
-                />
-                <button
-                  type="button"
-                  onClick={copyShareLink}
-                  aria-label="Copy profile URL"
-                  className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                  {copied ? "Copied!" : "Copy"}
-                </button>
-              </div>
+          <div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <Badge
+                variant={settings.is_public ? "success" : "secondary"}
+                className="px-3 py-1 text-[11px] uppercase tracking-wide"
+              >
+                {settings.is_public ? "Public" : "Private"}
+              </Badge>
               {settings.public_since && (
-                <p className="mt-3 text-xs text-[var(--muted-foreground)]">
+                <p className="text-xs text-[var(--muted-foreground)] sm:text-right">
                   Public since {new Date(settings.public_since).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                 </p>
               )}
             </div>
-          )}
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                type="text"
+                value={profileUrl}
+                readOnly
+                aria-label="Public profile URL"
+                className="min-w-0 flex-1 rounded-xl border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] outline-none transition-colors focus:border-[var(--accent)]"
+              />
+              <Button
+                type="button"
+                onClick={copyShareLink}
+                variant="secondary"
+                className="w-full sm:w-auto"
+                aria-label="Copy public profile URL"
+              >
+                {copied ? "Copied!" : "Copy"}
+              </Button>
+            </div>
+            {!settings.is_public && (
+              <p className="mt-3 text-sm text-[var(--muted-foreground)]">
+                Your profile is currently private. Enable Public Profile to allow others to view this link.
+              </p>
+            )}
+          </div>
 
           {/* Weekly Goals on Profile toggle */}
           {settings.is_public && (
@@ -915,6 +1042,47 @@ function SettingsPageContent() {
             </div>
           )}
 
+          {/* ── Public Widget Selector ────────────────────────────────── */}
+          {settings.is_public && (
+            <div className="mt-6 pt-6 border-t border-[var(--border)]">
+              <div className="mb-3">
+                <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+                  Visible Widgets
+                </h3>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  Choose which stats are shown on your public profile.
+                </p>
+              </div>
+              <div className="space-y-3">
+                {WIDGET_OPTIONS.map(({ key, label, description }) => (
+                  <label
+                    key={key}
+                    className="flex items-start gap-3 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 transition-colors hover:bg-[var(--control)]/80"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={publicWidgets.includes(key)}
+                      onChange={(e) => handleToggleWidget(key, e.target.checked)}
+                      className="mt-0.5 accent-[var(--accent)]"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--card-foreground)]">{label}</div>
+                      <div className="text-xs text-[var(--muted-foreground)]">{description}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveWidgets}
+                disabled={savingWidgets}
+                className="mt-4 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {savingWidgets ? "Saving..." : "Save Widget Settings"}
+              </button>
+            </div>
+          )}
+
           {/* ── Profile Bio with Markdown preview ─────────────────────── */}
           <div className="mt-6 pt-6 border-t border-[var(--border)]">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -946,7 +1114,18 @@ function SettingsPageContent() {
               placeholder="Write a short bio with **bold**, _italic_, `code`, or links."
               className="w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-3 text-sm text-[var(--card-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             />
-
+<div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--control)]">
+  <div
+    className={`h-full transition-all ${
+      bioDraft.length >= 490
+        ? "bg-red-500"
+        : bioDraft.length >= 450
+        ? "bg-yellow-500"
+        : "bg-[var(--accent)]"
+    }`}
+    style={{ width: `${(bioDraft.length / 500) * 100}%` }}
+  />
+</div>
             {showBioPreview && (
               <div className="mt-3 min-h-[128px] rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-[var(--card-foreground)]">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
@@ -1003,6 +1182,7 @@ function SettingsPageContent() {
                   checked={theme === "default"}
                   onChange={() => {
                     setTheme("default");
+                    setIsDirty(true);
                   }}
                   className="accent-[var(--accent)] focus-visible:ring-[var(--accent)]"
                 />
@@ -1016,6 +1196,7 @@ function SettingsPageContent() {
                   checked={theme === "colour-blind-friendly"}
                   onChange={() => {
                     setTheme("colour-blind-friendly");
+                    setIsDirty(true);
                   }}
                   className="accent-[var(--accent)] focus-visible:ring-[var(--accent)]"
                 />
@@ -1032,18 +1213,75 @@ function SettingsPageContent() {
             </div>
           )}
 
+          {isDirty && (
+            <div className="mt-6 pt-6 border-t border-[var(--border)] flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  // The toggles themselves already call the API,
+                  // but for the heatmap theme which is local only,
+                  // or to clear the dirty state after a manual change,
+                  // we provide this clear feedback.
+                  setIsDirty(false);
+                  toast.success("Settings saved successfully!");
+                }}
+                className="px-6 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Save Changes
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-            Application Theme
+            {t("appearanceTitle")}
           </h2>
 
           <p className="mt-1 text-sm text-[var(--muted-foreground)] mb-6">
-            Choose a theme for the DevTrack interface.
+            {t("appearanceDescription")}
           </p>
 
           <ThemePresetPicker />
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                {t("languageTitle")}
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                {t("languageDescription")}
+              </p>
+            </div>
+            <div className="w-full md:w-64">
+              <label
+                htmlFor="preferred-locale"
+                className="block text-sm font-medium text-[var(--card-foreground)]"
+              >
+                {t("languageSelectLabel")}
+              </label>
+              <select
+                id="preferred-locale"
+                value={preferredLocale}
+                disabled={savingLanguage}
+                onChange={(event) => handleSaveLanguage(event.target.value as AppLocale)}
+                className="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-60"
+              >
+                {locales.map((locale) => (
+                  <option key={locale} value={locale}>
+                    {localeMetadata[locale].nativeLabel}
+                  </option>
+                ))}
+              </select>
+              {savingLanguage && (
+                <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+                  {common("saving")}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
@@ -1127,20 +1365,20 @@ function SettingsPageContent() {
                       <button
                         type="button"
                         onClick={() => handleMovePin(index, "up")}
-                        disabled={index === 0}
+                        disabled={index === 0 || saving}
                         title="Move Up"
                         aria-label={`Move ${repoName} up`}
-                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
+                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         ↑
                       </button>
                       <button
                         type="button"
                         onClick={() => handleMovePin(index, "down")}
-                        disabled={index === (settings.pinned_repos || []).length - 1}
+                        disabled={index === (settings.pinned_repos || []).length - 1 || saving}
                         title="Move Down"
                         aria-label={`Move ${repoName} down`}
-                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40"
+                        className="p-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--control-hover)] text-[var(--card-foreground)] disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         ↓
                       </button>
@@ -1149,8 +1387,9 @@ function SettingsPageContent() {
                       <button
                         type="button"
                         onClick={() => handleUnpinRepo(repoName)}
+                        disabled={saving}
                         aria-label={`Unpin ${repoName}`}
-                        className="ml-2 rounded-lg border border-[var(--destructive-muted-border)] hover:bg-[var(--destructive-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--destructive)]"
+                        className="ml-2 rounded-lg border border-[var(--destructive-muted-border)] hover:bg-[var(--destructive-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--destructive)] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Unpin
                       </button>
@@ -1171,9 +1410,10 @@ function SettingsPageContent() {
                 type="text"
                 value={repoSearchQuery}
                 onChange={(e) => setRepoSearchQuery(e.target.value)}
+                disabled={saving}
                 placeholder="Type to search your repositories..."
                 aria-label="Search repositories to pin"
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] mb-4"
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
               />
 
               {loadingRepos ? (
@@ -1200,8 +1440,9 @@ function SettingsPageContent() {
                         <button
                           type="button"
                           onClick={() => handlePinRepo(repoName)}
+                          disabled={saving}
                           aria-label={`Pin ${repoName}`}
-                          className="rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity"
+                          className="rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] px-3 py-1 text-xs font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Pin
                         </button>
@@ -1226,10 +1467,10 @@ function SettingsPageContent() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Weekly Email Digest
+                {t("weeklyDigestTitle")}
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Receive an optional weekly email digest every Monday morning summarizing your coding habits.
+                {t("weeklyDigestDescription")}
               </p>
             </div>
 
@@ -1262,17 +1503,17 @@ function SettingsPageContent() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Notifications
+                {t("notificationsTitle")}
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Send a weekly summary of your activity to Slack or Discord via webhook.
+                {t("notificationsDescription")}
               </p>
             </div>
           </div>
 
           <div className="mt-4">
             <label className="text-sm font-medium text-[var(--card-foreground)]">
-              Webhook URL
+              {t("webhookUrl")}
             </label>
             <input
               type="text"
@@ -1310,7 +1551,7 @@ function SettingsPageContent() {
                 disabled={webhookSaving}
                 className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity disabled:opacity-60"
               >
-                {webhookSaving ? "Saving..." : "Save"}
+                {webhookSaving ? common("saving") : common("save")}
               </button>
 
               <button
@@ -1320,7 +1561,7 @@ function SettingsPageContent() {
                 }}
                 className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--card-foreground)]"
               >
-                Reset
+                {common("reset")}
               </button>
             </div>
           </div>
@@ -1330,11 +1571,10 @@ function SettingsPageContent() {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Connected Accounts
+                {t("connectedAccountsTitle")}
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Link additional GitHub accounts and switch between them on the
-                dashboard.
+                {t("connectedAccountsDescription")}
               </p>
             </div>
 
@@ -1343,7 +1583,7 @@ function SettingsPageContent() {
               prefetch={false}
               className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
             >
-              Add GitHub Account
+              {t("addGitHubAccount")}
             </Link>
           </div>
 
@@ -1366,11 +1606,11 @@ function SettingsPageContent() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Loading linked accounts...
+                {t("loadingLinkedAccounts")}
               </div>
             ) : linkedAccounts.length === 0 ? (
               <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)]">
-                No linked GitHub accounts yet.
+                {t("noLinkedAccounts")}
               </div>
             ) : (
               <div className="space-y-3">
@@ -1410,10 +1650,103 @@ function SettingsPageContent() {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
+                GitHub Organizations
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                Choose which organizations to include or exclude from your dashboard metrics.
+              </p>
+            </div>
+          </div>
+
+          {loadingOrgs ? (
+            <div className="space-y-3">
+              <div className="h-10 bg-[var(--card-muted)] rounded animate-pulse" />
+              <div className="h-10 bg-[var(--card-muted)] rounded animate-pulse" />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {orgAccounts.some((acc) => !acc.hasOrgScope) && (
+                <div className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-4">
+                  <p className="text-sm text-amber-200">
+                    <strong>Action Required:</strong> Organization access is not fully authorized. To display private organization contributions, please sign out and sign back in to grant organization permission (enable the &quot;read:org&quot; scope when prompted).
+                  </p>
+                </div>
+              )}
+
+              {orgAccounts.length === 0 ? (
+                <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 text-sm text-[var(--muted-foreground)] text-center">
+                  No organizations found.
+                </div>
+              ) : (
+                orgAccounts.map((acc) => (
+                  <div key={acc.githubId} className="space-y-3">
+                    <h3 className="text-sm font-semibold text-[var(--card-foreground)] border-b border-[var(--border)] pb-2">
+                      Organizations ({acc.githubLogin})
+                    </h3>
+                    {acc.orgs.length === 0 ? (
+                      <p className="text-xs text-[var(--muted-foreground)] py-2">
+                        No organization memberships found for this account.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {acc.orgs.map((org: any) => {
+                          const isEnabled = orgsConfig[org.login] !== false; // default to true
+                          return (
+                            <div
+                              key={org.id}
+                              className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--control)] p-3"
+                            >
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={org.avatarUrl}
+                                  alt={org.login}
+                                  className="w-8 h-8 rounded"
+                                />
+                                <span className="text-sm font-semibold text-[var(--card-foreground)]">
+                                  {org.login}
+                                </span>
+                              </div>
+                              <label className="flex items-center cursor-pointer select-none">
+                                <span className="sr-only">Toggle {org.login}</span>
+                                <div className="relative">
+                                  <input
+                                    type="checkbox"
+                                    checked={isEnabled}
+                                    onChange={(e) => handleToggleOrg(org.login, e.target.checked)}
+                                    className="sr-only"
+                                  />
+                                  <div
+                                    className={`block h-6 w-10 rounded-full transition-colors ${
+                                      isEnabled ? "bg-[var(--accent)]" : "bg-[var(--control)]"
+                                    }`}
+                                  />
+                                  <div
+                                    className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--card)] transition-transform ${
+                                      isEnabled ? "translate-x-4" : ""
+                                    }`}
+                                  />
+                                </div>
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
                 Wakatime Integration
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Connect your Wakatime account to display accurate coding time and language usage.
+                {t("wakatimeDescription")}
               </p>
             </div>
           </div>
@@ -1421,7 +1754,7 @@ function SettingsPageContent() {
           <div className="space-y-4">
             <div>
               <label htmlFor="wakatime-key" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                API Key
+                {t("apiKey")}
               </label>
               <div className="flex gap-2">
                 <input
@@ -1442,7 +1775,7 @@ function SettingsPageContent() {
                   disabled={savingWakatime}
                   className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60 min-w-[80px]"
                 >
-                  {savingWakatime ? "Saving..." : "Save"}
+                  {savingWakatime ? common("saving") : common("save")}
                 </button>
               </div>
               <p className="mt-2 text-xs text-[var(--muted-foreground)]">
@@ -1456,10 +1789,10 @@ function SettingsPageContent() {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--card-foreground)]">
-                Discord Integration
+                {t("discordTitle")}
               </h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Receive streak reminders and milestone alerts in your Discord server.
+                {t("discordDescription")}
               </p>
             </div>
           </div>
@@ -1467,7 +1800,7 @@ function SettingsPageContent() {
           <div className="space-y-4">
             <div>
               <label htmlFor="discord-webhook" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                Webhook URL
+                {t("webhookUrl")}
               </label>
               <div className="flex gap-2">
                 <input
@@ -1486,7 +1819,7 @@ function SettingsPageContent() {
 
             <div>
               <label htmlFor="timezone-select" className="block text-sm font-medium text-[var(--card-foreground)] mb-1">
-                Timezone (For 8 PM reminders)
+                {t("timezoneLabel")}
               </label>
               <select
                 id="timezone-select"
@@ -1521,7 +1854,7 @@ function SettingsPageContent() {
                 disabled={savingDiscord}
                 className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
               >
-                {savingDiscord ? "Saving..." : "Save Discord Settings"}
+                {savingDiscord ? common("saving") : t("saveDiscord")}
               </button>
               <button
                 type="button"
@@ -1529,7 +1862,7 @@ function SettingsPageContent() {
                 disabled={testingDiscord || !discordWebhook}
                 className="px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--control)] text-[var(--card-foreground)] text-sm font-medium hover:bg-[var(--card-muted)] transition-colors disabled:opacity-60"
               >
-                {testingDiscord ? "Testing..." : "Test Notification"}
+                {testingDiscord ? t("testing") : t("testNotification")}
               </button>
             </div>
             <p className="mt-2 text-xs text-[var(--muted-foreground)]">
@@ -1539,7 +1872,7 @@ function SettingsPageContent() {
             {discordWebhook && (
               <div className="border-t border-[var(--border)]/60 pt-4 mt-4">
                 <h3 className="text-sm font-semibold text-[var(--card-foreground)] mb-3">
-                  Mute Notifications
+                  {t("muteNotifications")}
                 </h3>
                 {discordMutedUntil && new Date(discordMutedUntil).getTime() > Date.now() ? (
                   <div className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4">
@@ -1558,7 +1891,7 @@ function SettingsPageContent() {
                       disabled={savingDiscord}
                       className="px-4 py-2 rounded-lg border border-[var(--destructive-muted-border)] text-[var(--destructive)] text-sm font-medium hover:bg-[var(--destructive-muted)] transition-colors disabled:opacity-60"
                     >
-                      {savingDiscord ? "Unmuting..." : "Unmute Now"}
+                      {savingDiscord ? common("saving") : t("unmuteNow")}
                     </button>
                   </div>
                 ) : (
@@ -1578,7 +1911,7 @@ function SettingsPageContent() {
                       disabled={savingDiscord}
                       className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
                     >
-                      {savingDiscord ? "Muting..." : "Mute Notifications"}
+                      {savingDiscord ? common("saving") : t("muteNotifications")}
                     </button>
                   </div>
                 )}
@@ -1594,7 +1927,7 @@ function SettingsPageContent() {
               <span className="mr-2 transition-transform duration-200 group-hover:-translate-x-1.5">
                 ←
               </span>
-              Back to Dashboard
+              {common("backToDashboard")}
             </button>
           </Link>
         </div>
@@ -1603,10 +1936,10 @@ function SettingsPageContent() {
 
         <ConfirmModal
           isOpen={showConfirmModal}
-          title="Unsaved Changes"
-          message="You have unsaved changes in your settings. If you leave now, your progress will be lost."
-          confirmLabel="Leave Anyway"
-          cancelLabel="Stay and Save"
+          title={t("unsavedTitle")}
+          message={t("unsavedMessage")}
+          confirmLabel={t("leaveAnyway")}
+          cancelLabel={t("stayAndSave")}
           onConfirm={handleConfirmLeave}
           onCancel={handleCancelLeave}
         />
