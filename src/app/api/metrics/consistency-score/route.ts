@@ -23,7 +23,10 @@ async function fetchActiveDates(
   cacheContext: { bypass: boolean; userId: string },
   timeZone = "UTC",
 ): Promise<Set<string>> {
-  const key = metricsCacheKey(cacheContext.userId, "streak", { githubLogin });
+  const key = metricsCacheKey(cacheContext.userId, "streak", {
+    githubLogin,
+    timeZone,
+  });
 
   const dates = await withMetricsCache(
     {
@@ -91,8 +94,7 @@ async function getConsistencyScoreForDates(
   timeZone: string,
   cacheContext: { bypass: boolean; userId: string; accountKey: string },
 ) {
-  const key = `metrics:${cacheContext.userId}:consistency-score:${cacheContext.accountKey}`;
-
+const key = `metrics:${cacheContext.userId}:consistency-score:${cacheContext.accountKey}:${timeZone}`;
   return withMetricsCache(
     {
       bypass: cacheContext.bypass,
