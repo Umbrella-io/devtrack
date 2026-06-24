@@ -10,25 +10,16 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 [![Stack](https://img.shields.io/badge/stack-Next.js%2016%20%7C%20Supabase%20%7C%20TypeScript-blue)](./DEVELOPMENT.md)
-[![Good First Issues](https://img.shields.io/github/issues/Umbrella-io/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)](https://github.com/Umbrella-io/devtrack/issues?q=label%3A%22good+first+issue%22)
+[![Stars](https://img.shields.io/github/stars/Umbrella-io/devtrack?style=flat&color=yellow)](https://github.com/Umbrella-io/devtrack/stargazers)
+[![Forks](https://img.shields.io/github/forks/Umbrella-io/devtrack?style=flat&color=blue)](https://github.com/Umbrella-io/devtrack/network/members)
 [![Contributors](https://img.shields.io/github/contributors/Umbrella-io/devtrack?color=brightgreen)](https://github.com/Umbrella-io/devtrack/graphs/contributors)
 [![Last Commit](https://img.shields.io/github/last-commit/Umbrella-io/devtrack)](https://github.com/Umbrella-io/devtrack/commits/main)
+[![Views](https://komarev.com/ghpvc/?username=Priyanshu-byte-coder&label=Views&color=blueviolet)](https://github.com/Priyanshu-byte-coder/devtrack)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/Priyanshu-byte-coder?label=sponsors&color=ea4aaa)](https://github.com/sponsors/Priyanshu-byte-coder)
 
 **[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Umbrella-io/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Umbrella-io/devtrack/issues/new?template=feature_request.md)** · **[Discussions](https://github.com/Umbrella-io/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
 
 </div>
-
----
-
-## Project Stats
-
-| Metric | Count |
-|---|---|
-| GitHub Stars | 130+ |
-| Forks | 369 |
-| Merged PRs | 800+ |
-| Contributors | 224 |
 
 ---
 
@@ -65,7 +56,6 @@
 ## Table of Contents
 
 - [Why DevTrack?](#why-devtrack)
-- [Project Stats](#project-stats)
 - [Demo](#demo)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
