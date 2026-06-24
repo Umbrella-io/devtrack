@@ -156,14 +156,11 @@ export default function GoalTracker() {
           <span className="sr-only">Loading weekly goals</span>
           <div
             aria-hidden="true"
-            className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse"
+            className="mb-4 h-7 w-32 rounded bg-[var(--card-muted)] animate-pulse"
           />
-          {[1, 2, 3].map((i) => (
-            <div key={i} aria-hidden="true" className="mb-4">
-              <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
-              <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
-            </div>
-          ))}
+          <div aria-hidden="true" className="mb-2 h-[34px] rounded bg-[var(--card-muted)] animate-pulse" />
+          <div aria-hidden="true" className="ml-auto h-4 w-28 rounded bg-[var(--card-muted)] animate-pulse" />
+          <div aria-hidden="true" className="mt-6 h-[255px] rounded bg-[var(--card-muted)] animate-pulse" />
         </div>
       </div>
     );
@@ -425,4 +422,4 @@ function ConfettiBurst() {
       ))}
     </div>
   );
-}
+}

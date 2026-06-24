@@ -170,15 +170,17 @@ export default function StreakTracker() {
       <div className="bg-[var(--card)] rounded-xl p-6">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading streak tracker</span>
-          <div
-            aria-hidden="true"
-            className="h-6 w-36 bg-[var(--card-muted)] rounded animate-pulse mb-4"
-          />
+          <div aria-hidden="true" className="mb-4 h-8 w-36 rounded bg-[var(--card-muted)] animate-pulse" />
           <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse" />
+              <div key={i} className="h-[117px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
             ))}
           </div>
+          <div aria-hidden="true" className="mt-3 h-[38px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
+          <div aria-hidden="true" className="mt-3 h-[42px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
+          <div aria-hidden="true" className="mt-4 h-[57px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
+          <div aria-hidden="true" className="mt-2 ml-auto h-4 w-28 rounded bg-[var(--card-muted)] animate-pulse" />
+          <div aria-hidden="true" className="mt-6 h-[495px] rounded-lg bg-[var(--card-muted)] animate-pulse" />
         </div>
       </div>
     );
