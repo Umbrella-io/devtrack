@@ -3,7 +3,7 @@ import SectionHeader from "./SectionHeader";
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
-import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
+ 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import PRStatusDonutChart from "./PRStatusDonutChart";
 import MiniPRTrendChart from "./MiniPRTrendChart";
@@ -40,16 +40,21 @@ interface PRStat {
   href?: string;
 }
 
+interface PRMetricsProps {
+  isLoading?: boolean;
+}
+
 function formatReviewCycle(hours: number | null): string {
   if (hours === null) return "—";
   if (hours < 24) return `${hours}h`;
   return `${Math.round((hours / 24) * 10) / 10}d`;
 }
 
-export default function PRMetrics() {
+export default function PRMetrics({ isLoading  }: PRMetricsProps) {
   const { selectedAccount } = useAccount();
   const [metrics, setMetrics] = useState<PRData | null>(null);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = isLoading !== undefined ? isLoading : loading;
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -59,8 +64,11 @@ export default function PRMetrics() {
   const [staleThresholdDays, setStaleThresholdDays] = useState(14);
 
   const fetchMetrics = useCallback(() => {
-    setLoading(true);
+    if (isLoading === undefined) {
+   setLoading(true);
+}
     setError(null);
+    
 
     const url =
       selectedAccount !== null
@@ -78,9 +86,13 @@ export default function PRMetrics() {
         setMinutesAgo(0);
       })
       .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
-      .finally(() => setLoading(false));
-  }, [selectedAccount, range]);
-
+      .finally(() => {
+   if (isLoading === undefined) {
+      setLoading(false);
+   }
+});
+  }, [selectedAccount, range , isLoading]);
+ 
   useEffect(() => {
     fetchMetrics();
   }, [fetchMetrics]);
@@ -175,11 +187,38 @@ export default function PRMetrics() {
   };
 
   return (
+    
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4">
         <SectionHeader title="PR Analytics" />
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-2">
+{showSkeleton ? (
+    <>
+      {/* Range buttons skeleton */}
+      <div className="flex gap-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-8 w-16 rounded bg-[var(--card-muted)] animate-pulse"
+          />
+        ))}
+      </div>
+
+      {/* Tab buttons skeleton */}
+      <div className="flex gap-2">
+        <div className="h-8 w-28 rounded bg-[var(--card-muted)] animate-pulse" />
+        <div className="h-8 w-28 rounded bg-[var(--card-muted)] animate-pulse" />
+      </div>
+
+      {/* Dropdown skeletons */}
+      <div className="h-8 w-24 rounded bg-[var(--card-muted)] animate-pulse" />
+      <div className="h-8 w-28 rounded bg-[var(--card-muted)] animate-pulse" />
+    </>
+  ) : (
+        <>
+       
+
+             <div className="flex gap-2">
             {(["7d", "30d", "90d"] as const).map((option) => (
               <button
                 key={option}
@@ -209,6 +248,7 @@ export default function PRMetrics() {
               Reviews Given
             </button>
           </div>
+          
           <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted-foreground)]">
             Range
             <select
@@ -233,10 +273,13 @@ export default function PRMetrics() {
               ))}
             </select>
           </label>
+          </>
+          )}
         </div>
+            
       </div>
 
-      {loading ? (
+      {showSkeleton  ? (
         <div
           role="status"
           aria-live="polite"
@@ -246,7 +289,7 @@ export default function PRMetrics() {
           <span className="sr-only">Loading PR analytics</span>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-            {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+           {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
                 aria-hidden="true"
@@ -259,6 +302,14 @@ export default function PRMetrics() {
             className="h-[220px] rounded-lg bg-[var(--card-muted)] animate-pulse"
             aria-hidden="true"
           />
+           <div className="space-y-2">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div
+          key={i}
+          className="h-12 rounded-md bg-[var(--card-muted)] animate-pulse"
+        />
+      ))}
+    </div>
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
