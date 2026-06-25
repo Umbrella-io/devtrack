@@ -196,7 +196,7 @@ To deploy your own instance, see the **[Self-Hosting Guide](./docs/self-hosting.
 ```bash
 git clone https://github.com/Priyanshu-byte-coder/devtrack.git
 cd devtrack
-npm install
+pnpm install
 ```
 
 **2. Set up Supabase**
@@ -242,7 +242,7 @@ cp .env.example .env.local
 **5. Run locally**
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and sign in with GitHub.
@@ -251,11 +251,11 @@ Open [http://localhost:3000](http://localhost:3000) and sign in with GitHub.
 
 ```bash
 # Unit tests
-npm test
+pnpm test
 
 # End-to-end tests (requires Chromium)
 npx playwright install --with-deps chromium
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ### E2E Test Suite (Playwright)
@@ -275,7 +275,7 @@ DevTrack ships a Playwright-based end-to-end suite covering the full user journe
 npx playwright install --with-deps chromium
 
 # Run the full suite (dev server auto-starts on port 3002)
-npm run test:e2e
+pnpm run test:e2e
 
 # Run a single spec
 npx playwright test e2e/goals.spec.ts
@@ -443,7 +443,7 @@ Setup takes under 10 minutes — see [DEVELOPMENT.md](./DEVELOPMENT.md) for the 
 1. Browse [open issues](https://github.com/Priyanshu-byte-coder/devtrack/issues) — start with `good first issue`
 2. Comment on the issue to get assigned before starting work
 3. Fork → branch (`feat/issue-42-description`) → PR against `main`
-4. Ensure CI passes: `npm run lint && npm run type-check`
+4. Ensure CI passes: `pnpm run lint && pnpm run type-check`
 
 See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for commit style, branch naming, and the review process.
 
