@@ -7,6 +7,7 @@ import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA1
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import PRStatusDonutChart from "./PRStatusDonutChart";
 import MiniPRTrendChart from "./MiniPRTrendChart";
+import PRBreakdownChart from "./PRBreakdownChart";
 
 interface PRMetricsSummary {
   open: number;
@@ -54,7 +55,7 @@ export default function PRMetrics() {
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"authored" | "reviews">("authored");
-  const [prFilter, setPrFilter] = useState<"all" | "merged" | "open">("all");
+  const [prFilter, setPrFilter] = useState<"all" | "merged" | "open" | "closed">("all");
   const [range, setRange] = useState<"7d" | "30d" | "90d">("30d");
   const [staleThresholdDays, setStaleThresholdDays] = useState(14);
 
@@ -274,16 +275,28 @@ export default function PRMetrics() {
             <div className="flex flex-wrap items-center justify-between mb-4">
               <p className="text-sm font-medium text-[var(--muted-foreground)]">GitHub PRs</p>
               <div className="flex items-center gap-2">
-                {(["all", "merged", "open"] as const).map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setPrFilter(filter)}
-                    className={`rounded-full px-4 py-1.5 text-xs font-semibold capitalize transition-colors ${prFilter === filter ? "bg-[var(--accent)] text-white" : "bg-[var(--control)] text-[var(--muted-foreground)]"
-                      }`}
-                  >
-                    {filter}
-                  </button>
-                ))}
+                {(["all", "merged", "open", "closed"] as const).map((filter) => {
+  const colors: Record<string, string> = {
+    all: "bg-[var(--accent)] text-white",
+    merged: "bg-green-600 text-white",
+    open: "bg-blue-600 text-white",
+    closed: "bg-orange-500 text-white",
+  };
+  return (
+    <button
+      key={filter}
+      onClick={() => setPrFilter(filter)}
+      aria-pressed={prFilter === filter}
+      className={`rounded-full px-4 py-1.5 text-xs font-semibold capitalize transition-colors ${
+        prFilter === filter
+          ? colors[filter]
+          : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
+      }`}
+    >
+      {filter}
+    </button>
+  );
+})}
               </div>
             </div>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -302,15 +315,18 @@ export default function PRMetrics() {
 
           {/* PR Status Donut Chart */}
           {metrics && (
-            <div>
-              <p className="mb-2 text-sm font-medium text-[var(--muted-foreground)]">PR Status Distribution</p>
-              <PRStatusDonutChart
-                open={prFilter === "merged" ? 0 : (metrics.open || 0)}
-                merged={prFilter === "open" ? 0 : (metrics.merged || 0)}
-                closed={prFilter === "all" ? (metrics.closed || 0) : 0}
-              />
-            </div>
-          )}
+  <div>
+    <p className="mb-2 text-sm font-medium text-[var(--muted-foreground)]">PR Status Distribution</p>
+    <PRStatusDonutChart
+      open={prFilter === "merged" ? 0 : (metrics.open || 0)}
+      merged={prFilter === "open" ? 0 : (metrics.merged || 0)}
+      closed={prFilter === "all" ? (metrics.closed || 0) : 0}
+    />
+    <div className="mt-4">
+      <PRBreakdownChart filter={prFilter} />
+    </div>
+  </div>
+)}
 
           {/* Cycle Time Features */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

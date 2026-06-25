@@ -10,6 +10,9 @@ interface PRBreakdown {
   merged: number;
   closed: number;
 }
+interface PRBreakdownChartProps {
+  filter?: "all" | "merged" | "open" | "closed";
+}
 
 const SLICES: { key: keyof PRBreakdown; label: string; color: string }[] = [
   { key: "open",   label: "Open",   color: "var(--accent)" },
@@ -18,7 +21,7 @@ const SLICES: { key: keyof PRBreakdown; label: string; color: string }[] = [
   { key: "draft",  label: "Draft",  color: "var(--muted-foreground)" },
 ];
 
-export default function PRBreakdownChart() {
+export default function PRBreakdownChart({ filter = "all" }: PRBreakdownChartProps) {
   const { selectedAccount } = useAccount();
   const [breakdown, setBreakdown] = useState<PRBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,11 +92,16 @@ export default function PRBreakdownChart() {
   }
 
   const total = breakdown ? SLICES.reduce((sum, s) => sum + (breakdown[s.key] ?? 0), 0) : 0;
-  const chartData = breakdown
-    ? SLICES.map((s) => ({ name: s.label, value: breakdown[s.key] ?? 0, color: s.color })).filter(
-        (d) => d.value > 0
-      )
-    : [];
+ const chartData = breakdown
+  ? SLICES.map((s) => ({
+      name: s.label,
+      value:
+        filter === "all" || s.key === filter
+          ? (breakdown[s.key] ?? 0)
+          : 0,
+      color: s.color,
+    })).filter((d) => d.value > 0)
+  : [];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
@@ -136,15 +144,19 @@ export default function PRBreakdownChart() {
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-3 flex flex-wrap justify-center gap-4">
-            {SLICES.map((s) => (
-              <div
-                key={s.key}
-                className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]"
-              >
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-                {s.label}: {breakdown?.[s.key] ?? 0}
-              </div>
-            ))}
+            {SLICES.filter((s) => filter === "all" || s.key === filter).map((s) => (
+  <div
+    key={s.key}
+    className={`flex items-center gap-1.5 text-xs transition-opacity ${
+      filter === "all" || s.key === filter
+        ? "text-[var(--muted-foreground)]"
+        : "opacity-30 text-[var(--muted-foreground)]"
+    }`}
+  >
+    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+    {s.label}: {breakdown?.[s.key] ?? 0}
+  </div>
+))}
           </div>
         </>
       )}
