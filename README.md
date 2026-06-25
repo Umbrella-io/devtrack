@@ -61,6 +61,7 @@
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
+- [API Documentation](#api-documentation)
 - [Getting Started](#getting-started)
 - [Docker Development Setup](#docker-development-setup)
 - [Roadmap](#roadmap)
