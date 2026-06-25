@@ -49,7 +49,7 @@ export default async function DashboardPage() {
   return (
     <DashboardSSEProvider>
       <DashboardWidgetA11yProvider>
-        <div className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
+        <main className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] transition-colors sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
           <DashboardHeader />
 
           <div className="mt-6 space-y-8">
@@ -151,7 +151,7 @@ export default async function DashboardPage() {
               <MilestonePlanner />
             </section>
           </div>
-        </div>
+        </main>
       </DashboardWidgetA11yProvider>
     </DashboardSSEProvider>
   );
