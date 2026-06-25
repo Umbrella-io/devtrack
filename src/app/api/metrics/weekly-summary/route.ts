@@ -8,7 +8,7 @@ import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { calculateStreak } from "@/lib/streak";
-import { toDateStr } from "@/lib/dateUtils";
+import { toDateStr } from "@/lib/date-utils";
 
 export const dynamic = "force-dynamic";
 

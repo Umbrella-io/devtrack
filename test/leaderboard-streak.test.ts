@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dateDiffDays, toDateStr } from '@/lib/dateUtils';
+import { dateDiffDays, toDateStr } from '@/lib/date-utils';
 import { calculateCurrentStreak } from '@/lib/streak';
 
 describe('calculateCurrentStreak', () => {

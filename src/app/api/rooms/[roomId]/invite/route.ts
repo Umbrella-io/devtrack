@@ -18,6 +18,9 @@ export async function POST(
   const { github_username } = await req.json();
   if (!github_username?.trim())
     return NextResponse.json({ error: 'github_username required' }, { status: 400 });
+  // GitHub usernames: 1-39 chars, alphanumeric + hyphens, no leading/trailing hyphen
+  if (!/^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/.test(github_username))
+    return NextResponse.json({ error: 'Invalid GitHub username' }, { status: 400 });
   const ghRes = await fetch(`https://api.github.com/users/${github_username}`, {
     headers: {
       Accept: 'application/vnd.github+json',
