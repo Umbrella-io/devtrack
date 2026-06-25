@@ -238,11 +238,30 @@ async function injectMockSession(page: import("@playwright/test").Page) {
           thisWeek: { opened: 3, merged: 2 },
           lastWeek: { opened: 1, merged: 1 },
         },
-        issues: { thisWeek: 5, lastWeek: 3 },
+        issues: { 
+          thisWeek: { opened: 5, closed: 0 }, 
+          lastWeek: { opened: 3, closed: 0 } 
+        },
         productivityScore: { current: 88, previous: 75 },
         activeDays: { thisWeek: 5, lastWeek: 4 },
         streak: 7,
         topRepo: "demo/devtrack",
+        repoBreakdown: [],
+        dailyCommits: [],
+        mostActiveDay: "2023-10-07"
+      }),
+    })
+  );
+
+  await page.route("**/api/metrics/sponsors**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        mrr: 15000,
+        activeCount: 12,
+        growthTrend: 15,
+        sponsors: [],
+        sparklineData: []
       }),
     })
   );
