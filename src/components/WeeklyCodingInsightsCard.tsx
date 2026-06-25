@@ -144,7 +144,7 @@ export default function WeeklyCodingInsightsCard() {
           </div>
           <h3 className="text-base font-semibold text-[var(--card-foreground)]">No activity this week</h3>
           <p className="mt-1 text-sm text-[var(--muted-foreground)] max-w-sm">
-            It looks like you haven't made any commits, opened PRs, or closed issues in the past 7 days. Time to get coding!
+            It looks like you haven&apos;t made any commits, opened PRs, or closed issues in the past 7 days. Time to get coding!
           </p>
         </div>
       ) : (
