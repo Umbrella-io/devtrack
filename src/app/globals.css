@@ -550,7 +550,7 @@ body {
   font-family: var(--font-jetbrains, ui-monospace, monospace);
   font-size: 14px;
   font-weight: 600;
-  color: #000;
+  color: #fff;
   background: #818cf8;
   padding: 12px 24px;
   border-radius: 6px;
@@ -564,6 +564,7 @@ body {
 
 .lnd-cta-primary:hover {
   background: #fff;
+  color: #000;
   transform: translateY(-2px);
   box-shadow: 0 0 18px rgba(129, 140, 248, 0.5);
 }
