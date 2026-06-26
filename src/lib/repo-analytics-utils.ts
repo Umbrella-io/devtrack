@@ -12,6 +12,7 @@ export interface ParsedRepo {
  * Returns the split components on success, or null if the value is invalid.
  */
 export function parseRepoParam(raw: string): ParsedRepo | null {
+  if (!raw || typeof raw !== "string") return null;
   const trimmed = raw.trim();
   const match = REPO_IDENTIFIER_RE.exec(trimmed);
   if (!match) return null;
