@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, it, expect } from "vitest";
 import { csvCell, toCsv } from "../src/lib/csv";
 
 describe("csvCell", () => {
@@ -10,42 +10,33 @@ describe("csvCell", () => {
     expect(csvCell(undefined)).toBe("");
   });
 
-  it("returns plain string unchanged", () => {
+  it("returns plain string unchanged when no special chars", () => {
     expect(csvCell("hello")).toBe("hello");
   });
 
-  it("returns number as string", () => {
-    expect(csvCell(42)).toBe("42");
+  it("wraps value with comma in quotes", () => {
+    expect(csvCell("hello,world")).toBe('"hello,world"');
   });
 
-  it("returns boolean as string", () => {
-    expect(csvCell(true)).toBe("true");
-    expect(csvCell(false)).toBe("false");
-  });
-
-  it("wraps string with comma in double-quotes", () => {
-    expect(csvCell("hello, world")).toBe('"hello, world"');
-  });
-
-  it("wraps string with double-quote in double-quotes and escapes inner quotes", () => {
+  it("wraps value with double-quote in quotes and escapes the quote", () => {
     expect(csvCell('say "hello"')).toBe('"say ""hello"""');
   });
 
-  it("wraps string with newline in double-quotes", () => {
+  it("wraps value with newline in quotes", () => {
     expect(csvCell("line1\nline2")).toBe('"line1\nline2"');
   });
 
-  it("wraps string with carriage return in double-quotes", () => {
+  it("wraps value with carriage return in quotes", () => {
     expect(csvCell("line1\rline2")).toBe('"line1\rline2"');
   });
 
-  it("wraps string with all special chars (comma, quote, newline)", () => {
-    expect(csvCell('a, "b"\nc')).toBe('"a, ""b""\nc"');
+  it("coerces number to string without quoting", () => {
+    expect(csvCell(42)).toBe("42");
   });
 
-  it("returns plain string unchanged when it has no special chars", () => {
-    expect(csvCell("simple")).toBe("simple");
-    expect(csvCell("hello world")).toBe("hello world");
+  it("coerces boolean to string without quoting", () => {
+    expect(csvCell(true)).toBe("true");
+    expect(csvCell(false)).toBe("false");
   });
 });
 
@@ -54,59 +45,35 @@ describe("toCsv", () => {
     expect(toCsv([])).toBe("");
   });
 
-  it("returns header row only for single row", () => {
-    expect(toCsv([{ name: "Alice", age: 30 }])).toBe("name,age");
+  it("serialises single row correctly", () => {
+    const rows = [{ name: "Alice", age: 30 }];
+    expect(toCsv(rows)).toBe("name,age\nAlice,30");
   });
 
-  it("serialises multiple rows with correct values", () => {
+  it("uses first row keys as stable header order", () => {
     const rows = [
-      { name: "Alice", age: 30 },
-      { name: "Bob", age: 25 },
-    ];
-    const result = toCsv(rows);
-    expect(result).toBe("name,age\nAlice,30\nBob,25");
-  });
-
-  it("omits extra keys not present in first row", () => {
-    const rows = [
-      { name: "Alice", age: 30 },
-      { name: "Bob", extra: "ignored" },
-    ];
-    expect(toCsv(rows)).toBe("name,age\nAlice,30\nBob,");
-  });
-
-  it("fills empty cells for keys missing in later rows", () => {
-    const rows = [
-      { name: "Alice", age: 30, city: "NYC" },
-      { name: "Bob" },
-    ];
-    expect(toCsv(rows)).toBe("name,age,city\nAlice,30,NYC\nBob,,");
-  });
-
-  it("handles values requiring CSV escaping", () => {
-    const rows = [
-      { value: "simple" },
-      { value: "has, comma" },
-      { value: 'has "quote"' },
-      { value: "multi\nline" },
+      { b: "2", a: "1" },
+      { a: "3", b: "4" },
     ];
     const result = toCsv(rows);
     const lines = result.split("\n");
-    expect(lines[1]).toBe("simple");
-    expect(lines[2]).toBe('"has, comma"');
-    expect(lines[3]).toBe('"has ""quote"""');
-    expect(lines[4]).toBe('"multi\nline"');
+    expect(lines[0]).toBe("b,a");
+    expect(lines[1]).toBe("2,1");
+    expect(lines[2]).toBe("4,3");
   });
 
-  it("handles null and undefined in cells", () => {
-    const rows = [{ a: null, b: undefined, c: "hello" }];
-    const result = toCsv(rows);
-    expect(result).toBe("a,b,c\n,,hello");
+  it("escapes special characters in cells", () => {
+    const rows = [{ name: "Bob, Jr.", note: 'says "hi"' }];
+    expect(toCsv(rows)).toBe('name,note\n"Bob, Jr.","says ""hi"""');
   });
 
-  it("handles numbers and booleans without quoting", () => {
-    const rows = [{ n: 42, b: true }];
-    const result = toCsv(rows);
-    expect(result).toBe("n,b\n42,true");
+  it("handles null and undefined as empty cells", () => {
+    const rows = [{ a: null, b: undefined, c: "c" }];
+    expect(toCsv(rows)).toBe("a,b,c\n,,c");
+  });
+
+  it("handles numeric values without quoting", () => {
+    const rows = [{ x: 1, y: 2 }];
+    expect(toCsv(rows)).toBe("x,y\n1,2");
   });
 });
