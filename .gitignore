@@ -56,3 +56,11 @@ worker/
 server-output.txt
 test-ssr.mjs
 
+# dev artifacts — prevent accidental commits of scratch files and patches
+*.patch
+temp.*
+upstream-*.ts
+screenshot.png
+
+# Prevent npm lockfile conflicts
+package-lock.json

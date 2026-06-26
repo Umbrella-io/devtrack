@@ -98,16 +98,33 @@ export async function dispatchWebhook(
 
   try {
     const response = await fetch(webhook.url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Webhook-Signature": `sha256=${signature}`,
-        "X-Webhook-Event": event,
-        "X-Webhook-Delivery-Id": webhookId,
-      },
-      body: payloadString,
-      signal: AbortSignal.timeout(10000),
-    });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-Webhook-Signature": `sha256=${signature}`,
+    "X-Webhook-Event": event,
+    "X-Webhook-Delivery-Id": webhookId,
+  },
+  body: payloadString,
+  signal: AbortSignal.timeout(10000),
+  redirect: "manual",
+});
+
+if ([301, 302, 303, 307, 308].includes(response.status)) {
+  const location = response.headers.get("location");
+
+  if (!location) {
+    throw new Error("Redirect response missing location header");
+  }
+
+  const redirectSafe = await isSafeUrl(location);
+
+  if (!redirectSafe) {
+    throw new Error(
+      "SSRF protection: blocked redirect to private/internal address"
+    );
+  }
+}
 
     statusCode = response.status;
     const success = response.ok;

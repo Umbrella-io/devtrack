@@ -137,6 +137,34 @@ export function mockMetricResponse(url) {
     return { pinnedRepos: [] };
   }
   if (url.includes("/api/metrics/repo-explorer")) return { repos: [] };
+  if (url.includes("/api/metrics/sponsors")) {
+    return {
+      mrr: 85,
+      activeCount: 3,
+      growthTrend: 200,
+      sparklineData: [
+        { month: "Jan", count: 0 },
+        { month: "Feb", count: 0 },
+        { month: "Mar", count: 0 },
+        { month: "Apr", count: 1 },
+        { month: "May", count: 1 },
+        { month: "Jun", count: 3 },
+      ],
+      sponsors: [
+        {
+          login: "sponsor-1",
+          name: "Gold Supporter",
+          url: "https://github.com/sponsor-1",
+          avatarUrl: null,
+          privacyLevel: "PUBLIC",
+          tierName: "$50 tier",
+          monthlyPriceInCents: 5000,
+          createdAt: "2026-05-18T12:00:00.000Z",
+        },
+      ],
+      syncedAt: "2026-06-11T12:00:00.000Z",
+    };
+  }
   return {};
 }
 
@@ -157,6 +185,34 @@ export async function installDashboardApiMocks(page, options = {}) {
     route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ notifications: [], unreadCount: 0 }),
+    })
+  );
+
+  await page.route("**/api/milestones**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ milestones: [] }),
+    })
+  );
+
+  await page.route("**/api/daily-note**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ todayNote: "", yesterdayNote: "" }),
+    })
+  );
+
+  await page.route("**/api/accounts**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [] }),
+    })
+  );
+
+  await page.route("**/api/user/orgs**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [], config: {} }),
     })
   );
 
@@ -279,6 +335,8 @@ export async function installDashboardApiMocks(page, options = {}) {
     "**/api/metrics/productive-hours**",
     "**/api/user/pinned-repos/details**",
     "**/api/metrics/repo-explorer**",
+    "**/api/metrics/sponsors**",
+    "**/api/metrics/achievement-progress**",
   ];
 
   for (const pattern of stubRoutes) {

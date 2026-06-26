@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import { toPng } from "html-to-image";
 import ProfileShareCard from "./ProfileShareCard";
-import ProfileQrModal from "@/components/ProfileQrModal";
+import { ProfileQrModal } from "@/components/ProfileQrModal";
 import { QrCode } from "lucide-react";
 
 interface ShareProfileSectionProps {
@@ -170,7 +170,6 @@ return (
     )}
 
     <ProfileQrModal
-      isOpen={showQrModal}
       onClose={() => setShowQrModal(false)}
       username={username}
       profileUrl={profileUrl}

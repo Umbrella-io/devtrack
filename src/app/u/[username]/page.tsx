@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-
+import QrCodeButton from "@/components/QrCodeButton";
 import ProfileThemeWrapper from "@/components/ProfileThemeWrapper";
 import { Metadata } from "next";
 import Link from "next/link";
@@ -345,6 +345,10 @@ export default async function PublicProfilePage({
           streak={profile.streak.current}
           profileUrl={profileUrl}
         />
+          <div className="mt-3">
+            <QrCodeButton profileUrl={profileUrl} username={profile.username} />
+          </div>
+
       </div>
 
       {/* Row 1: Contribution graph + Streak (gated by public_widgets) */}

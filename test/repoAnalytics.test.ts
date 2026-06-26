@@ -7,7 +7,7 @@ import {
   LanguageSlice,
   TimelinePoint,
   RepoAnalyticsResponse,
-} from "../src/lib/repoAnalytics";
+} from "../src/lib/repo-analytics-types";
 
 describe("repoAnalytics Type Structure Validation", () => {
   describe("ExplorerRepoCardData Type Validation", () => {

@@ -1,5 +1,5 @@
 "use client";
-
+import { Activity } from "lucide-react";
 import React, { useState } from "react";
 import {
     ComposedChart,
@@ -131,6 +131,7 @@ function CustomTooltip({ active, payload }: any) {
 export default function CommitActivityWidget() {
     // Component Context Tracking Variable States
     const [chartType, setChartType] = useState<ChartType>("bar");
+    const hasData = MOCK_TELEMETRY_DATA.length > 0;
 
     /**
      * Contextual State Mutation Handlers
@@ -188,7 +189,20 @@ export default function CommitActivityWidget() {
             </div>
 
             {/* Graphical Chart Visualization Rendering Canvas Viewport */}
-            <div className="h-64 w-full pt-2">
+{!hasData ? (
+    <div className="flex h-64 flex-col items-center justify-center text-center">
+        <Activity className="h-10 w-10 text-muted-foreground mb-3" />
+        <h4 className="font-semibold">
+            No commit activity yet
+        </h4>
+        <p className="text-sm text-muted-foreground max-w-xs">
+            Connect your GitHub repositories and start committing code
+            to see activity insights here.
+        </p>
+    </div>
+) : (
+    <div className="h-64 w-full pt-2">
+
                 <ResponsiveContainer 
                     width="100%" 
                     height="100%"
@@ -269,10 +283,9 @@ export default function CommitActivityWidget() {
                 </ResponsiveContainer>
             </div>
             
-        </div>
+            )} </div>
     );
 }
-
 // Technical Quality & Code Standards Assurance Directives:
 // - Verified compatible with Next.js App Router streaming architectures.
 // - Complies directly with multi-line scanning readability specifications.

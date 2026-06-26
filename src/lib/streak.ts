@@ -1,4 +1,4 @@
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { dateDiffDays, toDateStr } from "@/lib/date-utils";
 
 export interface StreakResult {
   current: number;
@@ -17,12 +17,6 @@ function todayAndYesterday(timeZone: string): {
   today: string;
   yesterday: string;
 } {
-  if (timeZone === "UTC") {
-    const today = toDateStr(new Date());
-    const yesterday = toDateStr(new Date(Date.now() - 86400000));
-    return { today, yesterday };
-  }
-
   const fmt = new Intl.DateTimeFormat("en", {
     timeZone,
     year: "numeric",
@@ -30,17 +24,27 @@ function todayAndYesterday(timeZone: string): {
     day: "2-digit",
   });
 
-  const parts = (d: Date) => {
-    const p = fmt.formatToParts(d);
-    const y = p.find((x) => x.type === "year")?.value ?? "0000";
-    const m = p.find((x) => x.type === "month")?.value ?? "00";
-    const day = p.find((x) => x.type === "day")?.value ?? "00";
-    return `${y}-${m}-${day}`;
-  };
+  const p = fmt.formatToParts(new Date());
+  const yStr = p.find((x) => x.type === "year")?.value ?? "0000";
+  const mStr = p.find((x) => x.type === "month")?.value ?? "00";
+  const dStr = p.find((x) => x.type === "day")?.value ?? "00";
+
+  const y = parseInt(yStr, 10);
+  const m = parseInt(mStr, 10);
+  const d = parseInt(dStr, 10);
+
+  const todayStr = `${yStr}-${mStr}-${dStr}`;
+
+  const yesterdayDate = new Date(Date.UTC(y, m - 1, d - 1));
+  const yYesterday = yesterdayDate.getUTCFullYear();
+  const mYesterday = yesterdayDate.getUTCMonth() + 1;
+  const dYesterday = yesterdayDate.getUTCDate();
+
+  const yesterdayStr = `${String(yYesterday).padStart(4, "0")}-${String(mYesterday).padStart(2, "0")}-${String(dYesterday).padStart(2, "0")}`;
 
   return {
-    today: parts(new Date()),
-    yesterday: parts(new Date(Date.now() - 86400000)),
+    today: todayStr,
+    yesterday: yesterdayStr,
   };
 }
 

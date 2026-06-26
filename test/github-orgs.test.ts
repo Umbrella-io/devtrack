@@ -18,6 +18,9 @@ const mocks = vi.hoisted(() => ({
   resolveAppUser: vi.fn(),
   supabaseFrom: vi.fn(),
   fetchFn: vi.fn(),
+  getAccountToken: vi.fn(),
+  getAllAccounts: vi.fn(),
+  mergeMetrics: vi.fn(),
 }));
 
 vi.mock("next-auth", () => ({ getServerSession: mocks.getServerSession }));
@@ -27,6 +30,11 @@ vi.mock("@/lib/resolve-user", () => ({
 }));
 vi.mock("@/lib/supabase", () => ({
   supabaseAdmin: { from: mocks.supabaseFrom },
+}));
+vi.mock("@/lib/github-accounts", () => ({
+  getAccountToken: mocks.getAccountToken,
+  getAllAccounts: mocks.getAllAccounts,
+  mergeMetrics: mocks.mergeMetrics,
 }));
 // Intercept global fetch for GitHub API calls
 vi.stubGlobal("fetch", mocks.fetchFn);
@@ -325,16 +333,23 @@ describe("GET /api/metrics/contributions — org: accountId", () => {
       json: async () => ({ total_count: 0, items: [] }),
     });
 
-    // Stub metrics cache (supabase) — needs select chain
-    const cacheSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-    const cacheEq = vi.fn().mockReturnValue({ single: cacheSingle });
-    const cacheSelect = vi.fn().mockReturnValue({ eq: cacheEq });
-    mocks.supabaseFrom.mockReturnValue({ select: cacheSelect });
+    mocks.getAccountToken.mockResolvedValue("tok-alice");
+
+    // Stub metrics cache (supabase) — supports infinite chain-mocking
+    const cacheSingle = vi.fn().mockResolvedValue({ data: { github_login: "alice" }, error: null });
+    const createChain = () => {
+      const obj = {
+        eq: () => obj,
+        single: cacheSingle,
+      };
+      return obj;
+    };
+    mocks.supabaseFrom.mockReturnValue({ select: () => createChain() });
 
     const { GET } = await import("@/app/api/metrics/contributions/route");
     const req = makeRequest(
       "GET",
-      "http://localhost/api/metrics/contributions?days=30&accountId=org:acme-corp"
+      "http://localhost/api/metrics/contributions?days=30&accountId=org:12345:acme-corp"
     );
     await GET(req);
 
@@ -360,9 +375,14 @@ describe("GET /api/metrics/contributions — org: accountId", () => {
       json: async () => ({ total_count: 0, items: [] }),
     });
     const cacheSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-    const cacheEq = vi.fn().mockReturnValue({ single: cacheSingle });
-    const cacheSelect = vi.fn().mockReturnValue({ eq: cacheEq });
-    mocks.supabaseFrom.mockReturnValue({ select: cacheSelect });
+    const createChain = () => {
+      const obj = {
+        eq: () => obj,
+        single: cacheSingle,
+      };
+      return obj;
+    };
+    mocks.supabaseFrom.mockReturnValue({ select: () => createChain() });
 
     const { GET } = await import("@/app/api/metrics/contributions/route");
     const req = makeRequest(

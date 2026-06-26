@@ -58,7 +58,7 @@ export default function MembersPanel({ roomId, members, isOwner, onMemberAdded, 
           <div key={m.id} className="flex items-center gap-2 group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={`https://github.com/${m.github_username}.png?size=32`}
+              src={`https://github.com/${encodeURIComponent(m.github_username)}.png?size=32`}
               alt={m.github_username}
               className="w-7 h-7 rounded-full shrink-0"
             />

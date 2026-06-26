@@ -2,7 +2,7 @@ import React from "react";
 import "@testing-library/jest-dom";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import ProfileQrModal from "../../src/components/ProfileQrModal";
+import { ProfileQrModal } from "../../src/components/ProfileQrModal";
 
 describe("ProfileQrModal", () => {
   const defaultProps = {
@@ -23,7 +23,7 @@ describe("ProfileQrModal", () => {
   });
 
   it("does not render when isOpen is false", () => {
-    const { container } = render(<ProfileQrModal {...defaultProps} isOpen={false} />);
+    const { container } = render(<ProfileQrModal {...defaultProps}/>);
     expect(container.firstChild).toBeNull();
   });
 

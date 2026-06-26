@@ -42,6 +42,9 @@
 html[data-theme="classic-dark"],
 html.dark {
   color-scheme: dark;
+  --card: #111111;
+  --card-muted: #1a1a1a;
+  --border: #2a2a2a;
 }
 
 html[data-theme="modern-light-blue"] {
@@ -570,7 +573,19 @@ body {
 }
 
 .lnd-cta-secondary {
-  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-jetbrains, ui-monospace, monospace);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground);
+  background: transparent;
+  padding: 11px 22px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  text-decoration: none;
+  transition: all 0.2s;
 }
 
 .lnd-cta-secondary:hover {
@@ -580,23 +595,17 @@ body {
   transform: translateY(-2px);
 }
 
-
-.lnd-cta-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.lnd-footer-link {
   font-family: var(--font-jetbrains, ui-monospace, monospace);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 11px;
   color: var(--muted-foreground);
-  background: transparent;
-  padding: 11px 22px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
   text-decoration: none;
-  transition: all 0.2s;
+  transition: color 0.2s;
 }
 
+.lnd-footer-link:hover {
+  color: var(--foreground);
+}
 
 .lnd-cell {
   background: color-mix(in srgb, var(--card) 60%, transparent);
@@ -629,21 +638,48 @@ body {
 }
 
 .lnd-about-card {
-  background: rgba(10, 10, 12, 0.72);
-  border: 1px solid #1e293b;
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   padding: 22px;
   min-height: 210px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.lnd-about-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(
+    250px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
+    rgba(129, 140, 248, 0.5) 0%,
+    transparent 80%
+  );
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 1;
 }
 
 .lnd-about-card:hover {
-  background: rgba(14, 14, 18, 0.92);
-  border-color: rgba(129, 140, 248, 0.48);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(129, 140, 248, 0.25);
   transform: translateY(-3px) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
     0 14px 34px rgba(0, 0, 0, 0.28);
+}
+
+.lnd-about-card:hover::before {
+  opacity: 1;
 }
 
 .lnd-heatmap-cell:hover {
@@ -686,6 +722,26 @@ body {
   .hover\:-translate-y-1:hover {
     transform: none !important;
   }
+
+  .primary-button:hover,
+  .secondary-button:hover {
+    transform: none !important;
+  }
+
+  .lnd-cta-primary:hover,
+  .lnd-cta-primary:active,
+  .lnd-cta-secondary:hover {
+    transform: none !important;
+  }
+
+  .lnd-ticker {
+    transform: none !important;
+  }
+
+  .skeleton-shimmer,
+  .animate-shimmer {
+    animation: none !important;
+  }
 }
 
 @keyframes shimmer {
@@ -696,4 +752,18 @@ body {
 
 .animate-shimmer {
   animation: shimmer 1.5s infinite;
+}
+/* Mouse spotlight enhancement for visibility on all backgrounds */
+.lnd-root .mouse-spotlight {
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Focus styles for accessibility - landing page specific */
+.lnd-root button:focus-visible,
+.lnd-root a:focus-visible,
+.lnd-root [role="button"]:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
