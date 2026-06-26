@@ -19,15 +19,16 @@ import type { DigestMetrics } from "@/lib/weekly-digest";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function esc(s: string): string {
-  return s
+export function esc(s: string): string {
+  const str = String(s);
+  return str
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
 
-function pluralise(n: number, singular: string, plural = `${singular}s`): string {
+export function pluralise(n: number, singular: string, plural = `${singular}s`): string {
   return `${n} ${n === 1 ? singular : plural}`;
 }
 
@@ -55,7 +56,7 @@ const LANG_COLOURS: Record<string, string> = {
   Svelte: "#ff3e00",
 };
 
-function langColour(name: string): string {
+export function langColour(name: string): string {
   return LANG_COLOURS[name] ?? "#64748b";
 }
 
