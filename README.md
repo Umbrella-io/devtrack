@@ -6,29 +6,20 @@
 
 > Track your GitHub activity, commit streaks, PR analytics, and coding goals in one clean, self-hostable dashboard — no enterprise plan, no vendor lock-in.
 
-[![CI](https://github.com/Umbrella-io/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Umbrella-io/devtrack/actions/workflows/ci.yml)
+[![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 [![Stack](https://img.shields.io/badge/stack-Next.js%2016%20%7C%20Supabase%20%7C%20TypeScript-blue)](./DEVELOPMENT.md)
-[![Good First Issues](https://img.shields.io/github/issues/Umbrella-io/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)](https://github.com/Umbrella-io/devtrack/issues?q=label%3A%22good+first+issue%22)
-[![Contributors](https://img.shields.io/github/contributors/Umbrella-io/devtrack?color=brightgreen)](https://github.com/Umbrella-io/devtrack/graphs/contributors)
-[![Last Commit](https://img.shields.io/github/last-commit/Umbrella-io/devtrack)](https://github.com/Umbrella-io/devtrack/commits/main)
+[![Stars](https://img.shields.io/github/stars/Priyanshu-byte-coder/devtrack?style=flat&color=yellow)](https://github.com/Priyanshu-byte-coder/devtrack/stargazers)
+[![Forks](https://img.shields.io/github/forks/Priyanshu-byte-coder/devtrack?style=flat&color=blue)](https://github.com/Priyanshu-byte-coder/devtrack/network/members)
+[![Contributors](https://img.shields.io/github/contributors/Priyanshu-byte-coder/devtrack?color=brightgreen)](https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors)
+[![Last Commit](https://img.shields.io/github/last-commit/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/commits/main)
+[![Views](https://komarev.com/ghpvc/?username=Priyanshu-byte-coder&label=Views&color=blueviolet)](https://github.com/Priyanshu-byte-coder/devtrack)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/Priyanshu-byte-coder?label=sponsors&color=ea4aaa)](https://github.com/sponsors/Priyanshu-byte-coder)
 
-**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Umbrella-io/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Umbrella-io/devtrack/issues/new?template=feature_request.md)** · **[Discussions](https://github.com/Umbrella-io/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
+**[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
 
 </div>
-
----
-
-## Project Stats
-
-| Metric | Count |
-|---|---|
-| GitHub Stars | 130+ |
-| Forks | 369 |
-| Merged PRs | 800+ |
-| Contributors | 224 |
 
 ---
 
@@ -65,12 +56,12 @@
 ## Table of Contents
 
 - [Why DevTrack?](#why-devtrack)
-- [Project Stats](#project-stats)
 - [Demo](#demo)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
+- [API Documentation](#api-documentation)
 - [Getting Started](#getting-started)
 - [Docker Development Setup](#docker-development-setup)
 - [Roadmap](#roadmap)
@@ -203,9 +194,9 @@ To deploy your own instance, see the **[Self-Hosting Guide](./docs/self-hosting.
 **1. Clone and install**
 
 ```bash
-git clone https://github.com/Umbrella-io/devtrack.git
+git clone https://github.com/Priyanshu-byte-coder/devtrack.git
 cd devtrack
-npm install
+pnpm install
 ```
 
 **2. Set up Supabase**
@@ -251,7 +242,7 @@ cp .env.example .env.local
 **5. Run locally**
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and sign in with GitHub.
@@ -260,11 +251,11 @@ Open [http://localhost:3000](http://localhost:3000) and sign in with GitHub.
 
 ```bash
 # Unit tests
-npm test
+pnpm test
 
 # End-to-end tests (requires Chromium)
 npx playwright install --with-deps chromium
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ### E2E Test Suite (Playwright)
@@ -284,7 +275,7 @@ DevTrack ships a Playwright-based end-to-end suite covering the full user journe
 npx playwright install --with-deps chromium
 
 # Run the full suite (dev server auto-starts on port 3002)
-npm run test:e2e
+pnpm run test:e2e
 
 # Run a single spec
 npx playwright test e2e/goals.spec.ts
@@ -426,12 +417,12 @@ Want to contribute? Pick an item below and open an issue or start a PR.
 
 | Feature | Difficulty | Issue |
 |---|---|---|
-| Contribution heatmap calendar | Intermediate | [#18](https://github.com/Umbrella-io/devtrack/issues/18) |
-| Chart type toggle (bar / line) | Intermediate | [#17](https://github.com/Umbrella-io/devtrack/issues/17) |
-| Language breakdown widget | Intermediate | [#32](https://github.com/Umbrella-io/devtrack/issues/32) |
-| Activity feed | Intermediate | [#33](https://github.com/Umbrella-io/devtrack/issues/33) |
-| Auto-progress goals from commits | Advanced | [#34](https://github.com/Umbrella-io/devtrack/issues/34) |
-| GitLab integration | Advanced | [#6](https://github.com/Umbrella-io/devtrack/issues/6) |
+| Contribution heatmap calendar | Intermediate | [#18](https://github.com/Priyanshu-byte-coder/devtrack/issues/18) |
+| Chart type toggle (bar / line) | Intermediate | [#17](https://github.com/Priyanshu-byte-coder/devtrack/issues/17) |
+| Language breakdown widget | Intermediate | [#32](https://github.com/Priyanshu-byte-coder/devtrack/issues/32) |
+| Activity feed | Intermediate | [#33](https://github.com/Priyanshu-byte-coder/devtrack/issues/33) |
+| Auto-progress goals from commits | Advanced | [#34](https://github.com/Priyanshu-byte-coder/devtrack/issues/34) |
+| GitLab integration | Advanced | [#6](https://github.com/Priyanshu-byte-coder/devtrack/issues/6) |
 | Jira integration | Advanced | — |
 | Team dashboards | Advanced | — |
 | Embeddable stats widgets | Intermediate | — |
@@ -449,14 +440,14 @@ Setup takes under 10 minutes — see [DEVELOPMENT.md](./DEVELOPMENT.md) for the 
 
 ### How to contribute
 
-1. Browse [open issues](https://github.com/Umbrella-io/devtrack/issues) — start with `good first issue`
+1. Browse [open issues](https://github.com/Priyanshu-byte-coder/devtrack/issues) — start with `good first issue`
 2. Comment on the issue to get assigned before starting work
 3. Fork → branch (`feat/issue-42-description`) → PR against `main`
-4. Ensure CI passes: `npm run lint && npm run type-check`
+4. Ensure CI passes: `pnpm run lint && pnpm run type-check`
 
 See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for commit style, branch naming, and the review process.
 
-Questions? Open a [Discussion](https://github.com/Umbrella-io/devtrack/discussions).
+Questions? Open a [Discussion](https://github.com/Priyanshu-byte-coder/devtrack/discussions).
 
 ---
 
@@ -506,8 +497,8 @@ Want a standalone sponsor brief to share with your company's finance team? See [
 
 Have questions, ideas, or want to connect with other contributors?
 
-- **[GitHub Discussions](https://github.com/Umbrella-io/devtrack/discussions)** — ask questions, share ideas, show what you've built
-- **[Open an Issue](https://github.com/Umbrella-io/devtrack/issues/new/choose)** — bug reports, feature requests, and good-first-issues
+- **[GitHub Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** — ask questions, share ideas, show what you've built
+- **[Open an Issue](https://github.com/Priyanshu-byte-coder/devtrack/issues/new/choose)** — bug reports, feature requests, and good-first-issues
 - **[Email the maintainer](mailto:doshipriyanshu3@gmail.com)** — for anything else
 
 All contributors are expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
@@ -531,12 +522,12 @@ MIT — see [LICENSE](./LICENSE) for details.
 
 ## Contributors
 
-Thanks to everyone who has helped build DevTrack. Want to join the list? See [CONTRIBUTING.md](./CONTRIBUTING.md) and pick a [good first issue](https://github.com/Umbrella-io/devtrack/issues?q=label%3A%22good+first+issue%22).
+Thanks to everyone who has helped build DevTrack. Want to join the list? See [CONTRIBUTING.md](./CONTRIBUTING.md) and pick a [good first issue](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22).
 
 <div align="center">
 
-<a href="https://github.com/Umbrella-io/devtrack/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Umbrella-io/devtrack" alt="Contributors" />
+<a href="https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Priyanshu-byte-coder/devtrack" alt="Contributors" />
 </a>
 
 </div>
