@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "validate-env": "node scripts/validate-env.js",
-    "build": "npm run validate-env && next build && node scripts/copy-standalone-static.js",
+    "build": "pnpm install --no-frozen-lockfile && npm run validate-env && next build && node scripts/copy-standalone-static.js",
     "start": "next start",
     "lint": "eslint src",
     "type-check": "tsc --noEmit",
