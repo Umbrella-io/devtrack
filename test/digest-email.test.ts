@@ -35,7 +35,7 @@ describe("digest-email", () => {
       const html = buildDigestHtml({
         ...BASE_DATA,
         metrics: {
-          streak: { current: 5, longest: 10 },
+          streak: { current: 5, longest: 10, lastCommitDate: null },
           weeklyCommits: 20,
           prsThisWeek: 3,
           weeklyActiveDays: 4,
@@ -51,7 +51,7 @@ describe("digest-email", () => {
       const html = buildDigestHtml({
         ...BASE_DATA,
         metrics: {
-          streak: { current: 0, longest: 0 },
+          streak: { current: 0, longest: 0, lastCommitDate: null },
           weeklyCommits: 42,
           prsThisWeek: 2,
           weeklyActiveDays: 3,
@@ -70,7 +70,7 @@ describe("digest-email", () => {
       const html = buildDigestHtml({
         ...BASE_DATA,
         metrics: {
-          streak: { current: 0, longest: 0 },
+          streak: { current: 0, longest: 0, lastCommitDate: null },
           weeklyCommits: 10,
           prsThisWeek: 1,
           weeklyActiveDays: 2,
@@ -86,7 +86,7 @@ describe("digest-email", () => {
       const html = buildDigestHtml({
         ...BASE_DATA,
         metrics: {
-          streak: { current: 0, longest: 0 },
+          streak: { current: 0, longest: 0, lastCommitDate: null },
           weeklyCommits: 10,
           prsThisWeek: 1,
           weeklyActiveDays: 2,
@@ -108,7 +108,7 @@ describe("digest-email", () => {
       const html = buildDigestHtml({
         ...BASE_DATA,
         metrics: {
-          streak: { current: 0, longest: 0 },
+          streak: { current: 0, longest: 0, lastCommitDate: null },
           weeklyCommits: 10,
           prsThisWeek: 1,
           weeklyActiveDays: 2,
@@ -146,7 +146,7 @@ describe("digest-email", () => {
       const text = buildDigestText({
         ...BASE_DATA,
         metrics: {
-          streak: { current: 7, longest: 14 },
+          streak: { current: 7, longest: 14, lastCommitDate: null },
           weeklyCommits: 10,
           prsThisWeek: 2,
           weeklyActiveDays: 5,
@@ -162,7 +162,7 @@ describe("digest-email", () => {
       const text = buildDigestText({
         ...BASE_DATA,
         metrics: {
-          streak: { current: 0, longest: 0 },
+          streak: { current: 0, longest: 0, lastCommitDate: null },
           weeklyCommits: 15,
           prsThisWeek: 4,
           weeklyActiveDays: 6,
@@ -179,7 +179,7 @@ describe("digest-email", () => {
       const text = buildDigestText({
         ...BASE_DATA,
         metrics: {
-          streak: { current: 0, longest: 0 },
+          streak: { current: 0, longest: 0, lastCommitDate: null },
           weeklyCommits: 10,
           prsThisWeek: 1,
           weeklyActiveDays: 2,
@@ -200,7 +200,7 @@ describe("digest-email", () => {
       const text = buildDigestText({
         ...BASE_DATA,
         metrics: {
-          streak: { current: 0, longest: 0 },
+          streak: { current: 0, longest: 0, lastCommitDate: null },
           weeklyCommits: 10,
           prsThisWeek: 1,
           weeklyActiveDays: 2,
