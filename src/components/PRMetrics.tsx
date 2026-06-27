@@ -59,13 +59,38 @@ export default function PRMetrics() {
   const [staleThresholdDays, setStaleThresholdDays] = useState(14);
 
   const fetchMetrics = useCallback(() => {
-    setLoading(true);
-    setError(null);
-
     const url =
       selectedAccount !== null
         ? `/api/metrics/prs?accountId=${encodeURIComponent(selectedAccount)}&range=${range}`
         : `/api/metrics/prs?range=${range}`;
+
+    const cacheKey = `devtrack:swr:prs:${selectedAccount || 'default'}:${range}`;
+    let hasStale = false;
+
+    if (typeof window !== "undefined") {
+      try {
+        const cached = window.localStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.data) {
+            setMetrics(parsed.data);
+            if (parsed.timestamp) {
+              setLastUpdated(new Date(parsed.timestamp));
+              setMinutesAgo(Math.floor((Date.now() - parsed.timestamp) / 60000));
+            }
+            setLoading(false);
+            hasStale = true;
+          }
+        }
+      } catch (e) {
+        // Ignore parsing errors or local storage disabled
+      }
+    }
+
+    if (!hasStale) {
+      setLoading(true);
+    }
+    setError(null);
 
     fetch(url)
       .then((r) => {
@@ -76,9 +101,23 @@ export default function PRMetrics() {
         setMetrics(data);
         setLastUpdated(new Date());
         setMinutesAgo(0);
+        
+        if (typeof window !== "undefined") {
+          try {
+            window.localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
+          } catch (e) {
+            // Ignore quota exceeded or storage disabled
+          }
+        }
       })
-      .catch(() => setError("We couldn't load your PR analytics right now. Please try again in a moment."))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!hasStale) {
+          setError("We couldn't load your PR analytics right now. Please try again in a moment.");
+        }
+      })
+      .finally(() => {
+        if (!hasStale) setLoading(false);
+      });
   }, [selectedAccount, range]);
 
   useEffect(() => {

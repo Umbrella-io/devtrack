@@ -83,7 +83,37 @@ export function useStreakTracker() {
   }, []);
 
   const fetchStreak = useCallback(async () => {
-    setLoading(true);
+    const cacheKeyStreak = `devtrack:swr:streak:${selectedAccount || 'default'}`;
+    const cacheKeyContrib = `devtrack:swr:contrib:${selectedAccount || 'default'}`;
+    let hasStale = false;
+
+    if (typeof window !== "undefined") {
+      try {
+        const cachedStreak = window.localStorage.getItem(cacheKeyStreak);
+        const cachedContrib = window.localStorage.getItem(cacheKeyContrib);
+        if (cachedStreak && cachedContrib) {
+          const parsedStreak = JSON.parse(cachedStreak);
+          const parsedContrib = JSON.parse(cachedContrib);
+          if (parsedStreak && parsedStreak.data && parsedContrib && parsedContrib.data) {
+            setData(parsedStreak.data);
+            setContributionData(parsedContrib.data);
+            setFreezeDates(parsedStreak.data.freezeDates || []);
+            if (parsedStreak.timestamp) {
+              setLastUpdated(new Date(parsedStreak.timestamp));
+              setMinutesAgo(Math.floor((Date.now() - parsedStreak.timestamp) / 60000));
+            }
+            setLoading(false);
+            hasStale = true;
+          }
+        }
+      } catch (e) {
+        // Ignore parsing errors or local storage disabled
+      }
+    }
+
+    if (!hasStale) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -111,13 +141,25 @@ export function useStreakTracker() {
       setData(streakData);
       setContributionData(contribData);
       setFreezeDates(streakData.freezeDates || []);
-    } catch (err) {
-      console.error("Failed to fetch streak data:", err);
-      setError("We couldn't load your streak data right now. Please try again in a moment.");
-    } finally {
-      setLoading(false);
+      
       setLastUpdated(new Date());
       setMinutesAgo(0);
+
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem(cacheKeyStreak, JSON.stringify({ data: streakData, timestamp: Date.now() }));
+          window.localStorage.setItem(cacheKeyContrib, JSON.stringify({ data: contribData, timestamp: Date.now() }));
+        } catch (e) {
+          // Ignore quota exceeded or storage disabled
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch streak data:", err);
+      if (!hasStale) {
+        setError("We couldn't load your streak data right now. Please try again in a moment.");
+      }
+    } finally {
+      if (!hasStale) setLoading(false);
     }
   }, [selectedAccount]);
 

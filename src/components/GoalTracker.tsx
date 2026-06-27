@@ -41,7 +41,14 @@ const RECURRENCE_LABELS: Record<Recurrence, string> = {
 
 export function useGoalTracker() {
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return !window.localStorage.getItem("devtrack:swr:goals");
+      } catch (e) {}
+    }
+    return true;
+  });
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -62,6 +69,26 @@ export function useGoalTracker() {
   const initialLoadDoneRef = useRef<boolean>(false);
 
   const loadGoals = useCallback(async () => {
+    const cacheKey = "devtrack:swr:goals";
+
+    if (typeof window !== "undefined") {
+      try {
+        const cached = window.localStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.data) {
+            setGoals(parsed.data);
+            if (parsed.timestamp) {
+              setLastUpdated(new Date(parsed.timestamp));
+              setMinutesAgo(Math.floor((Date.now() - parsed.timestamp) / 60000));
+            }
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
     const response = await fetch("/api/goals");
     if (!response.ok) {
       throw new Error(`Failed to load goals (HTTP ${response.status})`);
@@ -69,6 +96,13 @@ export function useGoalTracker() {
     const data: { goals: Goal[] } = await response.json();
     const fetchedGoals = data.goals ?? [];
     setGoals(fetchedGoals);
+    
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(cacheKey, JSON.stringify({ data: fetchedGoals, timestamp: Date.now() }));
+      } catch (e) {}
+    }
+    
     return fetchedGoals;
   }, []);
 
