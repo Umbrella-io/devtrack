@@ -34,6 +34,18 @@ describe("stripHtml", () => {
     expect(stripHtml("＜script＞alert(1)＜/script＞")).toBe("alert(1)");
     expect(stripHtml("＜b＞Hello＜/b＞")).toBe("Hello");
   });
+  it("returns plain text unchanged", () => {
+  expect(stripHtml("Hello World")).toBe("Hello World");
+  });
+
+  it("decodes apostrophe entities", () => {
+    expect(stripHtml("it&#x27;s fine")).toBe("it's fine");
+    expect(stripHtml("it&#39;s fine")).toBe("it's fine");
+  });
+
+  it("handles mixed tags and entities", () => {
+    expect(stripHtml("<b>Tom &amp; Jerry</b>")).toBe("Tom & Jerry");
+  });
 });
 
 describe("validateTextInput", () => {
@@ -99,6 +111,12 @@ describe("validateTextInput", () => {
       ok: false,
       value: "",
       error: "Name must be 5 characters or fewer",
+    });
+  });
+    it("strips script injection and returns ok", () => {
+    expect(validateTextInput("<script>alert(1)</script>Hello", "Name")).toEqual({
+      ok: true,
+      value: "Hello",
     });
   });
 });
