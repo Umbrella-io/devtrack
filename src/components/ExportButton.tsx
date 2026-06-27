@@ -407,12 +407,12 @@ export default function ExportButton() {
       downloadFile(csv, "dashboard-metrics.csv", "text/csv");
       toast.success("CSV exported successfully.");
     } catch (error) {
-        console.error("CSV export failed:", error);
+      console.error("CSV export failed:", error);
 
-        toast.error(
-           "Failed to export CSV. Please try again."
-        );
-      } finally {
+      toast.error(
+        "Failed to export CSV. Please try again."
+      );
+    } finally {
       setIsExportingCSV(false);
     }
   };
@@ -668,12 +668,12 @@ export default function ExportButton() {
       doc.save(`devtrack-export-${reportName || "metrics"}-${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success("PDF exported successfully.");
     } catch (error) {
-         console.error("PDF export failed:", error);
+      console.error("PDF export failed:", error);
 
-         toast.error(
-            "Failed to export PDF. Please try again."
-         );
-      }
+      toast.error(
+        "Failed to export PDF. Please try again."
+      );
+    }
     finally {
       setIsExportingPDF(false);
     }
