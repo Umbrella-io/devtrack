@@ -1,10 +1,16 @@
-import { getServerSession } from "next-auth";
+﻿import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { toDateStr } from "@/lib/date-utils";
 import { calculateCurrentStreak } from "@/lib/streak";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
-import { supabaseAdmin } from "@/lib/supabase";
+import {
+  cacheGet,
+  cacheSet,
+  isMetricsCacheBypassed,
+  metricsCacheKey,
+  METRICS_CACHE_TTL_SECONDS,
+} from "@/lib/metrics-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -35,28 +41,16 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Invalid GitHub username" }, { status: 400 });
   }
 
-  // Check Supabase cache first (keyed by viewer identity + target username + UTC date)
-  // Viewer identity must be part of the key because GitHub API results are token-scoped
-  // (private/org repos can differ per viewer), so one user's cached payload must not
-  // be served to a different authenticated user.
-  // Use githubId (stable numeric ID) with githubLogin as fallback.
-  const today = toDateStr(new Date());
-  const viewerId = session.githubId ?? session.githubLogin;
-  const cacheKey = `${viewerId}::${normalizedUsername}::${today}`;
+  const viewerId = String(session.githubId ?? session.githubLogin);
+  const ttlSeconds = METRICS_CACHE_TTL_SECONDS.compare;
+  const cacheKey = metricsCacheKey(viewerId, "compare", {
+    target: normalizedUsername,
+  });
+  const bypassCache = isMetricsCacheBypassed(req);
 
-  const { data: cached } = await supabaseAdmin
-    .from("comparison_cache")
-    .select("payload")
-    .eq("cache_key", cacheKey)
-    .maybeSingle();
+  if (!bypassCache) {
+    const encodedUsername = encodeURIComponent(normalizedUsername);
 
-  if (cached?.payload) {
-    return Response.json({ ...cached.payload, fromCache: true });
-  }
-
-  const encodedUsername = encodeURIComponent(normalizedUsername);
-
-  // 1. Verify user exists
   const userRes = await fetch(`${GITHUB_API}/users/${encodedUsername}`, {
     headers: { Authorization: `Bearer ${session.accessToken}` },
     cache: "no-store",
@@ -70,9 +64,7 @@ export async function GET(req: NextRequest) {
       { status: 502 }
     );
   }
-
-  // 2. Commits & Streak (fetch 90 days)
-  const since90 = new Date();
+const since90 = new Date();
   since90.setDate(since90.getDate() - 90);
   const since90Str = since90.toISOString().slice(0, 10);
 
@@ -115,7 +107,6 @@ export async function GET(req: NextRequest) {
         commits30d++;
       }
 
-      // Bucket into Mon-anchored week for chart
       const d = new Date(dateStr);
       const day = d.getUTCDay();
       const diff = day === 0 ? -6 : 1 - day;
@@ -127,7 +118,6 @@ export async function GET(req: NextRequest) {
     streak = calculateCurrentStreak(Object.keys(daySet));
   }
 
-  // Build ordered weekly array (last 8 weeks) for the chart
   const weeklyCommits: Array<{ week: string; commits: number }> = [];
   for (let i = 7; i >= 0; i--) {
     const d = new Date();
@@ -138,7 +128,6 @@ export async function GET(req: NextRequest) {
     weeklyCommits.push({ week: weekKey, commits: weeklyMap[weekKey] ?? 0 });
   }
 
-  // 3. Top Language from repos
   const reposUrl = new URL(`${GITHUB_API}/users/${encodedUsername}/repos`);
   reposUrl.searchParams.set("per_page", "100");
   reposUrl.searchParams.set("sort", "pushed");
@@ -161,7 +150,6 @@ export async function GET(req: NextRequest) {
     if (sortedLangs.length > 0) topLanguage = sortedLangs[0][0];
   }
 
-  // 4. PRs
   const prsUrl = new URL(`${GITHUB_API}/search/issues`);
   prsUrl.searchParams.set("q", `type:pr author:${normalizedUsername}`);
   prsUrl.searchParams.set("per_page", "1");
@@ -185,14 +173,8 @@ export async function GET(req: NextRequest) {
     weeklyCommits,
   };
 
-  // Store in cache — best-effort, never fail the request over this
-  void supabaseAdmin
-    .from("comparison_cache")
-    .upsert({
-      cache_key: cacheKey,
-      target_username: normalizedUsername,
-      payload,
-    });
+  await cacheSet(cacheKey, payload, ttlSeconds);
 
   return Response.json({ ...payload, fromCache: false });
+}
 }
