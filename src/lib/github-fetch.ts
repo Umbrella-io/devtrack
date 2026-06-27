@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Typed GitHub API fetch helper.
  * Centralises Authorization headers, Accept header, ok-check,
  * and rate-limit error handling so metric routes don't
@@ -6,6 +6,7 @@
  */
 
 import { GITHUB_API } from "@/lib/github";
+import { markTokenRevokedNow } from "@/lib/token-revocation-flag";
 
 export { GITHUB_API };
 
@@ -26,10 +27,6 @@ export class GitHubApiError extends Error {
   }
 }
 
-/**
- * Thrown when the GitHub API responds with 401, indicating the stored OAuth
- * token has been revoked or has expired.
- */
 export class GitHubAuthError extends Error {
   readonly status = 401;
   constructor() {
@@ -38,11 +35,6 @@ export class GitHubAuthError extends Error {
   }
 }
 
-/**
- * Returns a standardised 401 JSON response for metric routes that detect a
- * revoked token.  Client-side code checks for the `token_expired` error code
- * to show a reconnect prompt instead of a generic error state.
- */
 export function githubAuthErrorResponse(): Response {
   return Response.json(
     { error: "token_expired" },
@@ -78,26 +70,21 @@ function isSecondaryRateLimitBody(body: unknown): boolean {
 
 async function buildGitHubError(
   res: Response,
+  githubId?: string,
 ): Promise<GitHubRateLimitError | GitHubApiError> {
   const { resetAt, retryAfter, remaining } = extractRateLimitInfo(res.headers);
 
-  // 429: always a rate limit
   if (res.status === 429) {
     return new GitHubRateLimitError(resetAt, retryAfter);
   }
 
   if (res.status === 403) {
-    // Primary rate limit: quota exhausted
     if (remaining === 0) {
       return new GitHubRateLimitError(resetAt, retryAfter);
     }
-
-    // Secondary rate limit: Retry-After header signals required backoff
     if (retryAfter !== null) {
       return new GitHubRateLimitError(resetAt, retryAfter);
     }
-
-    // Secondary rate limit: body message indicates rate limiting
     let body: unknown = null;
     try {
       body = await res.json();
@@ -107,9 +94,14 @@ async function buildGitHubError(
     if (isSecondaryRateLimitBody(body)) {
       return new GitHubRateLimitError(resetAt, retryAfter);
     }
-
-    // Authorization failure: invalid token, insufficient scope, permissions
     return new GitHubApiError(res.status);
+  }
+
+  if (res.status === 401 && githubId) {
+    // Live signal: this token just failed against GitHub right now. Flag it
+    // immediately so the next session check surfaces "TokenRevoked" without
+    // waiting for the 24h periodic validation in auth.ts.
+    await markTokenRevokedNow(githubId);
   }
 
   return new GitHubApiError(res.status);
@@ -117,17 +109,14 @@ async function buildGitHubError(
 
 /**
  * Fetch a GitHub API endpoint with standard headers.
- * Throws GitHubRateLimitError when response headers or body indicate actual rate limiting:
- * - 429 responses
- * - 403 with X-RateLimit-Remaining: 0 (primary rate limit)
- * - 403 with Retry-After header (secondary rate limit)
- * - 403 with rate-limit message in response body (secondary rate limit)
- * Authorization failures (invalid token, insufficient scope, permissions) throw GitHubApiError.
+ * Pass githubId when available so a live 401 can immediately flag the
+ * token as revoked (see lib/token-revocation-flag.ts).
  */
 export async function githubFetch<T>(
   url: string,
   token: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  githubId?: string,
 ): Promise<T> {
 
   const res = await fetch(url, {
@@ -141,7 +130,7 @@ export async function githubFetch<T>(
   });
 
   if (!res.ok) {
-    throw await buildGitHubError(res);
+    throw await buildGitHubError(res, githubId);
   }
 
   return res.json() as Promise<T>;
@@ -153,7 +142,8 @@ export async function githubFetch<T>(
 export async function githubGraphQL<T>(
   query: string,
   token: string,
-  variables?: Record<string, unknown>
+  variables?: Record<string, unknown>,
+  githubId?: string,
 ): Promise<T> {
 
   const MAX_RETRIES = 2;
@@ -169,14 +159,13 @@ export async function githubGraphQL<T>(
       cache: "no-store",
     });
 
-    // Retry on transient server errors (502/503) before error classification.
     if ((res.status === 502 || res.status === 503) && attempt < MAX_RETRIES) {
       await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
       continue;
     }
 
     if (!res.ok) {
-      throw await buildGitHubError(res);
+      throw await buildGitHubError(res, githubId);
     }
 
     const json = await res.json();
