@@ -103,6 +103,9 @@ export function mockMetricResponse(url) {
     return { total: 0, answered: 0 };
   }
   if (url.includes("/api/metrics/pr-review-trend")) return { trend: [] };
+  if (url.includes("/api/metrics/pr-review-time")) {
+    return { weeks: [] };
+  }
   if (url.includes("/api/metrics/inactive-repos")) return { repos: [] };
   if (url.includes("/api/metrics/coding-time") || url.includes("/api/wakatime")) {
     return {
@@ -314,6 +317,7 @@ export async function installDashboardApiMocks(page, options = {}) {
     "**/api/metrics/prs**",
     "**/api/metrics/pr-breakdown**",
     "**/api/metrics/pr-review-trend**",
+    "**/api/metrics/pr-review-time**",
     "**/api/metrics/issues**",
     "**/api/metrics/languages**",
     "**/api/metrics/repos**",
