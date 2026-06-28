@@ -1,11 +1,10 @@
-import React from "react";
-import ProfileCardDemo from "@/components/ProfileCardDemo";
+import ProfileCardPageClient from "@/components/ProfileCardPageClient";
 
 export default function Page() {
   return (
-    <main style={{ padding: 24 }}>
-      <h1 style={{ color: "white", marginBottom: 12 }}>Profile Card Demo</h1>
-      <ProfileCardDemo />
+    <main className="min-h-screen bg-[var(--background)] p-6 text-[var(--foreground)]">
+      <h1 className="mb-4 text-2xl font-bold">Profile Card</h1>
+      <ProfileCardPageClient />
     </main>
   );
 }

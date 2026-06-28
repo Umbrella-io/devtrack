@@ -143,7 +143,7 @@ describe('GoalTracker - useGoalTracker Hook', () => {
     });
 
     expect(result.current.syncing).toBe(false);
-    expect(result.current.syncError).toBe('Sync failed. Please try again.');
+    expect(result.current.syncError).toBe('Failed to sync goals. Please try again.');
   });
 
   it('handles creating a non-auto-synced goal successfully', async () => {
@@ -188,6 +188,11 @@ describe('GoalTracker - useGoalTracker Hook', () => {
         return Promise.resolve({
           ok: false,
           status: 400,
+          json: () =>
+            Promise.resolve({
+              error: 'Task with this title already exists',
+              code: 'DUPLICATE_TASK_TITLE',
+            }),
         } as Response);
       }
       return Promise.resolve({
@@ -211,7 +216,7 @@ describe('GoalTracker - useGoalTracker Hook', () => {
       await result.current.handleCreate();
     });
 
-    expect(result.current.createError).toBe('Failed to create goal. Please try again.');
+    expect(result.current.createError).toBe('Task with this title already exists');
   });
 
   it('handles optimistic deletion and failure rollback', async () => {
@@ -268,6 +273,7 @@ describe('GoalTracker - useGoalTracker Hook', () => {
           deadline: null,
           is_public: false,
           period_start: '2026-05-30T00:00:00.000Z',
+          week_start: null,
           last_synced_at: null,
           last_period: null,
         }

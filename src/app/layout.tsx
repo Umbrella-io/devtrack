@@ -30,6 +30,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://devtrack.vercel.app"),
   title: "DevTrack — Developer Productivity Dashboard",
   description:
     "Track coding habits, visualize GitHub contributions, and hit your goals.",
@@ -75,7 +76,13 @@ export default async function RootLayout({
                 try {
                   const stored = localStorage.getItem('theme');
                   const validThemes = ['classic-dark', 'modern-light-blue', 'nordic-frost', 'cyberpunk-matrix'];
-                  const theme = validThemes.includes(stored || '') ? stored : 'classic-dark';
+                  let theme = validThemes.includes(stored || '') ? stored : null;
+
+                  if (!theme) {
+                    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    theme = systemPrefersDark ? 'classic-dark' : 'modern-light-blue';
+                  }
+
                   const isDark = theme !== 'modern-light-blue';
 
                   document.documentElement.dataset.theme = theme;
@@ -91,6 +98,12 @@ export default async function RootLayout({
       <body
         className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-[var(--accent)] focus:px-4 focus:py-2 focus:text-[var(--accent-foreground)] focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+        >
+          Skip to main content
+        </a>
         <CustomCursor />
         <OfflineBanner />
 
@@ -99,12 +112,13 @@ export default async function RootLayout({
             <NextIntlClientProvider locale={locale} messages={messages}>
               <Providers>
                 <AppNavbar />
-                {children}
+                <div id="main-content" tabIndex={-1} className="outline-none">
+                  {children}
+                </div>
+                <Footer />
               </Providers>
             </NextIntlClientProvider>
           </div>
-
-          <Footer />
 
           <Toaster richColors position="top-right" />
         </div>

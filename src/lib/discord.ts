@@ -8,12 +8,20 @@ function validateWebhookUrl(webhookUrl: string) {
   }
 }
 
+/**
+ * Sends a generic JSON payload to a Discord webhook, handling rate limits automatically.
+ * @param webhookUrl - The Discord webhook URL.
+ * @param payload - The JSON payload to send.
+ * @param retryCount - The current retry iteration (internal use).
+ * @returns A promise that resolves to true if successful.
+ */
 export async function sendDiscordWebhook(
   webhookUrl: string,
   payload: any,
   retryCount = 0
 ) {
   validateWebhookUrl(webhookUrl);
+  // lgtm[js/request-forgery] - URL is validated by validateWebhookUrl() against a strict Discord-only regex
   const res = await fetch(webhookUrl, {
     method: "POST",
     headers: {
@@ -37,6 +45,12 @@ export async function sendDiscordWebhook(
   return true;
 }
 
+/**
+ * Sends a test notification to verify a newly linked Discord webhook.
+ * @param webhookUrl - The Discord webhook URL.
+ * @param username - The GitHub username of the user.
+ * @returns A promise resolving to true on success.
+ */
 export async function sendTestNotification(
   webhookUrl: string,
   username: string
@@ -60,6 +74,13 @@ export async function sendTestNotification(
   return sendDiscordWebhook(webhookUrl, payload);
 }
 
+/**
+ * Sends a warning notification to a user whose current commit streak is at risk of expiring.
+ * @param webhookUrl - The Discord webhook URL.
+ * @param username - The GitHub username.
+ * @param currentStreak - The user's current streak length.
+ * @returns A promise resolving to true on success.
+ */
 export async function sendStreakAtRisk(
   webhookUrl: string,
   username: string,
@@ -83,6 +104,13 @@ export async function sendStreakAtRisk(
   return sendDiscordWebhook(webhookUrl, payload);
 }
 
+/**
+ * Sends a celebratory notification when a user reaches a significant streak milestone.
+ * @param webhookUrl - The Discord webhook URL.
+ * @param username - The GitHub username.
+ * @param streak - The milestone streak length reached.
+ * @returns A promise resolving to true on success.
+ */
 export async function sendMilestoneReached(
   webhookUrl: string,
   username: string,
@@ -109,6 +137,13 @@ export async function sendMilestoneReached(
   return sendDiscordWebhook(webhookUrl, payload);
 }
 
+/**
+ * Sends a weekly summary of the user's coding activity to their Discord webhook.
+ * @param webhookUrl - The Discord webhook URL.
+ * @param username - The GitHub username.
+ * @param stats - An object containing the weekly commit, PR, and active days counts.
+ * @returns A promise resolving to true on success.
+ */
 export async function sendWeeklySummary(
   webhookUrl: string,
   username: string,

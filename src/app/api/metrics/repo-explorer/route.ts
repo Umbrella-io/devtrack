@@ -1,21 +1,26 @@
-import { getServerSession } from "next-auth";
+import { getSessionWithToken } from "@/lib/get-session-token";
 import { NextRequest } from "next/server";
-import { authOptions } from "@/lib/auth";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
 import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
 import { fetchUserRepos } from "@/lib/github";
+import { ExplorerRepoCardData } from "@/lib/repo-analytics-types";
+
 
 export const dynamic = "force-dynamic";
 const GITHUB_API = "https://api.github.com";
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.accessToken || !session.githubLogin) {
+  const sessionData = await getSessionWithToken();
+  if (!sessionData || !sessionData.session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const session = sessionData.session;
+  const accessToken = sessionData.accessToken;
+
   const bypass = isMetricsCacheBypassed(req);
-  const key = metricsCacheKey(session.githubId ?? session.githubLogin, "repo-explorer-v2" as any, { days: 7 });
+  const key = metricsCacheKey(session.githubId ?? session.githubLogin!, "repo-explorer-v2" as any, { days: 7 });
+
 
  try {
   const data = await withMetricsCache(
@@ -23,18 +28,27 @@ export async function GET(req: NextRequest) {
     async () => {
       const repos = await fetchUserRepos(session.accessToken);
 
-      // 2. Fetch last 30 days of commits across all repos for the user
+  try {
+    const data = await withMetricsCache({ bypass, key, ttlSeconds: 30 * 60 }, async () => {
+      const reposRes = await fetch(`${GITHUB_API}/user/repos?sort=pushed&per_page=100`, {
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      });
+
+      if (!reposRes.ok) throw new Error("API error fetching repos");
+      const repos = await reposRes.json();
+
       const since = new Date();
       since.setDate(since.getDate() - 30);
       const sinceStr = since.toISOString().slice(0, 10);
-      
+
       const searchRes = await fetch(`${GITHUB_API}/search/commits?q=author:${session.githubLogin}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`, {
-        headers: { Authorization: `Bearer ${session.accessToken}`, Accept: "application/vnd.github+json" },
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/vnd.github+json" },
         cache: "no-store",
       });
 
       const repoCommits: Record<string, any[]> = {};
-      
+
       if (searchRes.ok) {
         const searchData = await searchRes.json();
         const items = searchData.items || [];
@@ -48,7 +62,7 @@ export async function GET(req: NextRequest) {
       }
 
       const result: ExplorerRepoCardData[] = [];
-      
+
       for (const repo of repos) {
         const commitDates = repoCommits[repo.full_name] || [];
         const commitCount = commitDates.length;
@@ -77,7 +91,7 @@ export async function GET(req: NextRequest) {
           id: String(repo.id),
           name: repo.name,
           fullName: repo.full_name,
-          commitCount, // 30-day commit count
+          commitCount,
           createdAt: repo.created_at,
           updatedAt: repo.updated_at,
           primaryLanguage: repo.language,
@@ -86,7 +100,6 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      // Sort result by activity and recency
       result.sort((a, b) => b.commitCount - a.commitCount || new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
       return { repos: result };

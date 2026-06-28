@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
+import { useDashboardWidgetA11y } from "@/components/dashboard/DashboardWidgetA11yContext";
 import {
   PieChart,
   Pie,
@@ -65,6 +66,22 @@ export default function LanguageBreakdown() {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { setSummary, setIsUpdating } = useDashboardWidgetA11y("language-breakdown");
+
+  useEffect(() => {
+    setIsUpdating(loading);
+  }, [loading, setIsUpdating]);
+
+  useEffect(() => {
+    if (languages.length === 0) {
+      setSummary(null);
+      return;
+    }
+    const top = languages[0];
+    setSummary(
+      `Top language: ${top.name}, ${top.percentage}%. ${languages.length} language${languages.length === 1 ? "" : "s"} tracked.`,
+    );
+  }, [languages, setSummary]);
 
   useEffect(() => {
     setLoading(true);
@@ -85,18 +102,41 @@ export default function LanguageBreakdown() {
       .finally(() => setLoading(false));
   }, [selectedAccount]);
 
-  const totalPercentage = languages.reduce(
-    (sum, lang) => sum + lang.percentage,
-    0
-  );
-  const roundedTotal = Math.round(totalPercentage * 10) / 10;
+  const MAX_DISPLAY = 6;
 
-  const chartData: Language[] = [...languages];
-  if (roundedTotal < 99.5 && languages.length > 0) {
+  // Step 1: merge languages whose share is < 1% into an "Others" bucket.
+  // Step 2: cap named languages at MAX_DISPLAY; anything beyond that rank
+  // also collapses into "Others". This prevents the legend from growing
+  // unboundedly and overflowing the card when a user has 10+ languages.
+  const { named, othersBytes, othersPercentage } = languages.reduce<{
+    named: Language[];
+    othersBytes: number;
+    othersPercentage: number;
+  }>(
+    (acc, lang, idx) => {
+      if (lang.percentage < 1 || idx >= MAX_DISPLAY) {
+        acc.othersBytes += lang.bytes;
+        acc.othersPercentage += lang.percentage;
+      } else {
+        acc.named.push(lang);
+      }
+      return acc;
+    },
+    { named: [], othersBytes: 0, othersPercentage: 0 }
+  );
+
+  // Absorb any rounding remainder so the donut stays visually complete.
+  const namedTotal = named.reduce((s, l) => s + l.percentage, 0);
+  const remainder = 100 - namedTotal - othersPercentage;
+  const finalOthersPct =
+    Math.round((othersPercentage + Math.max(remainder, 0)) * 10) / 10;
+
+  const chartData: Language[] = [...named];
+  if (finalOthersPct > 0 || othersBytes > 0) {
     chartData.push({
-      name: "Other",
-      bytes: 0,
-      percentage: Math.round((100 - roundedTotal) * 10) / 10,
+      name: "Others",
+      bytes: othersBytes,
+      percentage: finalOthersPct,
     });
   }
 
@@ -132,10 +172,25 @@ export default function LanguageBreakdown() {
           {error}
         </p>
       ) : languages.length === 0 ? (
-        <div className="flex min-h-[200px] items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--card-muted)]">
-          <p className="text-sm text-[var(--muted-foreground)]">
-            No language data available.
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="mb-3 text-4xl">🧩</div>
+
+          <h3 className="text-sm font-semibold text-[var(--card-foreground)]">
+            No language data available
+          </h3>
+
+          <p className="mt-2 max-w-sm text-sm text-[var(--muted-foreground)]">
+            Start committing code to repositories and we&apos;ll analyze the language distribution across your projects.
           </p>
+
+          <a
+            href="https://github.com/new"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--control)]"
+          >
+            Create Repository
+          </a>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-8">
@@ -171,13 +226,13 @@ export default function LanguageBreakdown() {
                 <Tooltip content={<LanguageTooltip />} />
               </PieChart>
             </ResponsiveContainer>
-            {/* Centre label */}
+            {/* Centre label — shows the true total, not the capped display count */}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-xs font-medium text-[var(--muted-foreground)]">
                 Languages
               </span>
               <span className="text-lg font-bold text-[var(--card-foreground)]">
-                {chartData.length}
+                {languages.length}
               </span>
             </div>
           </div>
@@ -190,8 +245,12 @@ export default function LanguageBreakdown() {
                 className="flex items-center gap-2 text-sm"
               >
                 <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: getColor(lang.name) }}
+                  className="h-3 w-3 shrink-0 rounded-full"
+                  style={{
+                    backgroundColor: getColor(lang.name),
+                    minWidth: "12px",
+                    minHeight: "12px",
+                  }}
                   role="img"
                   aria-label={lang.name}
                 />

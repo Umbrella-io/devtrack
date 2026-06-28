@@ -54,7 +54,7 @@ If you experience or witness behavior that violates the Contributor Covenant dur
 GSSoC participation:
 
 1. **Open a private GitHub Security Advisory** at
-   <https://github.com/Priyanshu-byte-coder/devtrack/security/advisories/new> with the
+   <https://github.com/Umbrella-io/devtrack/security/advisories/new> with the
    `gsoc-coc` label in the title. This keeps the report visible only to the maintainer.
 2. **If the advisory form is unavailable**, email **doshipriyanshu3@gmail.com** with
    subject line `GSSoC CoC Report`.

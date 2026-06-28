@@ -70,6 +70,7 @@ describe("Local Coding Keys POST API Endpoint", () => {
     const res = await POST(createRequest("  Laptop  "));
     const body = await res.json();
     const returnedApiKey = body.key.api_key;
+    // lgtm[js/insufficient-password-hash] - SHA-256 is appropriate for hashing high-entropy random API keys in tests
     const expectedHash = createHash("sha256").update(returnedApiKey).digest("hex");
 
     expect(res.status).toBe(200);

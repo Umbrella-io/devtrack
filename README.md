@@ -9,11 +9,12 @@
 [![CI](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Priyanshu-byte-coder/devtrack/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
-[![GSSoC 2026](https://img.shields.io/badge/GSSoC-2026-orange.svg)](https://gssoc.girlscript.tech/)
 [![Stack](https://img.shields.io/badge/stack-Next.js%2016%20%7C%20Supabase%20%7C%20TypeScript-blue)](./DEVELOPMENT.md)
-[![Good First Issues](https://img.shields.io/github/issues/Priyanshu-byte-coder/devtrack/good%20first%20issue?label=good%20first%20issues&color=7c3aed)](https://github.com/Priyanshu-byte-coder/devtrack/issues?q=label%3A%22good+first+issue%22)
+[![Stars](https://img.shields.io/github/stars/Priyanshu-byte-coder/devtrack?style=flat&color=yellow)](https://github.com/Priyanshu-byte-coder/devtrack/stargazers)
+[![Forks](https://img.shields.io/github/forks/Priyanshu-byte-coder/devtrack?style=flat&color=blue)](https://github.com/Priyanshu-byte-coder/devtrack/network/members)
 [![Contributors](https://img.shields.io/github/contributors/Priyanshu-byte-coder/devtrack?color=brightgreen)](https://github.com/Priyanshu-byte-coder/devtrack/graphs/contributors)
 [![Last Commit](https://img.shields.io/github/last-commit/Priyanshu-byte-coder/devtrack)](https://github.com/Priyanshu-byte-coder/devtrack/commits/main)
+[![Views](https://komarev.com/ghpvc/?username=Priyanshu-byte-coder&label=Views&color=blueviolet)](https://github.com/Priyanshu-byte-coder/devtrack)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/Priyanshu-byte-coder?label=sponsors&color=ea4aaa)](https://github.com/sponsors/Priyanshu-byte-coder)
 
 **[Live Demo](https://devtrack-delta.vercel.app)** · **[Dev Guide](./DEVELOPMENT.md)** · **[Report Bug](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=bug_report.md)** · **[Request Feature](https://github.com/Priyanshu-byte-coder/devtrack/issues/new?template=feature_request.md)** · **[Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** · **[Sponsor](https://github.com/sponsors/Priyanshu-byte-coder)**
@@ -60,13 +61,16 @@
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
+- [API Documentation](#api-documentation)
 - [Getting Started](#getting-started)
 - [Docker Development Setup](#docker-development-setup)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [Community](#community)
+- [Built With](#built-with)
 - [Sponsors](#sponsors)
 - [License](#license)
+- [Maintainers](#maintainers)
 - [Contributors](#contributors)
 
 ---
@@ -192,7 +196,7 @@ To deploy your own instance, see the **[Self-Hosting Guide](./docs/self-hosting.
 ```bash
 git clone https://github.com/Priyanshu-byte-coder/devtrack.git
 cd devtrack
-npm install
+pnpm install
 ```
 
 **2. Set up Supabase**
@@ -238,7 +242,7 @@ cp .env.example .env.local
 **5. Run locally**
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and sign in with GitHub.
@@ -247,11 +251,11 @@ Open [http://localhost:3000](http://localhost:3000) and sign in with GitHub.
 
 ```bash
 # Unit tests
-npm test
+pnpm test
 
 # End-to-end tests (requires Chromium)
 npx playwright install --with-deps chromium
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ### E2E Test Suite (Playwright)
@@ -271,7 +275,7 @@ DevTrack ships a Playwright-based end-to-end suite covering the full user journe
 npx playwright install --with-deps chromium
 
 # Run the full suite (dev server auto-starts on port 3002)
-npm run test:e2e
+pnpm run test:e2e
 
 # Run a single spec
 npx playwright test e2e/goals.spec.ts
@@ -430,7 +434,7 @@ Want to contribute? Pick an item below and open an issue or start a PR.
 
 ## Contributing
 
-DevTrack actively welcomes contributors of all skill levels, including **GSSoC 2026 participants**.
+DevTrack actively welcomes contributors of all skill levels.
 
 Setup takes under 10 minutes — see [DEVELOPMENT.md](./DEVELOPMENT.md) for the full walkthrough.
 
@@ -439,7 +443,7 @@ Setup takes under 10 minutes — see [DEVELOPMENT.md](./DEVELOPMENT.md) for the 
 1. Browse [open issues](https://github.com/Priyanshu-byte-coder/devtrack/issues) — start with `good first issue`
 2. Comment on the issue to get assigned before starting work
 3. Fork → branch (`feat/issue-42-description`) → PR against `main`
-4. Ensure CI passes: `npm run lint && npm run type-check`
+4. Ensure CI passes: `pnpm run lint && pnpm run type-check`
 
 See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for commit style, branch naming, and the review process.
 
@@ -447,9 +451,30 @@ Questions? Open a [Discussion](https://github.com/Priyanshu-byte-coder/devtrack/
 
 ---
 
+## Built With
+
+DevTrack is built on best-in-class open-source infrastructure. Sponsoring helps us keep using these tools and exposes them to 224+ active contributors.
+
+| Partner | Role in DevTrack |
+|---|---|
+| [Supabase](https://supabase.com) | PostgreSQL database, auth, Row Level Security, and Realtime sync |
+| [Vercel](https://vercel.com) | Hosting, CI/CD, and preview deployments |
+| [Groq](https://groq.com) | AI-powered weekly coding insights |
+| [Wakatime](https://wakatime.com) | Coding time tracking and language analytics |
+
+---
+
 ## Sponsors
 
-DevTrack is free and open source. Sponsoring helps cover infrastructure costs and accelerates new features.
+DevTrack is free and open source, built by **224+ contributors** worldwide. Sponsoring directly funds:
+
+- **Supabase and Vercel infrastructure** — keeping the hosted demo fast and free for every contributor
+- **Groq API costs** — powering AI weekly insights for all users
+- **Maintainer time** — code review, issue triage, and release management
+
+With **130+ stars**, **369 forks**, **800+ merged PRs**, and **224 contributors**, DevTrack is one of the most active open-source developer-productivity projects on GitHub. Your logo here reaches a highly technical, actively coding audience.
+
+### Sponsor Tiers
 
 | Tier | Amount | Perks |
 |---|---|---|
@@ -458,7 +483,13 @@ DevTrack is free and open source. Sponsoring helps cover infrastructure costs an
 | Champion | $50 / mo | Name + logo in README + feature request priority |
 | One-time | $10+ | One-time thanks, no recurring commitment |
 
-**[Sponsor DevTrack on GitHub](https://github.com/sponsors/Priyanshu-byte-coder)**
+### Current Sponsors
+
+> Be the first sponsor — your logo or name will appear here. See tiers above.
+
+**[Sponsor DevTrack on GitHub →](https://github.com/sponsors/Priyanshu-byte-coder)** · **[Buy Me a Chai →](https://www.buymeachai.in/devtrack)**
+
+Want a standalone sponsor brief to share with your company's finance team? See [docs/SPONSORS.md](./docs/SPONSORS.md).
 
 ---
 
@@ -468,7 +499,7 @@ Have questions, ideas, or want to connect with other contributors?
 
 - **[GitHub Discussions](https://github.com/Priyanshu-byte-coder/devtrack/discussions)** — ask questions, share ideas, show what you've built
 - **[Open an Issue](https://github.com/Priyanshu-byte-coder/devtrack/issues/new/choose)** — bug reports, feature requests, and good-first-issues
-- **[Email the maintainer](mailto:priyanshu.coder.dev@gmail.com)** — for anything else
+- **[Email the maintainer](mailto:doshipriyanshu3@gmail.com)** — for anything else
 
 All contributors are expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
@@ -477,6 +508,15 @@ All contributors are expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.
 ## License
 
 MIT — see [LICENSE](./LICENSE) for details.
+
+---
+
+## Maintainers
+
+| Name | GitHub | Role |
+|---|---|---|
+| Priyanshu Doshi | [@Priyanshu-byte-coder](https://github.com/Priyanshu-byte-coder) | Founder & Maintainer |
+| Saahil Doshi | [@Legit-Ox](https://github.com/Legit-Ox) | Maintainer |
 
 ---
 

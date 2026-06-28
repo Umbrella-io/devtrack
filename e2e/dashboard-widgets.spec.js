@@ -74,6 +74,27 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
+  await page.route("**/api/milestones**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ milestones: [] }),
+    });
+  });
+
+  await page.route("**/api/accounts**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [] }),
+    });
+  });
+
+  await page.route("**/api/user/orgs**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [], config: {} }),
+    });
+  });
+
   await page.route("**/api/user/settings", async (route) => {
     await route.fulfill({
       contentType: "application/json",
@@ -162,6 +183,7 @@ test.beforeEach(async ({ page }) => {
     "**/api/user/pinned-repos/details**",
     "**/api/metrics/repo-explorer**",
     "**/api/metrics/pr-review-time**",
+    "**/api/metrics/achievement-progress**",
   ];
 
   for (const pattern of metricRoutes) {
@@ -210,7 +232,7 @@ test("dashboard widgets render with mocked metrics", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Your Commits" })).toBeVisible(
     { timeout: 10000 }
   );
-  await expect(page.getByRole("heading", { name: "PR Analytics" })).toBeVisible(
+  await expect(page.getByRole("heading", { name: "PR Analytics" }).first()).toBeVisible(
     { timeout: 10000 }
   );
   await expect(
@@ -262,7 +284,7 @@ test("goal form posts a new goal", async ({ page }) => {
   ).toBeVisible({ timeout: 30000 });
   await page.getByLabel("Goal title").fill("Ship one PR");
   await page.getByLabel("Target").fill("1");
-  await page.getByLabel("Unit").selectOption("prs");
+  await page.getByLabel("Unit", { exact: true }).selectOption("prs");
   await page.getByRole("button", { name: "Create goal" }).click();
 
   await expect.poll(() => goalPosts, { timeout: 15000 }).toHaveLength(1);

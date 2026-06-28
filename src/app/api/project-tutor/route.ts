@@ -34,10 +34,12 @@ async function fetchRepoData(owner: string, repo: string) {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
+  const safeOwner = encodeURIComponent(owner);
+  const safeRepo = encodeURIComponent(repo);
   const [repoRes, readmeRes, languagesRes] = await Promise.all([
-    fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers }),
-    fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, { headers }),
-    fetch(`https://api.github.com/repos/${owner}/${repo}/languages`, { headers }),
+    fetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}`, { headers }),
+    fetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/readme`, { headers }),
+    fetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/languages`, { headers }),
   ]);
 
   const repoData = repoRes.ok ? await repoRes.json() : {};
@@ -65,6 +67,10 @@ export async function POST(req: NextRequest) {
     if (!match) return NextResponse.json({ error: "Invalid GitHub URL" }, { status: 400 });
 
     const [, owner, repo] = match;
+    // Validate owner and repo are valid GitHub identifiers to prevent path traversal
+    const githubIdentifier = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]{0,97}[a-zA-Z0-9])?$/;
+    if (!githubIdentifier.test(owner) || !githubIdentifier.test(repo.replace(/\.git$/, "")))
+      return NextResponse.json({ error: "Invalid GitHub URL" }, { status: 400 });
     const { repoData, readmeContent, languages } = await fetchRepoData(owner, repo);
 
     const techStack = Object.keys(languages).join(", ") || "Unknown";
