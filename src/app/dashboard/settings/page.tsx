@@ -16,7 +16,6 @@ import WebhookManager from "@/components/webhook/WebhookManager";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CopyToClipboardButton from "@/components/CopyToClipboardButton";
-import CopyToClipboardButton from "@/components/CopyToClipboardButton";
 import { useLocale, useTranslations } from "next-intl";
 import { localeMetadata, locales, type AppLocale } from "@/i18n/config";
 
