@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from 'react';
-import { Copy, Sparkles, Flame } from 'lucide-react';
+import { Sparkles, Flame } from 'lucide-react';
+import CopyToClipboardButton from '@/components/CopyToClipboardButton';
 
 interface UserStats {
   commits: number;
@@ -14,12 +15,14 @@ export default function RoastHypeWidget({ stats }: { stats: UserStats }) {
   const [mode, setMode] = useState<'roast' | 'hype'>('hype');
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+
+  const shareText = output
+    ? `DevTrack ${mode === 'hype' ? 'Hype' : 'Roast'}:\n"${output}"\n\nTrack your stats at devtrack.app! 🚀`
+    : "";
 
   const generateContent = async () => {
     setLoading(true);
     setOutput(null);
-    setCopied(false);
 
     try {
       const response = await fetch('/api/ai/roast', {
@@ -39,14 +42,6 @@ export default function RoastHypeWidget({ stats }: { stats: UserStats }) {
       setOutput('Network error. Check your connection.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const copyToClipboard = () => {
-    if (output) {
-      navigator.clipboard.writeText(`DevTrack ${mode === 'hype' ? 'Hype' : 'Roast'}:\n"${output}"\n\nTrack your stats at devtrack.app! 🚀`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -93,17 +88,15 @@ export default function RoastHypeWidget({ stats }: { stats: UserStats }) {
       {output && (
         <div className="mt-5 p-4 bg-[var(--background)] border border-[var(--border)] rounded-lg relative group">
           <p className="text-[var(--foreground)] pr-6 text-sm italic">&ldquo;{output}&rdquo;</p>
-          <button
-            onClick={copyToClipboard}
-            className="absolute top-3 right-3 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
-            title="Copy to clipboard"
-          >
-            {copied ? (
-              <span className="text-[10px] text-green-500 font-bold uppercase tracking-wider">Copied!</span>
-            ) : (
-              <Copy size={16} />
-            )}
-          </button>
+          <CopyToClipboardButton
+            value={shareText}
+            iconOnly
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 h-8 w-8 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            ariaLabel="Copy to clipboard"
+            copiedLabel="Copied!"
+          />
         </div>
       )}
     </div>

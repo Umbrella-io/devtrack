@@ -8,6 +8,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import { buildPublicGoalShareUrl } from "@/lib/goals/share";
 import GoalHistory from "@/components/GoalHistory";
 import EmptyState from "@/components/EmptyState";
+import CopyToClipboardButton from "@/components/CopyToClipboardButton";
 
 
 type Recurrence = "none" | "weekly" | "monthly";
@@ -368,7 +369,6 @@ export default function GoalTracker() {
       ? (session as { githubLogin: string }).githubLogin
       : null;
 
-  const [copiedGoalId, setCopiedGoalId] = useState<string | null>(null);
   const [sharingGoalId, setSharingGoalId] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
 
@@ -397,31 +397,6 @@ export default function GoalTracker() {
       setShareError("Failed to update goal sharing. Please check your connection.");
     } finally {
       setSharingGoalId(null);
-    }
-  };
-
-  const copyGoalShareLink = async (goalId: string) => {
-    if (!githubLogin) {
-      setShareError("Unable to build share link for this account.");
-      return;
-    }
-
-    const shareUrl = buildPublicGoalShareUrl(
-      window.location.origin,
-      githubLogin,
-      goalId
-    );
-
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopiedGoalId(goalId);
-      window.setTimeout(() => {
-        setCopiedGoalId((currentGoalId) =>
-          currentGoalId === goalId ? null : currentGoalId
-        );
-      }, 2000);
-    } catch {
-      setShareError("Failed to copy share link. Please copy it manually.");
     }
   };
 
@@ -734,14 +709,21 @@ export default function GoalTracker() {
                     </label>
                   </div>
 
-                  {goal.is_public && (
-                    <button
-                      type="button"
-                      onClick={() => copyGoalShareLink(goal.id)}
+                  {goal.is_public && githubLogin && (
+                    <CopyToClipboardButton
+                      value={buildPublicGoalShareUrl(
+                        window.location.origin,
+                        githubLogin,
+                        goal.id,
+                      )}
+                      label="Copy share link"
+                      copiedLabel="Copied!"
+                      variant="secondary"
+                      size="sm"
                       className="secondary-button mt-3 rounded-lg px-3 py-1.5 text-sm"
-                    >
-                      {copiedGoalId === goal.id ? "Copied!" : "Copy share link"}
-                    </button>
+                      ariaLabel={`Copy share link for ${goal.title}`}
+                      errorMessage="Failed to copy share link. Please copy it manually."
+                    />
                   )}
                 </div>
               </li>

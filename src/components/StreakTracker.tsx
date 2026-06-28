@@ -8,9 +8,11 @@ import { useCountUp } from "@/hooks/useCountUp";
 import StreakMilestoneBanner from "@/components/StreakMilestoneBanner";
 import { useHeatmapTheme } from "@/hooks/useHeatmapTheme";
 import { toast } from "sonner";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import { toPng } from "html-to-image";
-import { Flame, Trophy, Calendar, Zap, Copy, CheckCircle, Medal, Star, Sparkles } from "lucide-react";
+import { Flame, Trophy, Calendar, Zap, CheckCircle, Medal, Star, Sparkles } from "lucide-react";
 import ConfirmModal from "@/components/ConfirmModal";
+import CopyToClipboardButton from "@/components/CopyToClipboardButton";
 
 const DATA_WINDOW_DAYS = 90;
 const dataWindowLabel = `Last ${DATA_WINDOW_DAYS} days`;
@@ -47,7 +49,11 @@ export function useStreakTracker() {
   const [lastCelebratedMilestone, setLastCelebratedMilestone] = useState<number>(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
-  const [copied, setCopied] = useState(false);
+  const { copy, copied } = useCopyToClipboard({
+    showToast: true,
+    successMessage: "Streak stats copied to clipboard!",
+    errorMessage: "Failed to copy streak stats.",
+  });
   const [error, setError] = useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [freeze, setFreeze] = useState<FreezeData | null>(null);
@@ -294,23 +300,7 @@ export function useStreakTracker() {
       `Active days: ${data.totalActiveDays}`,
     ].join("\n");
 
-    if (typeof navigator === "undefined" || !navigator.clipboard) {
-      toast.error("Clipboard is not supported in this browser.");
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-
-      setCopied(true);
-
-      toast.success("Streak stats copied to clipboard!");
-
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy streak stats:", err);
-      toast.error("Failed to copy streak stats.");
-    }
+    await copy(textToCopy);
   };
 
   // -------------------------------------------------------------------------
@@ -349,7 +339,6 @@ export function useStreakTracker() {
     lastUpdated,
     minutesAgo,
     copied,
-    setCopied,
     error,
     setError,
     calendarMonth,
@@ -397,8 +386,6 @@ export default function StreakTracker() {
     lastCelebratedMilestone,
     lastUpdated,
     minutesAgo,
-    copied,
-    setCopied,
     error,
     setError,
     calendarMonth,
@@ -424,7 +411,6 @@ export default function StreakTracker() {
     currentMilestone,
     shouldShowBanner,
     handleDismissBanner,
-    handleCopy,
   } = useStreakTracker();
 
   const { setSummary, setIsUpdating } = useDashboardWidgetA11y("streak-tracker");
@@ -577,18 +563,23 @@ export default function StreakTracker() {
       <div className="relative">
         {data && (
           <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-colors"
-              aria-label="Copy streak stats to clipboard"
-            >
-              {copied ? (
-                <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
-              ) : (
-                <Copy size={16} className="opacity-80 hover:opacity-100" />
-              )}
-            </button>
+            <CopyToClipboardButton
+              value={[
+                "🔥 DevTrack Stats",
+                `Current streak: ${data.current} days`,
+                `Longest streak: ${data.longest} days`,
+                `Active days: ${data.totalActiveDays}`,
+              ].join("\n")}
+              iconOnly
+              showToast
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)]"
+              successMessage="Streak stats copied to clipboard!"
+              errorMessage="Failed to copy streak stats."
+              ariaLabel="Copy streak stats to clipboard"
+              copiedLabel="Copied!"
+            />
             <button
               type="button"
               onClick={handleDownload}

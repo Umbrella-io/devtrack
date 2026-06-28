@@ -15,6 +15,8 @@ import { useRouter } from "next/navigation";
 import WebhookManager from "@/components/webhook/WebhookManager";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import CopyToClipboardButton from "@/components/CopyToClipboardButton";
+import CopyToClipboardButton from "@/components/CopyToClipboardButton";
 import { useLocale, useTranslations } from "next-intl";
 import { localeMetadata, locales, type AppLocale } from "@/i18n/config";
 
@@ -178,7 +180,6 @@ function SettingsPageContent() {
   const [saving, setSaving] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState<string | null>(null);
   const [webhookSaving, setWebhookSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [accountsError, setAccountsError] = useState<string | null>(null);
   const [removingAccountId, setRemovingAccountId] = useState<string | null>(
@@ -197,7 +198,6 @@ function SettingsPageContent() {
   const [testingDiscord, setTestingDiscord] = useState(false);
   const [discordMutedUntil, setDiscordMutedUntil] = useState<string | null>(null);
   const [muteDuration, setMuteDuration] = useState<number>(1);
-  const copyResetTimerRef = useRef<number | null>(null);
 
   // GitHub Orgs States
   const [orgAccounts, setOrgAccounts] = useState<any[]>([]);
@@ -789,32 +789,6 @@ function SettingsPageContent() {
     }
   };
 
-  const copyShareLink = () => {
-    if (!profileUrl) return;
-
-    if (copyResetTimerRef.current) {
-      window.clearTimeout(copyResetTimerRef.current);
-      copyResetTimerRef.current = null;
-    }
-
-    if (!navigator.clipboard?.writeText) {
-      toast.error("Clipboard access is not available in this browser.");
-      return;
-    }
-
-    navigator.clipboard.writeText(profileUrl).then(() => {
-      setCopied(true);
-      toast.success("Link copied successfully!");
-      copyResetTimerRef.current = window.setTimeout(() => {
-        setCopied(false);
-        copyResetTimerRef.current = null;
-      }, 2000);
-    }).catch((err) => {
-      console.error("Clipboard copy failed:", err);
-      toast.error("Failed to copy profile URL");
-    });
-  };
-
   const handleRemoveAccount = async (githubId: string) => {
     setRemoveError(null);
     setRemovingAccountId(githubId);
@@ -969,15 +943,18 @@ function SettingsPageContent() {
                 aria-label="Public profile URL"
                 className="min-w-0 flex-1 rounded-xl border border-[var(--border)] bg-[var(--control)] px-4 py-2 text-sm text-[var(--card-foreground)] outline-none transition-colors focus:border-[var(--accent)]"
               />
-              <Button
-                type="button"
-                onClick={copyShareLink}
+              <CopyToClipboardButton
+                value={profileUrl}
+                label="Copy"
+                copiedLabel="Copied!"
                 variant="secondary"
                 className="w-full sm:w-auto"
-                aria-label="Copy public profile URL"
-              >
-                {copied ? "Copied!" : "Copy"}
-              </Button>
+                showToast
+                successMessage="Link copied successfully!"
+                errorMessage="Failed to copy profile URL"
+                ariaLabel="Copy public profile URL"
+                disabled={!profileUrl}
+              />
             </div>
             {!settings.is_public && (
               <p className="mt-3 text-sm text-[var(--muted-foreground)]">

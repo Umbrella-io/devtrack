@@ -1,9 +1,10 @@
 ﻿"use client";
 
-import { Check, ChevronDown, Copy, Download, Sparkles } from "lucide-react";
+import { ChevronDown, Download, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/components/AccountContext";
 import { signOut } from "next-auth/react";
+import CopyToClipboardButton from "@/components/CopyToClipboardButton";
 
 interface WeeklySummaryData {
   commits: {
@@ -34,7 +35,6 @@ interface AiSummaryState {
   loading: boolean;
   error: string | null;
   rateLimitReset: Date | null;
-  copied: boolean;
 }
 
 export default function WeeklySummaryCard() {
@@ -50,7 +50,6 @@ export default function WeeklySummaryCard() {
     loading: false,
     error: null,
     rateLimitReset: null,
-    copied: false,
   });
 
   const maxCommits = summary?.commits
@@ -201,14 +200,6 @@ ${ai.text ? `\nAI Summary\n----------\n${ai.text}` : ""}
       });
   }, [summary, ai.loading]);
 
-  const handleCopy = useCallback(() => {
-    if (!ai.text) return;
-    navigator.clipboard.writeText(ai.text).then(() => {
-      setAi((prev) => ({ ...prev, copied: true }));
-      setTimeout(() => setAi((prev) => ({ ...prev, copied: false })), 2000);
-    });
-  }, [ai.text]);
-
   const rateLimitMessage = (() => {
     if (!ai.rateLimitReset) return null;
     const now = Date.now();
@@ -344,25 +335,16 @@ ${ai.text ? `\nAI Summary\n----------\n${ai.text}` : ""}
                     <Sparkles className="h-3.5 w-3.5" />
                     AI Summary
                   </span>
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-[var(--muted-foreground)] transition-colors hover:bg-[var(--border)] hover:text-[var(--card-foreground)]"
-                    aria-label="Copy AI summary to clipboard"
-                    title="Copy to clipboard"
-                  >
-                    {ai.copied ? (
-                      <>
-                        <Check className="h-3 w-3 text-[var(--success)]" />
-                        <span className="text-[var(--success)]">Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3 w-3" />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
+                  <CopyToClipboardButton
+                    value={ai.text ?? ""}
+                    label="Copy"
+                    copiedLabel="Copied"
+                    iconOnly
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto px-1.5 py-0.5 text-xs text-[var(--muted-foreground)] hover:bg-[var(--border)] hover:text-[var(--card-foreground)]"
+                    ariaLabel="Copy AI summary to clipboard"
+                  />
                 </div>
                 <p className="text-sm leading-relaxed text-[var(--card-foreground)]">
                   {ai.text}
