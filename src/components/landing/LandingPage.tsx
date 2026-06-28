@@ -573,11 +573,14 @@ function HeroSection() {
         </h1>
 
         {/* Tagline */}
-        <p style={{
-          fontSize: 'clamp(16px,2vw,18px)', color: 'var(--foreground)',
-          lineHeight: 1.6, maxWidth: 420, margin: '0 0 40px',
-          fontWeight: 400, letterSpacing: '0.01em', opacity: 0.85,
-        }}>
+        <p
+          className="text-slate-800 dark:text-slate-200"
+          style={{
+            fontSize: 'clamp(16px,2vw,18px)',
+            lineHeight: 1.6, maxWidth: 420, margin: '0 0 40px',
+            fontWeight: 400, letterSpacing: '0.01em',
+          }}
+        >
           Open-source developer productivity dashboard. Track GitHub streaks,
           PR velocity, and coding goals — automatically.
         </p>
@@ -672,8 +675,9 @@ function CommitTicker() {
         {doubled.map((c, i) => (
           <span
             key={i}
+            className="text-slate-600 dark:text-slate-400"
             style={{
-              fontFamily: MONO, fontSize: 12, color: 'var(--muted-foreground)',
+              fontFamily: MONO, fontSize: 12,
               display: 'inline-flex', alignItems: 'center', gap: 10,
             }}
           >
@@ -714,6 +718,8 @@ function AboutHighlightCard({
         transformOrigin: 'top center',
         transform: visible ? tiltStyle.transform : `perspective(1000px) rotateX(-90deg)`,
         transition: visible ? tiltStyle.transition : `opacity 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${index * 80}ms, transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${index * 80}ms`,
+        background: 'var(--card)',
+        border: '1px solid var(--border)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         cursor: 'pointer',
@@ -737,14 +743,20 @@ function AboutHighlightCard({
         }}>
           <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
         </div>
-        <h3 style={{
-          fontFamily: DISP, fontWeight: 700,
-          fontSize: 19, color: TEXT, margin: '0 0 10px',
-          letterSpacing: 0,
-        }}>
+        <h3
+          className="text-slate-900 dark:text-white"
+          style={{
+            fontFamily: DISP, fontWeight: 700,
+            fontSize: 19, margin: '0 0 10px',
+            letterSpacing: 0,
+          }}
+        >
           {item.title}
         </h3>
-        <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.65, margin: 0 }}>
+        <p
+          className="text-slate-600 dark:text-slate-300"
+          style={{ fontSize: 14, lineHeight: 1.65, margin: 0 }}
+        >
           {item.desc}
         </p>
       </div>
@@ -794,7 +806,10 @@ function AboutSection() {
           >
             A clearer home for your developer progress.
           </h2>
-          <p style={{ color: MUTED, fontSize: 16, lineHeight: 1.75, margin: '0 0 28px', maxWidth: 580 }}>
+          <p
+            className="text-slate-600 dark:text-slate-300"
+            style={{ fontSize: 16, lineHeight: 1.75, margin: '0 0 28px', maxWidth: 580 }}
+          >
             DevTrack helps developers, open-source contributors, and teams understand how their GitHub work is moving. It brings activity, pull requests, streaks, goals, and public profile insights into one calm dashboard so new users can quickly see what the platform is for.
           </p>
           <a href="#features" className="lnd-cta-secondary">
@@ -873,15 +888,21 @@ function StatItem({ value, label, delay }: { value: number; label: string; delay
         transition: `all 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
       }}
     >
-      <div style={{
-        fontFamily: MONO, fontWeight: 700,
-        fontSize: 'clamp(32px,5vw,52px)', color: TEXT,
-        lineHeight: 1, letterSpacing: '-0.03em',
-      }}>
+      <div
+        className="text-slate-900 dark:text-white"
+        style={{
+          fontFamily: MONO, fontWeight: 700,
+          fontSize: 'clamp(32px,5vw,52px)',
+          lineHeight: 1, letterSpacing: '-0.03em',
+        }}
+      >
         <Counter end={value} active={vis} />
-        <span style={{ color: 'var(--foreground)', fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
+        <span className="text-slate-900 dark:text-white" style={{ fontSize: 'clamp(18px,3vw,28px)' }}>+</span>
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted-foreground)', letterSpacing: '0.12em', marginTop: 8 }}>
+      <div
+        className="text-slate-600 dark:text-slate-400"
+        style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', marginTop: 8 }}
+      >
         {label}
       </div>
     </div>
@@ -976,10 +997,10 @@ function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         // @ts-ignore
         ref.current = el;
       }}
-      className="relative overflow-hidden"
+      className="relative overflow-hidden bg-card dark:bg-slate-900 border border-border dark:border-slate-800"
       style={{
         display: 'flex', flexDirection: 'column', gap: 16,
-        padding: '28px 24px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b',
+        padding: '28px 24px',
         borderRadius: 16, boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
         opacity: vis ? 1 : 0,
         transformStyle: 'preserve-3d',
@@ -1003,14 +1024,20 @@ function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
       }}>
         <Icon size={28} strokeWidth={1.5} color="#818cf8" />
       </div>
-      <h3 style={{
-        fontFamily: DISP, fontWeight: 700,
-        fontSize: 'clamp(18px,2.5vw,22px)', color: TEXT,
-        letterSpacing: '-0.02em', margin: 0,
-      }}>
+      <h3
+        className="text-slate-900 dark:text-white"
+        style={{
+          fontFamily: DISP, fontWeight: 700,
+          fontSize: 'clamp(18px,2.5vw,22px)',
+          letterSpacing: '-0.02em', margin: 0,
+        }}
+      >
         {f.title}
       </h3>
-      <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.6, margin: 0 }}>
+      <p
+        className="text-slate-600 dark:text-slate-300"
+        style={{ fontSize: 15, lineHeight: 1.6, margin: 0 }}
+      >
         {f.desc}
       </p>
     </div>
@@ -1041,9 +1068,9 @@ function FeaturesSection() {
         FEATURE PREVIEW
       </div>
       <p
+        className="text-slate-600 dark:text-slate-300"
         style={{
           textAlign: 'center',
-          color: MUTED,
           maxWidth: 600,
           margin: '0 auto 50px auto',
           lineHeight: 1.6,
@@ -1092,8 +1119,8 @@ function WhyDevTrackSection() {
         </h2>
 
         <p
+          className="text-slate-600 dark:text-slate-300"
           style={{
-            color: MUTED,
             maxWidth: 700,
             margin: "0 auto",
           }}
@@ -1111,11 +1138,10 @@ function WhyDevTrackSection() {
           return (
             <div
               key={item.title}
+              className="bg-card dark:bg-slate-900 border border-border dark:border-slate-800"
               style={{
                 padding: "24px",
-                border: "1px solid #1e293b",
                 borderRadius: "16px",
-                background: "rgba(10,10,12,0.7)",
               }}
             >
               <Icon
@@ -1125,8 +1151,8 @@ function WhyDevTrackSection() {
               />
 
               <h3
+                className="text-slate-900 dark:text-white"
                 style={{
-                  color: TEXT,
                   marginBottom: 10,
                   fontWeight: 700,
                 }}
@@ -1135,8 +1161,8 @@ function WhyDevTrackSection() {
               </h3>
 
               <p
+                className="text-slate-600 dark:text-slate-300"
                 style={{
-                  color: MUTED,
                   fontSize: 14,
                   lineHeight: 1.6,
                 }}
@@ -1191,15 +1217,15 @@ function HowItWorksSection() {
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           return (
-          <Link key={i} href={step.href} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
-            <div className="group-hover:border-indigo-500/40 transition-colors duration-300" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, border: '1px solid #1e293b', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(129,140,248,0.05)' }}>
+          <Link key={i} href={step.href} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15 bg-card dark:bg-slate-900 border border-border dark:border-slate-800" style={{ flex: '1 1 300px', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
+            <div className="group-hover:border-indigo-500/40 transition-colors duration-300 border border-border dark:border-slate-800" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(129,140,248,0.05)' }}>
               <Icon size={64} strokeWidth={1} color="#818cf8" className="group-hover:scale-110 transition-transform duration-700 ease-in-out opacity-90" />
             </div>
             <div className="group-hover:bg-indigo-500/20 group-hover:scale-110 transition-all duration-300 group-hover:border-indigo-500/40" style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.2)', color: A, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontFamily: MONO, fontSize: 18, fontWeight: 700 }}>
               {step.num}
             </div>
-            <h3 style={{ fontFamily: DISP, fontWeight: 700, fontSize: 20, color: TEXT, margin: '0 0 12px' }}>{step.title}</h3>
-            <p style={{ fontSize: 15, color: MUTED, margin: 0, lineHeight: 1.6 }}>{step.desc}</p>
+            <h3 className="text-slate-900 dark:text-white" style={{ fontFamily: DISP, fontWeight: 700, fontSize: 20, margin: '0 0 12px' }}>{step.title}</h3>
+            <p className="text-slate-600 dark:text-slate-300" style={{ fontSize: 15, margin: 0, lineHeight: 1.6 }}>{step.desc}</p>
           </Link>
           );
         })}
@@ -1266,14 +1292,20 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
               borderRadius: 8, padding: '20px 20px 16px',
             }}
           >
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#94a3b8', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div
+              className="text-slate-600 dark:text-slate-400"
+              style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', marginBottom: 10 }}
+            >
               {s.icon} {s.label}
             </div>
-            <div style={{
-              fontFamily: MONO, fontWeight: 700,
-              fontSize: 'clamp(26px,3.5vw,42px)', color: TEXT,
-              lineHeight: 1, letterSpacing: '-0.03em',
-            }}>
+            <div
+              className="text-slate-900 dark:text-white"
+              style={{
+                fontFamily: MONO, fontWeight: 700,
+                fontSize: 'clamp(26px,3.5vw,42px)',
+                lineHeight: 1, letterSpacing: '-0.03em',
+              }}
+            >
               <Counter end={s.value} active={vis} />
               {s.suffix && <span style={{ color: A, fontSize: '0.75em' }}>{s.suffix}</span>}
             </div>
@@ -1292,11 +1324,14 @@ function ContributeSection({ stats }: { stats: RepoStats }) {
           BUILT IN PUBLIC.<br />
           <span style={{ color: A }}>SHIP WITH US.</span>
         </h2>
-        <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, margin: 0 }}>   {/* was '#555' */}
+        <p
+          className="text-slate-600 dark:text-slate-300"
+          style={{ fontSize: 16, lineHeight: 1.7, margin: 0 }}
+        >
           DevTrack is fully open source — MIT licensed, self-hostable, and built by developers
           who actually use it. Every widget, every metric, every API was contributed by
           someone in this list. {stats.goodFirstIssues > 0 && (
-            <span style={{ color: TEXT }}>
+            <span className="text-slate-900 dark:text-white">
               {stats.goodFirstIssues}{" "} issues are tagged good&nbsp;first&nbsp;issue and waiting right now.
             </span>
           )}
