@@ -106,6 +106,8 @@ interface WeeklySummaryData {
   };
   streak: number;
   topRepo: string | null;
+  dailyCommits: Array<{ date: string; count: number }>;
+  repositoriesContributedTo: number;
 }
 
 async function fetchWeeklySummaryForAccount(
@@ -152,19 +154,31 @@ async function fetchWeeklySummaryForAccount(
     const activeDaysLastWeek = new Set<string>();
     const repoCounts = new Map<string, number>();
 
+    // Initialize daily commits array for this week (Mon-Sun)
+    const dailyCommitsMap = new Map<string, number>();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(currentWeekStart.getTime() + i * 86400000);
+      dailyCommitsMap.set(d.toISOString().slice(0, 10), 0);
+    }
+
     // Partition commits into this week vs last week using UTC week boundaries.
     for (const item of commitsData.items) {
       const commitDate = new Date(item.commit.author.date);
+      const dateStr = item.commit.author.date.slice(0, 10);
 
       if (commitDate >= currentWeekStart) {
         commitsThisWeek++;
-        activeDaysThisWeek.add(item.commit.author.date.slice(0, 10));
+        activeDaysThisWeek.add(dateStr);
+        
+        if (dailyCommitsMap.has(dateStr)) {
+          dailyCommitsMap.set(dateStr, (dailyCommitsMap.get(dateStr) ?? 0) + 1);
+        }
 
         const repoName = item.repository.full_name;
         repoCounts.set(repoName, (repoCounts.get(repoName) ?? 0) + 1);
       } else if (commitDate >= prevWeekStart && commitDate <= prevWeekEnd) {
         commitsPrevWeek++;
-        activeDaysLastWeek.add(item.commit.author.date.slice(0, 10));
+        activeDaysLastWeek.add(dateStr);
       }
     }
 
@@ -229,6 +243,11 @@ async function fetchWeeklySummaryForAccount(
     const streakDates = await fetchActiveDates(githubLogin, token);
     const commitDelta = commitsThisWeek - commitsPrevWeek;
 
+    const dailyCommits = Array.from(dailyCommitsMap.entries()).map(([date, count]) => ({
+      date,
+      count,
+    }));
+
     return {
       commits: {
         current: commitsThisWeek,
@@ -246,6 +265,8 @@ async function fetchWeeklySummaryForAccount(
       },
       streak: calculateCurrentStreak(streakDates),
       topRepo,
+      dailyCommits,
+      repositoriesContributedTo: repoCounts.size,
     };
   });
 }
@@ -329,6 +350,20 @@ export async function GET(req: NextRequest) {
           }
         }
 
+        // Merge daily commits
+        const dailyCommitsMap = new Map<string, number>();
+        for (const res of results) {
+          for (const { date, count } of res.dailyCommits) {
+            dailyCommitsMap.set(date, (dailyCommitsMap.get(date) ?? 0) + count);
+          }
+        }
+        
+        const combinedDailyCommits = Array.from(dailyCommitsMap.entries())
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => a.date.localeCompare(b.date));
+
+        const repositoriesContributedTo = results.reduce((sum, r) => sum + r.repositoriesContributedTo, 0);
+
         return {
           commits: {
             current: commitsCurrent,
@@ -346,6 +381,8 @@ export async function GET(req: NextRequest) {
           },
           streak: maxStreak,
           topRepo,
+          dailyCommits: combinedDailyCommits,
+          repositoriesContributedTo,
         };
       });
 

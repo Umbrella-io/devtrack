@@ -11,6 +11,7 @@ import MilestonePlanner from "@/components/MilestonePlanner";
 import LazyWidget from "@/components/LazyWidget";
 import DiscussionsWidget from "@/components/DiscussionsWidget";
 import CommunityMetrics from "@/components/CommunityMetrics";
+import WeeklyProductivityDashboard from "@/components/WeeklyProductivityDashboard";
 
 import TodayFocusHero from "@/components/TodayFocusHero";
 import AchievementsDashboard from "@/components/achievements/AchievementsDashboard";
@@ -206,6 +207,15 @@ export default async function DashboardPage() {
               <LocalCodingTime />
               <CodingTimeWidget />
             </div>
+
+          {/* Weekly Productivity Section */}
+          <section id="weekly-productivity" className="mt-14 space-y-6 scroll-mt-28 mb-12">
+            <div className="flex items-center gap-3 border-b border-[var(--border)] pb-4">
+              <div className="h-8 w-1.5 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+              <h2 className="text-2xl font-bold tracking-tight">Weekly Productivity</h2>
+            </div>
+            <WeeklyProductivityDashboard />
+          </section>
 
           {/* Repo analytics explorer — full width */}
           <div className="mt-6">
