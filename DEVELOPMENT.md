@@ -669,6 +669,69 @@ A simple rule: append the new migration SQL into `supabase/schema.sql` (includin
   4. **Database Check:** In the Supabase Dashboard, go to **Table Editor** and confirm that the `users` table exists and is populated after sign-in. If it is empty, re-check that `SUPABASE_SERVICE_ROLE_KEY` is correctly set and the schema migration has been applied.
   5. **Lint and Type-Check:** Run `npm run lint && npm run type-check` in your terminal and verify both commands pass without errors.
 
+### 9. Node.js version incompatibility
+* **Symptom:** `npm install` throws errors like `engine "node" is incompatible with this module`, unexpected syntax errors during `npm run dev`, or certain packages fail to compile.
+* **Likely Cause:** Your system's Node.js version is below the required `>= 20`. Run `node -v` to check your current version.
+* **Solution:** Install Node.js 20 or higher.
+  * **Using nvm (recommended for macOS/Linux):**
+```bash
+    nvm install 20
+    nvm use 20
+    node -v   # should print v20.x.x or higher
+```
+  * **Using nvm-windows (Windows):**
+```powershell
+    nvm install 20
+    nvm use 20
+    node -v
+```
+  * **Without nvm:** Download the LTS installer directly from [nodejs.org](https://nodejs.org) and re-run `npm install` after upgrading.
+
+### 10. npm version too old
+* **Symptom:** `npm install` fails with peer dependency errors, lockfile conflicts, or warnings like `npm WARN old lockfile`. Some `npm run` scripts may not work as expected.
+* **Likely Cause:** Your npm version is below the required `>= 10`. Run `npm -v` to check.
+* **Solution:** Upgrade npm without changing your Node.js installation:
+```bash
+  # macOS / Linux
+  npm install -g npm@latest
+
+  # Windows PowerShell (run as Administrator)
+  npm install -g npm@latest
+```
+  After upgrading, verify with `npm -v` and re-run `npm install` in the project directory.
+
+### 11. TypeScript and build errors
+* **Symptom:** `npm run build` or `npm run type-check` fails with TypeScript compiler errors. Common messages include `Type 'X' is not assignable to type 'Y'`, `Property 'X' does not exist on type 'Y'`, or `Cannot find module`.
+* **Likely Cause:** Type errors in the source code, a missing or outdated dependency, or a mismatch between a library's types and its runtime version.
+* **Solution:** Work through the following steps in order:
+  1. **Run type-check to see all errors at once:**
+```bash
+     npm run type-check
+```
+  2. **Ensure dependencies are fully installed:**
+```bash
+     npm install
+```
+  3. **If the error mentions a missing module or type declaration**, install the relevant `@types` package:
+```bash
+     npm install --save-dev @types/<package-name>
+```
+  4. **Clear the Next.js build cache** and retry:
+```bash
+     # macOS / Linux
+     rm -rf .next
+
+     # Windows PowerShell
+     Remove-Item -Recurse -Force .next
+     
+     npm run build
+```
+  5. **Fix the reported errors** in your source files. If you are unsure about a type, avoid using `any` — check the library's documentation or existing usages in the codebase for the correct type.
+  6. **Run lint alongside type-check** before pushing to catch all issues:
+```bash
+     npm run lint && npm run type-check
+```
+
 ---
 
 ## Questions?
