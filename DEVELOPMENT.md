@@ -6,11 +6,41 @@ Everything you need to run DevTrack locally from scratch in under 10 minutes.
 
 ## Prerequisites
 
-| Tool | Version | Check |
-|------|---------|-------|
-| Node.js | >= 20 | `node -v` |
-| npm | >= 10 | `npm -v` |
-| Git | any | `git --version` |
+|
+ Tool 
+|
+ Version 
+|
+ Check 
+|
+|
+------
+|
+---------
+|
+-------
+|
+|
+ Node.js 
+|
+ >= 20 
+|
+`node -v`
+|
+|
+ npm 
+|
+ >= 10 
+|
+`npm -v`
+|
+|
+ Git 
+|
+ any 
+|
+`git --version`
+|
 
 You also need free accounts on:
 - [Supabase](https://supabase.com) — for the database
@@ -366,16 +396,57 @@ All GitHub API calls use the signed-in user's OAuth token — stored in the sess
 
 ## Available scripts
 
-| Command | What it does |
-|---------|-------------|
-| `npm run dev` | Start dev server at localhost:3000 |
-| `npm run build` | Validate env, then production build |
-| `npm start` | Start production server |
-| `npm run lint` | ESLint across `src/` |
-| `npm run type-check` | TypeScript compiler check (no emit) |
-| `npm test` | Run unit tests with Vitest |
-| `npm run test:coverage` | Run tests with coverage report |
-| `npm run test:e2e` | Run Playwright end-to-end tests |
+|
+ Command 
+|
+ What it does 
+|
+|
+---------
+|
+-------------
+|
+|
+`npm run dev`
+|
+ Start dev server at localhost:3000 
+|
+|
+`npm run build`
+|
+ Validate env, then production build 
+|
+|
+`npm start`
+|
+ Start production server 
+|
+|
+`npm run lint`
+|
+ ESLint across 
+`src/`
+|
+|
+`npm run type-check`
+|
+ TypeScript compiler check (no emit) 
+|
+|
+`npm test`
+|
+ Run unit tests with Vitest 
+|
+|
+`npm run test:coverage`
+|
+ Run tests with coverage report 
+|
+|
+`npm run test:e2e`
+|
+ Run Playwright end-to-end tests 
+|
 
 Run lint and type-check before pushing:
 ```bash
@@ -546,22 +617,29 @@ A simple rule: append the new migration SQL into `supabase/schema.sql` (includin
 * **Likely Cause:** The **Authorization callback URL** in your GitHub developer settings does not match the URL configured locally.
 * **Solution:** Visit your GitHub account settings, go to **Developer Settings > OAuth Apps**, open your registered application, and verify that the **Authorization callback URL** matches `http://localhost:3000/api/auth/callback/github` exactly.
 
+> **Note:** If you are deploying to a platform like Vercel, also add your production callback URL (e.g., `https://your-app.vercel.app/api/auth/callback/github`) in the same GitHub OAuth App settings. GitHub allows multiple callback URLs.
+
 ### 5. `NEXTAUTH_SECRET` not set or invalid
 * **Symptom:** NextAuth throws a `[next-auth][error][NO_SECRET]` error in the terminal, and users cannot log in.
 * **Likely Cause:** The `NEXTAUTH_SECRET` key is missing from `.env.local` or is empty.
 * **Solution:** Generate a random 32-byte secret and add it to `.env.local` as `NEXTAUTH_SECRET`. You can generate it by running:
-  ```bash
+```bash
   # macOS / Linux
   openssl rand -base64 32
 
   # Windows PowerShell
   [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
-  ```
+
+  # Cross-platform (Node.js)
+  node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
 
 ### 6. Environment variables not loading correctly from `.env.local`
 * **Symptom:** Changes to environment variables in `.env.local` are not recognized, or values behave as if they are missing or outdated.
 * **Likely Cause:** The Next.js development server has not been restarted since the environment variables were modified.
 * **Solution:** Stop the active development server using `Ctrl + C` and start it again using `npm run dev`. Ensure the file is named exactly `.env.local` (not `.env` or `.env.local.txt`) and is in the project root.
+
+> **Note:** Only variables prefixed with `NEXT_PUBLIC_` are exposed to the browser. Server-only variables like `SUPABASE_SERVICE_ROLE_KEY` must never use this prefix — they should only be accessed in server-side code (API routes, server components). If a client-side feature is not working despite the variable being set, check that it has the `NEXT_PUBLIC_` prefix.
 
 ### 7. Port conflicts while running the development server
 * **Symptom:** Starting the server fails with an `EADDRINUSE: address already in use :::3000` error, or the app is served on a fallback port like `3001`.
@@ -569,13 +647,17 @@ A simple rule: append the new migration SQL into `supabase/schema.sql` (includin
 * **Solution:** Free up port `3000` or run the dev server on a custom port.
   * To run on a custom port, execute: `npm run dev -- -p 3001`
   * To kill the existing process on Windows (PowerShell):
-    ```powershell
+```powershell
     Stop-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess -Force
-    ```
+```
   * To kill the existing process on macOS/Linux:
-    ```bash
+```bash
+    # Option 1 (no extra packages required)
+    lsof -ti:3000 | xargs kill -9
+
+    # Option 2
     npx kill-port 3000
-    ```
+```
 
 ### 8. Basic steps to verify that the local setup is configured correctly
 * **Symptom:** Need to confirm that your local environment, database schema, and OAuth are completely and correctly integrated.
@@ -584,15 +666,14 @@ A simple rule: append the new migration SQL into `supabase/schema.sql` (includin
   1. **Run Dev Server:** Start the server with `npm run dev` and ensure there are no startup errors in the console.
   2. **Page Load:** Open `http://localhost:3000` in your browser and verify the landing page displays correctly.
   3. **Sign In Check:** Click **Sign in with GitHub**, authorize the application, and verify that you are successfully redirected to the dashboard (`http://localhost:3000/dashboard`).
-  4. **Lint and Type-Check:** Run `npm run lint && npm run type-check` in your terminal and verify both commands pass without errors.
+  4. **Database Check:** In the Supabase Dashboard, go to **Table Editor** and confirm that the `users` table exists and is populated after sign-in. If it is empty, re-check that `SUPABASE_SERVICE_ROLE_KEY` is correctly set and the schema migration has been applied.
+  5. **Lint and Type-Check:** Run `npm run lint && npm run type-check` in your terminal and verify both commands pass without errors.
 
 ---
 
 ## Questions?
 
 Open a [GitHub Discussion](https://github.com/Umbrella-io/devtrack/discussions) — not an issue.
-
-
 
 ### Husky Hooks Troubleshooting Guide
 - If prettier-check fails in sandboxed environments, run git commit with --no-verify.
