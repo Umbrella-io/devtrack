@@ -100,6 +100,10 @@ interface WeeklySummaryData {
     thisWeek: { opened: number; merged: number };
     lastWeek: { opened: number; merged: number };
   };
+  issues: {
+    thisWeek: number;
+    lastWeek: number;
+  };
   activeDays: {
     thisWeek: number;
     lastWeek: number;
@@ -225,7 +229,45 @@ async function fetchWeeklySummaryForAccount(
       }
     }
 
-    // Search API calls 3+ — fetchActiveDates pages through to build the 90-day commit date set.
+    // Search API call 3 of 4 — fetches issues closed in the past 14 days.
+    const issuesRes = await fetch(
+      `${GITHUB_API}/search/issues?q=type:issue+author:@me+is:closed+closed:>=${fourteenDaysAgoStr}&per_page=100`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!issuesRes.ok) {
+      if (issuesRes.status === 401) throw new GitHubAuthError();
+      throw new Error("GitHub API error");
+    }
+
+    const issuesData = (await issuesRes.json()) as {
+      items: Array<{
+        closed_at: string | null;
+      }>;
+    };
+
+    let issuesClosedThisWeek = 0;
+    let issuesClosedLastWeek = 0;
+
+    for (const item of issuesData.items) {
+      if (!item.closed_at) continue;
+      const closedAt = new Date(item.closed_at);
+      if (Number.isNaN(closedAt.getTime())) continue;
+
+      if (closedAt >= currentWeekStart) {
+        issuesClosedThisWeek++;
+      } else if (closedAt >= prevWeekStart && closedAt <= prevWeekEnd) {
+        issuesClosedLastWeek++;
+      }
+    }
+
+    // Search API calls 4+ — fetchActiveDates pages through to build the 90-day commit date set.
     const streakDates = await fetchActiveDates(githubLogin, token);
     const commitDelta = commitsThisWeek - commitsPrevWeek;
 
@@ -239,6 +281,10 @@ async function fetchWeeklySummaryForAccount(
       prs: {
         thisWeek: { opened: prsOpenedThisWeek, merged: prsMergedThisWeek },
         lastWeek: { opened: prsOpenedLastWeek, merged: prsMergedLastWeek },
+      },
+      issues: {
+        thisWeek: issuesClosedThisWeek,
+        lastWeek: issuesClosedLastWeek,
       },
       activeDays: {
         thisWeek: activeDaysThisWeek.size,
@@ -314,6 +360,9 @@ export async function GET(req: NextRequest) {
         const prsLastWeekOpened = results.reduce((sum, r) => sum + r.prs.lastWeek.opened, 0);
         const prsLastWeekMerged = results.reduce((sum, r) => sum + r.prs.lastWeek.merged, 0);
 
+        const issuesThisWeek = results.reduce((sum, r) => sum + r.issues.thisWeek, 0);
+        const issuesLastWeek = results.reduce((sum, r) => sum + r.issues.lastWeek, 0);
+
         const activeDaysThisWeek = Math.min(7, results.reduce((sum, r) => sum + r.activeDays.thisWeek, 0));
         const activeDaysLastWeek = Math.min(7, results.reduce((sum, r) => sum + r.activeDays.lastWeek, 0));
 
@@ -339,6 +388,10 @@ export async function GET(req: NextRequest) {
           prs: {
             thisWeek: { opened: prsThisWeekOpened, merged: prsThisWeekMerged },
             lastWeek: { opened: prsLastWeekOpened, merged: prsLastWeekMerged },
+          },
+          issues: {
+            thisWeek: issuesThisWeek,
+            lastWeek: issuesLastWeek,
           },
           activeDays: {
             thisWeek: activeDaysThisWeek,

@@ -15,6 +15,7 @@ export type DashboardWidgetId =
   | "contribution-heatmap"
   | "repo-contribution-distribution"
   | "activity-ring"
+  | "weekly-coding-insights"
   | "coding-activity-insights"
   | "streak-tracker"
   | "consistency-score"
@@ -71,6 +72,7 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   "contribution-heatmap": "Contribution Heatmap",
   "repo-contribution-distribution": "Repository Contribution Distribution",
   "activity-ring": "Activity Ring",
+  "weekly-coding-insights": "Weekly Coding Insights",
   "coding-activity-insights": "Coding Activity Insights",
   "streak-tracker": "Streak Tracker",
   "consistency-score": "Consistency Score",
@@ -108,6 +110,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
       "contribution-heatmap",
       "repo-contribution-distribution",
       "activity-ring",
+      "weekly-coding-insights",
       "coding-activity-insights",
       "streak-tracker",
       "consistency-score",

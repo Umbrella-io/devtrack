@@ -143,6 +143,11 @@ export const ContributionHeatmapSkeleton = () => (
   </div>
 );
 
+const WeeklyCodingInsightsCard = dynamic(
+  () => import("@/components/WeeklyCodingInsightsCard"),
+  { ssr: false, loading: () => <ChartSkeleton /> },
+);
+
 const CodingActivityInsightsCard = dynamic(
   () => import("@/components/CodingActivityInsightsCard"),
   { ssr: false, loading: () => <ChartSkeleton /> },
@@ -307,6 +312,13 @@ const renderDashboardWidget = (widgetId: DashboardWidgetId): ReactNode => {
       return (
         <LazyWidget fallback={<ChartSkeleton />}>
           <ActivityRingChart />
+        </LazyWidget>
+      );
+
+    case "weekly-coding-insights":
+      return (
+        <LazyWidget fallback={<ChartSkeleton />}>
+          <WeeklyCodingInsightsCard />
         </LazyWidget>
       );
 
