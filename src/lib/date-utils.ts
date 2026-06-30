@@ -133,7 +133,7 @@ function fromUtcWallClock(date: Date): Date {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
 }
 
-function getUtcWeekStart(date: Date): Date {
+export function getUtcWeekStart(date: Date): Date {
   const utcWallClock = toUtcWallClock(date);
   const weekStart = startOfWeek(utcWallClock, { weekStartsOn: 1 });
   const utcWeekStart = fromUtcWallClock(weekStart);

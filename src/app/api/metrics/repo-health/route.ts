@@ -3,59 +3,12 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { computeHealthScore } from "@/lib/repo-health";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
+import { fetchTopRepos } from "@/lib/repo-analytics-utils";
 import type { RepoHealthResponse, RepoHealthSignals, RepoHealthScore } from "@/types/repo-health";
 
 export const dynamic = "force-dynamic";
 const GITHUB_API = "https://api.github.com";
 
-interface RepoSummary { name: string; commits: number; url: string; }
-interface RepoListResponse { repos: RepoSummary[]; days: number; }
-
-async function fetchReposForAccount(token: string, githubLogin: string, days: number): Promise<RepoListResponse> {
-  const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
-
-  // GitHub Commit Search API — finds recent commits to identify the user's active repos.
-  // Rate limits:
-  //   • Authenticated (OAuth token / PAT): 30 requests/minute
-  //   • Unauthenticated:                   10 requests/minute
-  // This single request costs 1 of the 30 req/min quota.
-  // The outer withMetricsCache (ttlSeconds: 10 * 60) in the GET handler prevents
-  // re-fetching on every page load — this is only called on a cache miss.
-  const searchRes = await fetch(
-    `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${since}&per_page=100&sort=author-date&order=desc`,
-    {
-      headers: {
-        // OAuth token / PAT: raises the Search API limit from 10 → 30 req/min.
-        // Without this, a single repo-health load could exhaust the unauthenticated
-        // 10 req/min quota when combined with other concurrent Search API calls.
-        Authorization: `Bearer ${token}`,
-        // Mandatory for the Commit Search endpoint — omitting returns HTTP 415.
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    }
-  );
-
-  // HTTP 403 = Search API rate limit exceeded. HTTP 422 = malformed query.
-  // Throws here so the GET handler catches it and returns HTTP 502 to the client.
-  if (!searchRes.ok) throw new Error("API error");
-
-  const data = await searchRes.json();
-  const repoMap: Record<string, { commits: number; url: string }> = {};
-  for (const item of data.items) {
-    const name = item.repository.full_name;
-    if (!repoMap[name]) repoMap[name] = { commits: 0, url: item.repository.html_url };
-    repoMap[name].commits++;
-  }
-  // Slice to top 6 repos to cap the number of fetchSignalsForRepo calls below.
-  return {
-    repos: Object.entries(repoMap)
-      .map(([name, info]) => ({ name, ...info }))
-      .sort((a, b) => b.commits - a.commits)
-      .slice(0, 6),
-    days,
-  };
-}
 
 function hoursBetween(a: string, b: string): number { return (new Date(b).getTime() - new Date(a).getTime()) / 3600000; }
 function daysSince(isoDate: string): number { return Math.max(0, Math.floor((Date.now() - new Date(isoDate).getTime()) / 86400000)); }
@@ -165,7 +118,7 @@ export async function GET(req: NextRequest) {
     // the 30 req/min Search API quota in under 2 minutes.
     const data = await withMetricsCache({ bypass, key, ttlSeconds: 10 * 60 }, async () => {
       // Step 1: identify the top 6 repos via Commit Search (1 Search API request).
-      const topRepos = (await fetchReposForAccount(session.accessToken!, session.githubLogin!, days)).repos;
+       const topRepos = await fetchTopRepos(session.githubLogin!, session.accessToken!, days);
 
       const scores: RepoHealthScore[] = [];
       for (const repo of topRepos) {

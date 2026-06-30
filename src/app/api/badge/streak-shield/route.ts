@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateBadgeSVG } from "../badge-utils";
 import { checkBadgeRateLimit, getBadgeClientIp } from "@/lib/badge-rate-limit";
-import { calculateStreakFromDates } from "@/lib/streak";
+import { calculateStreakFromDates, fetchActiveDates } from "@/lib/streak";
 import { logError } from "@/lib/error-handler";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
+import { GitHubRateLimitError } from "@/lib/github-fetch";
 
 export const dynamic = "force-dynamic";
 
@@ -36,52 +37,28 @@ async function fetchStreak(
   username: string,
   token?: string
 ): Promise<StreakData> {
-  const since = new Date();
-  since.setDate(since.getDate() - 90);
-  const sinceStr = since.toISOString().slice(0, 10);
-
-  const url = new URL(`${GITHUB_API}/search/commits`);
-  url.searchParams.set("q", `author:${username} author-date:>=${sinceStr}`);
-  url.searchParams.set("per_page", "100");
-  url.searchParams.set("sort", "author-date");
-  url.searchParams.set("order", "desc");
-
-  const searchRes = await fetchGitHubWithToken(url.toString(), token);
-
-  if (!searchRes.ok) {
-    const errorBody = await searchRes.text();
-    const isRateLimited = searchRes.status === 403;
-    console.error(`GitHub API error fetching streak for ${username}:`, {
-      status: searchRes.status,
-      url: url.toString(),
-      body: errorBody,
-      rateLimited: isRateLimited,
-    });
+  try {
+    const activeDates = await fetchActiveDates(username, token);
+    const result = calculateStreakFromDates(activeDates);
     return {
-      current: 0,
-      longest: 0,
-      lastCommitDate: null,
-      totalActiveDays: 0,
-      stale: isRateLimited ? true : undefined,
+      current: result.current,
+      longest: result.longest,
+      lastCommitDate: result.lastCommitDate,
+      totalActiveDays: result.totalActiveDays,
     };
+  } catch (error) {
+    if (error instanceof GitHubRateLimitError) {
+      console.error(`GitHub API rate limit fetching streak for ${username}:`, error);
+      return {
+        current: 0,
+        longest: 0,
+        lastCommitDate: null,
+        totalActiveDays: 0,
+        stale: true,
+      };
+    }
+    throw error;
   }
-
-  const data = (await searchRes.json()) as {
-    items: Array<{ commit: { author: { date: string } } }>;
-  };
-
-  const activeDates = new Set<string>();
-  for (const item of data.items) {
-    activeDates.add(item.commit.author.date.slice(0, 10));
-  }
-
-  const result = calculateStreakFromDates(activeDates);
-  return {
-    current: result.current,
-    longest: result.longest,
-    lastCommitDate: result.lastCommitDate,
-    totalActiveDays: result.totalActiveDays,
-  };
 }
 
 export async function GET(req: NextRequest) {

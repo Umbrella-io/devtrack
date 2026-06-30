@@ -1,4 +1,5 @@
-import { calculateStreakFromDates } from "@/lib/streak";
+import { calculateStreakFromDates, fetchActiveDates } from "@/lib/streak";
+import { fetchTopRepos } from "@/lib/repo-analytics-utils";
 import type { GitHubAchievement } from "@/lib/github-achievements";
 import { syncGitHubAchievementsForUser } from "@/lib/github-achievements";
 import { fetchPinnedRepoDetails, type PinnedRepoDetails } from "@/lib/pinned-repos";
@@ -97,32 +98,7 @@ export async function fetchPublicTopRepos(
   token?: string,
   days = 30
 ): Promise<TopRepo[]> {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  const sinceStr = since.toISOString().slice(0, 10);
-
-  const res = await ghFetch(
-    `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
-    token
-  );
-
-  if (!res.ok) return [];
-
-  const data = (await res.json()) as {
-    items: Array<{ repository: { full_name: string; html_url: string } }>;
-  };
-
-  const repoMap: Record<string, { commits: number; url: string }> = {};
-  for (const item of data.items) {
-    const name = item.repository.full_name;
-    if (!repoMap[name]) repoMap[name] = { commits: 0, url: item.repository.html_url };
-    repoMap[name].commits++;
-  }
-
-  return Object.entries(repoMap)
-    .map(([name, info]) => ({ name, ...info }))
-    .sort((a, b) => b.commits - a.commits)
-    .slice(0, 6);
+  return fetchTopRepos(username, token, days);
 }
 
 /**
@@ -173,45 +149,19 @@ export async function fetchPublicStreak(
   token?: string,
   timezone?: string
 ): Promise<StreakData> {
-  const since = new Date();
-  since.setDate(since.getDate() - 365);
-  const sinceStr = since.toISOString().slice(0, 10);
-
-  const res = await ghFetch(
-    `${GITHUB_API}/search/commits?q=author:${username}+author-date:>=${sinceStr}&per_page=100&sort=author-date&order=desc`,
-    token
-  );
-
-  if (!res.ok) return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
-
-  const data = (await res.json()) as {
-    items: Array<{ commit: { author: { date: string } } }>;
-  };
-
   const tz = timezone || "UTC";
-  const activeDates = new Set<string>();
-  for (const item of data.items) {
-    try {
-      const d = new Date(item.commit.author.date);
-      const tzDate = new Intl.DateTimeFormat("en-CA", {
-        timeZone: tz,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).format(d);
-      activeDates.add(tzDate);
-    } catch (e) {
-      activeDates.add(item.commit.author.date.slice(0, 10));
-    }
+  try {
+    const activeDates = await fetchActiveDates(username, token, 365, tz);
+    const result = calculateStreakFromDates(activeDates, new Set(), tz);
+    return {
+      current: result.current,
+      longest: result.longest,
+      lastCommitDate: result.lastCommitDate,
+      totalActiveDays: result.totalActiveDays,
+    };
+  } catch {
+    return { current: 0, longest: 0, lastCommitDate: null, totalActiveDays: 0 };
   }
-
-  const result = calculateStreakFromDates(activeDates, new Set(), tz);
-  return {
-    current: result.current,
-    longest: result.longest,
-    lastCommitDate: result.lastCommitDate,
-    totalActiveDays: result.totalActiveDays,
-  };
 }
 
 /**

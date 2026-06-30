@@ -12,6 +12,7 @@ import {
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { calculateConsistencyScore } from "@/lib/consistency-score";
+import { fetchActiveDates as fetchActiveDatesShared } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -32,53 +33,7 @@ async function fetchActiveDates(
       ttlSeconds: METRICS_CACHE_TTL_SECONDS.streak,
     },
     async () => {
-      const since = new Date();
-      since.setDate(since.getDate() - LOOKBACK_DAYS);
-      const sinceStr = since.toISOString().slice(0, 10);
-
-      const activeDates = new Set<string>();
-      let page = 1;
-
-      while (true) {
-        const searchRes = await fetch(
-          `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: "application/vnd.github+json",
-            },
-            cache: "no-store",
-          },
-        );
-
-        if (!searchRes.ok) {
-          throw new Error("GitHub API error");
-        }
-
-        const data = (await searchRes.json()) as {
-          items: Array<{ commit: { author: { date: string } } }>;
-        };
-
-        for (const item of data.items) {
-          const commitDate = new Date(item.commit.author.date);
-          const parts = new Intl.DateTimeFormat("en", {
-            timeZone,
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          }).formatToParts(commitDate);
-          const year = parts.find((p) => p.type === "year")?.value;
-          const month = parts.find((p) => p.type === "month")?.value;
-          const day = parts.find((p) => p.type === "day")?.value;
-          if (year && month && day) {
-            activeDates.add(`${year}-${month}-${day}`);
-          }
-        }
-
-        if (data.items.length < 100 || page >= 10) break;
-        page += 1;
-      }
-
+      const activeDates = await fetchActiveDatesShared(githubLogin, token, LOOKBACK_DAYS, timeZone);
       return Array.from(activeDates);
     },
   );

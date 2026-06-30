@@ -11,7 +11,7 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { calculateStreakFromDates } from "@/lib/streak";
+import { calculateStreakFromDates, fetchActiveDates as fetchActiveDatesShared } from "@/lib/streak";
 import { dispatchToAllWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
@@ -24,13 +24,8 @@ async function fetchActiveDates(
   cacheContext: { bypass: boolean; userId: string },
   timeZone = "UTC"
 ): Promise<Set<string>> {
-  // Cache key is scoped per user + githubLogin so multi-account "combined" view
-  // stores each account's dates separately and merges them in the GET handler.
   const key = metricsCacheKey(cacheContext.userId, "streak", { githubLogin });
 
-  // withMetricsCache returns cached dates if available within the TTL window,
-  // skipping all GitHub API calls below. This is the primary protection against
-  // exhausting the Search API rate limit on repeated page loads.
   const dates = await withMetricsCache(
     {
       bypass: cacheContext.bypass,
@@ -38,78 +33,7 @@ async function fetchActiveDates(
       ttlSeconds: METRICS_CACHE_TTL_SECONDS.streak,
     },
     async () => {
-      // Look back far enough to correctly compute long streaks.
-      // GitHub Commit Search supports date ranges up to ~1 year.
-      const since = new Date();
-      since.setDate(since.getDate() - STREAK_LOOKBACK_DAYS);
-      const sinceStr = since.toISOString().slice(0, 10); // "YYYY-MM-DD"
-
-      const activeDates = new Set<string>();
-      let page = 1;
-
-      // GitHub Commit Search API rate limits:
-      //   • Authenticated (OAuth token / PAT): 30 requests/minute
-      //   • Unauthenticated:                   10 requests/minute
-      //
-      // This loop pages through up to 10 pages (1,000 commits max).
-      // Each page = 1 request against the 30 req/min quota.
-      // Most users need only 1–2 pages; the cap of 10 prevents runaway API usage
-      // for extremely active accounts.
-      while (true) {
-        const searchRes = await fetch(
-          `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
-          {
-            headers: {
-              // OAuth token / PAT: raises the Search API limit from 10 → 30 req/min.
-              // Without this, a single multi-page streak fetch could exhaust the
-              // unauthenticated 10 req/min quota for everyone on the same server IP.
-              Authorization: `Bearer ${token}`,
-              // The Accept header is mandatory for the Commit Search endpoint.
-              // Omitting it causes GitHub to return HTTP 415 (Unsupported Media Type).
-              Accept: "application/vnd.github+json",
-            },
-            cache: "no-store",
-          }
-        );
-
-        // HTTP 403 = Search API rate limit exceeded ("API rate limit exceeded" in body).
-        // HTTP 422 = malformed query (e.g. special characters in githubLogin).
-        // Both are thrown here so the outer GET handler returns HTTP 502 to the client,
-        // which shows an error state rather than a misleading 0-day streak.
-        if (!searchRes.ok) {
-          const apiErr = Object.assign(new Error("GitHub API error"), { status: searchRes.status }); throw apiErr;
-        }
-
-        const data = (await searchRes.json()) as {
-          items: Array<{ commit: { author: { date: string } } }>;
-        };
-
-        // Extract the date part ("YYYY-MM-DD") from each commit timestamp
-        // but bucket the commit into the user's local timezone so streaks are
-        // calculated relative to the user's day boundaries rather than UTC.
-        for (const item of data.items) {
-          const commitDate = new Date(item.commit.author.date);
-          // Format the commit into a YYYY-MM-DD in the user's timezone.
-          const parts = new Intl.DateTimeFormat("en", {
-            timeZone,
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          }).formatToParts(commitDate);
-          const year = parts.find((p) => p.type === "year")?.value;
-          const month = parts.find((p) => p.type === "month")?.value;
-          const day = parts.find((p) => p.type === "day")?.value;
-          if (year && month && day) {
-            activeDates.add(`${year}-${month}-${day}`);
-          }
-        }
-
-        // Stop paginating when GitHub returns fewer than 100 items (last page)
-        // or when we hit the 10-page safety cap to avoid excessive API usage.
-        if (data.items.length < 100 || page >= 10) break;
-        page++;
-      }
-
+      const activeDates = await fetchActiveDatesShared(githubLogin, token, STREAK_LOOKBACK_DAYS, timeZone);
       return Array.from(activeDates);
     }
   );

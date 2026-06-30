@@ -14,6 +14,7 @@ import {
   withMetricsCache,
 } from "@/lib/metrics-cache";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { getUtcWeekStart } from "@/lib/date-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -41,16 +42,7 @@ function addDaysUtc(date: Date, days: number): Date {
   return result;
 }
 
-function getUtcWeekStart(date: Date): Date {
-  const result = new Date(date);
-  const dayOfWeek = result.getUTCDay();
-  const daysSinceMonday = (dayOfWeek + 6) % 7;
 
-  result.setUTCDate(result.getUTCDate() - daysSinceMonday);
-  result.setUTCHours(0, 0, 0, 0);
-
-  return result;
-}
 
 function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);

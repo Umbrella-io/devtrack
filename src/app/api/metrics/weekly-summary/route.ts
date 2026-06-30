@@ -7,87 +7,15 @@ import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib
 import { getAccountToken, getAllAccounts } from "@/lib/github-accounts";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
-import { calculateStreak } from "@/lib/streak";
-import { toDateStr } from "@/lib/date-utils";
+import { calculateStreak, calculateCurrentStreak, fetchActiveDates } from "@/lib/streak";
+import { toDateStr, getUtcWeekStart } from "@/lib/date-utils";
 
 export const dynamic = "force-dynamic";
 
 // Returns the start of the current week (Monday 00:00:00 UTC).
 // All week boundary comparisons use UTC to stay consistent with GitHub's
 // commit timestamps, which are always returned in UTC.
-function getCurrentWeekStartUtc(): Date {
-  const now = new Date();
-  const currentWeekStart = new Date(now);
-  const dayOfWeek = currentWeekStart.getUTCDay();
-  const daysSinceMonday = (dayOfWeek + 6) % 7;
-  currentWeekStart.setUTCDate(currentWeekStart.getUTCDate() - daysSinceMonday);
-  currentWeekStart.setUTCHours(0, 0, 0, 0);
-  return currentWeekStart;
-}
 
-function calculateCurrentStreak(activeDates: Set<string>): number {
-  const { currentStreak } = calculateStreak(
-    Array.from(activeDates).map((day) => new Date(day))
-  );
-  return currentStreak;
-}
-
-async function fetchActiveDates(githubLogin: string, token: string): Promise<Set<string>> {
-  // Look back 90 days — the maximum window the GitHub Commit Search API supports.
-  const since = new Date();
-  since.setDate(since.getDate() - 90);
-  const sinceStr = since.toISOString().slice(0, 10); // "YYYY-MM-DD"
-
-  const activeDates = new Set<string>();
-  let page = 1;
-
-  // GitHub Commit Search API rate limits:
-  //   • Authenticated (OAuth token / PAT): 30 requests/minute
-  //   • Unauthenticated:                   10 requests/minute
-  //
-  // This loop pages up to 10 pages (1,000 commits max) to cover the 90-day window.
-  // Each page = 1 request against the 30 req/min quota.
-  // NOTE: this function is called INSIDE withMetricsCache in the GET handler,
-  // so it only runs on a cache miss — repeated page loads reuse cached dates.
-  while (true) {
-    const searchRes = await fetch(
-      `${GITHUB_API}/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`,
-      {
-        headers: {
-          // OAuth token / PAT: raises the Search API limit from 10 → 30 req/min.
-          // Without this, the streak pagination loop could exhaust the unauthenticated
-          // quota on its own, blocking all other Search API calls on the same IP.
-          Authorization: `Bearer ${token}`,
-          // Mandatory Accept header for the Commit Search endpoint.
-          // Omitting it causes GitHub to return HTTP 415 (Unsupported Media Type).
-          Accept: "application/vnd.github+json",
-        },
-        cache: "no-store",
-      }
-    );
-
-    // HTTP 401 = token revoked/invalid. HTTP 403 = rate limit.
-    // Both throw so the outer GET handler can distinguish auth failures.
-    if (!searchRes.ok) {
-      if (searchRes.status === 401) throw new GitHubAuthError();
-      throw new Error("GitHub API error");
-    }
-
-    const data = (await searchRes.json()) as { items: Array<{ commit: { author: { date: string } } }> };
-
-    // Extract just the "YYYY-MM-DD" date from each commit timestamp.
-    // Set deduplicates — multiple commits on the same day count as one active day.
-    for (const item of data.items) {
-      activeDates.add(item.commit.author.date.slice(0, 10));
-    }
-
-    // Stop when GitHub returns fewer than 100 items (last page) or the 10-page cap is hit.
-    if (data.items.length < 100 || page >= 10) break;
-    page++;
-  }
-
-  return activeDates;
-}
 
 interface WeeklySummaryData {
   commits: {
@@ -117,7 +45,7 @@ async function fetchWeeklySummaryForAccount(
   const key = metricsCacheKey(userId, "weekly-summary" as any);
 
   return withMetricsCache({ bypass, key, ttlSeconds: 5 * 60 }, async () => {
-    const currentWeekStart = getCurrentWeekStartUtc();
+    const currentWeekStart = getUtcWeekStart(new Date());
     const prevWeekStart = new Date(currentWeekStart.getTime() - 7 * 86400000);
     const prevWeekEnd = new Date(currentWeekStart.getTime() - 1);
     // Fetch 14 days of data in a single query so both this week and last week

@@ -16,6 +16,7 @@ import {
 } from "@/lib/metrics-cache";
 import { supabaseAdmin, isSupabaseAdminAvailable } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
+import { fetchTopRepos } from "@/lib/repo-analytics-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -118,8 +119,6 @@ async function fetchReposForAccount(
   orgName?: string | null,
   excludedOrgs: string[] = []
 ): Promise<RepoResponse> {
-  // Cache key is scoped per user + githubLogin + days so different time range
-  // selections and multi-account views don't return each other's cached results.
   const key = metricsCacheKey(cacheContext.userId, "repos", {
     days,
     githubLogin,
@@ -127,9 +126,6 @@ async function fetchReposForAccount(
     excludedOrgs: excludedOrgs.length > 0 ? excludedOrgs.join(",") : undefined,
   });
 
-  // withMetricsCache returns cached results within the TTL window, skipping all
-  // GitHub API calls below. This is the primary protection against exhausting
-  // the Search API's 30 req/min rate limit on repeated dashboard loads.
   return withMetricsCache(
     {
       bypass: cacheContext.bypass,
@@ -137,80 +133,9 @@ async function fetchReposForAccount(
       ttlSeconds: METRICS_CACHE_TTL_SECONDS.repos,
     },
     async () => {
-      const since = new Date();
-      since.setDate(since.getDate() - days);
-      const sinceStr = since.toISOString().slice(0, 10); // "YYYY-MM-DD"
+      // Call shared repository fetching helper
+      const repos = await fetchTopRepos(githubLogin, token, days, { orgName, excludedOrgs });
 
-      let q = `author:${githubLogin}`;
-      if (orgName) {
-        q += `+org:${orgName}`;
-      } else if (excludedOrgs.length > 0) {
-        q += excludedOrgs.map((org) => `+-org:${org}`).join("");
-      }
-      q += `+author-date:>=${sinceStr}`;
-
-      // GitHub Commit Search API — finds all commits by this user in the date window.
-      // Rate limits (separate and stricter than the REST API):
-      //   • Authenticated (OAuth token / PAT): 30 requests/minute
-      //   • Unauthenticated:                   10 requests/minute
-      //
-      // We fetch a single page of 100 commits — enough to identify the top 6 repos
-      // by commit count. The withMetricsCache wrapper above prevents re-fetching
-      // within the TTL, so this Search API request is only made on a cache miss.
-      const searchRes = await fetch(
-        `${GITHUB_API}/search/commits?q=${q}&per_page=100&sort=author-date&order=desc`,
-        {
-          headers: {
-            // OAuth token / PAT: raises the Search API limit from 10 → 30 req/min.
-            // For the "combined" multi-account view, this is called once per linked
-            // account — e.g. 3 accounts = 3 Search API requests in parallel, each
-            // drawing from that account token's own 30 req/min quota.
-            Authorization: `Bearer ${token}`,
-            // The Accept header is mandatory for the Commit Search endpoint.
-            // Omitting it causes GitHub to return HTTP 415 (Unsupported Media Type).
-            Accept: "application/vnd.github+json",
-          },
-          cache: "no-store",
-        }
-      );
-
-      // HTTP 401 = token revoked — throw auth error so caller can surface reconnect.
-      // HTTP 403 = Search API rate limit exceeded for this token.
-      // HTTP 422 = malformed query (e.g. invalid date format or username characters).
-      if (!searchRes.ok) {
-        if (searchRes.status === 401) throw new GitHubAuthError();
-        throw new Error("GitHub API error");
-      }
-
-      const data = (await searchRes.json()) as {
-        items: Array<{
-          repository: { full_name: string; html_url: string; description: string | null };
-          commit: { author: { date: string } };
-        }>;
-      };
-
-      // Group commits by repository and count them.
-      // Each item in the Search API response represents one commit, so we tally
-      // per repo to find the most actively committed-to repositories.
-      const repoMap: Record<string, { commits: number; description: string | null; url: string }> = {};
-      for (const item of data.items) {
-        const name = item.repository.full_name;
-        repoMap[name] = {
-          commits: (repoMap[name]?.commits ?? 0) + 1,
-          description: item.repository.description,
-          url: item.repository.html_url,
-        };
-      }
-
-      // Take the top 6 repos by commit count to keep the dashboard widget compact
-      // and to limit the number of subsequent language API calls (6 REST requests max).
-      const repos = Object.entries(repoMap)
-        .map(([name, { commits, description, url }]) => ({ name, commits, description, url }))
-        .sort((a, b) => b.commits - a.commits)
-        .slice(0, 6);
-
-      // Fetch language breakdown for each top repo using the REST API (5,000/hr limit).
-      // Promise.all runs these concurrently — 6 parallel requests, well within quota.
       const reposWithLanguages = await Promise.all(
         repos.map(async (repo) => {
           const languages = await fetchRepoLanguages(token, repo.name);

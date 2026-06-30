@@ -1,4 +1,5 @@
 import { dateDiffDays, toDateStr } from "@/lib/date-utils";
+import { GitHubRateLimitError } from "@/lib/github-fetch";
 
 export interface StreakResult {
   current: number;
@@ -132,3 +133,67 @@ export function calculateStreak(commitDates: Date[]): DateStreakResult {
   const result = calculateStreakFromDates(dateSet);
   return { currentStreak: result.current, longestStreak: result.longest };
 }
+
+/**
+ * Shared utility to fetch active commit dates for a GitHub user.
+ * Supports timezone conversion, lookback day counts, and optional authentication.
+ */
+export async function fetchActiveDates(
+  githubLogin: string,
+  token?: string,
+  days: number = 90,
+  timeZone: string = "UTC"
+): Promise<Set<string>> {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString().slice(0, 10);
+
+  const activeDates = new Set<string>();
+  let page = 1;
+  while (true) {
+    const headers: Record<string, string> = {
+      Accept: "application/vnd.github+json",
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const url = `https://api.github.com/search/commits?q=author:${githubLogin}+author-date:>=${sinceStr}&per_page=100&page=${page}&sort=author-date&order=desc`;
+    const searchRes = await fetch(url, {
+      headers,
+      cache: "no-store",
+    });
+
+    if (!searchRes.ok) {
+      if (searchRes.status === 403) {
+        throw new GitHubRateLimitError(null);
+      }
+      throw new Error("GitHub API error");
+    }
+
+    const data = (await searchRes.json()) as {
+      items: Array<{ commit: { author: { date: string } } }>;
+    };
+
+    for (const item of data.items) {
+      try {
+        const d = new Date(item.commit.author.date);
+        const tzDate = new Intl.DateTimeFormat("en-CA", {
+          timeZone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(d);
+        activeDates.add(tzDate);
+      } catch (e) {
+        activeDates.add(item.commit.author.date.slice(0, 10));
+      }
+    }
+
+    if (data.items.length < 100 || page >= 10) break;
+    page++;
+  }
+
+  return activeDates;
+}
+
