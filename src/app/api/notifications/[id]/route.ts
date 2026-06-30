@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -13,7 +13,7 @@ export async function PATCH(
 ) {
   const resolvedParams = await params;
 
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -65,7 +65,7 @@ export async function DELETE(
 ) {
   const resolvedParams = await params;
 
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

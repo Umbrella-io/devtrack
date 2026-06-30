@@ -1,4 +1,5 @@
-import { getServerSession, type Session } from "next-auth";
+import { type Session } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { fetchIssuesMetrics } from "@/lib/github";
@@ -17,7 +18,7 @@ import { isSupabaseAdminAvailable } from "@/lib/supabase-admin";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

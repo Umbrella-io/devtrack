@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -142,7 +142,7 @@ async function getRecentExport(userId: string): Promise<Date | null> {
  */
 export async function GET(req: NextRequest) {
   // --- Authentication --------------------------------------------------
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -303,7 +303,7 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   // --- Authentication --------------------------------------------------
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -1,6 +1,6 @@
 import WrappedExperience from "@/components/WrappedExperience";
 import { authOptions } from "@/lib/auth";
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { redirect } from "next/navigation";
 
 export const metadata = {
@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 export default async function WrappedPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
 
   if (!session || session.error === "TokenRevoked") {
     redirect("/");

@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
@@ -19,7 +19,7 @@ function todayStr(): string {
 // GET /api/streak/freeze
 // Returns whether the user currently has an unused freeze available.
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -60,7 +60,7 @@ async function getFreezeStatus(userId: string) {
 // POST /api/streak/freeze
 // Inserts a freeze for today. Fails if the user already holds an unused freeze.
 export async function POST() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -118,7 +118,7 @@ export async function POST() {
 // DELETE /api/streak/freeze
 // Removes today's active freeze for the authenticated user.
 export async function DELETE() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

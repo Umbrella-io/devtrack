@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const MAX_HISTORY_ROWS = 50;
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { resolveAppUser } from "@/lib/resolve-user";
 import { dispatchToAllWebhooks } from "@/lib/webhooks";
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.accessToken || !session.githubId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

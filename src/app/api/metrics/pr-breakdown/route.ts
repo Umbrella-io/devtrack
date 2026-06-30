@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { GitHubAuthError, githubAuthErrorResponse } from "@/lib/github-fetch";
@@ -12,7 +12,7 @@ const GITHUB_API = "https://api.github.com";
 interface PRItem { state: string; draft?: boolean; pull_request?: { merged_at: string | null; }; }
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.accessToken) return Response.json({ error: "Unauthorized" }, { status: 401 });
   if (session.error === "TokenRevoked") return githubAuthErrorResponse();
 

@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { extractValidRepoFromGoal, type ActivityGoal } from "@/lib/goals-sync-utils";
@@ -35,7 +35,7 @@ const GITHUB_API = "https://api.github.com";
 
 
 export async function POST() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.accessToken || !session.githubId || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

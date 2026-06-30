@@ -8,7 +8,7 @@ import ExportButton from "@/components/ExportButton";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { authOptions } from "@/lib/auth";
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { decode } from "next-auth/jwt";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
       session = null;
     }
   } else {
-    session = await getServerSession(authOptions);
+    session = await getServerAuthSession();
   }
   if (!session) redirect("/");
 

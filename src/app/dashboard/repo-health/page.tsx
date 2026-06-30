@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import RepoHealthExplorer from "@/components/repo-health/RepoHealthExplorer";
@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 export default async function RepoHealthPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session) redirect("/");
   return <RepoHealthExplorer />;
 }

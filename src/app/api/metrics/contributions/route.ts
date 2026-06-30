@@ -2,7 +2,7 @@ import {
   githubRateLimitResponse,
   throwIfGitHubRateLimited,
 } from "@/lib/github-rate-limit";
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import {
@@ -361,7 +361,7 @@ async function mergeGitLabContributions(
 
 export async function GET(req: NextRequest) {
   const timezone = req.nextUrl.searchParams.get("timezone") || "UTC";
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.accessToken || !session.githubLogin) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

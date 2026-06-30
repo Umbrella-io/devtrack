@@ -1,4 +1,4 @@
-import { getServerSession } from 'next-auth';
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getRoomsForUser } from '@/lib/supabase-rooms';
@@ -8,7 +8,7 @@ import Link from 'next/link';
 export const metadata = { title: 'Collaboration Rooms — DevTrack' };
 
 export default async function RoomsPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.user?.name) redirect('/api/auth/signin');
   const rooms = await getRoomsForUser(session.user.name);
   return (

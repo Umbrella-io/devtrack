@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import type { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import {
@@ -57,7 +57,7 @@ const PINNED_REPOS_QUERY = `
 `;
 
 export async function GET(req?: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
 
   if (!session?.accessToken) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

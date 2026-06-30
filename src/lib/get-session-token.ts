@@ -1,5 +1,5 @@
 import "server-only";
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { resolveAppUser } from "@/lib/resolve-user";
 import type { Session } from "next-auth";
@@ -10,7 +10,7 @@ export interface SessionWithToken {
 }
 
 export async function getSessionWithToken(): Promise<SessionWithToken | null> {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId || !session?.githubLogin) return null;
 
   const accessToken = session.accessToken;

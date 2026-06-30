@@ -1,4 +1,4 @@
-import { getServerSession } from 'next-auth';
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { getRoomById, getRoomMembers, getRoomMessages } from '@/lib/supabase-rooms';
@@ -10,7 +10,7 @@ interface Props {
 
 export default async function RoomPage({ params }: Props) {
   const { roomId } = await params;
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.user?.name) redirect('/api/auth/signin');
   const [room, members, messages] = await Promise.all([
     getRoomById(roomId, session.user.name),

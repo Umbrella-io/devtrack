@@ -1,5 +1,5 @@
 
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import LandingPage, { type RepoStats } from "@/components/landing/LandingPage";
@@ -128,7 +128,7 @@ async function fetchRepoStats(): Promise<RepoStats> {
 }
 
 export default async function HomePage() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (session) {
     redirect("/dashboard");
   }

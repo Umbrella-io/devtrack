@@ -20,7 +20,7 @@
  *    for forensic purposes.
  */
 
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { strToU8, zipSync } from "fflate";
 import { authOptions } from "@/lib/auth";
@@ -228,7 +228,7 @@ async function collectContributions(userId: string) {
 
 export async function GET(req: NextRequest) {
   // Authentication
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

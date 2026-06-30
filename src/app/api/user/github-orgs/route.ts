@@ -15,7 +15,7 @@
  * the endpoint degrades gracefully rather than failing.
  */
 
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { type NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -41,7 +41,7 @@ export interface OrgRecord {
 // ── GET ──────────────────────────────────────────────────────────────────────
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId || !session.accessToken) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -109,7 +109,7 @@ export async function GET() {
 // ── PATCH ─────────────────────────────────────────────────────────────────────
 
 export async function PATCH(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

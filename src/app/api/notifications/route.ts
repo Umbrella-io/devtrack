@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin, isSupabaseAdminAvailable } from "@/lib/supabase";
@@ -34,7 +34,7 @@ async function getUserId(githubId: string): Promise<string | null> {
 // GET — fetch 10 most recent notifications
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerAuthSession();
     if (!session?.githubId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -73,7 +73,7 @@ export async function GET() {
 // PATCH — mark all as read
 export async function PATCH() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerAuthSession();
     if (!session?.githubId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -110,7 +110,7 @@ export async function PATCH() {
 // DELETE — clear (delete) all notifications for the current user
 export async function DELETE() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerAuthSession();
     if (!session?.githubId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

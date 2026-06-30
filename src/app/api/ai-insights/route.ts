@@ -1,5 +1,9 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { NextResponse, NextRequest } from "next/server";
+import { GET as getContributions } from "@/app/api/metrics/contributions/route";
+import { GET as getPrs } from "@/app/api/metrics/prs/route";
+import { GET as getStreak } from "@/app/api/metrics/streak/route";
+import { GET as getRepos } from "@/app/api/metrics/repos/route";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
@@ -63,7 +67,7 @@ interface ReposApiResponse {
 }
 
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
 
   if (!session?.githubId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -145,20 +149,20 @@ export async function GET(request: Request) {
   }
 
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-  const cookie = request.headers.get("cookie") ?? "";
-  const headers = { Cookie: cookie };
+
+  // We construct mock NextRequests to directly invoke the route handlers.
+  // This avoids serverless loopback fetches that cause 504 timeouts.
+  const headers = new Headers(request.headers);
+  const reqContributions = new NextRequest(`${baseUrl}/api/metrics/contributions?days=90`, { headers });
+  const reqPrs = new NextRequest(`${baseUrl}/api/metrics/prs`, { headers });
+  const reqStreak = new NextRequest(`${baseUrl}/api/metrics/streak`, { headers });
+  const reqRepos = new NextRequest(`${baseUrl}/api/metrics/repos?days=90`, { headers });
 
   const [contributionsRes, prsRes, streakRes, reposRes] = await Promise.all([
-    fetch(`${baseUrl}/api/metrics/contributions?days=90`, {
-      headers,
-      cache: "no-store",
-    }),
-    fetch(`${baseUrl}/api/metrics/prs`, { headers, cache: "no-store" }),
-    fetch(`${baseUrl}/api/metrics/streak`, { headers, cache: "no-store" }),
-    fetch(`${baseUrl}/api/metrics/repos?days=90`, {
-      headers,
-      cache: "no-store",
-    }),
+    getContributions(reqContributions),
+    getPrs(reqPrs),
+    getStreak(reqStreak),
+    getRepos(reqRepos),
   ]);
 
   const [contributionsRaw, prsRaw, streakRaw, reposRaw]: [

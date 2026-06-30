@@ -26,7 +26,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerAuthSession } from "@/lib/server-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAppUser } from "@/lib/resolve-user";
@@ -151,7 +151,7 @@ function validateBody(body: unknown): ValidationResult | ValidationError {
 
 export async function POST(req: Request): Promise<NextResponse> {
   // 1. Authentication
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.githubId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
