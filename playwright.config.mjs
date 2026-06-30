@@ -12,7 +12,7 @@ export default defineConfig({
     timeout: 8_000,
   },
   fullyParallel: true,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 2,
   forbidOnly: Boolean(process.env.CI),
   timeout: process.env.CI ? 60_000 : 120_000,
   retries: process.env.CI ? 2 : 0,

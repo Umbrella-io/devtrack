@@ -165,14 +165,14 @@ test("[Goals E2E] creating a goal sends POST /api/goals with correct payload", a
   await openGoalsWidget(page);
 
   // Scroll the goal form into view and wait for it to be interactive.
-  const titleInput = page.getByLabel("Goal title");
+  const titleInput = page.getByLabel("Goal title", { exact: true }).first();
   await titleInput.scrollIntoViewIfNeeded();
   await titleInput.waitFor({ state: "visible", timeout: 10_000 });
 
-  await titleInput.fill("Ship one PR");
-  await page.getByLabel("Target").fill("1");
-  await page.getByLabel("Unit", { exact: true }).selectOption("prs");
-  await page.getByRole("button", { name: "Create goal" }).click();
+  await page.getByLabel("Goal title", { exact: true }).first().fill("Ship one PR");
+  await page.getByLabel("Target", { exact: true }).first().fill("1");
+  await page.getByLabel("Unit", { exact: true }).first().selectOption("prs");
+  await page.getByRole("button", { name: "Create goal" }).first().click();
 
   await expect.poll(() => goalPosts.filter(Boolean), { timeout: 10_000 }).toHaveLength(1);
   expect(goalPosts.find(Boolean)).toMatchObject({ title: "Ship one PR", target: 1, unit: "prs" });
@@ -231,15 +231,15 @@ test("[Goals E2E] newly created goal appears in the goals list", async ({
   await expect(page.getByText("Existing Goal")).toBeVisible({ timeout: 10_000 });
 
   // Scroll goal form into view and wait for it to be interactive.
-  const titleInput = page.getByLabel("Goal title");
+  const titleInput = page.getByLabel("Goal title", { exact: true });
   await titleInput.scrollIntoViewIfNeeded();
   await titleInput.waitFor({ state: "visible", timeout: 10_000 });
 
   // Create a new goal.
-  await titleInput.fill("Ship five PRs");
-  await page.getByLabel("Target").fill("5");
-  await page.getByLabel("Unit", { exact: true }).selectOption("prs");
-  await page.getByRole("button", { name: "Create goal" }).click();
+  await titleInput.first().fill("Ship five PRs");
+  await page.getByLabel("Target", { exact: true }).first().fill("5");
+  await page.getByLabel("Unit", { exact: true }).first().selectOption("prs");
+  await page.getByRole("button", { name: "Create goal" }).first().click();
 
   // The new goal should appear without a page reload.
   await expect(page.getByText("Ship five PRs")).toBeVisible({ timeout: 10_000 });

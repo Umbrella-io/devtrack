@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useAccount } from "@/components/AccountContext";
+import WidgetSkeleton, { SkeletonBlock } from "./WidgetSkeleton";
 
 interface PRBreakdown {
   draft: number;
@@ -12,10 +13,10 @@ interface PRBreakdown {
 }
 
 const SLICES: { key: keyof PRBreakdown; label: string; color: string }[] = [
-  { key: "open",   label: "Open",   color: "var(--accent)" },
+  { key: "open", label: "Open", color: "var(--accent)" },
   { key: "merged", label: "Merged", color: "var(--success)" },
   { key: "closed", label: "Closed", color: "var(--warning)" },
-  { key: "draft",  label: "Draft",  color: "var(--muted-foreground)" },
+  { key: "draft", label: "Draft", color: "var(--muted-foreground)" },
 ];
 
 export default function PRBreakdownChart() {
@@ -35,15 +36,18 @@ export default function PRBreakdownChart() {
     setLoading(true);
     setError(null);
 
-    const url = selectedAccount !== null
-      ? `/api/metrics/pr-breakdown?accountId=${encodeURIComponent(selectedAccount)}`
-      : "/api/metrics/pr-breakdown";
+    const url =
+      selectedAccount !== null
+        ? `/api/metrics/pr-breakdown?accountId=${encodeURIComponent(selectedAccount)}`
+        : "/api/metrics/pr-breakdown";
 
     fetch(url)
       .then((r) => r.json())
       .then((d: PRBreakdown) => setBreakdown(d))
       .catch(() =>
-        setError("We couldn't load your PR breakdown right now. Please try again in a moment.")
+        setError(
+          "We couldn't load your PR breakdown right now. Please try again in a moment."
+        )
       )
       .finally(() => setLoading(false));
   }, [selectedAccount]);
@@ -54,26 +58,27 @@ export default function PRBreakdownChart() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-        <div role="status" aria-live="polite" aria-busy="true">
-          <span className="sr-only">Loading PR breakdown</span>
-          <div
-            aria-hidden="true"
-            className="mb-4 h-5 w-40 rounded skeleton-shimmer"
-          />
-          <div
-            aria-hidden="true"
-            className="h-[200px] rounded skeleton-shimmer"
-          />
+      <WidgetSkeleton title="PR Breakdown" className="transition-all duration-300">
+        <div className="mb-4">
+          <SkeletonBlock className="h-6 w-40" />
         </div>
-      </div>
+        <SkeletonBlock className="h-[200px] w-full" />
+        <div className="mt-3 flex justify-center gap-4">
+          <SkeletonBlock className="h-4 w-16" />
+          <SkeletonBlock className="h-4 w-16" />
+          <SkeletonBlock className="h-4 w-16" />
+          <SkeletonBlock className="h-4 w-16" />
+        </div>
+      </WidgetSkeleton>
     );
   }
 
   if (error) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Breakdown</h2>
+        <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
+          PR Breakdown
+        </h2>
         <div className="rounded-lg border border-[var(--destructive)]/20 bg-[var(--destructive)]/10 p-4 text-sm text-[var(--destructive)]">
           <p>{error}</p>
           <button
@@ -88,16 +93,22 @@ export default function PRBreakdownChart() {
     );
   }
 
-  const total = breakdown ? SLICES.reduce((sum, s) => sum + (breakdown[s.key] ?? 0), 0) : 0;
+  const total = breakdown
+    ? SLICES.reduce((sum, s) => sum + (breakdown[s.key] ?? 0), 0)
+    : 0;
   const chartData = breakdown
-    ? SLICES.map((s) => ({ name: s.label, value: breakdown[s.key] ?? 0, color: s.color })).filter(
-        (d) => d.value > 0
-      )
+    ? SLICES.map((s) => ({
+        name: s.label,
+        value: breakdown[s.key] ?? 0,
+        color: s.color,
+      })).filter((d) => d.value > 0)
     : [];
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">PR Breakdown</h2>
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 fade-in-up">
+      <h2 className="mb-4 text-lg font-semibold text-[var(--card-foreground)]">
+        PR Breakdown
+      </h2>
       {total === 0 ? (
         <p className="flex h-[200px] items-center justify-center text-sm text-[var(--muted-foreground)]">
           No pull requests found.
@@ -119,20 +130,20 @@ export default function PRBreakdownChart() {
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
-               <Tooltip
-  contentStyle={{
-    backgroundColor: getCSSVariable('--tooltip'),
-    border: `1px solid ${getCSSVariable('--border')}`,
-    borderRadius: "10px",
-    color: getCSSVariable('--tooltip-foreground'),
-  }}
-  itemStyle={{
-    color: getCSSVariable('--tooltip-foreground'),
-  }}
-  labelStyle={{
-    color: getCSSVariable('--tooltip-foreground'),
-  }}
-/>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: getCSSVariable("--tooltip"),
+                  border: `1px solid ${getCSSVariable("--border")}`,
+                  borderRadius: "10px",
+                  color: getCSSVariable("--tooltip-foreground"),
+                }}
+                itemStyle={{
+                  color: getCSSVariable("--tooltip-foreground"),
+                }}
+                labelStyle={{
+                  color: getCSSVariable("--tooltip-foreground"),
+                }}
+              />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-3 flex flex-wrap justify-center gap-4">
@@ -141,7 +152,10 @@ export default function PRBreakdownChart() {
                 key={s.key}
                 className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]"
               >
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: s.color }}
+                />
                 {s.label}: {breakdown?.[s.key] ?? 0}
               </div>
             ))}
