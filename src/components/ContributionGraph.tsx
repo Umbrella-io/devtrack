@@ -129,10 +129,11 @@ function mergeContributionSources(
   return merged;
 }
 
-export default function ContributionGraph() {
+export default function ContributionGraph({ isLoading }: { isLoading?: boolean } = {}) {
   const { selectedAccount } = useAccount();
   const [data, setData] = useState<DayData[]>([]);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = isLoading !== undefined ? isLoading : loading;
   const [days, setDays] = useState<number>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -486,7 +487,7 @@ export default function ContributionGraph() {
           {compareMode && compareLoading && (
             <p className="text-xs text-[var(--muted-foreground)] mt-1">Loading friend data...</p>
           )}
-          {!compareMode && !loading && !error && (
+          {!compareMode && !showSkeleton && !error && (
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">
               {totalCommits} commit{totalCommits === 1 ? "" : "s"}
             </p>
@@ -643,17 +644,22 @@ export default function ContributionGraph() {
         </div>
       </div>
 
-      {loading ? (
+      {showSkeleton ? (
         <div
           role="status"
           aria-live="polite"
           aria-busy="true"
+          className="flex h-[220px] items-end justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4"
         >
           <span className="sr-only">Loading contribution graph</span>
-          <div
-            aria-hidden="true"
-            className="h-[220px] rounded border border-[var(--border)] bg-[var(--background)] animate-pulse"
-          />
+          {[2, 4, 3, 6, 5, 8, 6, 4, 7, 5, 3, 6, 4, 2, 5, 3].map((h, i) => (
+            <div
+              key={i}
+              aria-hidden="true"
+              className="w-full rounded-sm bg-muted animate-pulse"
+              style={{ height: `${(h / 8) * 100}%` }}
+            />
+          ))}
         </div>
       ) : error ? (
         <div className="flex h-[220px] items-center rounded-lg border border-[var(--border)] bg-[var(--background)] px-4">
