@@ -1,7 +1,6 @@
 import { getSessionWithToken } from "@/lib/get-session-token";
 import { NextRequest } from "next/server";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
-import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
 import { fetchUserRepos } from "@/lib/github";
 import { ExplorerRepoCardData } from "@/lib/repo-analytics-types";
 
@@ -28,15 +27,7 @@ export async function GET(req: NextRequest) {
     async () => {
       const repos = await fetchUserRepos(session.accessToken);
 
-  try {
-    const data = await withMetricsCache({ bypass, key, ttlSeconds: 30 * 60 }, async () => {
-      const reposRes = await fetch(`${GITHUB_API}/user/repos?sort=pushed&per_page=100`, {
-        headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/vnd.github+json" },
-        cache: "no-store",
-      });
-
-      if (!reposRes.ok) throw new Error("API error fetching repos");
-      const repos = await reposRes.json();
+ 
 
       const since = new Date();
       since.setDate(since.getDate() - 30);
