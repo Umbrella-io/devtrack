@@ -1,13 +1,20 @@
+packages:
+  - '.'
+overrides:
+  serialize-javascript: ">=7.0.3"
+  postcss: ">=8.4.31"
+  uuid: ">=9.0.1"
+  js-yaml: "4.1.0"
 allowBuilds:
-  '@parcel/watcher': set this to true or false
-  '@scarf/scarf': set this to true or false
-  '@sentry/cli': set this to true or false
-  '@swc/core': set this to true or false
-  '@tree-sitter-grammars/tree-sitter-yaml': set this to true or false
-  core-js: set this to true or false
-  core-js-pure: set this to true or false
-  esbuild: set this to true or false
-  sharp: set this to true or false
-  tree-sitter: set this to true or false
-  tree-sitter-json: set this to true or false
-  unrs-resolver: set this to true or false
+  '@parcel/watcher': true
+  '@scarf/scarf': true
+  '@sentry/cli': true
+  '@swc/core': true
+  '@tree-sitter-grammars/tree-sitter-yaml': true
+  core-js: true
+  core-js-pure: true
+  esbuild: true
+  sharp: true
+  tree-sitter: true
+  tree-sitter-json: true
+  unrs-resolver: true
