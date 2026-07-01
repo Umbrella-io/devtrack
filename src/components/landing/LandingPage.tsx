@@ -896,7 +896,7 @@ function StatsSection({ stats }: { stats: RepoStats }) {
     { value: stats.stars,           label: 'GITHUB STARS' },
   ];
   return (
-    <section id="features" style={{
+    <section id="stats" style={{
       padding: '64px clamp(20px,4vw,48px)',
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))',
@@ -915,26 +915,40 @@ function StatsSection({ stats }: { stats: RepoStats }) {
 /* ═══════════════════════════════════════════════════════════
    FEATURES LIST
    ═══════════════════════════════════════════════════════════ */
-const FEATURES = [
+const FEATURES: Array<{
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+}> = [
   {
     icon: Flame,
     title: 'Commit streaks tracker',
-    desc: 'Track your daily GitHub activity.',
+    desc: 'Track daily GitHub activity, active days, and consistency patterns so contributors can keep momentum visible.',
   },
   {
     icon: GitPullRequest,
     title: 'PR analytics',
-    desc: 'Monitor review velocity and merge rates.',
+    desc: 'Monitor merged pull requests, review velocity, and open contribution flow without jumping across GitHub tabs.',
   },
   {
     icon: Goal,
     title: 'Weekly goals',
-    desc: 'Set commit and PR targets and stay accountable.',
+    desc: 'Set commit and PR targets, then track progress automatically as GitHub activity lands.',
+  },
+  {
+    icon: Share2,
+    title: 'Shareable profile',
+    desc: 'Turn developer activity into a portfolio-ready public profile for open-source programs and collaborators.',
   },
   {
     icon: FolderGit2,
-    title: 'Top repositories',
-    desc: 'See where you contribute the most.',
+    title: 'Repository insights',
+    desc: 'See top repositories, contribution density, and project activity from one focused dashboard.',
+  },
+  {
+    icon: Brain,
+    title: 'AI weekly insights',
+    desc: 'Summarize weekly activity into readable takeaways so developers know what improved and what needs focus.',
   },
 ];
 
@@ -964,6 +978,28 @@ const WHY_DEVTRACK = [
     title: "Self-Hosting",
     desc: "Run DevTrack on your own infrastructure."
   }
+];
+
+const HOW_IT_WORKS: Array<{
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+}> = [
+  {
+    icon: LogIn,
+    title: 'Connect GitHub',
+    desc: 'Sign in with GitHub and let DevTrack read your contribution activity securely.',
+  },
+  {
+    icon: LayoutDashboard,
+    title: 'View metrics',
+    desc: 'Explore streaks, pull requests, goals, repositories, heatmaps, and progress signals in one dashboard.',
+  },
+  {
+    icon: Target,
+    title: 'Set goals',
+    desc: 'Create weekly coding targets and track progress as your GitHub work moves forward.',
+  },
 ];
 
 function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
@@ -1014,6 +1050,316 @@ function FeatureCard({ f, index }: { f: typeof FEATURES[0]; index: number }) {
         {f.desc}
       </p>
     </div>
+  );
+}
+
+function FeatureShowcaseSection() {
+  return (
+    <section
+      id="features"
+      aria-labelledby="features-heading"
+      style={{
+        padding: '88px clamp(20px,4vw,48px)',
+        borderTop: `1px solid ${BORDER}`,
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
+      <div style={{ maxWidth: 1180, margin: '0 auto' }}>
+        <div style={{ marginBottom: 34 }}>
+          <div
+            style={{
+              fontFamily: MONO,
+              fontSize: 10,
+              color: A,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              marginBottom: 18,
+            }}
+          >
+            FEATURE SHOWCASE
+          </div>
+
+          <h2
+            id="features-heading"
+            style={{
+              fontFamily: DISP,
+              fontWeight: 800,
+              fontSize: 'clamp(32px,5vw,52px)',
+              color: TEXT,
+              lineHeight: 1.05,
+              letterSpacing: '-0.03em',
+              margin: '0 0 18px',
+              maxWidth: 780,
+            }}
+          >
+            Everything contributors need to understand GitHub momentum.
+          </h2>
+
+          <p
+            style={{
+              color: MUTED,
+              fontSize: 16,
+              lineHeight: 1.75,
+              margin: 0,
+              maxWidth: 760,
+            }}
+          >
+            DevTrack brings streaks, pull requests, coding goals, repositories, profile sharing,
+            and AI summaries into one landing experience so new users understand the dashboard
+            before signing in.
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: 18,
+          }}
+        >
+          {FEATURES.map((feature, index) => (
+            <FeatureCard key={feature.title} f={feature} index={index} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HowItWorksSection() {
+  return (
+    <section
+      id="how-it-works"
+      aria-labelledby="how-it-works-heading"
+      style={{
+        padding: '88px clamp(20px,4vw,48px)',
+        borderTop: `1px solid ${BORDER}`,
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
+      <div style={{ maxWidth: 1180, margin: '0 auto' }}>
+        <div style={{ marginBottom: 34 }}>
+          <div
+            style={{
+              fontFamily: MONO,
+              fontSize: 10,
+              color: A,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              marginBottom: 18,
+            }}
+          >
+            HOW IT WORKS
+          </div>
+
+          <h2
+            id="how-it-works-heading"
+            style={{
+              fontFamily: DISP,
+              fontWeight: 800,
+              fontSize: 'clamp(32px,5vw,52px)',
+              color: TEXT,
+              lineHeight: 1.05,
+              letterSpacing: '-0.03em',
+              margin: '0 0 18px',
+              maxWidth: 780,
+            }}
+          >
+            Connect GitHub. View metrics. Set goals.
+          </h2>
+
+          <p
+            style={{
+              color: MUTED,
+              fontSize: 16,
+              lineHeight: 1.75,
+              margin: 0,
+              maxWidth: 760,
+            }}
+          >
+            The landing page now explains the product journey clearly so visitors can understand
+            what happens after signing in.
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: 18,
+          }}
+        >
+          {HOW_IT_WORKS.map((step, index) => {
+            const Icon = step.icon;
+
+            return (
+              <article
+                key={step.title}
+                style={{
+                  padding: '28px 24px',
+                  background: 'rgba(10, 10, 12, 0.7)',
+                  border: '1px solid #1e293b',
+                  borderRadius: 18,
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.35)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 18,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(129,140,248,0.12)',
+                      border: '1px solid rgba(129,140,248,0.28)',
+                      color: A,
+                    }}
+                  >
+                    <Icon size={22} strokeWidth={1.8} aria-hidden="true" />
+                  </div>
+
+                  <span
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: 13,
+                      color: MUTED,
+                    }}
+                  >
+                    0{index + 1}
+                  </span>
+                </div>
+
+                <h3
+                  style={{
+                    fontFamily: DISP,
+                    fontWeight: 700,
+                    fontSize: 20,
+                    color: TEXT,
+                    margin: '0 0 10px',
+                  }}
+                >
+                  {step.title}
+                </h3>
+
+                <p
+                  style={{
+                    color: MUTED,
+                    fontSize: 14,
+                    lineHeight: 1.7,
+                    margin: 0,
+                  }}
+                >
+                  {step.desc}
+                </p>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LandingCtaSection() {
+  return (
+    <section
+      aria-labelledby="landing-cta-heading"
+      style={{
+        padding: '88px clamp(20px,4vw,48px)',
+        borderTop: `1px solid ${BORDER}`,
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 980,
+          margin: '0 auto',
+          textAlign: 'center',
+          padding: '48px clamp(22px,5vw,64px)',
+          borderRadius: 28,
+          border: '1px solid rgba(129,140,248,0.28)',
+          background:
+            'radial-gradient(circle at top, rgba(129,140,248,0.18), rgba(10,10,12,0.78))',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.35)',
+        }}
+      >
+        <div
+          style={{
+            fontFamily: MONO,
+            fontSize: 10,
+            color: A,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            marginBottom: 18,
+          }}
+        >
+          START TRACKING
+        </div>
+
+        <h2
+          id="landing-cta-heading"
+          style={{
+            fontFamily: DISP,
+            fontWeight: 800,
+            fontSize: 'clamp(32px,5vw,54px)',
+            color: TEXT,
+            lineHeight: 1.05,
+            letterSpacing: '-0.03em',
+            margin: '0 0 18px',
+          }}
+        >
+          Build a clearer story from your GitHub activity.
+        </h2>
+
+        <p
+          style={{
+            color: MUTED,
+            fontSize: 16,
+            lineHeight: 1.75,
+            margin: '0 auto 30px',
+            maxWidth: 660,
+          }}
+        >
+          Sign in, view your contribution dashboard, set goals, and make your developer progress
+          easier to understand.
+        </p>
+
+        <div
+          style={{
+            display: 'flex',
+            gap: 14,
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+          }}
+        >
+          <Link
+            href="/api/auth/signin/github?callbackUrl=/dashboard"
+            prefetch={false}
+            className="lnd-cta-primary"
+          >
+            Sign in with GitHub
+          </Link>
+
+          <Link href="/dashboard" className="lnd-cta-secondary">
+            View Dashboard
+          </Link>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1161,69 +1507,6 @@ const STEPS = [
  },
 ];
 
-function HowItWorksSection() {
-  const [ref, vis] = useScrollReveal(0.2);
-  return (
-    <section
-      id="how-it-works"
-      ref={ref}
-      style={{
-        padding: '80px clamp(20px,4vw,48px)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-        opacity: vis ? 1 : 0,
-        transform: vis ? 'translateY(0)' : 'translateY(20px)',
-        transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)',
-        borderTop: '1px solid #1e293b',
-        position: 'relative',
-        overflow: 'hidden'
-      }}
-    >
-      <div 
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-64 bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none"
-      />
-      <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 50, textAlign: 'center', background: 'linear-gradient(90deg, #2dd4bf, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', width: '100%', position: 'relative' }}>
-        HOW IT WORKS
-      </div>
-
-      <div style={{
-        display: 'flex', flexWrap: 'wrap', gap: 32, justifyContent: 'center', maxWidth: 1100, width: '100%', marginBottom: 50, position: 'relative'
-      }}>
-        {STEPS.map((step, i) => {
-          const Icon = step.icon;
-          return (
-          <Link key={i} href={step.href} className="group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/15" style={{ flex: '1 1 300px', background: 'rgba(10, 10, 12, 0.7)', border: '1px solid #1e293b', borderRadius: 16, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', cursor: 'default' }}>
-            <div className="group-hover:border-indigo-500/40 transition-colors duration-300" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 12, overflow: 'hidden', marginBottom: 24, border: '1px solid #1e293b', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(129,140,248,0.05)' }}>
-              <Icon size={64} strokeWidth={1} color="#818cf8" className="group-hover:scale-110 transition-transform duration-700 ease-in-out opacity-90" />
-            </div>
-            <div className="group-hover:bg-indigo-500/20 group-hover:scale-110 transition-all duration-300 group-hover:border-indigo-500/40" style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.2)', color: A, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontFamily: MONO, fontSize: 18, fontWeight: 700 }}>
-              {step.num}
-            </div>
-            <h3 style={{ fontFamily: DISP, fontWeight: 700, fontSize: 20, color: TEXT, margin: '0 0 12px' }}>{step.title}</h3>
-            <p style={{ fontSize: 15, color: MUTED, margin: 0, lineHeight: 1.6 }}>{step.desc}</p>
-          </Link>
-          );
-        })}
-      </div>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', position: 'relative' }}>
-        <Link href="/api/auth/signin/github?callbackUrl=/dashboard" prefetch={false} className="lnd-cta-primary hover:scale-105 hover:shadow-indigo-500/30 transition-all duration-300">
-          Sign in with GitHub
-        </Link>
-        <a
-          href="https://github.com/Priyanshu-byte-coder/devtrack"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="lnd-cta-secondary"
-        >
-          ★ Star on GitHub
-        </a>
-      </div>
-
-      <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--foreground)', marginTop: 20, letterSpacing: '0.06em' }}>
-        MIT License · Self-hostable · Free forever · Zero vendor lock-in
-      </div>
-    </section>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════
    OPEN SOURCE / CONTRIBUTE SECTION
@@ -1436,10 +1719,12 @@ export default function LandingPage({ repoStats }: { repoStats: RepoStats }) {
       <AboutSection />
       <HeatmapSection />
       <StatsSection stats={repoStats} />
+      <FeatureShowcaseSection />
+      <HowItWorksSection />
+      <LandingCtaSection />
       <FeaturesSection />
       <WhyDevTrackSection />
       <ContributeSection stats={repoStats} />
-      <HowItWorksSection />
       <LandingFooter />
     </div>
   );
