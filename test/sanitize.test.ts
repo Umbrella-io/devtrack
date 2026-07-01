@@ -102,3 +102,4 @@ describe("validateTextInput", () => {
     });
   });
 });
+// Issue: #2964
