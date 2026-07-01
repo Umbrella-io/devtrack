@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { ReactNode } from "react";
+import BackToTopButton from "@/components/BackToTopButton";
 
 async function hasActiveSession(fetcher: typeof window.fetch) {
   try {
@@ -122,6 +123,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <>
       {showTokenBanner && <TokenRevokedBanner onReauthenticate={handleReauthenticate} />}
       {children}
+      <BackToTopButton />
     </>
   );
 }

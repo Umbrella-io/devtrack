@@ -28,7 +28,14 @@ export async function GET(req: NextRequest) {
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
   if (accountId === "combined") {
-    return await getCombinedIssuesMetrics(session, req);
+    return await getCombinedIssuesMetrics(
+      {
+        accessToken: session.accessToken,
+        githubId: session.githubId,
+        githubLogin: session.githubLogin,
+      },
+      req,
+    );
   }
   let orgName: string | null = null;
   let targetAccountId: string | null = accountId;

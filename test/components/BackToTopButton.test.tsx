@@ -7,37 +7,38 @@ import BackToTopButton from "../../src/components/BackToTopButton";
 describe("BackToTopButton", () => {
   beforeEach(() => {
     vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    Object.defineProperty(window, "scrollY", { value: 0, writable: true, configurable: true });
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("should not render the button initially when scroll Y is 0", () => {
+  it("does not render when scroll Y is 0", () => {
     render(<BackToTopButton />);
     expect(screen.queryByRole("button", { name: "Back to top" })).not.toBeInTheDocument();
   });
 
-  it("should render the button when scroll Y is greater than 300", async () => {
-    // Mock window scrollY and document height to trigger visibility
-    Object.defineProperty(window, "scrollY", { value: 400, writable: true });
-    
+  it("does not render when scroll Y is exactly 400px", () => {
+    Object.defineProperty(window, "scrollY", { value: 400, writable: true, configurable: true });
     render(<BackToTopButton />);
-    
-    // Simulate scroll event
     fireEvent.scroll(window);
-    
-    const button = screen.getByRole("button", { name: "Back to top" });
-    expect(button).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Back to top" })).not.toBeInTheDocument();
   });
 
-  it("should call window.scrollTo when clicked", () => {
-    Object.defineProperty(window, "scrollY", { value: 400, writable: true });
+  it("renders when scroll Y is greater than 400px", () => {
+    Object.defineProperty(window, "scrollY", { value: 401, writable: true, configurable: true });
+    render(<BackToTopButton />);
+    fireEvent.scroll(window);
+    expect(screen.getByRole("button", { name: "Back to top" })).toBeInTheDocument();
+  });
+
+  it("calls window.scrollTo with smooth behavior when clicked", () => {
+    Object.defineProperty(window, "scrollY", { value: 500, writable: true, configurable: true });
     render(<BackToTopButton />);
     fireEvent.scroll(window);
 
-    const button = screen.getByRole("button", { name: "Back to top" });
-    fireEvent.click(button);
+    fireEvent.click(screen.getByRole("button", { name: "Back to top" }));
 
     expect(window.scrollTo).toHaveBeenCalledWith({
       top: 0,
@@ -45,18 +46,16 @@ describe("BackToTopButton", () => {
     });
   });
 
-  it("should call window.scrollTo when Enter or Space is pressed on the button", () => {
-    Object.defineProperty(window, "scrollY", { value: 400, writable: true });
+  it("calls window.scrollTo when Enter or Space is pressed", () => {
+    Object.defineProperty(window, "scrollY", { value: 500, writable: true, configurable: true });
     render(<BackToTopButton />);
     fireEvent.scroll(window);
 
     const button = screen.getByRole("button", { name: "Back to top" });
-    
-    // Test Enter key
+
     fireEvent.keyDown(button, { key: "Enter" });
     expect(window.scrollTo).toHaveBeenCalledTimes(1);
 
-    // Test Space key
     fireEvent.keyDown(button, { key: " " });
     expect(window.scrollTo).toHaveBeenCalledTimes(2);
   });

@@ -60,10 +60,11 @@ const RATE_LIMIT_CONFIG = {
   AUTH_LIMIT: isTest ? 1000 : AUTH_LIMIT,
 } as const;
 
-// Warn in production if Upstash Redis is not configured (rates reset on cold starts)
+const memoryBuckets = new Map<string, number[]>();
+
 if (process.env.NODE_ENV === "production" && !process.env.UPSTASH_REDIS_REST_URL) {
   console.warn(
-    "UPSTASH_REDIS_REST_URL is not set – rate limits will use in-memory storage and reset on cold starts."
+    "UPSTASH_REDIS_REST_URL is not configured in production; falling back to in-memory rate limiting (resets on cold starts)."
   );
 }
 
