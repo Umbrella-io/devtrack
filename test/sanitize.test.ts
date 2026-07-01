@@ -10,6 +10,8 @@ describe("stripHtml", () => {
     expect(stripHtml("<b>bold</b>")).toBe("bold");
   });
 
+  it("strips entity-encoded tags (prevents XSS bypass)", () => {
+    expect(stripHtml("&lt;script&gt;")).toBe("");
   it("strips nested tags", () => {
     expect(stripHtml("<div><p>text</p></div>")).toBe("text");
   });
