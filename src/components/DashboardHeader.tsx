@@ -18,11 +18,7 @@ import SignOutButton from "@/components/SignOutButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
 import KeyboardShortcuts from "@/components/KeyboardShortcuts";
-import OnboardingTour from "@/components/OnboardingTour";
-import { Moon, Sun } from "lucide-react";
-import { toast } from "sonner";
-import { useRealtimeSync } from "@/hooks/useRealtimeSync";
-import { Button, buttonVariants } from "@/components/ui/button";
+import SyncButton from "@/components/SyncButton";
 
 type DashboardSyncContextValue = {
   lastSynced: Date | null;
@@ -215,13 +211,22 @@ export default function DashboardHeader() {
   useEffect(() => {
     const computeCurrentGreeting = () => {
       const currentHour = new Date().getHours();
-      if (currentHour >= 5 && currentHour < 12) return "Good morning ☀️";
-      if (currentHour >= 12 && currentHour < 17) return "Good afternoon 🌤️";
-      if (currentHour >= 17 && currentHour < 22) return "Good evening 🌙";
-      return "Burning the midnight oil 🦉";
+
+      if (currentHour >= 5 && currentHour < 12) {
+        return "Good morning \u2600\ufe0f";
+      } else if (currentHour >= 12 && currentHour < 17) {
+        return "Good afternoon \uD83C\uDF24\uFE0F";
+      } else if (currentHour >= 17 && currentHour < 22) {
+        return "Good evening \uD83C\uDF19";
+      } else {
+        return "Burning the midnight oil \uD83E\uDD89";
+      }
     };
     setGreeting(computeCurrentGreeting());
   }, []);
+
+  const { lastSynced } = useDashboardSync();
+  const [now, setNow] = useState(() => Date.now());
 
   // Extracted to useCallback so useRealtimeSync can call it as a stable reference.
   const loadSettings = useCallback(async () => {
@@ -298,7 +303,9 @@ export default function DashboardHeader() {
   const [now, setNow] = useState(() => Date.now());
 
   // Extract a fallback username parameter from active session data strings
-  const displayName = session?.user?.name || session?.githubLogin || "Developer";
+  const displayName =
+    session?.user?.name || session?.githubLogin || "Developer";
+
   useEffect(() => {
     if (!lastSynced) return;
 
@@ -358,11 +365,16 @@ export default function DashboardHeader() {
             <h1 className="mt-2 bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--accent)] bg-clip-text text-xl font-extrabold text-transparent sm:text-3xl md:text-4xl">
               Dashboard
             </h1>
-            <p
-              className="mt-2 max-w-xl text-sm leading-6 text-[var(--muted-foreground)]"
-              style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)", letterSpacing: "0.06em" }}
-            >
-              coding activity at a glance
+          </div>
+
+          <p className="mt-2 text-sm md:text-base text-[var(--muted-foreground)]">
+            Your coding activity at a glance 🚀
+          </p>
+          {minutesAgo !== null && (
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+              {minutesAgo <= 0
+                ? "Synced just now"
+                : `Synced ${minutesAgo} min ago`}
             </p>
             {minutesAgo !== null && (
               <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
@@ -392,7 +404,10 @@ export default function DashboardHeader() {
               <ShareProfileButton githubLogin={session.githubLogin} />
             )}
 
-            <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
+            {/* Sync Data button — issue #2406 */}
+            <SyncButton />
+
+            <div className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card-muted)]/50 p-2 shadow-sm backdrop-blur-sm">
               <div className="transition-transform duration-200 hover:scale-[1.05]">
                 <KeyboardShortcuts />
               </div>
