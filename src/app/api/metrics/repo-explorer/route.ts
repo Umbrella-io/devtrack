@@ -1,7 +1,7 @@
 import { getSessionWithToken } from "@/lib/get-session-token";
 import { NextRequest } from "next/server";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
-import { ExplorerRepoCardData } from "@/lib/repo-analytics-types";
+import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
 
 export const dynamic = "force-dynamic";
 const GITHUB_API = "https://api.github.com";

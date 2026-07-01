@@ -28,8 +28,13 @@ export async function GET(req: NextRequest) {
   const accountId = req.nextUrl.searchParams.get("accountId");
   const bypass = isMetricsCacheBypassed(req);
   if (accountId === "combined") {
-    return await getCombinedIssuesMetrics(session, req);
+  if (!session || !session.accessToken) {
+    return Response.json({ error: "Unauthorized: Missing access token" }, { status: 401 });
   }
+  
+  // Force TypeScript to treat this specific session as containing a guaranteed string token
+  return await getCombinedIssuesMetrics(session as any, req);
+}
   let orgName: string | null = null;
   let targetAccountId: string | null = accountId;
 

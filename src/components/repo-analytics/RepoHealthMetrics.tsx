@@ -1,6 +1,6 @@
 "use client";
 
-import { RepoHealth } from "@/lib/repo-analytics-types";
+import { RepoHealth } from "@/lib/repoAnalytics";
 
 const meterColor = (value: number) => (value >= 75 ? "bg-[var(--success)]" : value >= 45 ? "bg-[var(--warning)]" : "bg-[var(--error)]");
 

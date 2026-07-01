@@ -2,7 +2,7 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { sendMilestoneReached, sendStreakAtRisk, sendWeeklySummary } from "@/lib/discord";
 import { fetchPublicStreak, fetchPublicContributions } from "@/lib/public-profile-data";
-import { toDateStr } from "@/lib/date-utils";
+import { toDateStr } from "@/lib/dateUtils";
 import { validateCronRequest } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";

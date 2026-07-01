@@ -21,14 +21,9 @@ async function fetchActiveDates(
   githubLogin: string,
   token: string,
   cacheContext: { bypass: boolean; userId: string },
-  timeZone = "UTC"
+  timeZone = "UTC",
 ): Promise<Set<string>> {
-  const key = metricsCacheKey(cacheContext.userId, "streak", {
-    githubLogin,
-    // Timezone affects active-date bucketing, so it must be part
-    // of the cache key to prevent stale results across timezones.
-    timeZone,
-  });
+  const key = metricsCacheKey(cacheContext.userId, "streak", { githubLogin });
 
   const dates = await withMetricsCache(
     {
@@ -53,7 +48,7 @@ async function fetchActiveDates(
               Accept: "application/vnd.github+json",
             },
             cache: "no-store",
-          }
+          },
         );
 
         if (!searchRes.ok) {
@@ -85,7 +80,7 @@ async function fetchActiveDates(
       }
 
       return Array.from(activeDates);
-    }
+    },
   );
 
   return new Set(dates);
@@ -94,16 +89,17 @@ async function fetchActiveDates(
 async function getConsistencyScoreForDates(
   activeDates: Set<string>,
   timeZone: string,
-  cacheContext: { bypass: boolean; userId: string; accountKey: string }
+  cacheContext: { bypass: boolean; userId: string; accountKey: string },
 ) {
-  const key = `metrics:${cacheContext.userId}:consistency-score:${cacheContext.accountKey}:${timeZone}`;
+  const key = `metrics:${cacheContext.userId}:consistency-score:${cacheContext.accountKey}`;
+
   return withMetricsCache(
     {
       bypass: cacheContext.bypass,
       key,
       ttlSeconds: METRICS_CACHE_TTL_SECONDS.streak,
     },
-    async () => calculateConsistencyScore(activeDates, timeZone)
+    async () => calculateConsistencyScore(activeDates, timeZone),
   );
 }
 
@@ -139,7 +135,7 @@ export async function GET(req: NextRequest) {
         session.githubLogin,
         session.accessToken,
         { bypass, userId: session.githubId },
-        timeZone
+        timeZone,
       );
       const result = await getConsistencyScoreForDates(activeDates, timeZone, {
         bypass,
@@ -163,7 +159,7 @@ export async function GET(req: NextRequest) {
         githubId: session.githubId,
         githubLogin: session.githubLogin,
       },
-      appUserId
+      appUserId,
     );
 
     const dateResults = await Promise.allSettled(
@@ -172,9 +168,9 @@ export async function GET(req: NextRequest) {
           account.githubLogin,
           account.token,
           { bypass, userId: account.githubId },
-          timeZone
-        )
-      )
+          timeZone,
+        ),
+      ),
     );
 
     const unifiedDates = new Set<string>();
@@ -184,15 +180,11 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const scoreData = await getConsistencyScoreForDates(
-      unifiedDates,
-      timeZone,
-      {
-        bypass,
-        userId: appUserId,
-        accountKey: "combined",
-      }
-    );
+    const scoreData = await getConsistencyScoreForDates(unifiedDates, timeZone, {
+      bypass,
+      userId: appUserId,
+      accountKey: "combined",
+    });
 
     return Response.json(scoreData);
   }
@@ -227,7 +219,7 @@ export async function GET(req: NextRequest) {
       resolvedLogin,
       resolvedToken,
       { bypass, userId: accountId },
-      timeZone
+      timeZone,
     );
     const result = await getConsistencyScoreForDates(activeDates, timeZone, {
       bypass,

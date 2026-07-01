@@ -98,12 +98,6 @@ export default async function RootLayout({
       <body
         className={`${inter.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-[var(--accent)] focus:px-4 focus:py-2 focus:text-[var(--accent-foreground)] focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-        >
-          Skip to main content
-        </a>
         <CustomCursor />
         <OfflineBanner />
 
@@ -112,9 +106,7 @@ export default async function RootLayout({
             <NextIntlClientProvider locale={locale} messages={messages}>
               <Providers>
                 <AppNavbar />
-                <div id="main-content" tabIndex={-1} className="outline-none">
-                  {children}
-                </div>
+                {children}
                 <Footer />
               </Providers>
             </NextIntlClientProvider>

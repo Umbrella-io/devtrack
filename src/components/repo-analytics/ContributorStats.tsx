@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { RepoContributorData } from "@/lib/repo-analytics-types";
+import { RepoContributorData } from "@/lib/repoAnalytics";
 
 export default function ContributorStats({ contributors }: { contributors: RepoContributorData[] }) {
   const total = contributors.reduce((acc, c) => acc + c.contributions, 0);

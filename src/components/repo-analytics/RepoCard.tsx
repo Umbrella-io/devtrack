@@ -8,11 +8,11 @@ import {
   XAxis,
 } from "recharts";
 
-import { ExplorerRepoCardData } from "@/lib/repo-analytics-types";
+import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
 import {
   formatRelativeDate,
   formatDate,
-} from "@/lib/date-utils";
+} from "@/lib/repoAnalyticsUtils";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 interface RepoCardProps {

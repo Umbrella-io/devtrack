@@ -21,13 +21,6 @@ const COMMUNITY_LINKS = [
   { label: "Contributing Guide", href: "https://github.com/Priyanshu-byte-coder/devtrack/blob/main/CONTRIBUTING.md" },
 ];
 
-const LEGAL_LINKS = [
-  { label: "Privacy Policy", href: "/privacy-policy" },
-  { label: "Guidelines", href: "/guidelines" },
-  { label: "Documentation", href: "/api-docs" },
-];
-
-
 const SOCIAL_LINKS = [
   {
     label: "GitHub",
@@ -55,30 +48,19 @@ function FooterLink({
   href,
   children,
   external = false,
-  onClick,
 }: {
-  href?: string;
+  href: string;
   children: React.ReactNode;
   external?: boolean;
-  onClick?: () => void;
 }) {
   const baseClass =
-    "group relative w-fit text-[14px] text-[var(--muted-foreground)] transition-colors duration-200 hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 rounded-sm text-left";
+    "group relative w-fit text-[14px] text-[var(--muted-foreground)] transition-colors duration-200 hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 rounded-sm";
 
   const underline = (
     <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-[var(--accent)] transition-all duration-300 group-hover:w-full" />
   );
 
-  if (onClick) {
-    return (
-      <button onClick={onClick} className={baseClass}>
-        {children}
-        {underline}
-      </button>
-    );
-  }
-
-  if (external && href) {
+  if (external) {
     return (
       <a
         href={href}
@@ -93,7 +75,7 @@ function FooterLink({
   }
 
   return (
-    <Link href={href || "#"} className={baseClass}>
+    <Link href={href} className={baseClass}>
       {children}
       {underline}
     </Link>
@@ -110,10 +92,11 @@ export default function Footer() {
 
   return (
     <footer
-      className={`mt-auto border-t relative overflow-hidden ${isLanding
-        ? "bg-transparent border-slate-900/40"
-        : "border-[var(--border)] bg-[var(--background)]"
-        }`}
+      className={`mt-auto border-t relative overflow-hidden ${
+        isLanding
+          ? "bg-transparent border-slate-900/40"
+          : "border-[var(--border)] bg-[var(--background)]"
+      }`}
       aria-label="Site footer"
     >
       {/* Top gradient accent */}
@@ -131,7 +114,7 @@ export default function Footer() {
       <div className="relative mx-auto w-full max-w-7xl px-6 py-12 sm:px-8 lg:px-12">
 
         {/* Main grid */}
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.8fr_1fr_1fr_1fr_1fr]">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.8fr_1fr_1fr_1fr]">
 
           {/* Brand column */}
           <div>
@@ -182,24 +165,35 @@ export default function Footer() {
             >
               Product
             </h3>
+            <div className="mt-6 flex flex-col gap-4 text-[14px] text-[var(--muted-foreground)]">
+              <Link className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit" href="/">
+                Home
+              </Link>
+              {isAuthenticated ? (
+                <Link className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit" href="/dashboard">
+                  Dashboard
+                </Link>
+              ) : (
+                <button
+                  className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit text-left"
+                  onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+                >
+                  Dashboard
+                </button>
+              )}
+              <Link className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit" href="/leaderboard">
+                Leaderboard
+              </Link>
+              <Link className="transition-all duration-200 hover:text-[var(--foreground)] hover:translate-x-1 w-fit" href="/contact">
+                Contact
+              </Link>
+            </div>
             <nav aria-label="Product links" className="mt-6 flex flex-col gap-3">
-              {PRODUCT_LINKS.map(({ label, href }) => {
-                if (label === "Dashboard" && !isAuthenticated) {
-                  return (
-                    <FooterLink
-                      key={label}
-                      onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
-                    >
-                      {label}
-                    </FooterLink>
-                  );
-                }
-                return (
-                  <FooterLink key={label} href={href}>
-                    {label}
-                  </FooterLink>
-                );
-              })}
+              {PRODUCT_LINKS.map(({ label, href }) => (
+                <FooterLink key={label} href={href}>
+                  {label}
+                </FooterLink>
+              ))}
             </nav>
           </div>
 
@@ -220,27 +214,6 @@ export default function Footer() {
             </nav>
           </div>
 
-          <div>
-            <h3
-              className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--foreground)]"
-              style={{
-                fontFamily: "var(--font-jetbrains, ui-monospace, monospace)",
-              }}
-            >
-              Legal Links
-            </h3>
-
-            <nav
-              aria-label="Legal links"
-              className="mt-6 flex flex-col gap-3"
-            >
-              {LEGAL_LINKS.map(({ label, href }) => (
-                <FooterLink key={label} href={href}>
-                  {label}
-                </FooterLink>
-              ))}
-            </nav>
-          </div>
           {/* Stats column */}
           <div>
             <h3

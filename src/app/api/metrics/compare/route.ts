@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { toDateStr } from "@/lib/date-utils";
+import { toDateStr } from "@/lib/dateUtils";
 import { calculateCurrentStreak } from "@/lib/streak";
 import { normalizeGitHubUsername } from "@/lib/validate-github-username";
 import { supabaseAdmin } from "@/lib/supabase";

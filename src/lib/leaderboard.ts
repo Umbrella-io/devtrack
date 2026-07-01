@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase";
-import { dateDiffDays, toDateStr } from "@/lib/date-utils";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 import { cacheGet, cacheSet, cacheDelete, invalidateLeaderboardCache } from "@/lib/metrics-cache";
 import {
   pruneExpiredLeaderboardCache,

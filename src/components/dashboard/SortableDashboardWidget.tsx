@@ -34,7 +34,6 @@ export default function SortableDashboardWidget({
   } = useSortable({
     id,
     disabled: !isEditing,
-    resizeObserverConfig: {},
   });
 
   const style: CSSProperties = {

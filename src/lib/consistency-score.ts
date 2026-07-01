@@ -3,7 +3,7 @@ import { startOfWeek } from "date-fns/startOfWeek";
 import { subMonths } from "date-fns/subMonths";
 import { subWeeks } from "date-fns/subWeeks";
 import { format } from "date-fns/format";
-import { dateDiffDays } from "@/lib/date-utils";
+import { dateDiffDays } from "@/lib/dateUtils";
 import { calculateStreakFromDates } from "@/lib/streak";
 
 export interface ConsistencyScoreResult {

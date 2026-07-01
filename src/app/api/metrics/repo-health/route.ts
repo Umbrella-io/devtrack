@@ -137,8 +137,6 @@ async function fetchSignalsForRepo(token: string, repoFullName: string, days: nu
     openIssuesCount: openIssues.total_count || 0,
     // 9999 signals "no commits found" — treated as maximum staleness by computeHealthScore.
     daysSinceLastCommit: lastCommitDate ? daysSince(lastCommitDate) : 9999,
-    contributorCount: 0,
-    documentationScore: 0,
   };
 }
 

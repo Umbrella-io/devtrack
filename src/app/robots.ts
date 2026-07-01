@@ -1,8 +1,5 @@
 import { MetadataRoute } from "next";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://devtrack-delta.vercel.app";
-
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
@@ -10,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/", "/dashboard/"],
     },
-    sitemap: `${BASE_URL}/sitemap.xml`,
+    sitemap: "https://devtrack.vercel.app/sitemap.xml",
   };
 }

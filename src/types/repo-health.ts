@@ -1,11 +1,9 @@
 export interface RepoHealthSignals {
-  commitFrequency: number;
-  prMergeRate: number;
-  avgPrOpenTimeHours: number;
-  openIssuesCount: number;
-  daysSinceLastCommit: number;
-  contributorCount: number;
-  documentationScore: number; // 0-100
+  commitFrequency: number; // commits in last 30 days
+  prMergeRate: number; // merged PRs / opened PRs (0-1)
+  avgPrOpenTimeHours: number; // average hours a PR was open before close
+  openIssuesCount: number; // current open issues
+  daysSinceLastCommit: number; // recency signal
 }
 
 export interface RepoHealthScore {

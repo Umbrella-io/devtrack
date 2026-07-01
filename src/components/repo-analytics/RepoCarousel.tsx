@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import RepoCard from "./RepoCard";
 import RepoAnalyticsSheet from "./RepoAnalyticsSheet";
-import { ExplorerRepoCardData } from "@/lib/repo-analytics-types";
+import { ExplorerRepoCardData } from "@/lib/repoAnalytics";
 
 export default function RepoCarousel({ repos }: { repos: ExplorerRepoCardData[] }) {
   const PAGE_SIZE = 3;

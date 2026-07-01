@@ -26,10 +26,7 @@ async function fetchActiveDates(
 ): Promise<Set<string>> {
   // Cache key is scoped per user + githubLogin so multi-account "combined" view
   // stores each account's dates separately and merges them in the GET handler.
-  const key = metricsCacheKey(cacheContext.userId, "streak", {
-    githubLogin,
-    timeZone,
-  });
+  const key = metricsCacheKey(cacheContext.userId, "streak", { githubLogin });
 
   // withMetricsCache returns cached dates if available within the TTL window,
   // skipping all GitHub API calls below. This is the primary protection against

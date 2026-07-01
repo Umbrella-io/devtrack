@@ -8,7 +8,6 @@ export type DashboardSectionId =
 
 export type DashboardWidgetId =
   | "weekly-summary"
-  | "weekly-progress-summary"
   | "personal-records"
   | "ai-mentor"
   | "sponsor-analytics"
@@ -65,7 +64,6 @@ export const DASHBOARD_SECTION_LABELS: Record<DashboardSectionId, string> = {
 
 export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   "weekly-summary": "Weekly Summary",
-  "weekly-progress-summary": "Weekly Progress Summary",
   "personal-records": "Personal Records",
   "ai-mentor": "AI Mentor",
   "sponsor-analytics": "Sponsors Analytics",
@@ -104,7 +102,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutPreference = {
   version: 1,
   sections: ["overview", "activity", "analytics", "goals"],
   widgets: {
-    overview: ["weekly-summary", "weekly-progress-summary", "personal-records", "ai-mentor", "sponsor-analytics"],
+    overview: ["weekly-summary", "personal-records", "ai-mentor", "sponsor-analytics"],
     activity: [
       "contribution-graph",
       "contribution-heatmap",

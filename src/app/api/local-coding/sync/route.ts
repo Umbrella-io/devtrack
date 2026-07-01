@@ -26,53 +26,23 @@ function hashApiKey(key: string): string {
 async function authenticateApiKey(apiKey: string): Promise<string | null> {
   const keyHash = hashApiKey(apiKey);
 
+
   const { data: keyRecord } = await supabaseAdmin
     .from("local_coding_api_keys")
     .select("user_id")
     .eq("api_key_hash", keyHash)
     .single();
 
-  if (keyRecord) {
-    await supabaseAdmin
-      .from("local_coding_api_keys")
-      .update({ last_used_at: new Date().toISOString() })
-      .eq("api_key_hash", keyHash);
-
-    return keyRecord.user_id;
+  if (!keyRecord) {
+    return null;
   }
 
-  // Attempt Legacy Fallback (If Step 2 fails)
-  const { data: legacyRecord } = await supabaseAdmin
+  await supabaseAdmin
     .from("local_coding_api_keys")
-    .select("id, user_id")
-    .eq("api_key", apiKey)
-    .single();
+    .update({ last_used_at: new Date().toISOString() })
+    .eq("api_key_hash", keyHash);
 
-  if (legacyRecord) {
-    // Execute the Silent Upgrade (non-blocking)
-    (async () => {
-      try {
-        const { error } = await supabaseAdmin
-          .from("local_coding_api_keys")
-          .update({
-            api_key_hash: keyHash,
-            api_key: null,
-            last_used_at: new Date().toISOString(),
-          })
-          .eq("id", legacyRecord.id);
-
-        if (error) {
-          console.error("Failed to silently upgrade legacy API key:", error);
-        }
-      } catch (err) {
-        console.error("Unhandled error during legacy API key silent upgrade:", err);
-      }
-    })();
-
-    return legacyRecord.user_id;
-  }
-
-  return null;
+  return keyRecord.user_id;
 }
 
 function validateDays(days: number): number {

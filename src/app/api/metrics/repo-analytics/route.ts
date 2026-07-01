@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { isMetricsCacheBypassed, metricsCacheKey, withMetricsCache } from "@/lib/metrics-cache";
 import { computeHealthScore } from "@/lib/repo-health";
-import { RepoAnalyticsResponse } from "@/lib/repo-analytics-types";
+import { RepoAnalyticsResponse } from "@/lib/repoAnalytics";
 import { isSafeUrl } from "@/lib/ssrf-protection";
 import { parseRepoParam } from "@/lib/repo-analytics-utils";
 
@@ -128,8 +128,6 @@ export async function GET(req: NextRequest) {
         avgPrOpenTimeHours: 24,
         openIssuesCount: repoData.open_issues_count || 0,
         daysSinceLastCommit: 1,
-        contributorCount: 0,
-        documentationScore: 0,
       };
 
       const health = computeHealthScore(repoData.name, healthSignals);

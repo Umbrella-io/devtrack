@@ -1,4 +1,4 @@
-import { dateDiffDays, toDateStr } from "@/lib/date-utils";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 
 export type StreakDate = Date | string;
 

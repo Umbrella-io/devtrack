@@ -1,13 +1,10 @@
 import NextAuth from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
-
 const handler = NextAuth(authOptions);
-
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-
 function getClientIP(req: NextRequest): string {
   return (
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
@@ -15,7 +12,6 @@ function getClientIP(req: NextRequest): string {
     "unknown"
   );
 }
-
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const entry = rateLimitMap.get(ip);

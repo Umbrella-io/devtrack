@@ -1,4 +1,4 @@
-import { dateDiffDays, toDateStr } from "@/lib/date-utils";
+import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
 
 export interface StreakResult {
   current: number;
@@ -13,41 +13,24 @@ export interface DateStreakResult {
   longestStreak: number;
 }
 
-function todayAndYesterday(timeZone: string): {
-  today: string;
-  yesterday: string;
-} {
-  const fmt = new Intl.DateTimeFormat("en", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-
-  const p = fmt.formatToParts(new Date());
-  const yStr = p.find((x) => x.type === "year")?.value ?? "0000";
-  const mStr = p.find((x) => x.type === "month")?.value ?? "00";
-  const dStr = p.find((x) => x.type === "day")?.value ?? "00";
-
-  const y = parseInt(yStr, 10);
-  const m = parseInt(mStr, 10);
-  const d = parseInt(dStr, 10);
-
-  const todayStr = `${yStr}-${mStr}-${dStr}`;
-
-  const yesterdayDate = new Date(Date.UTC(y, m - 1, d - 1));
-  const yYesterday = yesterdayDate.getUTCFullYear();
-  const mYesterday = yesterdayDate.getUTCMonth() + 1;
-  const dYesterday = yesterdayDate.getUTCDate();
-
-  const yesterdayStr = `${String(yYesterday).padStart(4, "0")}-${String(mYesterday).padStart(2, "0")}-${String(dYesterday).padStart(2, "0")}`;
-
+function todayAndYesterday(timeZone: string = "UTC") {
+  const formatDateForTZ = (date: Date) => {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date); // This cleanly returns exactly "YYYY-MM-DD" matching the specified timezone!
+  };
+  const todayStr = formatDateForTZ(new Date());
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = formatDateForTZ(yesterday);
   return {
     today: todayStr,
-    yesterday: yesterdayStr,
+    yesterday: yesterdayStr
   };
 }
-
 /**
  * Canonical streak calculation shared across all endpoints.
  * Freeze dates count as active days so they do not break the streak.
