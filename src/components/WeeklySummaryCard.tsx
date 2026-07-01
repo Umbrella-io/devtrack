@@ -357,9 +357,13 @@ ${ai.text ? `\nAI Summary\n----------\n${ai.text}` : ""}
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-[var(--muted-foreground)] transition-colors hover:bg-[var(--border)] hover:text-[var(--card-foreground)]"
-                    aria-label="Copy AI summary to clipboard"
-                    title="Copy to clipboard"
+                    className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-all duration-200 ${
+                      ai.copied
+                        ? "scale-110 text-[var(--success)] bg-[var(--success)]/10"
+                        : "text-[var(--muted-foreground)] hover:bg-[var(--border)] hover:text-[var(--card-foreground)]"
+                    }`}
+                    aria-label={ai.copied ? "Copied!" : "Copy AI summary to clipboard"}
+                    title={ai.copied ? "Copied!" : "Copy to clipboard"}
                   >
                     {ai.copied ? (
                       <>

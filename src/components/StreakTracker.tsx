@@ -580,13 +580,17 @@ export default function StreakTracker() {
             <button
               type="button"
               onClick={handleCopy}
-              className="cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)] transition-colors"
-              aria-label="Copy streak stats to clipboard"
+              className={`cursor-pointer flex h-8 items-center justify-center rounded-md px-2 text-sm transition-all duration-200 ${
+                copied
+                  ? "text-emerald-500 scale-110 bg-emerald-500/10"
+                  : "text-[var(--muted-foreground)] hover:bg-[var(--control)] hover:text-[var(--card-foreground)]"
+              }`}
+              aria-label={copied ? "Copied!" : "Copy streak stats to clipboard"}
             >
               {copied ? (
-                <span className="text-xs font-medium text-[var(--success)]">Copied!</span>
+                <CheckCircle size={16} className="text-emerald-500" aria-hidden="true" />
               ) : (
-                <Copy size={16} className="opacity-80 hover:opacity-100" />
+                <Copy size={16} className="opacity-80 hover:opacity-100" aria-hidden="true" />
               )}
             </button>
             <button

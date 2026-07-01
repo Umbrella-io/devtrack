@@ -157,7 +157,11 @@ function CopyableCodeBlock({ code, onCopySuccess }: { code: string; onCopySucces
       </code>
       <button
         onClick={handleCopy}
-        className="ml-2 shrink-0 px-2 py-1 text-xs font-medium rounded bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+        className={`ml-2 shrink-0 px-2 py-1 text-xs font-medium rounded transition-all duration-200 ${
+          copied
+            ? "bg-emerald-500 text-white scale-105"
+            : "bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90"
+        }`}
       >
         {copied ? "✓ Copied!" : "Copy"}
       </button>
