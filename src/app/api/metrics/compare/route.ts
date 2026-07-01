@@ -1,4 +1,4 @@
-﻿import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { toDateStr } from "@/lib/date-utils";
@@ -51,130 +51,132 @@ export async function GET(req: NextRequest) {
   if (!bypassCache) {
     const encodedUsername = encodeURIComponent(normalizedUsername);
 
-  const userRes = await fetch(`${GITHUB_API}/users/${encodedUsername}`, {
-    headers: { Authorization: `Bearer ${session.accessToken}` },
-    cache: "no-store",
-  });
+    const userRes = await fetch(`${GITHUB_API}/users/${encodedUsername}`, {
+      headers: { Authorization: `Bearer ${session.accessToken}` },
+      cache: "no-store",
+    });
 
-  if (!userRes.ok) {
-    if (userRes.status === 404)
-      return Response.json({ error: "User not found" }, { status: 404 });
-    return Response.json(
-      { error: "GitHub API error or User is private" },
-      { status: 502 }
+    if (!userRes.ok) {
+      if (userRes.status === 404)
+        return Response.json({ error: "User not found" }, { status: 404 });
+      return Response.json(
+        { error: "GitHub API error or User is private" },
+        { status: 502 }
+      );
+    }
+    const since90 = new Date();
+    since90.setDate(since90.getDate() - 90);
+    const since90Str = since90.toISOString().slice(0, 10);
+
+    const since30 = new Date();
+    since30.setDate(since30.getDate() - 30);
+    const since30Str = since30.toISOString().slice(0, 10);
+
+    const commitsUrl = new URL(`${GITHUB_API}/search/commits`);
+    commitsUrl.searchParams.set(
+      "q",
+      `author:${normalizedUsername} author-date:>=${since90Str}`
     );
-  }
-const since90 = new Date();
-  since90.setDate(since90.getDate() - 90);
-  const since90Str = since90.toISOString().slice(0, 10);
+    commitsUrl.searchParams.set("per_page", "100");
+    commitsUrl.searchParams.set("sort", "author-date");
+    commitsUrl.searchParams.set("order", "desc");
 
-  const since30 = new Date();
-  since30.setDate(since30.getDate() - 30);
-  const since30Str = since30.toISOString().slice(0, 10);
+    const commitsRes = await fetch(commitsUrl.toString(), {
+      headers: {
+        Authorization: `Bearer ${session.accessToken}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    });
 
-  const commitsUrl = new URL(`${GITHUB_API}/search/commits`);
-  commitsUrl.searchParams.set(
-    "q",
-    `author:${normalizedUsername} author-date:>=${since90Str}`
-  );
-  commitsUrl.searchParams.set("per_page", "100");
-  commitsUrl.searchParams.set("sort", "author-date");
-  commitsUrl.searchParams.set("order", "desc");
+    let streak = 0;
+    let commits30d = 0;
+    let topLanguage = "Unknown";
+    const weeklyMap: Record<string, number> = {};
 
-  const commitsRes = await fetch(commitsUrl.toString(), {
-    headers: {
-      Authorization: `Bearer ${session.accessToken}`,
-      Accept: "application/vnd.github+json",
-    },
-    cache: "no-store",
-  });
+    if (commitsRes.ok) {
+      const commitsData = await commitsRes.json();
+      const items: Array<{ commit: { author: { date: string } } }> =
+        commitsData.items || [];
 
-  let streak = 0;
-  let commits30d = 0;
-  let topLanguage = "Unknown";
-  const weeklyMap: Record<string, number> = {};
+      const daySet: Record<string, true> = {};
+      for (const item of items) {
+        const dateStr = item.commit.author.date.slice(0, 10);
+        daySet[dateStr] = true;
+        if (dateStr >= since30Str) {
+          commits30d++;
+        }
 
-  if (commitsRes.ok) {
-    const commitsData = await commitsRes.json();
-    const items: Array<{ commit: { author: { date: string } } }> =
-      commitsData.items || [];
-
-    const daySet: Record<string, true> = {};
-    for (const item of items) {
-      const dateStr = item.commit.author.date.slice(0, 10);
-      daySet[dateStr] = true;
-      if (dateStr >= since30Str) {
-        commits30d++;
+        const d = new Date(dateStr);
+        const day = d.getUTCDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        d.setUTCDate(d.getUTCDate() + diff);
+        const weekKey = toDateStr(d);
+        weeklyMap[weekKey] = (weeklyMap[weekKey] ?? 0) + 1;
       }
 
-      const d = new Date(dateStr);
+      streak = calculateCurrentStreak(Object.keys(daySet));
+    }
+
+    const weeklyCommits: Array<{ week: string; commits: number }> = [];
+    for (let i = 7; i >= 0; i--) {
+      const d = new Date();
       const day = d.getUTCDay();
       const diff = day === 0 ? -6 : 1 - day;
-      d.setUTCDate(d.getUTCDate() + diff);
+      d.setUTCDate(d.getUTCDate() + diff - i * 7);
       const weekKey = toDateStr(d);
-      weeklyMap[weekKey] = (weeklyMap[weekKey] ?? 0) + 1;
+      weeklyCommits.push({ week: weekKey, commits: weeklyMap[weekKey] ?? 0 });
     }
 
-    streak = calculateCurrentStreak(Object.keys(daySet));
-  }
+    const reposUrl = new URL(`${GITHUB_API}/users/${encodedUsername}/repos`);
+    reposUrl.searchParams.set("per_page", "100");
+    reposUrl.searchParams.set("sort", "pushed");
 
-  const weeklyCommits: Array<{ week: string; commits: number }> = [];
-  for (let i = 7; i >= 0; i--) {
-    const d = new Date();
-    const day = d.getUTCDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    d.setUTCDate(d.getUTCDate() + diff - i * 7);
-    const weekKey = toDateStr(d);
-    weeklyCommits.push({ week: weekKey, commits: weeklyMap[weekKey] ?? 0 });
-  }
+    const reposRes = await fetch(reposUrl.toString(), {
+      headers: { Authorization: `Bearer ${session.accessToken}` },
+      cache: "no-store",
+    });
 
-  const reposUrl = new URL(`${GITHUB_API}/users/${encodedUsername}/repos`);
-  reposUrl.searchParams.set("per_page", "100");
-  reposUrl.searchParams.set("sort", "pushed");
-
-  const reposRes = await fetch(reposUrl.toString(), {
-    headers: { Authorization: `Bearer ${session.accessToken}` },
-    cache: "no-store",
-  });
-
-  if (reposRes.ok) {
-    const reposData: Array<{ language: string | null; fork: boolean }> =
-      await reposRes.json();
-    const langCounts: Record<string, number> = {};
-    for (const repo of reposData) {
-      if (!repo.fork && repo.language) {
-        langCounts[repo.language] = (langCounts[repo.language] || 0) + 1;
+    if (reposRes.ok) {
+      const reposData: Array<{ language: string | null; fork: boolean }> =
+        await reposRes.json();
+      const langCounts: Record<string, number> = {};
+      for (const repo of reposData) {
+        if (!repo.fork && repo.language) {
+          langCounts[repo.language] = (langCounts[repo.language] || 0) + 1;
+        }
       }
+      const sortedLangs = Object.entries(langCounts).sort(
+        (a, b) => b[1] - a[1]
+      );
+      if (sortedLangs.length > 0) topLanguage = sortedLangs[0][0];
     }
-    const sortedLangs = Object.entries(langCounts).sort((a, b) => b[1] - a[1]);
-    if (sortedLangs.length > 0) topLanguage = sortedLangs[0][0];
+
+    const prsUrl = new URL(`${GITHUB_API}/search/issues`);
+    prsUrl.searchParams.set("q", `type:pr author:${normalizedUsername}`);
+    prsUrl.searchParams.set("per_page", "1");
+
+    const prsRes = await fetch(prsUrl.toString(), {
+      headers: { Authorization: `Bearer ${session.accessToken}` },
+      cache: "no-store",
+    });
+    let prs = 0;
+    if (prsRes.ok) {
+      const prsData = await prsRes.json();
+      prs = prsData.total_count || 0;
+    }
+
+    const payload = {
+      username: normalizedUsername,
+      streak,
+      commits30d,
+      topLanguage,
+      prs,
+      weeklyCommits,
+    };
+
+    await cacheSet(cacheKey, payload, ttlSeconds);
+
+    return Response.json({ ...payload, fromCache: false });
   }
-
-  const prsUrl = new URL(`${GITHUB_API}/search/issues`);
-  prsUrl.searchParams.set("q", `type:pr author:${normalizedUsername}`);
-  prsUrl.searchParams.set("per_page", "1");
-
-  const prsRes = await fetch(prsUrl.toString(), {
-    headers: { Authorization: `Bearer ${session.accessToken}` },
-    cache: "no-store",
-  });
-  let prs = 0;
-  if (prsRes.ok) {
-    const prsData = await prsRes.json();
-    prs = prsData.total_count || 0;
-  }
-
-  const payload = {
-    username: normalizedUsername,
-    streak,
-    commits30d,
-    topLanguage,
-    prs,
-    weeklyCommits,
-  };
-
-  await cacheSet(cacheKey, payload, ttlSeconds);
-
-  return Response.json({ ...payload, fromCache: false });
-}
 }
