@@ -395,3 +395,4 @@ describe("GET /api/metrics/contributions — org: accountId", () => {
     expect(calledUrl).not.toContain("org%3A");
   });
 });
+// Issue: #2967
