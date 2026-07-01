@@ -10,8 +10,8 @@ describe("stripHtml", () => {
     expect(stripHtml("<div><p>Test</p></div>")).toBe("Test");
   });
 
-  it("decodes HTML entities", () => {
-    expect(stripHtml("&lt;script&gt;")).toBe("<script>");
+  it("strips entity-encoded tags (prevents XSS bypass)", () => {
+    expect(stripHtml("&lt;script&gt;")).toBe("");
   });
 
   it("decodes ampersand entity", () => {
