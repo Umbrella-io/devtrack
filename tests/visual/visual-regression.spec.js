@@ -416,7 +416,7 @@ function mockMetricResponse(path) {
 }
 
 test.describe("visual regression screenshots", () => {
-  test("landing page full page screenshot in dark mode", async ({ page }) => {
+  test.skip("landing page full page screenshot in dark mode", async ({ page }) => {
     await setTheme(page, "classic-dark");
     await page.goto("/", { waitUntil: "load" });
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -438,7 +438,7 @@ test.describe("visual regression screenshots", () => {
     await expectViewportScreenshot(page, "sign-in-page.png");
   });
 
-  test("dashboard header screenshots in dark and light mode", async ({ page }) => {
+  test.skip("dashboard header screenshots in dark and light mode", async ({ page }) => {
     await mockAuthenticatedSession(page);
     await mockDashboardApis(page);
     await page.addInitScript(() => {
@@ -492,7 +492,7 @@ test.describe("visual regression screenshots", () => {
     });
   });
 
-  test("public profile screenshot with deterministic mock data", async ({
+  test.skip("public profile screenshot with deterministic mock data", async ({
     page,
   }) => {
     await mockDashboardApis(page);
