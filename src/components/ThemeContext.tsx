@@ -43,6 +43,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
         updateTheme(DEFAULT_THEME);
       }
     }
+    // First visit — respect the OS-level prefers-color-scheme setting.
+    // This mirrors the anti-flash inline script in layout.tsx so that
+    // React hydration never produces a flash of the wrong theme.
+    const prefersDark =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    updateTheme(prefersDark ? "classic-dark" : "modern-light-blue");
   }, []);
 
   useSafeLayoutEffect(() => {

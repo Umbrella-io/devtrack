@@ -36,6 +36,37 @@ const ChevronIcon = (props: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+/** Sun icon — shown when the UI is in dark mode (click to go light). */
+const SunIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+  </svg>
+);
+
+/** Moon icon — shown when the UI is in light mode (click to go dark). */
+const MoonIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+);
+
 const CheckIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -51,7 +82,12 @@ const CheckIcon = (props: SVGProps<SVGSVGElement>) => (
 );
 
 type ThemeToggleProps = {
-  variant?: "default" | "compact";
+  /**
+   * - `"default"`  — Full-width select card (settings page)
+   * - `"compact"`  — Palette icon + dropdown (navbar palette picker)
+   * - `"icon"`     — Binary sun/moon toggle button (navbar quick-switch)
+   */
+  variant?: "default" | "compact" | "icon";
 };
 
 function CompactThemeToggle() {
@@ -218,7 +254,70 @@ function DefaultThemeToggle() {
   );
 }
 
+/**
+ * Binary light/dark toggle button (sun ↔ moon).
+ *
+ * - Dark theme  → shows ☀️ Sun  → clicking switches to `modern-light-blue`
+ * - Light theme → shows 🌙 Moon → clicking switches to `classic-dark`
+ *
+ * Uses `title` + `aria-label` for full keyboard & screen-reader support.
+ */
+function LightDarkToggle() {
+  const { themeMode, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Render an invisible placeholder of the same size to avoid layout shift
+  // during SSR / hydration.
+  if (!mounted || !themeMode) {
+    return (
+      <div
+        className="inline-flex h-8 w-8 shrink-0 rounded-lg border border-[var(--border)] bg-[var(--card)]"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  const isDark = themeMode === "dark";
+  const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+
+  return (
+    <button
+      id="theme-light-dark-toggle"
+      type="button"
+      onClick={() => setTheme(isDark ? "modern-light-blue" : "classic-dark")}
+      aria-label={label}
+      title={label}
+      className={
+        "group inline-flex h-8 w-8 items-center justify-center rounded-lg border " +
+        "border-[var(--border)] bg-[var(--card)] text-[var(--card-foreground)] " +
+        "transition-all duration-200 hover:bg-[var(--control)] active:scale-95 " +
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
+      }
+    >
+      {isDark ? (
+        <SunIcon
+          className="h-4 w-4 transition-transform duration-300 group-hover:rotate-12"
+          aria-hidden="true"
+        />
+      ) : (
+        <MoonIcon
+          className="h-4 w-4 transition-transform duration-300 group-hover:-rotate-12"
+          aria-hidden="true"
+        />
+      )}
+    </button>
+  );
+}
+
 export default function ThemeToggle({ variant = "default" }: ThemeToggleProps) {
+  if (variant === "icon") {
+    return <LightDarkToggle />;
+  }
+
   if (variant === "compact") {
     return <CompactThemeToggle />;
   }

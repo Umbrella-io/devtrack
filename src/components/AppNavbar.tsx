@@ -74,6 +74,7 @@ export default function AppNavbar() {
     ];
   }, [isAuthenticated, t]);
 
+  // Hide the global navbar on pages that have their own navigation structure
   // The wrapped experience provides its own navigation
   if (pathname === "/wrapped") return null;
 
@@ -235,7 +236,7 @@ export default function AppNavbar() {
                   <span className="text-sm font-medium text-[var(--muted-foreground)]" style={{ fontFamily: MONO }}>
                     Theme
                   </span>
-                  <ThemeToggle variant="compact" />
+                  <ThemeToggle variant="icon" />
                 </div>
               )}
               {isAuthenticated ? (
