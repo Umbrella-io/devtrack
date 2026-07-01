@@ -368,3 +368,4 @@ describe("wrapped", () => {
     });
   });
 });
+// Issue: #2965
