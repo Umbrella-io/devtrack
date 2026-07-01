@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { FileText, FileCode, Braces, Copy, Check, Download } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { FileText, FileCode, Braces, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import CopyToClipboardButton from "@/components/CopyToClipboardButton";
 import type { ResumeContent, ExportFormat } from "@/types/cv-types";
 
 interface ExportPanelProps {
@@ -12,30 +13,20 @@ interface ExportPanelProps {
 
 export default function ExportPanel({ content, onExport }: ExportPanelProps) {
   const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
-  const [copied, setCopied] = useState(false);
 
-  const handleExport = async (format: ExportFormat) => {
-    setExportingFormat(format);
-    try {
-      await onExport(format);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setExportingFormat(null);
-    }
-  };
+  const resumeText = useMemo(() => {
+    const bulletText = content.bulletPoints.map((bp) => `- ${bp.text}`).join("\n");
+    const projectText = content.projectDescriptions
+      .map(
+        (p) =>
+          `### ${p.name}\n${p.description}\n${p.highlights.map((h) => `- ${h}`).join("\n")}`,
+      )
+      .join("\n\n");
+    const skillText = content.skills
+      .map((c) => `**${c.category}**: ${c.skills.join(", ")}`)
+      .join("\n");
 
-  const copyToClipboard = async () => {
-    try {
-      const bulletText = content.bulletPoints.map((bp) => `- ${bp.text}`).join("\n");
-      const projectText = content.projectDescriptions
-        .map((p) => `### ${p.name}\n${p.description}\n${p.highlights.map((h) => `- ${h}`).join("\n")}`)
-        .join("\n\n");
-      const skillText = content.skills
-        .map((c) => `**${c.category}**: ${c.skills.join(", ")}`)
-        .join("\n");
-
-      const textToCopy = `
+    return `
 # Resume: ${content.role}
 
 ## Professional Summary
@@ -50,13 +41,17 @@ ${projectText}
 ## Skills Summary
 ${content.skillSummary}
 ${skillText}
-      `.trim();
+    `.trim();
+  }, [content]);
 
-      await navigator.clipboard.writeText(textToCopy);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleExport = async (format: ExportFormat) => {
+    setExportingFormat(format);
+    try {
+      await onExport(format);
     } catch (err) {
-      console.error("Failed to copy resume content:", err);
+      console.error(err);
+    } finally {
+      setExportingFormat(null);
     }
   };
 
@@ -138,23 +133,14 @@ ${skillText}
       </div>
 
       <div className="flex justify-center">
-        <button
-          type="button"
-          onClick={copyToClipboard}
-          className="inline-flex items-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-colors border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--card-muted)] text-[var(--foreground)] h-9 px-5 py-2"
-        >
-          {copied ? (
-            <>
-              <Check className="h-4 w-4 text-emerald-500" />
-              Copied to Clipboard!
-            </>
-          ) : (
-            <>
-              <Copy className="h-4 w-4" />
-              Copy Full Resume Text
-            </>
-          )}
-        </button>
+        <CopyToClipboardButton
+          value={resumeText}
+          label="Copy Full Resume Text"
+          copiedLabel="Copied to Clipboard!"
+          variant="outline"
+          className="h-9 px-5"
+          ariaLabel="Copy full resume text"
+        />
       </div>
     </div>
   );

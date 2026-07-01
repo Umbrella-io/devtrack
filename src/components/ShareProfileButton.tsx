@@ -1,9 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Link2, Check } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import CopyToClipboardButton from "@/components/CopyToClipboardButton";
 
 interface ShareProfileButtonProps {
   githubLogin: string;
@@ -12,42 +9,19 @@ interface ShareProfileButtonProps {
 export default function ShareProfileButton({
   githubLogin,
 }: ShareProfileButtonProps) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL ||
-        "https://devtrack-delta.vercel.app";
-
-      const profileUrl = `${baseUrl}/u/${githubLogin}`;
-
-      await navigator.clipboard.writeText(profileUrl);
-
-      setCopied(true);
-      toast.success("Link copied!");
-
-      setTimeout(() => {
-        setCopied(false);
-      }, 2000);
-    } catch {
-      toast.error("Failed to copy link");
-    }
-  };
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://devtrack-delta.vercel.app";
+  const profileUrl = `${baseUrl}/u/${githubLogin}`;
 
   return (
-    <Button onClick={handleCopy}>
-      {copied ? (
-        <>
-          <Check className="mr-2 h-4 w-4" />
-          Copied
-        </>
-      ) : (
-        <>
-          <Link2 className="mr-2 h-4 w-4" />
-          Share Profile
-        </>
-      )}
-    </Button>
+    <CopyToClipboardButton
+      value={profileUrl}
+      label="Share Profile"
+      copiedLabel="Copied"
+      showToast
+      successMessage="Link copied!"
+      errorMessage="Failed to copy link"
+      ariaLabel="Share profile link"
+    />
   );
 }

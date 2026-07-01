@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit2, Eye, Copy, Check, Info, Trash2, Plus } from "lucide-react";
+import { Edit2, Eye, Info, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import CopyToClipboardButton from "@/components/CopyToClipboardButton";
 import type { ResumeContent, ResumeBulletPoint, ProjectDescription, SkillCategory } from "@/types/cv-types";
 
 interface ResumePreviewProps {
@@ -14,17 +15,30 @@ interface ResumePreviewProps {
 
 export default function ResumePreview({ content, onContentChange }: ResumePreviewProps) {
   const [isEditMode, setIsEditMode] = useState(false);
-  const [copiedSection, setCopiedSection] = useState<string | null>(null);
 
-  const handleCopySection = async (sectionName: string, text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedSection(sectionName);
-      setTimeout(() => setCopiedSection(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy section:", err);
-    }
-  };
+  const experienceText = useMemo(
+    () => content.bulletPoints.map((bp) => `- ${bp.text}`).join("\n"),
+    [content.bulletPoints],
+  );
+
+  const projectsText = useMemo(
+    () =>
+      content.projectDescriptions
+        .map(
+          (p) =>
+            `### ${p.name}\n${p.description}\n${p.highlights.map((h) => `- ${h}`).join("\n")}`,
+        )
+        .join("\n\n"),
+    [content.projectDescriptions],
+  );
+
+  const skillsText = useMemo(
+    () =>
+      `${content.skillSummary}\n\n${content.skills
+        .map((c) => `${c.category}: ${c.skills.join(", ")}`)
+        .join("\n")}`,
+    [content.skillSummary, content.skills],
+  );
 
   // State update helpers
   const updateSummary = (newSummary: string) => {
@@ -191,14 +205,14 @@ export default function ResumePreview({ content, onContentChange }: ResumePrevie
             <TabsContent value="summary" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h4 className="text-sm font-bold text-[var(--foreground)]">Professional Summary</h4>
-                <button
-                  type="button"
-                  onClick={() => handleCopySection("summary", content.professionalSummary)}
-                  className="p-1 rounded hover:bg-[var(--card-muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                  title="Copy Section"
-                >
-                  {copiedSection === "summary" ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-                </button>
+                <CopyToClipboardButton
+                  value={content.professionalSummary}
+                  iconOnly
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 p-1 text-[var(--muted-foreground)] hover:bg-[var(--card-muted)] hover:text-[var(--foreground)]"
+                  ariaLabel="Copy professional summary section"
+                />
               </div>
 
               {isEditMode ? (
@@ -220,19 +234,14 @@ export default function ResumePreview({ content, onContentChange }: ResumePrevie
             <TabsContent value="experience" className="space-y-6">
               <div className="flex justify-between items-center">
                 <h4 className="text-sm font-bold text-[var(--foreground)]">Experience Bullet Points</h4>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleCopySection(
-                      "experience",
-                      content.bulletPoints.map((bp) => `- ${bp.text}`).join("\n")
-                    )
-                  }
-                  className="p-1 rounded hover:bg-[var(--card-muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                  title="Copy All Bullets"
-                >
-                  {copiedSection === "experience" ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-                </button>
+                <CopyToClipboardButton
+                  value={experienceText}
+                  iconOnly
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 p-1 text-[var(--muted-foreground)] hover:bg-[var(--card-muted)] hover:text-[var(--foreground)]"
+                  ariaLabel="Copy experience bullet points section"
+                />
               </div>
 
               <div className="space-y-4">
@@ -319,24 +328,14 @@ export default function ResumePreview({ content, onContentChange }: ResumePrevie
             <TabsContent value="projects" className="space-y-6">
               <div className="flex justify-between items-center">
                 <h4 className="text-sm font-bold text-[var(--foreground)]">Project Highlights</h4>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleCopySection(
-                      "projects",
-                      content.projectDescriptions
-                        .map(
-                          (p) =>
-                            `### ${p.name}\n${p.description}\n${p.highlights.map((h) => `- ${h}`).join("\n")}`
-                        )
-                        .join("\n\n")
-                    )
-                  }
-                  className="p-1 rounded hover:bg-[var(--card-muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                  title="Copy All Projects"
-                >
-                  {copiedSection === "projects" ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-                </button>
+                <CopyToClipboardButton
+                  value={projectsText}
+                  iconOnly
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 p-1 text-[var(--muted-foreground)] hover:bg-[var(--card-muted)] hover:text-[var(--foreground)]"
+                  ariaLabel="Copy project highlights section"
+                />
               </div>
 
               <div className="space-y-6">
@@ -442,22 +441,14 @@ export default function ResumePreview({ content, onContentChange }: ResumePrevie
             <TabsContent value="skills" className="space-y-6">
               <div className="flex justify-between items-center">
                 <h4 className="text-sm font-bold text-[var(--foreground)]">Technical Skills & Categories</h4>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleCopySection(
-                      "skills",
-                      `${content.skillSummary}\n\n` +
-                        content.skills
-                          .map((c) => `${c.category}: ${c.skills.join(", ")}`)
-                          .join("\n")
-                    )
-                  }
-                  className="p-1 rounded hover:bg-[var(--card-muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                  title="Copy Skills"
-                >
-                  {copiedSection === "skills" ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-                </button>
+                <CopyToClipboardButton
+                  value={skillsText}
+                  iconOnly
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 p-1 text-[var(--muted-foreground)] hover:bg-[var(--card-muted)] hover:text-[var(--foreground)]"
+                  ariaLabel="Copy skills section"
+                />
               </div>
 
               <div className="space-y-4">
