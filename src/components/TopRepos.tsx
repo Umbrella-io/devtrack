@@ -259,10 +259,11 @@ function getVisibleLanguages(languages: RepoLanguage[]): RepoLanguage[] {
   ];
 }
 
-export default function TopRepos() {
+export default function TopRepos({ isLoading }: { isLoading?: boolean } = {}) {
   const { selectedAccount } = useAccount();
   const [repos, setRepos] = useState<Repo[]>([]);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = isLoading !== undefined ? isLoading : loading;
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -456,7 +457,7 @@ export default function TopRepos() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <SectionHeader
-            title={`Top Repositories${!loading && repos.length > 0 ? ` (${repos.length})` : ""}`}
+            title={`Top Repositories${!showSkeleton && repos.length > 0 ? ` (${repos.length})` : ""}`}
           />
 
           {pinError && (
@@ -503,23 +504,33 @@ export default function TopRepos() {
         </button>
       </div>
 
-      {loading ? (
+      {showSkeleton ? (
         <div
           role="status"
           aria-live="polite"
           aria-busy="true"
-          className="space-y-5 mt-4"
+          className="space-y-5 mt-4 animate-pulse"
         >
           <span className="sr-only">Loading top repositories</span>
           <div aria-hidden="true" className="space-y-5">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-4 w-1/3 bg-[var(--card-muted)] rounded animate-pulse" />
-                  <div className="h-4 w-16 bg-[var(--card-muted)] rounded animate-pulse" />
+              <div key={i} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded bg-muted" />
+                    <div className="h-4 w-32 rounded bg-muted" />
+                  </div>
+                  <div className="h-4 w-16 rounded bg-muted" />
                 </div>
                 <div className="h-1.5 w-full bg-[var(--control)] rounded-full overflow-hidden">
-                  <div className="h-full bg-[var(--card-muted)] animate-pulse w-1/2" />
+                  <div
+                    className="h-full bg-muted rounded-full"
+                    style={{ width: `${30 + (i * 13) % 55}%` }}
+                  />
+                </div>
+                <div className="flex gap-1.5">
+                  <div className="h-5 w-16 rounded-full bg-muted" />
+                  <div className="h-5 w-12 rounded-full bg-muted" />
                 </div>
               </div>
             ))}

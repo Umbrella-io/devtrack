@@ -430,16 +430,22 @@ export default function GoalTracker() {
   if (loading) {
     return (
       <div className="h-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
-        <div role="status" aria-live="polite" aria-busy="true">
-          <span className="sr-only">Loading weekly goals</span>
-          <div
-            aria-hidden="true"
-            className="mb-4 h-5 w-32 rounded bg-[var(--card-muted)] animate-pulse"
-          />
+        <div className="flex items-center justify-between mb-4">
+          <div className="h-6 w-16 bg-muted rounded animate-pulse" />
+          <div className="h-7 w-24 bg-muted rounded animate-pulse" />
+        </div>
+        <div role="status" aria-live="polite" aria-busy="true" className="space-y-4">
+          <span className="sr-only">Loading goals</span>
           {[1, 2, 3].map((i) => (
-            <div key={i} aria-hidden="true" className="mb-4">
-              <div className="h-4 bg-[var(--card-muted)] rounded animate-pulse mb-2" />
-              <div className="h-2 bg-[var(--card-muted)] rounded animate-pulse" />
+            <div key={i} aria-hidden="true" className="animate-pulse">
+              <div className="flex justify-between items-center mb-1">
+                <div className="h-4 w-32 bg-muted rounded" />
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-16 bg-muted rounded" />
+                  <div className="h-6 w-6 bg-muted rounded" />
+                </div>
+              </div>
+              <div className="h-2 w-full bg-muted rounded-full" />
             </div>
           ))}
         </div>

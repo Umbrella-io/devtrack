@@ -382,7 +382,7 @@ export function useStreakTracker() {
   };
 }
 
-export default function StreakTracker() {
+export default function StreakTracker({ isLoading }: { isLoading?: boolean } = {}) {
   const {
     selectedAccount,
     isStreakLive,
@@ -428,10 +428,11 @@ export default function StreakTracker() {
   } = useStreakTracker();
 
   const { setSummary, setIsUpdating } = useDashboardWidgetA11y("streak-tracker");
+  const showSkeleton = isLoading !== undefined ? isLoading : loading;
 
   useEffect(() => {
-    setIsUpdating(loading);
-  }, [loading, setIsUpdating]);
+    setIsUpdating(showSkeleton);
+  }, [showSkeleton, setIsUpdating]);
 
   useEffect(() => {
     if (!data) {
@@ -443,18 +444,22 @@ export default function StreakTracker() {
     );
   }, [data, setSummary]);
 
-  if (loading) {
+  if (showSkeleton) {
     return (
-      <div className="bg-[var(--card)] rounded-xl p-6 min-h-[700px]">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
         <div role="status" aria-live="polite" aria-busy="true">
           <span className="sr-only">Loading streak tracker</span>
-          <div
-            aria-hidden="true"
-            className="h-6 w-36 bg-[var(--card-muted)] rounded animate-pulse mb-4"
-          />
-          <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div aria-hidden="true" className="h-6 w-36 bg-muted rounded animate-pulse mb-6" />
+          <div aria-hidden="true" className="grid grid-cols-2 gap-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-[var(--card-muted)] rounded-lg h-28 animate-pulse" />
+              <div
+                key={i}
+                className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 h-[108px] flex flex-col items-center justify-center space-y-2 animate-pulse"
+              >
+                <div className="h-5 w-5 rounded-full bg-muted" />
+                <div className="h-6 w-12 rounded bg-muted" />
+                <div className="h-3.5 w-20 rounded bg-muted" />
+              </div>
             ))}
           </div>
         </div>

@@ -46,10 +46,11 @@ function formatReviewCycle(hours: number | null): string {
   return `${Math.round((hours / 24) * 10) / 10}d`;
 }
 
-export default function PRMetrics() {
+export default function PRMetrics({ isLoading }: { isLoading?: boolean } = {}) {
   const { selectedAccount } = useAccount();
   const [metrics, setMetrics] = useState<PRData | null>(null);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = isLoading !== undefined ? isLoading : loading;
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -179,64 +180,80 @@ export default function PRMetrics() {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4">
         <SectionHeader title="PR Analytics" />
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-2">
-            {(["7d", "30d", "90d"] as const).map((option) => (
-              <button
-                key={option}
-                onClick={() => setRange(option)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${range === option
-                  ? "bg-[var(--accent)] text-white"
-                  : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
-                  }`}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab("authored")}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === "authored" ? "bg-[var(--accent)] text-white" : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
-                }`}
-            >
-              PRs Authored
-            </button>
-            <button
-              onClick={() => setActiveTab("reviews")}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === "reviews" ? "bg-[var(--accent)] text-white" : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
-                }`}
-            >
-              Reviews Given
-            </button>
-          </div>
-          <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted-foreground)]">
-            Range
-            <select
-              value={range}
-              onChange={(event) => setRange(event.target.value as "7d" | "30d" | "90d")}
-              className="rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--foreground)] transition-colors"
-            >
-              <option value="7d">7d</option>
-              <option value="30d">30d</option>
-              <option value="90d">90d</option>
-            </select>
-          </label>
-          <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted-foreground)]">
-            Stale after
-            <select
-              value={staleThresholdDays}
-              onChange={(event) => setStaleThresholdDays(Number(event.target.value))}
-              className="rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--foreground)] transition-colors"
-            >
-              {[7, 14, 30].map((days) => (
-                <option key={days} value={days}>{days} days</option>
-              ))}
-            </select>
-          </label>
+          {showSkeleton ? (
+            <>
+              <div className="flex gap-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-8 w-14 rounded-md bg-muted animate-pulse" aria-hidden="true" />
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <div className="h-8 w-28 rounded-md bg-muted animate-pulse" aria-hidden="true" />
+                <div className="h-8 w-28 rounded-md bg-muted animate-pulse" aria-hidden="true" />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex gap-2">
+                {(["7d", "30d", "90d"] as const).map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => setRange(option)}
+                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${range === option
+                      ? "bg-[var(--accent)] text-white"
+                      : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
+                      }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setActiveTab("authored")}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === "authored" ? "bg-[var(--accent)] text-white" : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
+                    }`}
+                >
+                  PRs Authored
+                </button>
+                <button
+                  onClick={() => setActiveTab("reviews")}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === "reviews" ? "bg-[var(--accent)] text-white" : "bg-[var(--control)] text-[var(--muted-foreground)] hover:bg-[var(--card-muted)]"
+                    }`}
+                >
+                  Reviews Given
+                </button>
+              </div>
+              <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted-foreground)]">
+                Range
+                <select
+                  value={range}
+                  onChange={(event) => setRange(event.target.value as "7d" | "30d" | "90d")}
+                  className="rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--foreground)] transition-colors"
+                >
+                  <option value="7d">7d</option>
+                  <option value="30d">30d</option>
+                  <option value="90d">90d</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted-foreground)]">
+                Stale after
+                <select
+                  value={staleThresholdDays}
+                  onChange={(event) => setStaleThresholdDays(Number(event.target.value))}
+                  className="rounded-md border border-[var(--border)] bg-[var(--control)] px-2 py-1 text-sm text-[var(--foreground)] transition-colors"
+                >
+                  {[7, 14, 30].map((days) => (
+                    <option key={days} value={days}>{days} days</option>
+                  ))}
+                </select>
+              </label>
+            </>
+          )}
         </div>
       </div>
 
-      {loading ? (
+      {showSkeleton ? (
         <div
           role="status"
           aria-live="polite"
@@ -244,21 +261,18 @@ export default function PRMetrics() {
           className="space-y-4"
         >
           <span className="sr-only">Loading PR analytics</span>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+            {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
                 aria-hidden="true"
-                className="bg-[var(--card-muted)] rounded-lg p-4 h-24 animate-pulse"
-              />
+                className="rounded-lg border border-[var(--border)] bg-[var(--control)] p-4 h-24 flex flex-col justify-center space-y-2 animate-pulse"
+              >
+                <div className="h-6 w-14 rounded bg-muted" />
+                <div className="h-4 w-20 rounded bg-muted" />
+              </div>
             ))}
           </div>
-          <div className="h-[270px] rounded-lg bg-[var(--card-muted)] animate-pulse" aria-hidden="true" />
-          <div
-            className="h-[220px] rounded-lg bg-[var(--card-muted)] animate-pulse"
-            aria-hidden="true"
-          />
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
