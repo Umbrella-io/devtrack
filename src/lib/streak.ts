@@ -1,4 +1,4 @@
-import { dateDiffDays, toDateStr } from "@/lib/dateUtils";
+import { dateDiffDays, toDateStr } from "@/lib/date-utils";
 
 export interface StreakResult {
   current: number;
