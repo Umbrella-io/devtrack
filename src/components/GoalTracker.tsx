@@ -31,12 +31,22 @@ interface Goal {
     achieved: number;
     completed: boolean;
   } | null;
+  category?: string | null;
 }
 
 const RECURRENCE_LABELS: Record<Recurrence, string> = {
   none: "One-time",
   weekly: "Weekly",
   monthly: "Monthly",
+};
+
+export const CATEGORIES = ["Side Project", "Work", "DSA", "Open Source"];
+
+export const CATEGORY_COLORS: Record<string, string> = {
+  "Side Project": "bg-purple-500/10 text-purple-500 border-purple-500/30",
+  "Work": "bg-blue-500/10 text-blue-500 border-blue-500/30",
+  "DSA": "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
+  "Open Source": "bg-amber-500/10 text-amber-500 border-amber-500/30",
 };
 
 export function useGoalTracker() {
@@ -51,6 +61,7 @@ export function useGoalTracker() {
   const [unit, setUnit] = useState("commits");
   const [recurrence, setRecurrence] = useState<Recurrence>("none");
   const [deadline, setDeadline] = useState("");
+  const [category, setCategory] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -161,7 +172,7 @@ export function useGoalTracker() {
 
     try {
       const result = await submitGoalWithRefresh({
-        payload: { title, target, unit, recurrence, deadline: deadline || null },
+        payload: { title, target, unit, recurrence, deadline: deadline || null, category: category || null },
         handleSync,
         loadGoals,
       });
@@ -176,6 +187,7 @@ export function useGoalTracker() {
       setUnit("commits");
       setRecurrence("none");
       setDeadline("");
+      setCategory("");
 
       if (unit === "commits" || unit === "prs") {
         await handleSync();
@@ -293,6 +305,8 @@ export function useGoalTracker() {
     setRecurrence,
     deadline,
     setDeadline,
+    category,
+    setCategory,
     creating,
     createError,
     confirmingId,
@@ -331,6 +345,8 @@ export default function GoalTracker() {
     setRecurrence,
     deadline,
     setDeadline,
+    category,
+    setCategory,
     creating,
     createError,
     confirmingId,
@@ -346,6 +362,8 @@ export default function GoalTracker() {
   } = useGoalTracker();
 
   const { setSummary, setIsUpdating } = useDashboardWidgetA11y("goal-tracker");
+
+  const [filterCategory, setFilterCategory] = useState<string>("All");
 
   useEffect(() => {
     setIsUpdating(loading);
@@ -520,6 +538,35 @@ export default function GoalTracker() {
         </div>
       )}
 
+      {/* Filter Toggle Pills */}
+      {goals.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => setFilterCategory("All")}
+            className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
+              filterCategory === "All"
+                ? "bg-[var(--foreground)] text-[var(--background)] border-[var(--foreground)]"
+                : "bg-transparent text-[var(--muted-foreground)] border-[var(--border)] hover:border-[var(--muted-foreground)]"
+            }`}
+          >
+            All
+          </button>
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setFilterCategory(cat)}
+              className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
+                filterCategory === cat
+                  ? "bg-[var(--foreground)] text-[var(--background)] border-[var(--foreground)]"
+                  : "bg-transparent text-[var(--muted-foreground)] border-[var(--border)] hover:border-[var(--muted-foreground)]"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+
       {goals.length === 0 ? (
         <div className="mt-6">
           <EmptyState
@@ -534,7 +581,9 @@ export default function GoalTracker() {
       ) : (
         <ul className="space-y-4">
 
-          {goals.map((goal) => {
+          {goals
+            .filter((goal) => filterCategory === "All" || goal.category === filterCategory)
+            .map((goal) => {
             const pct =
               goal.current > 0
                 ? Math.max(1, Math.min(Math.round((goal.current / goal.target) * 100), 100))
@@ -575,6 +624,13 @@ export default function GoalTracker() {
                           }`}
                         >
                           {RECURRENCE_LABELS[goal.recurrence]}
+                        </span>
+                      )}
+                      {goal.category && (
+                        <span
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full border ${CATEGORY_COLORS[goal.category] || "bg-[var(--card-muted)] text-[var(--muted-foreground)] border-[var(--border)]"}`}
+                        >
+                          {goal.category}
                         </span>
                       )}
                       {isAutoSynced && (
@@ -873,6 +929,29 @@ export default function GoalTracker() {
               {recurrence === "weekly" ? "Resets every Monday." : "Resets on the 1st of each month."}
             </p>
           )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="goal-category"
+            className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]"
+          >
+            Category (Optional)
+          </label>
+          <select
+            id="goal-category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            disabled={creating}
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] transition focus-visible:border-[var(--accent)]"
+          >
+            <option value="">No Category</option>
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
         </div>
 
         {(unit === "commits" || unit === "prs") && (

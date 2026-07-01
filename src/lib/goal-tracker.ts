@@ -6,6 +6,7 @@ export interface CreateGoalPayload {
   unit: string;
   recurrence: Recurrence;
   deadline: string | null;
+  category?: string | null;
 }
 
 interface SubmitGoalOptions {

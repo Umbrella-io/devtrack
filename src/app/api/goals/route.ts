@@ -20,6 +20,7 @@ interface Goal {
   created_at: string;
   goal_reset_version: number;
   is_public: boolean;
+  category: string | null;
 }
 
 interface GoalHistory {
@@ -34,6 +35,7 @@ interface GoalHistory {
 type Recurrence = "none" | "weekly" | "monthly";
 
 const VALID_RECURRENCES = ["none", "weekly", "monthly"] as const;
+const VALID_CATEGORIES = ["Side Project", "Work", "DSA", "Open Source"] as const;
 const MAX_TITLE_LEN = 100;
 const MAX_UNIT_LEN = 30;
 const MIN_TARGET = 1;
@@ -201,7 +203,7 @@ try {
     return Response.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { title, target, unit, recurrence, deadline } = body as Record<string, unknown>;
+  const { title, target, unit, recurrence, deadline, category } = body as Record<string, unknown>;
 
   if (typeof title !== "string" || title.trim().length === 0) {
     return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
@@ -238,6 +240,11 @@ try {
       safeDeadline = d.toISOString();
     }
   }
+
+  const safeCategory =
+    typeof category === "string" && VALID_CATEGORIES.includes(category as any)
+      ? category
+      : null;
 
   const user = await resolveAppUser(session.githubId, session.githubLogin);
   if (!user) return Response.json({ error: "User not found" }, { status: 404 });
@@ -287,6 +294,7 @@ try {
       deadline: safeDeadline,
       current: 0,
       goal_reset_version: 0,
+      category: safeCategory,
     })
     .select()
     .single();
