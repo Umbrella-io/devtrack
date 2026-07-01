@@ -58,10 +58,12 @@ function CompactThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
+  const [isMac, setIsMac] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
+    setIsMac(/Mac|iPod|iPhone|iPad/.test(navigator.userAgent));
   }, []);
 
   useEffect(() => {
@@ -104,7 +106,8 @@ function CompactThemeToggle() {
         type="button"
         onClick={() => setOpen((value) => !value)}
         className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--card-foreground)] transition-all duration-200 hover:bg-[var(--control)] active:scale-95"
-        aria-label="Choose theme"
+        aria-label={`Choose theme (${isMac ? "⌘ Shift T" : "Ctrl Shift T"})`}
+        title={`Choose theme — ${isMac ? "⌘ Shift T" : "Ctrl Shift T"} to cycle`}
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -130,16 +133,14 @@ function CompactThemeToggle() {
                     role="menuitemradio"
                     aria-checked={isActive}
                     onClick={() => handleSelect(option.id)}
-                    className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors ${
-                      isActive
+                    className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors ${isActive
                         ? "bg-[var(--accent-soft)] text-[var(--foreground)]"
                         : "text-[var(--card-foreground)] hover:bg-[var(--control)]"
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`h-3 w-3 shrink-0 rounded-full border border-black/10 ${
-                        option.mode === "dark" ? "bg-slate-700" : "bg-sky-200"
-                      }`}
+                      className={`h-3 w-3 shrink-0 rounded-full border border-black/10 ${option.mode === "dark" ? "bg-slate-700" : "bg-sky-200"
+                        }`}
                       aria-hidden="true"
                     />
                     <span className="min-w-0 flex-1">

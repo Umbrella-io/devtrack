@@ -45,8 +45,10 @@ export default function GlobalKeyboardShortcuts() {
         return;
       }
 
-      // Alt+T / Option+T to toggle theme
-      if (e.altKey && e.key.toLowerCase() === "t") {
+      // Alt+T / Option+T  OR  Ctrl+Shift+T / Cmd+Shift+T  -> toggle theme
+      const isAltT = e.altKey && !e.shiftKey && e.key.toLowerCase() === "t";
+      const isCtrlShiftT = (e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "t";
+      if (isAltT || isCtrlShiftT) {
         keyboardToggleRef.current = true;
         toggleTheme();
         e.preventDefault();
