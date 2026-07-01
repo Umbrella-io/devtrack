@@ -55,6 +55,12 @@ export default async function DashboardPage() {
 
           <div className="mt-6 space-y-8">
             {/* Quick actions */}
+              <Link
+              href="/dashboard/sprint-analytics"
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90"
+            >
+              📊 Sprint Analytics
+            </Link>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <Link
                 href="/wrapped"
