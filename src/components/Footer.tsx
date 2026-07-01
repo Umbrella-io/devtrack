@@ -20,6 +20,11 @@ const COMMUNITY_LINKS = [
   { label: "GitHub Repository", href: "https://github.com/Priyanshu-byte-coder/devtrack" },
   { label: "Contributing Guide", href: "https://github.com/Priyanshu-byte-coder/devtrack/blob/main/CONTRIBUTING.md" },
 ];
+const LEGAL_LINKS = [
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Guidelines", href: "https://github.com/Priyanshu-byte-coder/devtrack/blob/main/CODE_OF_CONDUCT.md" },
+  { label: "Documentation", href: "https://github.com/Priyanshu-byte-coder/devtrack/blob/main/DEVELOPMENT.md" },
+];
 
 const LEGAL_LINKS = [
   { label: "Privacy Policy", href: "/privacy-policy" },
@@ -219,28 +224,26 @@ export default function Footer() {
               ))}
             </nav>
           </div>
-
+          {/* Legal Links */}
           <div>
-            <h3
-              className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--foreground)]"
-              style={{
-                fontFamily: "var(--font-jetbrains, ui-monospace, monospace)",
-              }}
-            >
-              Legal Links
-            </h3>
-
-            <nav
-              aria-label="Legal links"
-              className="mt-6 flex flex-col gap-3"
-            >
-              {LEGAL_LINKS.map(({ label, href }) => (
-                <FooterLink key={label} href={href}>
-                  {label}
-                </FooterLink>
-              ))}
-            </nav>
-          </div>
+              <h3
+                className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--foreground)]"
+                style={{ fontFamily: "var(--font-jetbrains, ui-monospace, monospace)" }}
+              >
+                Legal Links
+              </h3>
+              <nav aria-label="Legal links" className="mt-6 flex flex-col gap-3">
+                {LEGAL_LINKS.map(({ label, href }) => (
+                  <FooterLink
+                    key={label}
+                    href={href}
+                    external={href.startsWith("http")}
+                  >
+                    {label}
+                  </FooterLink>
+                ))}
+              </nav>
+            </div>
           {/* Stats column */}
           <div>
             <h3
