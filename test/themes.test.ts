@@ -87,3 +87,4 @@ describe("nextThemeId", () => {
     expect(nextThemeId("not-a-theme" as any)).toBe(THEME_OPTIONS[1].id);
   });
 });
+// Issue: #2968
